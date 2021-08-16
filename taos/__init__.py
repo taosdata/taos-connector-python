@@ -441,18 +441,14 @@ from .result import *
 from .statement import *
 from .subscription import *
 
-try:
-    import importlib.metadata
-
-    __version__ = importlib.metadata.version("taos")
-except:
-    None
+__version__ = "0"
 
 # Globals
 threadsafety = 0
 paramstyle = "pyformat"
 
 __all__ = [
+    "__version__",
     # functions
     "connect",
     "new_bind_param",
