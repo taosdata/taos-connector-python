@@ -335,6 +335,7 @@ class TaosMultiBind(ctypes.Structure):
             )
         self.length = (c_int32 * len(values))(*[len(b) if b is not None else 0 for b in _bytes])
         self.buffer_length = buffer_length
+
     def binary(self, values):
         self.buffer_type = FieldType.C_BINARY
         self._str_to_buffer(values)
