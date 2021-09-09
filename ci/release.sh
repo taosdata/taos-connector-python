@@ -14,5 +14,6 @@ $ci/changelog-generate.sh >> CHANGELOG.md2
 sed "1,9d" CHANGELOG.md >> CHANGELOG.md2
 mv CHANGELOG.md2 CHANGELOG.md
 
-# git commit -a -m "release: v$newv"
-# git tag v$newv
+git commit -a -m "release: v$newv"
+git tag v$newv
+git push v$newv
