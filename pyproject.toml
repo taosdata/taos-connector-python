@@ -15,8 +15,8 @@ typing = "*"
 
 [tool.poetry.dev-dependencies]
 pytest = [
-  { version = "^4.6", python = "^2.7" },
-  { version = "^6.2", python = "^3.7" }
+  { version = "^4.6", python = ">=2.7,<3.0" },
+  { version = "^6.2", python = ">=3.7,<4.0" }
 ]
 pdoc = { version = "^7.1.1", python = "^3.7" }
 mypy = { version = "^0.910", python = "^3.6" }

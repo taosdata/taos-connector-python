@@ -16,4 +16,4 @@ mv CHANGELOG.md2 CHANGELOG.md
 
 git commit -a -m "release: v$newv"
 git tag v$newv
-git push v$newv
+git push --force origin v$newv:v$newv
