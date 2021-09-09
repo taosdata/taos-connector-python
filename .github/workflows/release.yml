@@ -1,9 +1,9 @@
 name: Release
 
 on:
-  release:
-    types:
-    - created
+  push:
+    tags:
+    - "v*"
 
 jobs:
   release:
@@ -31,8 +31,8 @@ jobs:
       - name: Test
         run: |
           poetry install
-          poetry run pytest tests/
-      - name: Build
+          poetry run pytest
+      - name: Build Artifacts
         run: |
           poetry build
 
@@ -45,5 +45,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           body_path: ${{ github.workflow }}-CHANGELOG.txt
+          draft: true
           files: |
             dist/*

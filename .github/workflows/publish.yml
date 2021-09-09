@@ -1,0 +1,17 @@
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  publish:
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Poetry Setup
+      uses: abatilo/actions-poetry@v2.1.2
+    - name: Publish to PyPI
+      env:
+        PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+      run: |
+        poetry config pypi-token.pypi $PYPI_TOKEN
+        poetry publish --build
