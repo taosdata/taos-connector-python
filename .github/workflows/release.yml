@@ -8,22 +8,35 @@ on:
 jobs:
   release:
     runs-on: ubuntu-20.04
-    container:
-      image: zitsen/tdengine-server:2.1.7.2
-      options: --user root
-      volumes:
-        - /etc/apt/sources.list:/etc/apt/sources.list
     steps:
       - name: Checkout
         uses: actions/checkout@v1
+
+      - name: Build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake
+
       - name: Setup Python
         run: |
-          apt-get update
-          apt-get install -y python3 python3-pip python-is-python3
+          sudo apt-get install -y python3 python3-pip python-is-python3
+
+      - name: Build TDengine
+        run: |
+          git clone --depth 1 https://github.com/taosdata/TDengine.git
+          cd TDengine
+          mkdir build
+          cd build
+          cmake ../ -DBUILD_HTTP=true -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/`
+          make -j
+          cd ../../
 
       - name: Start TDengine
         run: |
-          taosd &
+          tree TDengine/build/build/
+          export C_INCLUDE_PATH=$PWD/TDengine/build/build/bin
+          export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
+          sudo ./TDengine/build/build/bin/taosd &
       - name: Cache Poetry
         id: cache-poetry
         uses: actions/cache@v2.1.5
@@ -60,12 +73,16 @@ jobs:
       #----------------------------------------------
       - name: Install library
         run: poetry install --no-interaction
+
       #----------------------------------------------
       #              run test suite
       #----------------------------------------------
       - name: Test
         run: |
-          poetry run pytest
+          export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
+          source $VENV
+          poetry run pip install psutil pandas
+          poetry run pytest tests
       - name: Build Artifacts
         run: |
           poetry build
