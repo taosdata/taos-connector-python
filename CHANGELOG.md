@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.1.2 - 2021-11-04
+
+### Bug Fixes:
+
+- [TD-10828]:fix import taos error for TDengine 2.2 or 2.0
+- [TD-10838]:fix ci error in release
+
 ## v0.1.0 - 2021-09-09
 
 ### Features:
