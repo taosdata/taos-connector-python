@@ -60,7 +60,7 @@ def test_stmt_insert(conn):
         result = stmt.use_result()
         row  = result.next()
         print(row)
-        assert row[2] == None
+        assert row[2] is None
         for i in range(3, 11):
             assert row[i] == i - 1
         #float == may not work as expected
