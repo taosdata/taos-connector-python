@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.2.0 - 2021-12-23
+
+### Bug Fixes:
+
+- [TD-10875]:test for each git push
+- [TD-12253]:fix syntax error in README
+
+### Tests:
+
+- [TD-10875]:add GitHub Actions test workflow on pr
+
+### Documents:
+
+- [TD-12250]:fix README confused titles
+
 ## v2.1.2 - 2021-11-05
 
 ### Bug Fixes:
