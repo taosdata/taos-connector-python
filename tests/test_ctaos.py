@@ -116,7 +116,7 @@ def test_stmt(conn, caplog):
 def stream_callback(param, result, row):
     # type: (c_void_p, c_void_p, c_void_p) -> None
     try:
-        if result == None or row == None:
+        if result is None or row is None:
             return
         result = c_void_p(result)
         row = c_void_p(row)
