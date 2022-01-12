@@ -11,9 +11,9 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^2.7 || ^3.4"
-typing = "*"
 
 [tool.poetry.dev-dependencies]
+typing = "*"
 pytest = [
   { version = "^4.6", python = ">=2.7,<3.0" },
   { version = "^6.2", python = ">=3.7,<4.0" }
