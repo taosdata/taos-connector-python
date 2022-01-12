@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.2.1 - 2022-01-12
+
+### Bug Fixes:
+
+- [TS-1107]:use typing as one of dev-dependencies
+
 ## v2.2.0 - 2021-12-23
 
 ### Bug Fixes:
