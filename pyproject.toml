@@ -9,8 +9,14 @@ packages = [
   {include = "taos"}
 ]
 
+[tool.poetry.plugins] # Optional super table
+
+[tool.poetry.plugins."sqlalchemy.dialects"]
+"taos" = "taos.sqlalchemy:TaosDialect"
+
 [tool.poetry.dependencies]
 python = "^2.7 || ^3.4"
+sqlalchemy = { version = "*", optional = true }
 
 [tool.poetry.dev-dependencies]
 typing = "*"

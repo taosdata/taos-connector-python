@@ -441,6 +441,10 @@ from .result import *
 from .statement import *
 from .subscription import *
 from .schemaless import *
+try:
+    from .sqlalchemy import *
+except:
+    pass
 
 from taos._version import __version__
 
