@@ -25,6 +25,7 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/taosdata/TDengine.git
           cd TDengine
+          git submodule update --depth 1 --init --recursive
           mkdir build
           cd build
           cmake ../ -DBUILD_HTTP=true -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/`
