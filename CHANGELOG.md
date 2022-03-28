@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.2.2 - 2022-03-28
+
+### Features:
+
+- [TD-14210]:support sqlalchemy dialect plugin
+
+### Bug Fixes:
+
+- [TD-14358]:remove stream api
+
 ## v2.2.1 - 2022-01-12
 
 ### Bug Fixes:
