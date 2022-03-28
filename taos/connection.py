@@ -4,7 +4,6 @@ from .cinterface import *
 from .cursor import TaosCursor
 from .subscription import TaosSubscription
 from .statement import TaosStmt
-from .stream import TaosStream
 from .result import *
 
 
@@ -107,14 +106,6 @@ class TaosConnection(object):
     def load_table_info(self, tables):
         # type: (str) -> None
         taos_load_table_info(self._conn, tables)
-
-    def stream(self, sql, callback, stime=0, param=None, callback2=None):
-        # type: (str, Callable[[Any, TaosResult, TaosRows], None], int, Any, c_void_p) -> TaosStream
-        # cb = cast(callback, stream_callback_type)
-        # ref = byref(cb)
-
-        stream = taos_open_stream(self._conn, sql, callback, stime, param, callback2)
-        return TaosStream(stream)
 
     def schemaless_insert(self, lines, protocol, precision):
         # type: (list[str], SmlProtocol, SmlPrecision) -> int

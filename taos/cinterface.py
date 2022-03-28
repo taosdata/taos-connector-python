@@ -17,10 +17,6 @@ from .schemaless import *
 
 _UNSUPPORTED = {}
 
-# stream callback
-stream_callback_type = CFUNCTYPE(None, c_void_p, c_void_p, c_void_p)
-stream_callback2_type = CFUNCTYPE(None, c_void_p)
-
 # C interface class
 class TaosOption:
     Locale = (0,)
@@ -512,7 +508,7 @@ try:
     _libtaos.taos_load_table_info.restype = c_int
     _libtaos.taos_load_table_info.argstype = (c_void_p, c_char_p)
 except Exception as err:
-    _UNSUPPORTED["taos_open_stream"] = err
+    _UNSUPPORTED["taos_load_table_info"] = err
 
 
 def taos_load_table_info(connection, tables):
@@ -568,36 +564,6 @@ def taos_select_db(connection, db):
         raise DatabaseError("select database error", res)
 
 
-try:
-    _libtaos.taos_open_stream.restype = c_void_p
-    _libtaos.taos_open_stream.argstype = c_void_p, c_char_p, stream_callback_type, c_int64, c_void_p, Any
-except Exception as err:
-    _UNSUPPORTED["taos_open_stream"] = err
-
-
-def taos_open_stream(connection, sql, callback, stime=0, param=None, callback2=None):
-    # type: (ctypes.c_void_p, str, stream_callback_type, c_int64, c_void_p, c_void_p) -> ctypes.pointer
-    _check_if_supported()
-    if callback2 != None:
-        callback2 = stream_callback2_type(callback2)
-    """Open an stream"""
-    return c_void_p(
-        _libtaos.taos_open_stream(
-            connection, ctypes.c_char_p(sql.encode("utf-8")), stream_callback_type(callback), stime, param, callback2
-        )
-    )
-
-
-_libtaos.taos_close_stream.restype = None
-_libtaos.taos_close_stream.argstype = (c_void_p,)
-
-
-def taos_close_stream(stream):
-    # type: (c_void_p) -> None
-    """Open an stream"""
-    return _libtaos.taos_close_stream(stream)
-
-
 _libtaos.taos_stmt_init.restype = c_void_p
 _libtaos.taos_stmt_init.argstype = (c_void_p,)
 
@@ -644,7 +610,7 @@ try:
     _libtaos.taos_stmt_errstr.restype = c_char_p
     _libtaos.taos_stmt_errstr.argstype = (c_void_p,)
 except Exception as err:
-    _UNSUPPORTED["taos_stmt_set_tbname"] = err
+    _UNSUPPORTED["taos_stmt_errstr"] = err
 
 
 def taos_stmt_errstr(stmt):
