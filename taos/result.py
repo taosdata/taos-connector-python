@@ -48,6 +48,7 @@ class TaosResult(object):
 
         raw = self._block[self._block_iter]
         self._block_iter += 1
+        self._row_count += 1
         return raw
 
     @property
