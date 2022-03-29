@@ -4,7 +4,6 @@ import ctypes
 import platform
 import inspect
 from ctypes import *
-from packaging import version
 
 try:
     from typing import Any
