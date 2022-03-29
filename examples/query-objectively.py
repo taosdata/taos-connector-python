@@ -9,4 +9,5 @@ for field in result.fields:
     print(field)
 for row in result:
     print(row)
+assert result.row_count > 0
 conn.execute("drop database pytest")
