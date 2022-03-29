@@ -9,13 +9,13 @@ def conn():
     return connect()
 
 def test_client_info():
-    print(taos_get_client_info())
+    print("client info: %s" % taos_get_client_info())
     None
 
 def test_server_info(conn):
     # type: (TaosConnection) -> None
-    print(conn.client_info)
-    print(conn.server_info)
+    print("conn client info: %s" % conn.client_info)
+    print("conn server info: %s" % conn.server_info)
     None
 
 if __name__ == "__main__":

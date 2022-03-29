@@ -4,6 +4,7 @@ import ctypes
 import platform
 import inspect
 from ctypes import *
+from packaging import version
 
 try:
     from typing import Any
@@ -57,12 +58,26 @@ def _load_taos():
 _libtaos = _load_taos()
 
 _libtaos.taos_fetch_fields.restype = ctypes.POINTER(TaosField)
-_libtaos.taos_init.restype = None
+
+try:
+    _libtaos.taos_init.restype = None
+except Exception as err:
+    _UNSUPPORTED["taos_init"] = err
+
 _libtaos.taos_connect.restype = ctypes.c_void_p
 _libtaos.taos_fetch_row.restype = ctypes.POINTER(ctypes.c_void_p)
 _libtaos.taos_errstr.restype = ctypes.c_char_p
-_libtaos.taos_subscribe.restype = ctypes.c_void_p
-_libtaos.taos_consume.restype = ctypes.c_void_p
+
+try:
+    _libtaos.taos_subscribe.restype = ctypes.c_void_p
+except Exception as err:
+    _UNSUPPORTED["taos_subscribe"] = err
+
+try:
+    _libtaos.taos_consume.restype = ctypes.c_void_p
+except Exception as err:
+    _UNSUPPORTED["taos_consume"] = err
+
 _libtaos.taos_fetch_lengths.restype = ctypes.POINTER(ctypes.c_int)
 _libtaos.taos_free_result.restype = None
 _libtaos.taos_query.restype = ctypes.POINTER(ctypes.c_void_p)
@@ -326,8 +341,11 @@ def taos_consume(sub):
     return c_void_p(_libtaos.taos_consume(sub))
 
 
-_libtaos.taos_unsubscribe.restype = None
-_libtaos.taos_unsubscribe.argstype = c_void_p, c_int
+try:
+    _libtaos.taos_unsubscribe.restype = None
+    _libtaos.taos_unsubscribe.argstype = c_void_p, c_int
+except Exception as err:
+    _UNSUPPORTED["taos_unsubscribe"] = err
 
 
 def taos_unsubscribe(sub, keep_progress):
@@ -354,7 +372,6 @@ def taos_use_result(result):
 _libtaos.taos_fetch_block.restype = c_int
 _libtaos.taos_fetch_block.argtypes = c_void_p, c_void_p
 
-
 def taos_fetch_block_raw(result):
     pblock = ctypes.c_void_p(0)
     num_of_rows = _libtaos.taos_fetch_block(result, ctypes.byref(pblock))
@@ -366,9 +383,11 @@ def taos_fetch_block_raw(result):
 def taos_fetch_block(result, fields=None, field_count=None):
     pblock = ctypes.c_void_p(0)
     num_of_rows = _libtaos.taos_fetch_block(result, ctypes.byref(pblock))
+    print("CBD: num of rows: %d" % num_of_rows)
     if num_of_rows == 0:
         return None, 0
     precision = taos_result_precision(result)
+    print("CBD: precision: %d" % precision)
     if fields is None:
         fields = taos_fetch_fields(result)
     if field_count is None:
@@ -378,7 +397,8 @@ def taos_fetch_block(result, fields=None, field_count=None):
     for i in range(len(fields)):
         data = ctypes.cast(pblock, ctypes.POINTER(ctypes.c_void_p))[i]
         if fields[i]["type"] not in CONVERT_FUNC:
-            raise DatabaseError("Invalid data type returned from database")
+            print("CBD: fields type: %s" % fields[i]["type"])
+            raise DatabaseError("CBD: cinterface LN386 Invalid data type returned from database")
         blocks[i] = CONVERT_FUNC_BLOCK[fields[i]["type"]](data, num_of_rows, fieldLen[i], precision)
 
     return blocks, abs(num_of_rows)
@@ -409,7 +429,7 @@ def taos_fetch_row(result, fields):
         for i in range(field_count):
             data = ctypes.cast(pblock, ctypes.POINTER(ctypes.c_void_p))[i]
             if fields[i].type not in CONVERT_FUNC:
-                raise DatabaseError("Invalid data type returned from database")
+                raise DatabaseError("CBD: cinterface LN417 Invalid data type returned from database")
             if data is None:
                 blocks[i] = [None]
             else:
@@ -660,9 +680,11 @@ def taos_stmt_set_tbname_tags(stmt, name, tags):
     if res != 0:
         raise StatementError(msg=taos_stmt_errstr(stmt), errno=res)
 
-
-_libtaos.taos_stmt_is_insert.restype = c_int
-_libtaos.taos_stmt_is_insert.argstype = (c_void_p, POINTER(c_int))
+try:
+    _libtaos.taos_stmt_is_insert.restype = c_int
+    _libtaos.taos_stmt_is_insert.argstype = (c_void_p, POINTER(c_int))
+except Exception as err:
+    _UNSUPPORTED["taos_stmt_is_insert"] = err
 
 
 def taos_stmt_is_insert(stmt):
@@ -677,8 +699,12 @@ def taos_stmt_is_insert(stmt):
     return is_insert == 0
 
 
-_libtaos.taos_stmt_num_params.restype = c_int
-_libtaos.taos_stmt_num_params.argstype = (c_void_p, POINTER(c_int))
+try:
+    _libtaos.taos_stmt_num_params.restype = c_int
+    _libtaos.taos_stmt_num_params.argstype = (c_void_p, POINTER(c_int))
+except Exception as err:
+    _UNSUPPORTED["taos_stmt_num_params"] = err
+
 
 
 def taos_stmt_num_params(stmt):
@@ -693,8 +719,11 @@ def taos_stmt_num_params(stmt):
     return num_params.value
 
 
-_libtaos.taos_stmt_bind_param.restype = c_int
-_libtaos.taos_stmt_bind_param.argstype = (c_void_p, c_void_p)
+try:
+    _libtaos.taos_stmt_bind_param.restype = c_int
+    _libtaos.taos_stmt_bind_param.argstype = (c_void_p, c_void_p)
+except Exception as err:
+    _UNSUPPORTED["taos_stmt_bind_param"] = err
 
 
 def taos_stmt_bind_param(stmt, bind):
@@ -751,8 +780,11 @@ def taos_stmt_bind_single_param_batch(stmt, bind, col):
         raise StatementError(msg=taos_stmt_errstr(stmt), errno=res)
 
 
-_libtaos.taos_stmt_add_batch.restype = c_int
-_libtaos.taos_stmt_add_batch.argstype = (c_void_p,)
+try:
+    _libtaos.taos_stmt_add_batch.restype = c_int
+    _libtaos.taos_stmt_add_batch.argstype = (c_void_p,)
+except Exception as err:
+    _UNSUPPORTED["taos_stmt_add_batch"] = err
 
 
 def taos_stmt_add_batch(stmt):
@@ -765,8 +797,11 @@ def taos_stmt_add_batch(stmt):
         raise StatementError(msg=taos_stmt_errstr(stmt), errno=res)
 
 
-_libtaos.taos_stmt_execute.restype = c_int
-_libtaos.taos_stmt_execute.argstype = (c_void_p,)
+try:
+    _libtaos.taos_stmt_execute.restype = c_int
+    _libtaos.taos_stmt_execute.argstype = (c_void_p,)
+except Exception as err:
+    _UNSUPPORTED["taos_stmt_execute"] = err
 
 
 def taos_stmt_execute(stmt):
@@ -779,8 +814,11 @@ def taos_stmt_execute(stmt):
         raise StatementError(msg=taos_stmt_errstr(stmt), errno=res)
 
 
-_libtaos.taos_stmt_use_result.restype = c_void_p
-_libtaos.taos_stmt_use_result.argstype = (c_void_p,)
+try:
+    _libtaos.taos_stmt_use_result.restype = c_void_p
+    _libtaos.taos_stmt_use_result.argstype = (c_void_p,)
+except Exception as err:
+    _UNSUPPORTED["taos_stmt_use_result"] = err
 
 
 def taos_stmt_use_result(stmt):

@@ -105,7 +105,7 @@ class TaosResult(object):
         for i in range(field_count):
             data = ctypes.cast(block, ctypes.POINTER(ctypes.c_void_p))[i]
             if fields[i].type not in CONVERT_FUNC_BLOCK:
-                raise DatabaseError("Invalid data type returned from database")
+                raise DatabaseError("CBD: result LN108, Invalid data type returned from database")
             blocks[i] = CONVERT_FUNC_BLOCK[fields[i].type](data, length, lengths[i], precision)
 
         return list(map(tuple, zip(*blocks))), length
@@ -233,7 +233,7 @@ class TaosRow:
         for i in range(field_count):
             data = ctypes.cast(self._row, ctypes.POINTER(ctypes.c_void_p))[i]
             if fields[i].type not in CONVERT_FUNC:
-                raise DatabaseError("Invalid data type returned from database")
+                raise DatabaseError("CBD: result LN236 Invalid data type returned from database")
             if data is None:
                 blocks[i] = None
             else:
