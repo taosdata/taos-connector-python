@@ -70,16 +70,3 @@ class TaosStmt(object):
     def __del__(self):
         self.close()
 
-
-if __name__ == "__main__":
-    from taos.connection import TaosConnection
-
-    conn = TaosConnection()
-
-    stmt = conn.statement("select * from log.log limit 10")
-    stmt.execute()
-    result = stmt.use_result()
-    for row in result:
-        print(row)
-    stmt.close()
-    conn.close()

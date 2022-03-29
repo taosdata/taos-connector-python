@@ -161,7 +161,6 @@ class TaosConnection(object):
         conn.schemaless_insert(lines, 2, None)
 
         """
-        print(lines, protocol, precision)
         return taos_schemaless_insert(self._conn, lines, protocol, precision)
 
 
@@ -192,4 +191,3 @@ class TaosConnection(object):
 if __name__ == "__main__":
     conn = TaosConnection()
     conn.close()
-    print("Hello world")

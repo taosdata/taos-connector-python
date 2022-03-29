@@ -27,23 +27,8 @@ class TaosSubscription(object):
         taos_unsubscribe(self._sub, keepProgress)
         self._sub = None
         return True
-    
+
     def __del__(self):
         self.close()
 
 
-if __name__ == "__main__":
-    from .connection import TaosConnection
-
-    conn = TaosConnection(host="127.0.0.1", user="root", password="taosdata", database="test")
-
-    # Generate a cursor object to run SQL commands
-    sub = conn.subscribe(True, "test", "select * from meters;", 1000)
-
-    for i in range(0, 10):
-        data = sub.consume()
-        for d in data:
-            print(d)
-
-    sub.close()
-    conn.close()
