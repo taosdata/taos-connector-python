@@ -7,7 +7,7 @@ from ctypes import *
 
 try:
     from typing import Any
-except:
+except BaseException:
     pass
 
 from .error import *
@@ -18,6 +18,8 @@ from .schemaless import *
 _UNSUPPORTED = {}
 
 # C interface class
+
+
 class TaosOption:
     Locale = (0,)
     Charset = (1,)
@@ -62,6 +64,18 @@ try:
     _libtaos.taos_init.restype = None
 except Exception as err:
     _UNSUPPORTED["taos_init"] = err
+
+_libtaos.taos_get_client_info.restype = c_char_p
+
+
+def taos_get_client_info():
+    # type: () -> str
+    """Get client version info."""
+    return _libtaos.taos_get_client_info().decode("utf-8")
+
+
+taos_client_info = taos_get_client_info()
+print("CBD: taos_client_info: %s" % taos_client_info.split('.')[0])
 
 _libtaos.taos_connect.restype = ctypes.c_void_p
 _libtaos.taos_fetch_row.restype = ctypes.POINTER(ctypes.c_void_p)
@@ -112,15 +126,6 @@ def taos_cleanup():
     # type: () -> None
     """Cleanup workspace."""
     _libtaos.taos_cleanup()
-
-
-_libtaos.taos_get_client_info.restype = c_char_p
-
-
-def taos_get_client_info():
-    # type: () -> str
-    """Get client version info."""
-    return _libtaos.taos_get_client_info().decode("utf-8")
 
 
 _libtaos.taos_get_server_info.restype = c_char_p
@@ -189,7 +194,14 @@ def taos_connect(host=None, user="root", password="taosdata", db=None, port=0):
     except TypeError:
         raise TypeError("port is expected as an uint16")
 
-    connection = cast(_libtaos.taos_connect(_host, _user, _password, _db, _port), c_void_p)
+    connection = cast(
+        _libtaos.taos_connect(
+            _host,
+            _user,
+            _password,
+            _db,
+            _port),
+        c_void_p)
 
     if connection.value is None:
         raise ConnectionError("connect to TDengine failed")
@@ -245,7 +257,9 @@ def taos_connect_auth(host=None, user="root", auth="", db=None, port=0):
     except TypeError:
         raise TypeError("port is expected as an int")
 
-    connection = c_void_p(_libtaos.taos_connect_auth(_host, _user, _auth, _db, _port))
+    connection = c_void_p(
+        _libtaos.taos_connect_auth(
+            _host, _user, _auth, _db, _port))
 
     if connection.value is None:
         raise ConnectionError("connect to TDengine failed")
@@ -285,7 +299,12 @@ _libtaos.taos_query_a.argtypes = c_void_p, c_char_p, async_query_callback_type, 
 
 def taos_query_a(connection, sql, callback, param):
     # type: (c_void_p, str, async_query_callback_type, c_void_p) -> c_void_p
-    _libtaos.taos_query_a(connection, c_char_p(sql.encode("utf-8")), async_query_callback_type(callback), param)
+    _libtaos.taos_query_a(
+        connection,
+        c_char_p(
+            sql.encode("utf-8")),
+        async_query_callback_type(callback),
+        param)
 
 
 async_fetch_rows_callback_type = CFUNCTYPE(None, c_void_p, c_void_p, c_int)
@@ -295,7 +314,8 @@ _libtaos.taos_fetch_rows_a.argtypes = c_void_p, async_fetch_rows_callback_type, 
 
 def taos_fetch_rows_a(result, callback, param):
     # type: (c_void_p, async_fetch_rows_callback_type, c_void_p) -> c_void_p
-    _libtaos.taos_fetch_rows_a(result, async_fetch_rows_callback_type(callback), param)
+    _libtaos.taos_fetch_rows_a(
+        result, async_fetch_rows_callback_type(callback), param)
 
 
 def taos_affected_rows(result):
@@ -309,14 +329,22 @@ _libtaos.taos_subscribe.restype = c_void_p
 # _libtaos.taos_subscribe.argtypes = c_void_p, c_int, c_char_p, c_char_p, subscribe_callback_type, c_void_p, c_int
 
 
-def taos_subscribe(connection, restart, topic, sql, interval, callback=None, param=None):
-    # type: (c_void_p, bool, str, str, c_int, subscribe_callback_type, c_void_p | None) -> c_void_p
+def taos_subscribe(
+        connection,
+        restart,
+        topic,
+        sql,
+        interval,
+        callback=None,
+        param=None):
+    # type: (c_void_p, bool, str, str, c_int, subscribe_callback_type,
+    # c_void_p | None) -> c_void_p
     """Create a subscription
     @restart boolean,
     @sql string, sql statement for data query, must be a 'select' statement.
     @topic string, name of this subscription
     """
-    if callback != None:
+    if callback is not None:
         callback = subscribe_callback_type(callback)
     return c_void_p(
         _libtaos.taos_subscribe(
@@ -371,6 +399,7 @@ def taos_use_result(result):
 _libtaos.taos_fetch_block.restype = c_int
 _libtaos.taos_fetch_block.argtypes = c_void_p, c_void_p
 
+
 def taos_fetch_block_raw(result):
     pblock = ctypes.c_void_p(0)
     num_of_rows = _libtaos.taos_fetch_block(result, ctypes.byref(pblock))
@@ -379,7 +408,7 @@ def taos_fetch_block_raw(result):
     return pblock, abs(num_of_rows)
 
 
-def taos_fetch_block(result, fields=None, field_count=None):
+def taos_fetch_block_v3(result, fields=None, field_count=None):
     pblock = ctypes.c_void_p(0)
     num_of_rows = _libtaos.taos_fetch_block(result, ctypes.byref(pblock))
     print("CBD: num of rows: %d" % num_of_rows)
@@ -391,17 +420,51 @@ def taos_fetch_block(result, fields=None, field_count=None):
         fields = taos_fetch_fields(result)
     if field_count is None:
         field_count = taos_field_count(result)
+    print("CBD: field_count: %d" % field_count)
+    blocks = [None] * field_count
+    fieldLen = taos_fetch_lengths(result, field_count)
+    print("CBD: field_len: %d" % len(fields))
+    for i in range(len(fields)):
+        data = ctypes.cast(pblock, ctypes.POINTER(ctypes.c_void_p))[i]
+        print("CBD: fields type: %s" % fields[i]["type"])
+        if fields[i]["type"] not in CONVERT_FUNC:
+            raise DatabaseError(
+                "CBD: cinterface LN386 Invalid data type returned from database")
+        blocks[i] = CONVERT_FUNC_BLOCK[fields[i]["type"]](
+            data, num_of_rows, fieldLen[i], precision)
+
+    return blocks, abs(num_of_rows)
+
+
+def taos_fetch_block_v2(result, fields=None, field_count=None):
+    pblock = ctypes.c_void_p(0)
+    num_of_rows = _libtaos.taos_fetch_block(result, ctypes.byref(pblock))
+    if num_of_rows == 0:
+        return None, 0
+    precision = taos_result_precision(result)
+    if fields is None:
+        fields = taos_fetch_fields(result)
+    if field_count is None:
+        field_count = taos_field_count(result)
     blocks = [None] * field_count
     fieldLen = taos_fetch_lengths(result, field_count)
     for i in range(len(fields)):
         data = ctypes.cast(pblock, ctypes.POINTER(ctypes.c_void_p))[i]
         if fields[i]["type"] not in CONVERT_FUNC:
-            print("CBD: fields type: %s" % fields[i]["type"])
-            raise DatabaseError("CBD: cinterface LN386 Invalid data type returned from database")
-        blocks[i] = CONVERT_FUNC_BLOCK[fields[i]["type"]](data, num_of_rows, fieldLen[i], precision)
+            raise DatabaseError(
+                "CBD: cinterface LN386 Invalid data type returned from database")
+        blocks[i] = CONVERT_FUNC_BLOCK[fields[i]["type"]](
+            data, num_of_rows, fieldLen[i], precision)
 
     return blocks, abs(num_of_rows)
 
+
+if (taos_client_info.split('.')[0] < '3'):
+    print("CBD: use fetch_block_v2")
+    taos_fetch_block = taos_fetch_block_v2
+else:
+    print("CBD: use fetch_block_v3")
+    taos_fetch_block = taos_fetch_block_v3
 
 _libtaos.taos_fetch_row.restype = c_void_p
 _libtaos.taos_fetch_row.argtypes = (c_void_p,)
@@ -428,11 +491,13 @@ def taos_fetch_row(result, fields):
         for i in range(field_count):
             data = ctypes.cast(pblock, ctypes.POINTER(ctypes.c_void_p))[i]
             if fields[i].type not in CONVERT_FUNC:
-                raise DatabaseError("CBD: cinterface LN417 Invalid data type returned from database")
+                raise DatabaseError(
+                    "CBD: cinterface LN417 Invalid data type returned from database")
             if data is None:
                 blocks[i] = [None]
             else:
-                blocks[i] = CONVERT_FUNC[fields[i].type](data, num_of_rows, field_lens[i], precision)
+                blocks[i] = CONVERT_FUNC[fields[i].type](
+                    data, num_of_rows, field_lens[i], precision)
     else:
         return None, 0
     return blocks, abs(num_of_rows)
@@ -443,7 +508,7 @@ _libtaos.taos_free_result.argtypes = (c_void_p,)
 
 def taos_free_result(result):
     # type: (c_void_p) -> None
-    if result != None:
+    if result is not None:
         _libtaos.taos_free_result(result)
 
 
@@ -484,7 +549,8 @@ def taos_fetch_lengths(result, field_count=None):
     if field_count is None:
         field_count = taos_field_count(result)
     if not lens:
-        raise OperationalError("field length empty, use taos_fetch_row/block before it")
+        raise OperationalError(
+            "field length empty, use taos_fetch_row/block before it")
     return lens[:field_count]
 
 
@@ -534,7 +600,8 @@ def taos_load_table_info(connection, tables):
     # type: (ctypes.c_void_p, str) -> None
     """Stop current query"""
     _check_if_supported()
-    errno = _libtaos.taos_load_table_info(connection, c_char_p(tables.encode("utf-8")))
+    errno = _libtaos.taos_load_table_info(
+        connection, c_char_p(tables.encode("utf-8")))
     if errno != 0:
         msg = taos_errstr()
         raise OperationalError(msg, errno)
@@ -547,7 +614,9 @@ _libtaos.taos_validate_sql.argstype = (c_void_p, c_char_p)
 def taos_validate_sql(connection, sql):
     # type: (ctypes.c_void_p, str) -> None | str
     """Get taosd server info"""
-    errno = _libtaos.taos_validate_sql(connection, ctypes.c_char_p(sql.encode("utf-8")))
+    errno = _libtaos.taos_validate_sql(
+        connection, ctypes.c_char_p(
+            sql.encode("utf-8")))
     if errno != 0:
         msg = taos_errstr()
         return msg
@@ -578,7 +647,9 @@ _libtaos.taos_select_db.argstype = (c_void_p, c_char_p)
 def taos_select_db(connection, db):
     # type: (ctypes.c_void_p, str) -> None
     """Select database, eq to sql: use <db>"""
-    res = _libtaos.taos_select_db(connection, ctypes.c_char_p(db.encode("utf-8")))
+    res = _libtaos.taos_select_db(
+        connection, ctypes.c_char_p(
+            db.encode("utf-8")))
     if res != 0:
         raise DatabaseError("select database error", res)
 
@@ -606,7 +677,8 @@ def taos_stmt_prepare(stmt, sql):
     @stmt: c_void_p TAOS_STMT*
     """
     buffer = sql.encode("utf-8")
-    res = _libtaos.taos_stmt_prepare(stmt, ctypes.c_char_p(buffer), len(buffer))
+    res = _libtaos.taos_stmt_prepare(
+        stmt, ctypes.c_char_p(buffer), len(buffer))
     if res != 0:
         raise StatementError(msg=taos_stmt_errstr(stmt), errno=res)
 
@@ -663,7 +735,8 @@ def taos_stmt_set_tbname(stmt, name):
 
 try:
     _libtaos.taos_stmt_set_tbname_tags.restype = c_int
-    _libtaos.taos_stmt_set_tbname_tags.argstype = (c_void_p, c_char_p, c_void_p)
+    _libtaos.taos_stmt_set_tbname_tags.argstype = (
+        c_void_p, c_char_p, c_void_p)
 except Exception as err:
     _UNSUPPORTED["taos_stmt_set_tbname_tags"] = err
 
@@ -674,10 +747,12 @@ def taos_stmt_set_tbname_tags(stmt, name, tags):
     @stmt: c_void_p TAOS_STMT*
     """
     _check_if_supported()
-    res = _libtaos.taos_stmt_set_tbname_tags(stmt, ctypes.c_char_p(name.encode("utf-8")), tags)
+    res = _libtaos.taos_stmt_set_tbname_tags(
+        stmt, ctypes.c_char_p(name.encode("utf-8")), tags)
 
     if res != 0:
         raise StatementError(msg=taos_stmt_errstr(stmt), errno=res)
+
 
 try:
     _libtaos.taos_stmt_is_insert.restype = c_int
@@ -703,7 +778,6 @@ try:
     _libtaos.taos_stmt_num_params.argstype = (c_void_p, POINTER(c_int))
 except Exception as err:
     _UNSUPPORTED["taos_stmt_num_params"] = err
-
 
 
 def taos_stmt_num_params(stmt):
@@ -761,7 +835,8 @@ def taos_stmt_bind_param_batch(stmt, bind):
 
 try:
     _libtaos.taos_stmt_bind_single_param_batch.restype = c_int
-    _libtaos.taos_stmt_bind_single_param_batch.argstype = (c_void_p, c_void_p, c_int)
+    _libtaos.taos_stmt_bind_single_param_batch.argstype = (
+        c_void_p, c_void_p, c_int)
 except Exception as err:
     _UNSUPPORTED["taos_stmt_bind_single_param_batch"] = err
 
@@ -839,13 +914,20 @@ except Exception as err:
 
 
 def taos_schemaless_insert(connection, lines, protocol, precision):
-    # type: (c_void_p, list[str] | tuple(str), SmlProtocol, SmlPrecision) -> int
+    # type: (c_void_p, list[str] | tuple(str), SmlProtocol, SmlPrecision) ->
+    # int
     _check_if_supported()
     num_of_lines = len(lines)
     lines = (c_char_p(line.encode("utf-8")) for line in lines)
     lines_type = ctypes.c_char_p * num_of_lines
     p_lines = lines_type(*lines)
-    res = c_void_p(_libtaos.taos_schemaless_insert(connection, p_lines, num_of_lines, protocol, precision))
+    res = c_void_p(
+        _libtaos.taos_schemaless_insert(
+            connection,
+            p_lines,
+            num_of_lines,
+            protocol,
+            precision))
     errno = taos_errno(res)
     affected_rows = taos_affected_rows(res)
     if errno != 0:
@@ -860,7 +942,9 @@ def taos_schemaless_insert(connection, lines, protocol, precision):
 def _check_if_supported():
     func = inspect.stack()[1][3]
     if func in _UNSUPPORTED:
-        raise InterfaceError("C function %s is not supported in v%s: %s" % (func, taos_get_client_info(), _UNSUPPORTED[func]))
+        raise InterfaceError(
+            "C function %s is not supported in v%s: %s" %
+            (func, taos_get_client_info(), _UNSUPPORTED[func]))
 
 
 def unsupported_methods():
@@ -898,7 +982,13 @@ class CTaosInterface(object):
         """Get current config"""
         return self._config
 
-    def connect(self, host=None, user="root", password="taosdata", db=None, port=0):
+    def connect(
+            self,
+            host=None,
+            user="root",
+            password="taosdata",
+            db=None,
+            port=0):
         """
         Function to connect to server
 
