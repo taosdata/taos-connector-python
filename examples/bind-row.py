@@ -40,9 +40,7 @@ params[15].null()
 stmt.bind_param(params)
 stmt.execute()
 
-
-result = stmt.use_result()
-assert result.affected_rows == 2
+assert stmt.affected_rows == 2
 # No need to explicitly close, but ok for you
 # result.close()
 

@@ -57,8 +57,14 @@ class TaosStmt(object):
         taos_stmt_execute(self._stmt)
 
     def use_result(self):
+        """NOTE: Don't use a stmt result more than once."""
         result = taos_stmt_use_result(self._stmt)
-        return TaosResult(result)
+        return TaosResult(result, True)
+
+    @property
+    def affected_rows(self):
+        # type: () -> int
+        return taos_stmt_affected_rows(self._stmt)
 
     def close(self):
         """Close stmt."""
