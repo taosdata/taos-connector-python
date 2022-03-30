@@ -794,6 +794,18 @@ def taos_stmt_use_result(stmt):
     return result
 
 
+_libtaos.taos_stmt_affected_rows.restype = c_int
+_libtaos.taos_stmt_affected_rows.argstype = (c_void_p,)
+
+
+def taos_stmt_affected_rows(stmt):
+    # type: (ctypes.c_void_p) -> int
+    """Get stmt affected rows.
+    @stmt: TAOS_STMT*
+    """
+    return _libtaos.taos_stmt_affected_rows(stmt)
+
+
 try:
     _libtaos.taos_schemaless_insert.restype = c_void_p
     _libtaos.taos_schemaless_insert.argstype = c_void_p, c_void_p, c_int, c_int, c_int
@@ -823,7 +835,9 @@ def taos_schemaless_insert(connection, lines, protocol, precision):
 def _check_if_supported():
     func = inspect.stack()[1][3]
     if func in _UNSUPPORTED:
-        raise InterfaceError("C function %s is not supported in v%s: %s" % (func, taos_get_client_info(), _UNSUPPORTED[func]))
+        raise InterfaceError(
+            "C function %s is not supported in v%s: %s" % (func, taos_get_client_info(), _UNSUPPORTED[func])
+        )
 
 
 def unsupported_methods():
