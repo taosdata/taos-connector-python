@@ -409,6 +409,11 @@ def taos_fetch_block_raw(result):
 
 
 def taos_fetch_block_v3(result, fields=None, field_count=None):
+    if fields is None:
+        fields = taos_fetch_fields(result)
+    if field_count is None:
+        field_count = taos_field_count(result)
+    print("CBD: field_count: %d" % field_count)
     pblock = ctypes.c_void_p(0)
     num_of_rows = _libtaos.taos_fetch_block(result, ctypes.byref(pblock))
     print("CBD: num of rows: %d" % num_of_rows)
@@ -416,20 +421,16 @@ def taos_fetch_block_v3(result, fields=None, field_count=None):
         return None, 0
     precision = taos_result_precision(result)
     print("CBD: precision: %d" % precision)
-    if fields is None:
-        fields = taos_fetch_fields(result)
-    if field_count is None:
-        field_count = taos_field_count(result)
-    print("CBD: field_count: %d" % field_count)
     blocks = [None] * field_count
     fieldLen = taos_fetch_lengths(result, field_count)
     print("CBD: field_len: %d" % len(fields))
     for i in range(len(fields)):
         data = ctypes.cast(pblock, ctypes.POINTER(ctypes.c_void_p))[i]
-        print("CBD: fields type: %s" % fields[i]["type"])
+        print("CBD: fields[%d] name: %s" % (i, fields[i]["name"]))
+        print("CBD: fields[%d] type: %d" % (i, fields[i]["type"]))
         if fields[i]["type"] not in CONVERT_FUNC:
             raise DatabaseError(
-                "CBD: cinterface LN386 Invalid data type returned from database")
+                "Invalid data type returned from database")
         blocks[i] = CONVERT_FUNC_BLOCK[fields[i]["type"]](
             data, num_of_rows, fieldLen[i], precision)
 
@@ -452,7 +453,7 @@ def taos_fetch_block_v2(result, fields=None, field_count=None):
         data = ctypes.cast(pblock, ctypes.POINTER(ctypes.c_void_p))[i]
         if fields[i]["type"] not in CONVERT_FUNC:
             raise DatabaseError(
-                "CBD: cinterface LN386 Invalid data type returned from database")
+                "Invalid data type returned from database")
         blocks[i] = CONVERT_FUNC_BLOCK[fields[i]["type"]](
             data, num_of_rows, fieldLen[i], precision)
 
