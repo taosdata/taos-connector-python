@@ -37,14 +37,8 @@ params[15].timestamp([None, None, 1626861392591])
 stmt.bind_param_batch(params)
 stmt.execute()
 
-
-result = stmt.use_result()
-assert result.affected_rows == 3
-result.close()
+assert stmt.affected_rows == 3
 
 result = conn.query("select * from log")
 for row in result:
     print(row)
-result.close()
-stmt.close()
-conn.close()

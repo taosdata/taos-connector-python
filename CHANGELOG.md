@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.2.4 - 2022-03-31
+
+### Bug Fixes:
+
+- [TD-14410]:add affected_rows property for stmt
+- [TD-14410]:fix import error in taos 2.0/2.2
+- [TD-14410]:use stmt.affected_rows in examples
+
 ## v2.2.3 - 2022-03-29
 
 ### Bug Fixes:

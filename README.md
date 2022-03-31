@@ -181,20 +181,12 @@ params[15].null()
 stmt.bind_param(params)
 stmt.execute()
 
-
-result = stmt.use_result()
-assert result.affected_rows == 2
-result.close()
+assert stmt.affected_rows == 2
 
 result = conn.query("select * from log")
 
 for row in result:
     print(row)
-
-result.close()
-stmt.close()
-conn.close()
-
 ```
 
 ### Statement API - Bind multi rows
@@ -238,18 +230,11 @@ params[15].timestamp([None, None, 1626861392591])
 stmt.bind_param_batch(params)
 stmt.execute()
 
-
-result = stmt.use_result()
-assert result.affected_rows == 3
-result.close()
+assert stmt.affected_rows == 3
 
 result = conn.query("select * from log")
 for row in result:
     print(row)
-
-result.close()
-stmt.close()
-conn.close()
 ```
 
 ### Subscription
