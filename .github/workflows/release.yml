@@ -99,3 +99,11 @@ jobs:
           body_path: ${{ github.workflow }}-CHANGELOG.txt
           files: |
             dist/*
+
+      - name: Publish to PyPI
+        env:
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          poetry config pypi-token.pypi $PYPI_TOKEN
+          poetry publish --build
+
