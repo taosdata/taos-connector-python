@@ -55,7 +55,8 @@ class TaosCursor(object):
             raise OperationalError("Invalid use of fetch iterator")
 
         if self._block_rows <= self._block_iter:
-            block, self._block_rows = taos_fetch_row(self._result, self._fields)
+            block, self._block_rows = taos_fetch_row(
+                self._result, self._fields)
             if self._block_rows == 0:
                 raise StopIteration
             self._block = list(map(tuple, zip(*block)))
@@ -216,7 +217,8 @@ class TaosCursor(object):
     def fetchall(self):
         if self._result is None:
             raise OperationalError("Invalid use of fetchall")
-        fields = self._fields if self._fields is not None else taos_fetch_fields(self._result)
+        fields = self._fields if self._fields is not None else taos_fetch_fields(
+            self._result)
         buffer = [[] for i in range(len(fields))]
         self._rowcount = 0
         while True:
@@ -232,9 +234,9 @@ class TaosCursor(object):
         return list(map(tuple, zip(*buffer)))
 
     def stop_query(self):
-        if self._result != None:
+        if self._result is not None:
             taos_stop_query(self._result)
-            
+
     def nextset(self):
         """ """
         pass
@@ -262,7 +264,8 @@ class TaosCursor(object):
         """Handle the return result from query."""
         self._description = []
         for ele in self._fields:
-            self._description.append((ele["name"], ele["type"], None, None, None, None, False))
+            self._description.append(
+                (ele["name"], ele["type"], None, None, None, None, False))
 
         return self._result
 

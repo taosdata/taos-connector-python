@@ -12,7 +12,6 @@ except BaseException:
 
 from .error import *
 from .bind import *
-from .field import *
 from .schemaless import *
 
 _UNSUPPORTED = {}
@@ -58,13 +57,6 @@ def _load_taos():
 
 _libtaos = _load_taos()
 
-_libtaos.taos_fetch_fields.restype = ctypes.POINTER(TaosField)
-
-try:
-    _libtaos.taos_init.restype = None
-except Exception as err:
-    _UNSUPPORTED["taos_init"] = err
-
 _libtaos.taos_get_client_info.restype = c_char_p
 
 
@@ -75,7 +67,19 @@ def taos_get_client_info():
 
 
 taos_client_info = taos_get_client_info()
-print("CBD: taos_client_info: %s" % taos_client_info.split('.')[0])
+
+if (taos_client_info.split('.')[0] < '3'):
+    from .field import *
+else:
+    from .field_v3 import *
+
+_libtaos.taos_fetch_fields.restype = ctypes.POINTER(TaosField)
+
+try:
+    _libtaos.taos_init.restype = None
+except Exception as err:
+    _UNSUPPORTED["taos_init"] = err
+
 
 _libtaos.taos_connect.restype = ctypes.c_void_p
 _libtaos.taos_fetch_row.restype = ctypes.POINTER(ctypes.c_void_p)
@@ -413,21 +417,15 @@ def taos_fetch_block_v3(result, fields=None, field_count=None):
         fields = taos_fetch_fields(result)
     if field_count is None:
         field_count = taos_field_count(result)
-    print("CBD: field_count: %d" % field_count)
     pblock = ctypes.c_void_p(0)
     num_of_rows = _libtaos.taos_fetch_block(result, ctypes.byref(pblock))
-    print("CBD: num of rows: %d" % num_of_rows)
     if num_of_rows == 0:
         return None, 0
     precision = taos_result_precision(result)
-    print("CBD: precision: %d" % precision)
     blocks = [None] * field_count
     fieldLen = taos_fetch_lengths(result, field_count)
-    print("CBD: field_len: %d" % len(fields))
     for i in range(len(fields)):
         data = ctypes.cast(pblock, ctypes.POINTER(ctypes.c_void_p))[i]
-        print("CBD: fields[%d] name: %s" % (i, fields[i]["name"]))
-        print("CBD: fields[%d] type: %d" % (i, fields[i]["type"]))
         if fields[i]["type"] not in CONVERT_FUNC:
             raise DatabaseError(
                 "Invalid data type returned from database")
@@ -461,10 +459,8 @@ def taos_fetch_block_v2(result, fields=None, field_count=None):
 
 
 if (taos_client_info.split('.')[0] < '3'):
-    print("CBD: use fetch_block_v2")
     taos_fetch_block = taos_fetch_block_v2
 else:
-    print("CBD: use fetch_block_v3")
     taos_fetch_block = taos_fetch_block_v3
 
 _libtaos.taos_fetch_row.restype = c_void_p
@@ -493,7 +489,7 @@ def taos_fetch_row(result, fields):
             data = ctypes.cast(pblock, ctypes.POINTER(ctypes.c_void_p))[i]
             if fields[i].type not in CONVERT_FUNC:
                 raise DatabaseError(
-                    "CBD: cinterface LN417 Invalid data type returned from database")
+                    "LN417 Invalid data type returned from database")
             if data is None:
                 blocks[i] = [None]
             else:
