@@ -779,8 +779,11 @@ def taos_stmt_execute(stmt):
         raise StatementError(msg=taos_stmt_errstr(stmt), errno=res)
 
 
-_libtaos.taos_stmt_use_result.restype = c_void_p
-_libtaos.taos_stmt_use_result.argstype = (c_void_p,)
+try:
+    _libtaos.taos_stmt_use_result.restype = c_void_p
+    _libtaos.taos_stmt_use_result.argstype = (c_void_p,)
+except Exception as err:
+    _UNSUPPORTED["taos_stmt_use_result"] = err
 
 
 def taos_stmt_use_result(stmt):
@@ -788,21 +791,24 @@ def taos_stmt_use_result(stmt):
     """Get result of the statement.
     @stmt: TAOS_STMT*
     """
+    _check_if_supported()
     result = c_void_p(_libtaos.taos_stmt_use_result(stmt))
     if result is None:
         raise StatementError(taos_stmt_errstr(stmt))
     return result
 
-
-_libtaos.taos_stmt_affected_rows.restype = c_int
-_libtaos.taos_stmt_affected_rows.argstype = (c_void_p,)
-
+try:
+    _libtaos.taos_stmt_affected_rows.restype = c_int
+    _libtaos.taos_stmt_affected_rows.argstype = (c_void_p,)
+except Exception as err:
+    _UNSUPPORTED["taos_stmt_affected_rows"] = err
 
 def taos_stmt_affected_rows(stmt):
     # type: (ctypes.c_void_p) -> int
     """Get stmt affected rows.
     @stmt: TAOS_STMT*
     """
+    _check_if_supported()
     return _libtaos.taos_stmt_affected_rows(stmt)
 
 
