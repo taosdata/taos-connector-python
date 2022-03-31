@@ -97,6 +97,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           body_path: ${{ github.workflow }}-CHANGELOG.txt
-          draft: true
           files: |
             dist/*
