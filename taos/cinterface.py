@@ -429,6 +429,7 @@ def taos_fetch_block_v3(result, fields=None, field_count=None):
         if fields[i]["type"] not in CONVERT_FUNC:
             raise DatabaseError(
                 "Invalid data type returned from database")
+        print("CBD LN432 fields[i]: %s" % fields[i])
         blocks[i] = CONVERT_FUNC_BLOCK[fields[i]["type"]](
             data, num_of_rows, fieldLen[i], precision)
 

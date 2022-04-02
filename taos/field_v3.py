@@ -4,7 +4,7 @@ import math
 import datetime
 from ctypes import *
 
-from .constants import FieldType
+from .constants_v3 import FieldType
 from .error import *
 
 _datetime_epoch = datetime.datetime.fromtimestamp(0)
@@ -50,6 +50,7 @@ def _crow_bool_to_python(
         nbytes=None,
         precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C bool row to python row"""
+    print("CBD LN53 bool")
     return [
         None if ele == FieldType.C_BOOL_NULL else bool(ele)
         for ele in ctypes.cast(data, ctypes.POINTER(ctypes.c_byte))[: abs(num_of_rows)]
@@ -62,6 +63,7 @@ def _crow_tinyint_to_python(
         nbytes=None,
         precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C tinyint row to python row"""
+    print("CBD LN66 tinyint")
     return [
         None if ele == FieldType.C_TINYINT_NULL else ele
         for ele in ctypes.cast(data, ctypes.POINTER(ctypes.c_byte))[: abs(num_of_rows)]
@@ -74,6 +76,7 @@ def _crow_tinyint_unsigned_to_python(
         nbytes=None,
         precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C tinyint row to python row"""
+    print("CBD LN66 tinyint unsigned")
     return [
         None if ele == FieldType.C_TINYINT_UNSIGNED_NULL else ele
         for ele in ctypes.cast(data, ctypes.POINTER(ctypes.c_ubyte))[: abs(num_of_rows)]
@@ -86,6 +89,7 @@ def _crow_smallint_to_python(
         nbytes=None,
         precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C smallint row to python row"""
+    print("CBD LN92 smallint")
     return [
         None if ele == FieldType.C_SMALLINT_NULL else ele
         for ele in ctypes.cast(data, ctypes.POINTER(ctypes.c_short))[: abs(num_of_rows)]
@@ -98,6 +102,7 @@ def _crow_smallint_unsigned_to_python(
         nbytes=None,
         precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C smallint row to python row"""
+    print("CBD LN105 smallint unsigned")
     return [
         None if ele == FieldType.C_SMALLINT_UNSIGNED_NULL else ele
         for ele in ctypes.cast(data, ctypes.POINTER(ctypes.c_ushort))[: abs(num_of_rows)]
@@ -110,6 +115,7 @@ def _crow_int_to_python(
         nbytes=None,
         precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C int row to python row"""
+    print("CBD LN118 int")
     return [
         None if ele == FieldType.C_INT_NULL else ele
         for ele in ctypes.cast(data, ctypes.POINTER(ctypes.c_int))[: abs(num_of_rows)]
@@ -122,6 +128,7 @@ def _crow_int_unsigned_to_python(
         nbytes=None,
         precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C int row to python row"""
+    print("CBD LN131 int unsigned")
     return [
         None if ele == FieldType.C_INT_UNSIGNED_NULL else ele
         for ele in ctypes.cast(data, ctypes.POINTER(ctypes.c_uint))[: abs(num_of_rows)]
@@ -134,6 +141,7 @@ def _crow_bigint_to_python(
         nbytes=None,
         precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C bigint row to python row"""
+    print("CBD LN144 bigint")
     return [
         None if ele == FieldType.C_BIGINT_NULL else ele
         for ele in ctypes.cast(data, ctypes.POINTER(ctypes.c_int64))[: abs(num_of_rows)]
@@ -146,6 +154,7 @@ def _crow_bigint_unsigned_to_python(
         nbytes=None,
         precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C bigint row to python row"""
+    print("CBD LN157 bigint unsigned")
     return [
         None if ele == FieldType.C_BIGINT_UNSIGNED_NULL else ele
         for ele in ctypes.cast(data, ctypes.POINTER(ctypes.c_uint64))[: abs(num_of_rows)]
@@ -158,6 +167,7 @@ def _crow_float_to_python(
         nbytes=None,
         precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C float row to python row"""
+    print("CBD LN170 float")
     return [
         None if math.isnan(ele) else ele
         for ele in ctypes.cast(data, ctypes.POINTER(ctypes.c_float))[: abs(num_of_rows)]
@@ -170,6 +180,7 @@ def _crow_double_to_python(
         nbytes=None,
         precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C double row to python row"""
+    print("CBD LN183 double")
     return [None if math.isnan(ele) else ele for ele in ctypes.cast(
         data, ctypes.POINTER(ctypes.c_double))[: abs(num_of_rows)]]
 
@@ -180,6 +191,7 @@ def _crow_binary_to_python(
         nbytes=None,
         precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C binary row to python row"""
+    print("CBD LN194 timestamp")
     assert nbytes is not None
     return [
         None if ele.value[0:1] == FieldType.C_BINARY_NULL else ele.value.decode("utf-8")
@@ -193,10 +205,12 @@ def _crow_nchar_to_python(
         nbytes=None,
         precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C nchar row to python row"""
+    print("CBD LN208 nchar")
     assert nbytes is not None
     res = []
     for i in range(abs(num_of_rows)):
         try:
+            print("CBD LN200: num_of_rows: %d" % num_of_rows)
             if num_of_rows >= 0:
                 tmpstr = ctypes.c_char_p(data)
                 res.append(tmpstr.value.decode("utf-8"))
@@ -221,6 +235,7 @@ def _crow_binary_to_python_block(
         nbytes=None,
         precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C binary row to python row"""
+    print("CBD LN208 binary")
     assert nbytes is not None
     res = []
     for i in range(abs(num_of_rows)):
@@ -251,6 +266,7 @@ def _crow_nchar_to_python_block(
     """Function to convert C nchar row to python row"""
     assert nbytes is not None
     res = []
+    print("CBD LN269 nchar block num_of_rows: %d nbytes: %d" % (abs(num_of_rows), nbytes))
     for i in range(abs(num_of_rows)):
         rbyte = ctypes.cast(
             data + nbytes * i,
@@ -264,10 +280,13 @@ def _crow_nchar_to_python_block(
                 c_char * rbyte))
         buffer = create_string_buffer(rbyte + 1)
         buffer[:rbyte] = chars[0][:rbyte]
+        print("CBD LN283: rbyte=%d buffer[:4]=%s buffer[:32]=%s"
+              % (rbyte, buffer[:4], buffer[:32]))
         if rbyte == 4 and buffer[:4] == b'\xff' * 4:
             res.append(None)
         else:
             res.append(cast(buffer, c_char_p).value.decode("utf-8"))
+    print("CBD LN289: res: %s" % res)
     return res
 
 
