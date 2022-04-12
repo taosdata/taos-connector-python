@@ -18,6 +18,7 @@ class TaosConnection(object):
         self._database = None
         self._port = 0
         self._config = None
+        self._tz = None
         self._chandle = None
 
         self.config(**kwargs)
@@ -47,7 +48,11 @@ class TaosConnection(object):
         if "config" in kwargs:
             self._config = kwargs["config"]
 
-        self._chandle = CTaosInterface(self._config)
+        # timezone
+        if "timezone" in kwargs:
+            self._tz = kwargs["timezone"]
+
+        self._chandle = CTaosInterface(self._config, self._tz)
         self._conn = self._chandle.connect(self._host, self._user, self._password, self._database, self._port)
 
     def close(self):
