@@ -1,7 +1,9 @@
 # TDengine Connector for Python
 
 [TDengine](https://github.com/taosdata/TDengine) connector for Python enables python programs to access TDengine,
- using an API which is compliant with the Python DB API 2.0 (PEP-249). It uses TDengine C client library for client server communications.
+ using an API which is compliant with the Python DB API 2.0 (PEP-249). It contains two modules:
+1. The `taos` module. It uses TDengine C client library for client server communications.
+2. The `taosres` module. It wraps TDengine RESTful API to Python DB API 2.0 (PEP-249). With this module, you are free to install TDengine C client library.
 
 ## Install
 
@@ -27,7 +29,43 @@ pip install /usr/local/taos/connector/python
 
 [TDengine](https://github.com/taosdata/TDengine) connector for Python source code is hosted on [GitHub](https://github.com/taosdata/taos-connector-python).
 
-## Examples
+## Examples for `taosres` Module
+
+### Query with PEP-249 API
+
+```python
+import taosres
+
+conn = taosres.connect()
+cursor = conn.cursor()
+
+cursor.execute("show databases")
+results: list[tuple] = cursor.fetchall()
+for row in results:
+    print(row)
+
+cursor.close()
+conn.close()
+```
+
+### Read with Pandas
+#### Method one
+```python
+import pandas
+import taosres
+conn = taosres.connect()
+res: pandas.DataFrame = pandas.read_sql("select * from log.logs", conn)
+```
+#### Method Two
+
+```python
+import pandas
+from sqlalchemy import create_engine
+engine = create_engine("taosres://root:taosdata@localhost:6030/log")
+res: pandas.DataFrame = pandas.read_sql("select * from logs", engine)
+```
+
+## Examples for `taos` Module
 
 ### Connect options
 
@@ -413,7 +451,23 @@ for row in result:
 
 
 conn.execute("drop database if exists %s" % dbname)
+```
 
+### Read with Pandas
+#### Method one
+```python
+import pandas
+import taos
+conn = taos.connect()
+res: pandas.DataFrame = pandas.read_sql("select * from log.logs", conn)
+```
+#### Method Two
+
+```python
+import pandas
+from sqlalchemy import create_engine
+engine = create_engine("taos://root:taosdata@localhost:6030/log")
+res: pandas.DataFrame = pandas.read_sql("select * from logs", engine)
 ```
 
 ## License

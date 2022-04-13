@@ -6,7 +6,8 @@ authors = ["Taosdata Inc. <support@taosdata.com>"]
 license = "AGPL-3.0"
 readme = "README.md"
 packages = [
-  {include = "taos"}
+  {include = "taos"},
+  {include = "taosres"}
 ]
 
 [tool.poetry.plugins] # Optional super table
