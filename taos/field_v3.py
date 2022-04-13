@@ -280,8 +280,8 @@ def _crow_nchar_to_python_block(
                 c_char * rbyte))
         buffer = create_string_buffer(rbyte + 1)
         buffer[:rbyte] = chars[0][:rbyte]
-        print("CBD LN283: rbyte=%d buffer[:4]=%s buffer[:32]=%s"
-              % (rbyte, buffer[:4], buffer[:32]))
+        print("CBD LN283: rbyte=%d buffer[:32]=%s"
+              % (rbyte, buffer[:32]))
         if rbyte == 4 and buffer[:4] == b'\xff' * 4:
             res.append(None)
         else:
