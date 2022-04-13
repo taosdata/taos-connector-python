@@ -3,7 +3,9 @@ import taos
 conn = taos.connect(host='127.0.0.1',
                     user='root',
                     password='taosdata',
-                    database='log')
+                    database='log',
+                    config='/etc/taos',
+                    timezone='Asia/Shanghai')
 cursor = conn.cursor()
 
 sql = "select * from log.log limit 10"

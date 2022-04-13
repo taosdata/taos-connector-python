@@ -2,19 +2,35 @@
 import ctypes
 import math
 import datetime
+import pytz
+
+from datetime import datetime, timedelta
 from ctypes import *
 
 from .constants import FieldType
 from .error import *
 
-_datetime_epoch = datetime.datetime.fromtimestamp(0)
+_priv_tz = None
+_datetime_epoch = datetime.fromtimestamp(0)
+_utc_datetime_epoch = datetime.utcfromtimestamp(0).astimezone(pytz.timezone("UTC"))
+
+
+def set_tz(tz):
+    # type: (str) -> None
+    global _priv_tz
+    _priv_tz = tz
+
 
 def _convert_millisecond_to_datetime(milli):
-    return _datetime_epoch + datetime.timedelta(seconds=milli / 1000.0)
+    if _priv_tz is None:
+        return _datetime_epoch + timedelta(seconds=milli / 1000.0)
+    return _utc_datetime_epoch.astimezone(_priv_tz) + timedelta(seconds=milli / 1000.0)
 
 
 def _convert_microsecond_to_datetime(micro):
-    return _datetime_epoch + datetime.timedelta(seconds=micro / 1000000.0)
+    if _priv_tz is None:
+        return _datetime_epoch + timedelta(seconds=micro / 1000000.0)
+    return _datetime_epoch.astimezone(_priv_tz) + timedelta(seconds=micro / 1000000.0)
 
 
 def _convert_nanosecond_to_datetime(nanosec):
@@ -169,7 +185,7 @@ def _crow_binary_to_python_block(data, num_of_rows, nbytes=None, precision=Field
         chars = ctypes.cast(c_char_p(data + nbytes * i + 2), ctypes.POINTER(c_char * rbyte))
         buffer = create_string_buffer(rbyte + 1)
         buffer[:rbyte] = chars[0][:rbyte]
-        if rbyte == 1 and buffer[0] == b'\xff':
+        if rbyte == 1 and buffer[0] == b"\xff":
             res.append(None)
         else:
             res.append(cast(buffer, c_char_p).value.decode("utf-8"))
@@ -185,7 +201,7 @@ def _crow_nchar_to_python_block(data, num_of_rows, nbytes=None, precision=FieldT
         chars = ctypes.cast(c_char_p(data + nbytes * i + 2), ctypes.POINTER(c_char * rbyte))
         buffer = create_string_buffer(rbyte + 1)
         buffer[:rbyte] = chars[0][:rbyte]
-        if rbyte == 4 and buffer[:4] == b'\xff'*4:
+        if rbyte == 4 and buffer[:4] == b"\xff" * 4:
             res.append(None)
         else:
             res.append(cast(buffer, c_char_p).value.decode("utf-8"))
@@ -287,7 +303,7 @@ class TaosFields(object):
 
     def __next__(self):
         return self._next_field()
-    
+
     def next(self):
         return self._next_field()
 
