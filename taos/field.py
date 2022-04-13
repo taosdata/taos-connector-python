@@ -11,9 +11,9 @@ from .constants import FieldType
 from .error import *
 
 _priv_tz = None
+_utc_tz = pytz.timezone("UTC")
 _datetime_epoch = datetime.fromtimestamp(0)
-_utc_datetime_epoch = datetime.utcfromtimestamp(0).astimezone(pytz.timezone("UTC"))
-
+_utc_datetime_epoch = _utc_tz.localize(datetime.utcfromtimestamp(0))
 
 def set_tz(tz):
     # type: (str) -> None
@@ -24,13 +24,13 @@ def set_tz(tz):
 def _convert_millisecond_to_datetime(milli):
     if _priv_tz is None:
         return _datetime_epoch + timedelta(seconds=milli / 1000.0)
-    return _utc_datetime_epoch.astimezone(_priv_tz) + timedelta(seconds=milli / 1000.0)
+    return (_utc_datetime_epoch + timedelta(seconds=milli / 1000.0)).astimezone(_priv_tz)
 
 
 def _convert_microsecond_to_datetime(micro):
     if _priv_tz is None:
         return _datetime_epoch + timedelta(seconds=micro / 1000000.0)
-    return _datetime_epoch.astimezone(_priv_tz) + timedelta(seconds=micro / 1000000.0)
+    return (_utc_datetime_epoch + timedelta(seconds=micro / 1000000.0)).astimezone(_priv_tz)
 
 
 def _convert_nanosecond_to_datetime(nanosec):
