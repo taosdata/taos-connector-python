@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.2.5 - 2022-04-13
+
+### Features:
+
+- [TD-14696]:support timezone option when connect
+
 ## v2.2.4 - 2022-03-31
 
 ### Bug Fixes:
