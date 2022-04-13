@@ -29,6 +29,47 @@ pip install /usr/local/taos/connector/python
 
 ## Examples
 
+### Connect options
+
+Supported config options:
+
+- **config**: TDengine client configuration directory, by default use "/etc/taos/".
+- **host**: TDengine server host, by default use "localhost".
+- **user**: TDengine user name, default is "root".
+- **password**: TDengine user password, default is "taosdata".
+- **database**: Default connection database name, empty if not set.
+- **timezone**: Timezone for timestamp type (which is `datetime` object with tzinfo in python) no matter what the host's timezone is.
+
+```python
+import taos
+
+# 1. with empty options, connect TDengine by default options
+#   that means:
+#     - use /etc/taos/taos.cfg as default configuration file
+#     - use "localhost" if not set in config file
+#     - use "root" as default username
+#     - use "taosdata" as default password
+#     - use 6030 as default port if not set in config file
+#     - use local timezone datetime as timestamp
+conn = taos.connect()
+# 2. with full set options, default db: log, use UTC datetime.
+conn = taos.connect(host='localhost',
+                    user='root',
+                    password='taosdata',
+                    database='log',
+                    config='/etc/taos',
+                    timezone='UTC')
+```
+
+Note that, the datetime formatted string will contain timezone information when timezone set. For example:
+
+```python
+# without timezone(local timezone depends on your machine)
+'1969-12-31 16:00:00'
+# with timezone UTC
+'1969-12-31 16:00:00+00:00'
+```
+
 ### Query with PEP-249 API
 
 ```python

@@ -16,6 +16,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^2.7 || >=3.6"
+pytz = "*"
 
 [tool.poetry.dev-dependencies]
 typing = "*"

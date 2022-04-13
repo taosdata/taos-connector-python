@@ -3,7 +3,9 @@
 import ctypes
 import platform
 import inspect
+import pytz
 from ctypes import *
+from time import tzname
 
 try:
     from typing import Any
@@ -17,14 +19,15 @@ from .schemaless import *
 
 _UNSUPPORTED = {}
 
+
 # C interface class
 class TaosOption:
-    Locale = (0,)
-    Charset = (1,)
-    Timezone = (2,)
-    ConfigDir = (3,)
-    ShellActivityTimer = (4,)
-    MaxOptions = (5,)
+    Locale = 0
+    Charset = 1
+    Timezone = 2
+    ConfigDir = 3
+    ShellActivityTimer = 4
+    MaxOptions = 5
 
 
 def _load_taos_linux():
@@ -76,11 +79,13 @@ finally:
 
 
 _libtaos.taos_options.restype = None
+_libtaos.taos_options.argtypes = (c_int, c_void_p)
 
 
-def taos_options(option, *args):
-    # type: (TaosOption, Any) -> None
-    _libtaos.taos_options(option, *args)
+def taos_options(option, value):
+    # type: (TaosOption, str) -> None
+    _value = c_char_p(value.encode("utf-8"))
+    _libtaos.taos_options(option, _value)
 
 
 def taos_init():
@@ -797,11 +802,13 @@ def taos_stmt_use_result(stmt):
         raise StatementError(taos_stmt_errstr(stmt))
     return result
 
+
 try:
     _libtaos.taos_stmt_affected_rows.restype = c_int
     _libtaos.taos_stmt_affected_rows.argstype = (c_void_p,)
 except Exception as err:
     _UNSUPPORTED["taos_stmt_affected_rows"] = err
+
 
 def taos_stmt_affected_rows(stmt):
     # type: (ctypes.c_void_p) -> int
@@ -852,7 +859,7 @@ def unsupported_methods():
 
 
 class CTaosInterface(object):
-    def __init__(self, config=None):
+    def __init__(self, config=None, tz=None):
         """
         Function to initialize the class
         @host     : str, hostname to connect
@@ -863,18 +870,12 @@ class CTaosInterface(object):
 
         @rtype    : None
         """
-        if config is None:
-            self._config = ctypes.c_char_p(None)
-        else:
-            try:
-                self._config = ctypes.c_char_p(config.encode("utf-8"))
-            except AttributeError:
-                raise AttributeError("config is expected as a str")
-
         if config is not None:
-            taos_options(3, self._config)
+            taos_options(TaosOption.ConfigDir, config)
 
-        taos_init()
+        if tz is not None:
+            set_tz(pytz.timezone(tz))
+            taos_options(TaosOption.Timezone, tz)
 
     @property
     def config(self):
@@ -887,6 +888,7 @@ class CTaosInterface(object):
 
         @rtype: c_void_p, TDengine handle
         """
+
         return taos_connect(host, user, password, db, port)
 
 
