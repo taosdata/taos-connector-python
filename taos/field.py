@@ -1,7 +1,6 @@
 # encoding:UTF-8
 import ctypes
 import math
-import datetime
 import pytz
 
 from datetime import datetime, timedelta
