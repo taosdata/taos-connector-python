@@ -104,10 +104,17 @@ class TaosResult(object):
         blocks = [None] * field_count
         lengths = self.field_lengths()
         for i in range(field_count):
+            is_null = []
+            for j in range(length):
+                if taos_is_null(self._result, j, i):
+                    is_null.append(True)
+                else:
+                    is_null.append(False)
             data = ctypes.cast(block, ctypes.POINTER(ctypes.c_void_p))[i]
             if fields[i].type not in CONVERT_FUNC_BLOCK:
                 raise DatabaseError("Invalid data type returned from database")
-            blocks[i] = CONVERT_FUNC_BLOCK[fields[i].type](data, length, lengths[i], precision)
+            blocks[i] = CONVERT_FUNC_BLOCK[fields[i].type](
+                data, is_null, length, lengths[i], precision)
 
         return list(map(tuple, zip(*blocks))), length
 
@@ -130,7 +137,7 @@ class TaosResult(object):
             for i in range(len(self._fields)):
                 buffer[i].extend(block[i])
         return list(map(tuple, zip(*buffer)))
-    
+
     def fetch_all_into_dict(self):
         """Fetch all rows and convert it to dict"""
         names = [field.name for field in self.fields]
@@ -160,7 +167,7 @@ class TaosResult(object):
 
     def close(self):
         """free result object."""
-        if self._result != None and self._close_after:
+        if self._result is not None and self._close_after:
             taos_free_result(self._result)
         self._result = None
         self._fields = None
@@ -190,7 +197,7 @@ class TaosRows:
     def _next_row(self):
         if self._result is None:
             raise OperationalError("Invalid use of fetch iterator")
-        if self._num_of_rows != None and self._num_of_rows <= self._result._row_count:
+        if self._num_of_rows is not None and self._num_of_rows <= self._result._row_count:
             raise StopIteration
 
         row = taos_fetch_row_raw(self._result._result)
@@ -211,7 +218,10 @@ class TaosRow:
         self._row = row
 
     def __str__(self):
-        return taos_print_row(self._row, self._result.fields, self._result.field_count)
+        return taos_print_row(
+            self._row,
+            self._result.fields,
+            self._result.field_count)
 
     def __call__(self):
         return self.as_tuple()
@@ -232,20 +242,25 @@ class TaosRow:
         fields = self._result.fields
         field_lens = self._result.field_lengths()
         for i in range(field_count):
+            is_null = []
+            if taos_is_null(self._result, 1, i):
+                is_null.append(True)
+            else:
+                is_null.append(False)
             data = ctypes.cast(self._row, ctypes.POINTER(ctypes.c_void_p))[i]
             if fields[i].type not in CONVERT_FUNC:
                 raise DatabaseError("Invalid data type returned from database")
             if data is None:
                 blocks[i] = None
             else:
-                blocks[i] = CONVERT_FUNC[fields[i].type](data, 1, field_lens[i], precision)[0]
+                blocks[i] = CONVERT_FUNC[fields[i].type](
+                    data, is_null, 1, field_lens[i], precision)[0]
         return tuple(blocks)
 
     def as_dict(self):
         values = self.as_tuple()
         names = self._result.fields
         dict(zip(names, values))
-        
 
 
 class TaosBlocks:

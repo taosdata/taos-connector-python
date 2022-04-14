@@ -270,7 +270,7 @@ def _crow_binary_to_python(
     assert nbytes is not None
     return [
         None if is_null[i] else ele.value.decode("utf-8") for i,
-        ele in enumeratei(
+        ele in enumerate(
             (ctypes.cast(
                 data,
                 ctypes.POINTER(
