@@ -33,12 +33,12 @@ pip install /usr/local/taos/connector/python
 
 Supported config options:
 
--  **config**: TDengine client configuration directory, by default use "/etc/taos/".
--  **host**: TDengine server host, by default use "localhost".
--  **user**: TDengine user name, default is "root".
--  **password**: TDengine user password, default is "taosdata".
--  **database**: Default connection database name, empty if not set.
--  **timezone**: Timezone for timestamp type (which is `datetime` object with tzinfo in python) no matter what the host's timezone is.
+- **config**: TDengine client configuration directory, by default use "/etc/taos/".
+- **host**: TDengine server host, by default use "localhost".
+- **user**: TDengine user name, default is "root".
+- **password**: TDengine user password, default is "taosdata".
+- **database**: Default connection database name, empty if not set.
+- **timezone**: Timezone for timestamp type (which is `datetime` object with tzinfo in python) no matter what the host's timezone is.
 
 ```python
 import taos
