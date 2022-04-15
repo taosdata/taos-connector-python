@@ -196,7 +196,7 @@ def _crow_float_to_python(
 ):
     """Function to convert C float row to python row"""
     return [
-        None if math.isnan(ele) else ele
+        None if is_null[i] else ele
         for i, ele in enumerate(ctypes.cast(data, ctypes.POINTER(ctypes.c_float))[: abs(num_of_rows)])
     ]
 
