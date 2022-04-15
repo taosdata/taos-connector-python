@@ -57,7 +57,6 @@ def _crow_timestamp_to_python(data, is_null, num_of_rows, nbytes=None, precision
 
 def _crow_bool_to_python(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C bool row to python row"""
-    print("CBD LN53 bool")
     return [
         None if is_null[i] else bool(ele)
         for i, ele in enumerate(ctypes.cast(data, ctypes.POINTER(ctypes.c_byte))[: abs(num_of_rows)])
@@ -92,7 +91,6 @@ def _crow_smallint_unsigned_to_python(
     data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN
 ):
     """Function to convert C smallint row to python row"""
-    print("CBD LN105 smallint unsigned")
     return [
         None if is_null[i] else ele
         for i, ele in enumerate(ctypes.cast(data, ctypes.POINTER(ctypes.c_ushort))[: abs(num_of_rows)])
@@ -101,7 +99,6 @@ def _crow_smallint_unsigned_to_python(
 
 def _crow_int_to_python(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C int row to python row"""
-    print("CBD LN118 int")
     return [
         None if is_null[i] else ele
         for i, ele in enumerate(ctypes.cast(data, ctypes.POINTER(ctypes.c_int))[: abs(num_of_rows)])
