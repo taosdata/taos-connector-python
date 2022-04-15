@@ -104,17 +104,11 @@ class TaosResult(object):
         blocks = [None] * field_count
         lengths = self.field_lengths()
         for i in range(field_count):
-            is_null = []
-            for j in range(length):
-                if taos_is_null(self._result, j, i):
-                    is_null.append(True)
-                else:
-                    is_null.append(False)
+            is_null = [taos_is_null(self._result, j, i) for j in range(length)]
             data = ctypes.cast(block, ctypes.POINTER(ctypes.c_void_p))[i]
             if fields[i].type not in CONVERT_FUNC_BLOCK:
                 raise DatabaseError("Invalid data type returned from database")
-            blocks[i] = CONVERT_FUNC_BLOCK[fields[i].type](
-                data, is_null, length, lengths[i], precision)
+            blocks[i] = CONVERT_FUNC_BLOCK[fields[i].type](data, is_null, length, lengths[i], precision)
 
         return list(map(tuple, zip(*blocks))), length
 
@@ -218,10 +212,7 @@ class TaosRow:
         self._row = row
 
     def __str__(self):
-        return taos_print_row(
-            self._row,
-            self._result.fields,
-            self._result.field_count)
+        return taos_print_row(self._row, self._result.fields, self._result.field_count)
 
     def __call__(self):
         return self.as_tuple()
@@ -242,19 +233,13 @@ class TaosRow:
         fields = self._result.fields
         field_lens = self._result.field_lengths()
         for i in range(field_count):
-            is_null = []
-            if taos_is_null(self._result, 1, i):
-                is_null.append(True)
-            else:
-                is_null.append(False)
             data = ctypes.cast(self._row, ctypes.POINTER(ctypes.c_void_p))[i]
             if fields[i].type not in CONVERT_FUNC:
                 raise DatabaseError("Invalid data type returned from database")
             if data is None:
                 blocks[i] = None
             else:
-                blocks[i] = CONVERT_FUNC[fields[i].type](
-                    data, is_null, 1, field_lens[i], precision)[0]
+                blocks[i] = CONVERT_FUNC[fields[i].type](data, [False], 1, field_lens[i], precision)[0]
         return tuple(blocks)
 
     def as_dict(self):
