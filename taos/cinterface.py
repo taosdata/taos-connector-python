@@ -9,7 +9,7 @@ from time import tzname
 
 try:
     from typing import Any
-except:
+except BaseException:
     pass
 
 from .error import *
@@ -307,7 +307,7 @@ def taos_subscribe(connection, restart, topic, sql, interval, callback=None, par
     @sql string, sql statement for data query, must be a 'select' statement.
     @topic string, name of this subscription
     """
-    if callback != None:
+    if callback is not None:
         callback = subscribe_callback_type(callback)
     return c_void_p(
         _libtaos.taos_subscribe(
@@ -356,6 +356,14 @@ def taos_use_result(result):
     return fields
 
 
+_libtaos.taos_is_null.restype = c_bool
+_libtaos.taos_is_null.argtype = c_void_p, c_int, c_int
+
+
+def taos_is_null(result, row, col):
+    return _libtaos.taos_is_null(result, row, col)
+
+
 _libtaos.taos_fetch_block.restype = c_int
 _libtaos.taos_fetch_block.argtypes = c_void_p, c_void_p
 
@@ -384,7 +392,8 @@ def taos_fetch_block(result, fields=None, field_count=None):
         data = ctypes.cast(pblock, ctypes.POINTER(ctypes.c_void_p))[i]
         if fields[i]["type"] not in CONVERT_FUNC:
             raise DatabaseError("Invalid data type returned from database")
-        blocks[i] = CONVERT_FUNC_BLOCK[fields[i]["type"]](data, num_of_rows, fieldLen[i], precision)
+        is_null = [taos_is_null(result, j, i) for j in range(num_of_rows)]
+        blocks[i] = CONVERT_FUNC_BLOCK[fields[i]["type"]](data, is_null, num_of_rows, fieldLen[i], precision)
 
     return blocks, abs(num_of_rows)
 
@@ -418,7 +427,7 @@ def taos_fetch_row(result, fields):
             if data is None:
                 blocks[i] = [None]
             else:
-                blocks[i] = CONVERT_FUNC[fields[i].type](data, num_of_rows, field_lens[i], precision)
+                blocks[i] = CONVERT_FUNC[fields[i].type](data, [False], num_of_rows, field_lens[i], precision)
     else:
         return None, 0
     return blocks, abs(num_of_rows)
@@ -429,7 +438,7 @@ _libtaos.taos_free_result.argtypes = (c_void_p,)
 
 def taos_free_result(result):
     # type: (c_void_p) -> None
-    if result != None:
+    if result is not None:
         _libtaos.taos_free_result(result)
 
 
