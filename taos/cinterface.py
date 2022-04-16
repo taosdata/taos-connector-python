@@ -71,10 +71,14 @@ def taos_get_client_info():
 
 taos_client_info = taos_get_client_info()
 
+
 if taos_client_info.split(".")[0] < "3":
     from .field import *
 else:
+    from .field import *
+    """ use _v3's TaosField overwrite _v2's here, don't change import order """
     from .field_v3 import *
+    from .constants import *
 
 _libtaos.taos_fetch_fields.restype = ctypes.POINTER(TaosField)
 
@@ -384,7 +388,7 @@ def taos_use_result(result):
 
 
 _libtaos.taos_is_null.restype = c_bool
-_libtaos.taos_is_null.argtype = c_void_p, c_int, c_int
+_libtaos.taos_is_null.argtypes = c_void_p, c_int, c_int
 
 
 def taos_is_null(result, row, col):
@@ -403,6 +407,21 @@ def taos_fetch_block_raw(result):
     return pblock, abs(num_of_rows)
 
 
+if taos_client_info.split(".")[0] < "3":
+    pass
+else:
+    _libtaos.taos_get_column_data_offset.restype = ctypes.POINTER(ctypes.c_int)
+    _libtaos.taos_get_column_data_offset.argtypes = c_void_p, c_int
+
+
+def taos_get_column_data_offset(result, field, rows):
+    """Make sure to call taos_get_column_data_offset after taos_fetch_block()"""
+    offsets = _libtaos.taos_get_column_data_offset(result, field)
+    if not offsets:
+        raise OperationalError("offsets empty, use taos_fetch_block before it")
+    return offsets[:rows]
+
+
 def taos_fetch_block_v3(result, fields=None, field_count=None):
     if fields is None:
         fields = taos_fetch_fields(result)
@@ -417,10 +436,16 @@ def taos_fetch_block_v3(result, fields=None, field_count=None):
     fieldLen = taos_fetch_lengths(result, field_count)
     for i in range(len(fields)):
         data = ctypes.cast(pblock, ctypes.POINTER(ctypes.c_void_p))[i]
-        if fields[i]["type"] not in CONVERT_FUNC:
+        if fields[i]["type"] not in CONVERT_FUNC_BLOCK_v3 and fields[i]["type"] not in CONVERT_FUNC_BLOCK:
             raise DatabaseError("Invalid data type returned from database")
-        is_null = [taos_is_null(result, j, i) for j in range(num_of_rows)]
-        blocks[i] = CONVERT_FUNC_BLOCK[fields[i]["type"]](data, is_null, num_of_rows, fieldLen[i], precision)
+        offsets = []
+        is_null = []
+        if fields[i]["type"] == FieldType.C_VARCHAR or fields[i]["type"] == FieldType.C_NCHAR:
+            offsets = taos_get_column_data_offset(result, i, num_of_rows)
+            blocks[i] = CONVERT_FUNC_BLOCK_v3[fields[i]["type"]](data, is_null, num_of_rows, offsets, precision)
+        else:
+            is_null = [taos_is_null(result, j, i) for j in range(num_of_rows)]
+            blocks[i] = CONVERT_FUNC_BLOCK[fields[i]["type"]](data, is_null, num_of_rows, offsets, precision)
 
     return blocks, abs(num_of_rows)
 
