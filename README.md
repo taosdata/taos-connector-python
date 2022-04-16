@@ -3,7 +3,7 @@
 [TDengine](https://github.com/taosdata/TDengine) connector for Python enables python programs to access TDengine,
  using an API which is compliant with the Python DB API 2.0 (PEP-249). It contains two modules:
 1. The `taos` module. It uses TDengine C client library for client server communications.
-2. The `taosres` module. It wraps TDengine RESTful API to Python DB API 2.0 (PEP-249). With this module, you are free to install TDengine C client library.
+2. The `taosrest` module. It wraps TDengine RESTful API to Python DB API 2.0 (PEP-249). With this module, you are free to install TDengine C client library.
 
 ## Install
 
@@ -19,24 +19,18 @@ Or with git url:
 pip install git+https://github.com/taosdata/taos-connector-python.git
 ```
 
-If you have installed TDengine server or client with pre-built packages, then you can install the connector from path:
-
-```bash
-pip install /usr/local/taos/connector/python
-```
-
 ## Source Code
 
 [TDengine](https://github.com/taosdata/TDengine) connector for Python source code is hosted on [GitHub](https://github.com/taosdata/taos-connector-python).
 
-## Examples for `taosres` Module
+## Examples for `taosrest` Module
 
 ### Query with PEP-249 API
 
 ```python
-import taosres
+import taosrest
 
-conn = taosres.connect()
+conn = taosrest.connect()
 cursor = conn.cursor()
 
 cursor.execute("show databases")
@@ -52,8 +46,8 @@ conn.close()
 #### Method one
 ```python
 import pandas
-import taosres
-conn = taosres.connect()
+import taosrest
+conn = taosrest.connect()
 res: pandas.DataFrame = pandas.read_sql("select * from log.logs", conn)
 ```
 #### Method Two
@@ -61,7 +55,7 @@ res: pandas.DataFrame = pandas.read_sql("select * from log.logs", conn)
 ```python
 import pandas
 from sqlalchemy import create_engine
-engine = create_engine("taosres://root:taosdata@localhost:6030/log")
+engine = create_engine("taosrest://root:taosdata@localhost:6030/log")
 res: pandas.DataFrame = pandas.read_sql("select * from logs", engine)
 ```
 
