@@ -357,7 +357,7 @@ def taos_use_result(result):
 
 
 _libtaos.taos_is_null.restype = c_bool
-_libtaos.taos_is_null.argtype = c_void_p, c_int, c_int
+_libtaos.taos_is_null.argtypes = c_void_p, c_int, c_int
 
 
 def taos_is_null(result, row, col):
