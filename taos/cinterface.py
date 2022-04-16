@@ -3,9 +3,8 @@
 import ctypes
 import platform
 import inspect
-import pytz
 from ctypes import *
-from time import tzname
+import pytz
 
 try:
     from typing import Any
@@ -76,7 +75,8 @@ if taos_client_info.split(".")[0] < "3":
     from .field import *
 else:
     from .field import *
-    """ use _v3's TaosField overwrite _v2's here, don't change import order """
+
+    # use _v3s TaosField overwrite _v2s here, dont change import order
     from .field_v3 import *
     from .constants import *
 
@@ -433,7 +433,6 @@ def taos_fetch_block_v3(result, fields=None, field_count=None):
         return None, 0
     precision = taos_result_precision(result)
     blocks = [None] * field_count
-    fieldLen = taos_fetch_lengths(result, field_count)
     for i in range(len(fields)):
         data = ctypes.cast(pblock, ctypes.POINTER(ctypes.c_void_p))[i]
         if fields[i]["type"] not in CONVERT_FUNC_BLOCK_v3 and fields[i]["type"] not in CONVERT_FUNC_BLOCK:
