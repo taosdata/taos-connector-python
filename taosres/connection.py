@@ -1,5 +1,8 @@
 class TaosRestConnection:
-    def __init__(self):
+    def __init__(self, **kwargs):
+        """
+
+        """
         pass
 
     def close(self):
