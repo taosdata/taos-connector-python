@@ -18,6 +18,7 @@ class FieldType(object):
     C_BIGINT = 5
     C_FLOAT = 6
     C_DOUBLE = 7
+    C_VARCHAR = 8
     C_BINARY = 8
     C_TIMESTAMP = 9
     C_NCHAR = 10
