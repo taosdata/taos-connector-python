@@ -1,5 +1,5 @@
 # encoding:UTF-8
-from .cinterface import *
+from .cinterface import taos_fetch_fields
 from .error import *
 from .constants import FieldType
 from .result import *

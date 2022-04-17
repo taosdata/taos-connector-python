@@ -38,7 +38,7 @@ def _convert_nanosecond_to_datetime(nanosec):
 
 
 def _crow_timestamp_to_python(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
-    """Function to convert C bool row to python row"""
+    """Function to convert C bool row to python row."""
     _timestamp_converter = _convert_millisecond_to_datetime
     if precision == FieldType.C_TIMESTAMP_MILLI:
         _timestamp_converter = _convert_millisecond_to_datetime
@@ -56,7 +56,7 @@ def _crow_timestamp_to_python(data, is_null, num_of_rows, nbytes=None, precision
 
 
 def _crow_bool_to_python(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
-    """Function to convert C bool row to python row"""
+    """Function to convert C bool row to python row."""
     return [
         None if is_null[i] else bool(ele)
         for i, ele in enumerate(ctypes.cast(data, ctypes.POINTER(ctypes.c_byte))[: abs(num_of_rows)])
@@ -64,7 +64,7 @@ def _crow_bool_to_python(data, is_null, num_of_rows, nbytes=None, precision=Fiel
 
 
 def _crow_tinyint_to_python(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
-    """Function to convert C tinyint row to python row"""
+    """Function to convert C tinyint row to python row."""
     return [
         None if is_null[i] else ele
         for i, ele in enumerate(ctypes.cast(data, ctypes.POINTER(ctypes.c_byte))[: abs(num_of_rows)])
@@ -72,7 +72,7 @@ def _crow_tinyint_to_python(data, is_null, num_of_rows, nbytes=None, precision=F
 
 
 def _crow_tinyint_unsigned_to_python(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
-    """Function to convert C unsigned tinyint row to python row"""
+    """Function to convert C unsigned tinyint row to python row."""
     return [
         None if is_null[i] else ele
         for i, ele in enumerate(ctypes.cast(data, ctypes.POINTER(ctypes.c_ubyte))[: abs(num_of_rows)])
@@ -80,7 +80,7 @@ def _crow_tinyint_unsigned_to_python(data, is_null, num_of_rows, nbytes=None, pr
 
 
 def _crow_smallint_to_python(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
-    """Function to convert C smallint row to python row"""
+    """Function to convert C smallint row to python row."""
     return [
         None if is_null[i] else ele
         for i, ele in enumerate(ctypes.cast(data, ctypes.POINTER(ctypes.c_short))[: abs(num_of_rows)])
@@ -90,7 +90,7 @@ def _crow_smallint_to_python(data, is_null, num_of_rows, nbytes=None, precision=
 def _crow_smallint_unsigned_to_python(
     data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN
 ):
-    """Function to convert C unsigned smallint row to python row"""
+    """Function to convert C unsigned smallint row to python row."""
     return [
         None if is_null[i] else ele
         for i, ele in enumerate(ctypes.cast(data, ctypes.POINTER(ctypes.c_ushort))[: abs(num_of_rows)])
@@ -98,7 +98,7 @@ def _crow_smallint_unsigned_to_python(
 
 
 def _crow_int_to_python(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
-    """Function to convert C int row to python row"""
+    """Function to convert C int row to python row."""
     return [
         None if is_null[i] else ele
         for i, ele in enumerate(ctypes.cast(data, ctypes.POINTER(ctypes.c_int))[: abs(num_of_rows)])
@@ -106,7 +106,7 @@ def _crow_int_to_python(data, is_null, num_of_rows, nbytes=None, precision=Field
 
 
 def _crow_int_unsigned_to_python(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
-    """Function to convert C unsigned int row to python row"""
+    """Function to convert C unsigned int row to python row."""
     return [
         None if is_null[i] else ele
         for i, ele in enumerate(ctypes.cast(data, ctypes.POINTER(ctypes.c_uint))[: abs(num_of_rows)])
@@ -114,7 +114,7 @@ def _crow_int_unsigned_to_python(data, is_null, num_of_rows, nbytes=None, precis
 
 
 def _crow_bigint_to_python(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
-    """Function to convert C bigint row to python row"""
+    """Function to convert C bigint row to python row."""
     return [
         None if is_null[i] else ele
         for i, ele in enumerate(ctypes.cast(data, ctypes.POINTER(ctypes.c_int64))[: abs(num_of_rows)])
@@ -122,35 +122,23 @@ def _crow_bigint_to_python(data, is_null, num_of_rows, nbytes=None, precision=Fi
 
 
 def _crow_bigint_unsigned_to_python(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
-    """Function to convert C unsigned bigint row to python row"""
+    """Function to convert C unsigned bigint row to python row."""
     return [
         None if is_null[i] else ele
         for i, ele in enumerate(ctypes.cast(data, ctypes.POINTER(ctypes.c_uint64))[: abs(num_of_rows)])
     ]
 
 
-def _crow_float_to_python(
-    data,
-    is_null,
-    num_of_rows,
-    nbytes=None,
-    precision=FieldType.C_TIMESTAMP_UNKNOWN,
-):
-    """Function to convert C float row to python row"""
+def _crow_float_to_python(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
+    """Function to convert C float row to python row."""
     return [
         None if is_null[i] else ele
         for i, ele in enumerate(ctypes.cast(data, ctypes.POINTER(ctypes.c_float))[: abs(num_of_rows)])
     ]
 
 
-def _crow_double_to_python(
-    data,
-    is_null,
-    num_of_rows,
-    nbytes=None,
-    precision=FieldType.C_TIMESTAMP_UNKNOWN,
-):
-    """Function to convert C double row to python row"""
+def _crow_double_to_python(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
+    """Function to convert C double row to python row."""
     return [
         None if is_null[i] else ele
         for i, ele in enumerate(ctypes.cast(data, ctypes.POINTER(ctypes.c_double))[: abs(num_of_rows)])
@@ -158,7 +146,7 @@ def _crow_double_to_python(
 
 
 def _crow_binary_to_python(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
-    """Function to convert C binary row to python row"""
+    """Function to convert C binary row to python row."""
     assert nbytes is not None
     return [
         None if is_null[i] else ele.value.decode("utf-8")
@@ -166,14 +154,8 @@ def _crow_binary_to_python(data, is_null, num_of_rows, nbytes=None, precision=Fi
     ]
 
 
-def _crow_nchar_to_python(
-    data,
-    is_null,
-    num_of_rows,
-    nbytes=None,
-    precision=FieldType.C_TIMESTAMP_UNKNOWN,
-):
-    """Function to convert C nchar row to python row"""
+def _crow_nchar_to_python(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
+    """Function to convert C nchar row to python row."""
     assert nbytes is not None
     res = []
     for i in range(abs(num_of_rows)):
@@ -199,14 +181,8 @@ def _crow_nchar_to_python(
     return res
 
 
-def _crow_binary_to_python_block(
-    data,
-    is_null,
-    num_of_rows,
-    nbytes=None,
-    precision=FieldType.C_TIMESTAMP_UNKNOWN,
-):
-    """Function to convert C binary row to python row"""
+def _crow_binary_to_python_block(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
+    """Function to convert C binary row to python row."""
     assert nbytes is not None
     res = []
     for i in range(abs(num_of_rows)):
@@ -221,14 +197,8 @@ def _crow_binary_to_python_block(
     return res
 
 
-def _crow_nchar_to_python_block(
-    data,
-    is_null,
-    num_of_rows,
-    nbytes=None,
-    precision=FieldType.C_TIMESTAMP_UNKNOWN,
-):
-    """Function to convert C nchar row to python row"""
+def _crow_nchar_to_python_block(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
+    """Function to convert C nchar row to python row."""
     assert nbytes is not None
     res = []
     for i in range(abs(num_of_rows)):

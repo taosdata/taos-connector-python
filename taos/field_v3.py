@@ -1,13 +1,11 @@
 # encoding:UTF-8
 import ctypes
 
-from ctypes import *
-
 from .constants import FieldType
-from .error import *
+
 
 def _crow_binary_to_python_block_v3(data, is_null, num_of_rows, offsets, precision=FieldType.C_TIMESTAMP_UNKNOWN):
-    """Function to convert C binary row to python row"""
+    """Function to convert C binary row to python row."""
     assert offsets is not None
     res = []
     for i in range(abs(num_of_rows)):
@@ -15,21 +13,15 @@ def _crow_binary_to_python_block_v3(data, is_null, num_of_rows, offsets, precisi
             res.append(None)
         else:
             rbyte = ctypes.cast(data + offsets[i], ctypes.POINTER(ctypes.c_short))[:1].pop()
-            chars = ctypes.cast(c_char_p(data + offsets[i] + 2), ctypes.POINTER(c_char * rbyte))
-            buffer = create_string_buffer(rbyte + 1)
+            chars = ctypes.cast(ctypes.c_char_p(data + offsets[i] + 2), ctypes.POINTER(ctypes.c_char * rbyte))
+            buffer = ctypes.create_string_buffer(rbyte + 1)
             buffer[:rbyte] = chars[0][:rbyte]
-            res.append(cast(buffer, c_char_p).value.decode("utf-8"))
+            res.append(ctypes.cast(buffer, ctypes.c_char_p).value.decode("utf-8"))
     return res
 
 
-def _crow_nchar_to_python_block_v3(
-    data,
-    is_null,
-    num_of_rows,
-    offsets,
-    precision=FieldType.C_TIMESTAMP_UNKNOWN,
-):
-    """Function to convert C nchar row to python row"""
+def _crow_nchar_to_python_block_v3(data, is_null, num_of_rows, offsets, precision=FieldType.C_TIMESTAMP_UNKNOWN):
+    """Function to convert C nchar row to python row."""
     assert offsets is not None
     res = []
     for i in range(abs(num_of_rows)):
@@ -37,10 +29,10 @@ def _crow_nchar_to_python_block_v3(
             res.append(None)
         else:
             rbyte = ctypes.cast(data + offsets[i], ctypes.POINTER(ctypes.c_short))[:1].pop()
-            chars = ctypes.cast(c_char_p(data + offsets[i] + 2), ctypes.POINTER(c_char * rbyte))
-            buffer = create_string_buffer(rbyte + 1)
+            chars = ctypes.cast(ctypes.c_char_p(data + offsets[i] + 2), ctypes.POINTER(ctypes.c_char * rbyte))
+            buffer = ctypes.create_string_buffer(rbyte + 1)
             buffer[:rbyte] = chars[0][:rbyte]
-            res.append(cast(buffer, c_char_p).value.decode("utf-8"))
+            res.append(ctypes.cast(buffer, ctypes.c_char_p).value.decode("utf-8"))
     return res
 
 
@@ -67,7 +59,7 @@ class TaosField(ctypes.Structure):
 
     @property
     def length(self):
-        """alias to self.bytes"""
+        """Alias to self.bytes."""
         return self._bytes
 
     @property
@@ -79,54 +71,67 @@ class TaosField(ctypes.Structure):
         return self._type
 
     def __dict__(self):
+        """Construct dict."""
         return {"name": self.name, "type": self.type, "bytes": self.length}
 
     def __str__(self):
+        """Construct str."""
         return "{name: %s, type: %d, bytes: %d}" % (self.name, self.type, self.length)
 
     def __getitem__(self, item):
+        """Get attr."""
         return getattr(self, item)
 
 
 class TaosFields(object):
     def __init__(self, fields, count):
-        if isinstance(fields, c_void_p):
-            self._fields = cast(fields, POINTER(TaosField))
-        if isinstance(fields, POINTER(TaosField)):
+        """Init class."""
+        if isinstance(fields, ctypes.c_void_p):
+            self._fields = ctypes.cast(fields, ctypes.POINTER(TaosField))
+        if isinstance(fields, ctypes.POINTER(TaosField)):
             self._fields = fields
         self._count = count
         self._iter = 0
 
     def as_ptr(self):
+        """Return as ptr."""
         return self._fields
 
     @property
     def count(self):
+        """Return count."""
         return self._count
 
     @property
     def fields(self):
+        """Return fields."""
         return self._fields
 
     def __next__(self):
+        """Next field."""
         return self._next_field()
 
     def next(self):
+        """Next field."""
         return self._next_field()
 
     def _next_field(self):
+        """Iter next_field."""
         if self._iter < self.count:
             field = self._fields[self._iter]
             self._iter += 1
-            return field
         else:
             raise StopIteration
+        return field
 
     def __getitem__(self, item):
+        """Return field item."""
         return self._fields[item]
 
     def __iter__(self):
+        """To iter."""
         return self
 
     def __len__(self):
+        """Get len."""
         return self.count

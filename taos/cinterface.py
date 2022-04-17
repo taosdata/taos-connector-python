@@ -72,13 +72,13 @@ taos_client_info = taos_get_client_info()
 
 
 if taos_client_info.split(".")[0] < "3":
-    from .field import *
+    from .field import CONVERT_FUNC, CONVERT_FUNC_BLOCK, TaosFields, TaosField
 else:
-    from .field import *
+    from .field import CONVERT_FUNC, CONVERT_FUNC_BLOCK, TaosFields, TaosField
 
     # use _v3s TaosField overwrite _v2s here, dont change import order
-    from .field_v3 import *
-    from .constants import *
+    from .field_v3 import CONVERT_FUNC_BLOCK_v3, TaosFields, TaosField
+    from .constants import FieldType
 
 _libtaos.taos_fetch_fields.restype = ctypes.POINTER(TaosField)
 
@@ -328,8 +328,7 @@ _libtaos.taos_subscribe.restype = c_void_p
 
 
 def taos_subscribe(connection, restart, topic, sql, interval, callback=None, param=None):
-    # type: (c_void_p, bool, str, str, c_int, subscribe_callback_type,
-    # c_void_p | None) -> c_void_p
+    # type: (c_void_p, bool, str, str, c_int, subscribe_callback_type, c_void_p | None) -> c_void_p
     """Create a subscription
     @restart boolean,
     @sql string, sql statement for data query, must be a 'select' statement.
@@ -388,7 +387,7 @@ def taos_use_result(result):
 
 
 _libtaos.taos_is_null.restype = c_bool
-_libtaos.taos_is_null.argtypes = c_void_p, c_int, c_int
+_libtaos.taos_is_null.argtypes = ctypes.c_void_p, c_int, c_int
 
 
 def taos_is_null(result, row, col):
@@ -411,11 +410,11 @@ if taos_client_info.split(".")[0] < "3":
     pass
 else:
     _libtaos.taos_get_column_data_offset.restype = ctypes.POINTER(ctypes.c_int)
-    _libtaos.taos_get_column_data_offset.argtypes = c_void_p, c_int
+    _libtaos.taos_get_column_data_offset.argtypes = ctypes.c_void_p, c_int
 
 
 def taos_get_column_data_offset(result, field, rows):
-    """Make sure to call taos_get_column_data_offset after taos_fetch_block()"""
+    # Make sure to call taos_get_column_data_offset after taos_fetch_block()
     offsets = _libtaos.taos_get_column_data_offset(result, field)
     if not offsets:
         raise OperationalError("offsets empty, use taos_fetch_block before it")
@@ -501,7 +500,7 @@ def taos_fetch_row(result, fields):
         for i in range(field_count):
             data = ctypes.cast(pblock, ctypes.POINTER(ctypes.c_void_p))[i]
             if fields[i].type not in CONVERT_FUNC:
-                raise DatabaseError("LN417 Invalid data type returned from database")
+                raise DatabaseError("Invalid data type returned from database")
             if data is None:
                 blocks[i] = [None]
             else:
@@ -930,8 +929,7 @@ except Exception as err:
 
 
 def taos_schemaless_insert(connection, lines, protocol, precision):
-    # type: (c_void_p, list[str] | tuple(str), SmlProtocol, SmlPrecision) ->
-    # int
+    # type: (c_void_p, list[str] | tuple(str), SmlProtocol, SmlPrecision) -> int
     _check_if_supported()
     num_of_lines = len(lines)
     lines = (c_char_p(line.encode("utf-8")) for line in lines)
