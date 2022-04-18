@@ -504,7 +504,6 @@ def taos_fetch_row(result, fields):
             if data is None:
                 blocks[i] = [None]
             else:
-                blocks[i] = CONVERT_FUNC[fields[i].type](data, num_of_rows, field_lens[i], precision)
                 blocks[i] = CONVERT_FUNC[fields[i].type](data, [False], num_of_rows, field_lens[i], precision)
     else:
         return None, 0
