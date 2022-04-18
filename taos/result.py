@@ -102,7 +102,7 @@ class TaosResult(object):
         field_count = self.field_count
         fields = self.fields
         blocks = [None] * field_count
-        if self._conn.client_info.split(".")[0] < "3":
+        if not IS_V3:
             lengths = self.field_lengths()
             for i in range(field_count):
                 is_null = [taos_is_null(self._result, j, i) for j in range(length)]
