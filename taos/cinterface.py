@@ -68,10 +68,9 @@ def taos_get_client_info():
     return _libtaos.taos_get_client_info().decode("utf-8")
 
 
-taos_client_info = taos_get_client_info()
+IS_V3 = False
 
-
-if taos_client_info.split(".")[0] < "3":
+if taos_get_client_info().split(".")[0] < "3":
     from .field import CONVERT_FUNC, CONVERT_FUNC_BLOCK, TaosFields, TaosField
 else:
     from .field import CONVERT_FUNC, CONVERT_FUNC_BLOCK, TaosFields, TaosField
@@ -79,6 +78,8 @@ else:
     # use _v3s TaosField overwrite _v2s here, dont change import order
     from .field_v3 import CONVERT_FUNC_BLOCK_v3, TaosFields, TaosField
     from .constants import FieldType
+
+    IS_V3 = True
 
 _libtaos.taos_fetch_fields.restype = ctypes.POINTER(TaosField)
 
@@ -406,7 +407,7 @@ def taos_fetch_block_raw(result):
     return pblock, abs(num_of_rows)
 
 
-if taos_client_info.split(".")[0] < "3":
+if not IS_V3:
     pass
 else:
     _libtaos.taos_get_column_data_offset.restype = ctypes.POINTER(ctypes.c_int)
@@ -470,7 +471,7 @@ def taos_fetch_block_v2(result, fields=None, field_count=None):
     return blocks, abs(num_of_rows)
 
 
-if taos_client_info.split(".")[0] < "3":
+if not IS_V3:
     taos_fetch_block = taos_fetch_block_v2
 else:
     taos_fetch_block = taos_fetch_block_v3
