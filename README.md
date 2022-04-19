@@ -478,6 +478,10 @@ engine = create_engine("taos://root:taosdata@localhost:6030/log")
 res: pandas.DataFrame = pandas.read_sql("select * from logs", engine)
 ```
 
+## Limitation
+
+- `taosrest` is designed to use with taosAdapter. If your TDengine version is older than v2.4.0.0, taosAdapter may not be available.
+
 ## License
 
 We use MIT license for Python connector.
