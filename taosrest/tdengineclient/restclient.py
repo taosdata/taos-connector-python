@@ -1,6 +1,7 @@
 from urllib.request import urlopen, Request
 from .errors import ConnectionError, ExecutionError
 import json
+import socket
 
 
 class RestClient:
@@ -22,7 +23,7 @@ class RestClient:
         """
         self.login_url = f"http://{host}:{port}/rest/login/{user}/{password}"
         self.sql_utc_url = f"http://{host}:{port}/rest/sqlutc"
-        self.timeout = timeout
+        self.timeout = timeout if timeout is not None else socket._GLOBAL_DEFAULT_TIMEOUT
         self.token = self.get_token()
         self.headers = {
             "Authorization": "Taosd " + self.token
@@ -32,7 +33,7 @@ class RestClient:
         """
         Get authorization token.
         """
-        response = urlopen(self.login_url)
+        response = urlopen(self.login_url, timeout=self.timeout)
         resp = json.load(response)
         if resp["code"] != 0:
             raise ConnectionError(resp["desc"], resp["code"])
@@ -68,7 +69,7 @@ class RestClient:
 
         data = q.encode("utf8")
         request = Request(self.sql_utc_url, data, self.headers)
-        response = urlopen(request)
+        response = urlopen(request, timeout=self.timeout)
         resp = json.load(response)
         if resp["status"] == "error":
             raise ExecutionError(resp["desc"], resp["code"])
