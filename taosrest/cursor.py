@@ -1,6 +1,6 @@
 # For API reference, please refer to: https://peps.python.org/pep-0249/#cursor-objects
 
-from errors import *
+from .errors import *
 
 
 class TaosRestCursor:
@@ -41,5 +41,3 @@ class TaosRestCursor:
 
     def setoutputsize(self, size, column=None):
         raise NotSupportedError()
-
-
