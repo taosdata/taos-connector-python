@@ -1,4 +1,4 @@
-from taosrest.tdengineclient import RestClient
+from taosrest.restclient import RestClient
 
 
 def test_auth():
