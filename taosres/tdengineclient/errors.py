@@ -1,8 +1,3 @@
-# encoding:UTF-8
-"""Python exceptions
-"""
-
-
 class Error(Exception):
     def __init__(self, msg=None, errno=0xffff):
         self.msg = msg
