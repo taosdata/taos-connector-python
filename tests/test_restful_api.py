@@ -57,6 +57,5 @@ def test_wrong_sql():
     request = Request(url, data, headers)
     response = urlopen(request)
     resp = json.load(response)
-    print()
-    print(resp)
+    print("\n", resp)
     assert "status" in resp and resp["status"] == "error"

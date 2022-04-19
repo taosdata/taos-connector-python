@@ -18,8 +18,8 @@ class RestClient:
         - host : host to connect
         - port : port to connect
         - user : username used to log in
-        - password : str password used to log
-        - timeout :  the optional *timeout* parameter specifies a timeout in seconds for blocking operations
+        - password : password used to log in
+        - timeout : the optional timeout parameter specifies a timeout in seconds for blocking operations
         """
         self.login_url = f"http://{host}:{port}/rest/login/{user}/{password}"
         self.sql_utc_url = f"http://{host}:{port}/rest/sqlutc"
