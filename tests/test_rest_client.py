@@ -1,4 +1,4 @@
-from taosrest.tdengineclient import RestClient
+from taosrest.restclient import RestClient
 
 
 def test_auth():
@@ -18,7 +18,10 @@ def test_insert_data():
     c.sql("drop database if exists test")
     c.sql("create database test")
     c.sql("create table test.tb (ts timestamp, c1 int, c2 double)")
-    c.sql("insert into test.tb values (now, -100, -200.3) (now+10s, -101, -340.2423424)")
+    resp = c.sql("insert into test.tb values (now, -100, -200.3) (now+10s, -101, -340.2423424)")
+    print("\n==============insert resp==============")
+    print(resp)
     resp = c.sql("select * from test.tb")
+    print("\n==============select resp==============")
     print("\n", resp)
     assert resp["rows"] == 2

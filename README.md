@@ -34,17 +34,13 @@ import taosrest
 conn = taosrest.connect(host="localhost",
                         user="root",
                         password="taosdata",
-                        database="test",
-                        prot=6041)
+                        port=6041)
 cursor = conn.cursor()
 
 cursor.execute("show databases")
 results: list[tuple] = cursor.fetchall()
 for row in results:
     print(row)
-
-cursor.close()
-conn.close()
 ```
 
 ### Read with Pandas
@@ -65,8 +61,8 @@ res: pandas.DataFrame = pandas.read_sql("select * from log.logs", conn)
 import pandas
 from sqlalchemy import create_engine
 
-engine = create_engine("taosrest://root:taosdata@localhost:6030/log")
-res: pandas.DataFrame = pandas.read_sql("select * from logs", engine)
+engine = create_engine("taosrest://root:taosdata@localhost:6030")
+res: pandas.DataFrame = pandas.read_sql("select * from log.logs", engine)
 ```
 
 ## Examples for `taos` Module

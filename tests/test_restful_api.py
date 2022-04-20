@@ -59,3 +59,7 @@ def test_wrong_sql():
     resp = json.load(response)
     print("\n", resp)
     assert "status" in resp and resp["status"] == "error"
+
+
+
+
