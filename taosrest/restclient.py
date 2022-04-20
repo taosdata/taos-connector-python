@@ -1,3 +1,4 @@
+from datetime import datetime
 from urllib.request import urlopen, Request
 from .errors import ConnectionError, ExecutionError
 import json
@@ -8,6 +9,9 @@ class RestClient:
     """
      A wrapper for TDengine RESTful API.
     """
+
+    TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f%z"
+    """default time format of /rest/sqlutc api"""
 
     def __init__(self, host: str, port: int, user: str, password: str, timeout: int = None):
         """
@@ -55,12 +59,25 @@ class RestClient:
             "head": ["ts","current", …],
             "column_meta": [["ts",9,8],["current",6,4], …],
             "data": [
-                ["2018-10-03T14:38:05.000+0800", 10.3, …],
-                ["2018-10-03T14:38:15.000+0800", 12.6, …]
+                [datetime.datetime(2022, 4, 20, 14, 16, 2, 522000, tzinfo=datetime.timezone(datetime.timedelta(seconds=28800))), 10.3, …],
+                [datetime.datetime(2022, 4, 20, 14, 16, 12, 522000, tzinfo=datetime.timezone(datetime.timedelta(seconds=28800))), 12.6, …]
             ],
             "rows": 2
         }
         ```
+
+        Column Type
+        ----------------
+        - 1：BOOL
+        - 2：TINYINT
+        - 3：SMALLINT
+        - 4：INT
+        - 5：BIGINT
+        - 6：FLOAT
+        - 7：DOUBLE
+        - 8：BINARY
+        - 9：TIMESTAMP
+        - 10：NCHAR
 
         Raises
         ------
@@ -73,4 +90,16 @@ class RestClient:
         resp = json.load(response)
         if resp["status"] == "error":
             raise ExecutionError(resp["desc"], resp["code"])
+        self._convert_time(resp)
         return resp
+
+    def _convert_time(self, resp: dict):
+        """
+        Convert timestamp in string format(RFC 3339) to python's datetime object with time zone info.
+        """
+        meta = resp["column_meta"]
+        data = resp["data"]
+        for i in range(len(meta)):
+            if meta[i][1] == 9:
+                for row in data:
+                    row[i] = datetime.strptime(row[i], RestClient.TIME_FORMAT)

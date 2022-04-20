@@ -1,3 +1,5 @@
+import datetime
+
 from taosrest.restclient import RestClient
 
 
@@ -17,11 +19,16 @@ def test_insert_data():
     c = RestClient("localhost", 6041, "root", "taosdata")
     c.sql("drop database if exists test")
     c.sql("create database test")
-    c.sql("create table test.tb (ts timestamp, c1 int, c2 double)")
-    resp = c.sql("insert into test.tb values (now, -100, -200.3) (now+10s, -101, -340.2423424)")
+    c.sql("create table test.tb2 (ts timestamp, c1 int, c2 double, c3 timestamp)")
+    resp = c.sql("insert into test.tb2 values (now, -100, -200.3, now+1m) (now+10s, -101, -340.2423424, now+2m)")
     print("\n==============insert resp==============")
     print(resp)
-    resp = c.sql("select * from test.tb")
-    print("\n==============select resp==============")
-    print("\n", resp)
-    assert resp["rows"] == 2
+    assert resp["rows"] == 1
+
+
+def test_select_data_with_timestamp_type():
+    c = RestClient("localhost", 6041, "root", "taosdata")
+    resp = c.sql("select * from test.tb2")
+    data = resp["data"]
+    assert isinstance(data[0][0], datetime.datetime)
+    assert isinstance(data[0][3], datetime.datetime)
