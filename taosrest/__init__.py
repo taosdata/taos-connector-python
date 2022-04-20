@@ -1,4 +1,8 @@
 from .connection import TaosRestConnection
+from .errors import *
+
+threadsafety = 0
+paramstyle = "pyformat"
 
 
 def connect(**kwargs) -> TaosRestConnection:

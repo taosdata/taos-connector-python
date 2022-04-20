@@ -32,3 +32,14 @@ def test_fetch_one():
     while row is not None:
         print(row)
         row = c.fetchone()
+
+
+def test_get_server_info():
+    conn = taosrest.connect(host="localhost",
+                            user="root",
+                            password="taosdata",
+                            database="test",
+                            port=6041)
+
+    version: str = conn.server_info
+    assert len(version.split(".")) == 4
