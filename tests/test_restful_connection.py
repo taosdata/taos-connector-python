@@ -6,7 +6,7 @@ def test_fetch_all():
                             user="root",
                             password="taosdata",
                             database="test",
-                            prot=6041)
+                            port=6041)
     cursor = conn.cursor()
 
     cursor.execute("show databases")
