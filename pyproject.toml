@@ -7,13 +7,15 @@ license = "AGPL-3.0"
 readme = "README.md"
 packages = [
   {include = "taos"},
-  {include = "taosres"}
+  {include = "taosrest"}
 ]
 
 [tool.poetry.plugins] # Optional super table
 
 [tool.poetry.plugins."sqlalchemy.dialects"]
 "taos" = "taos.sqlalchemy:TaosDialect"
+"taosrest" = "taosrest.sqlalchemy:TaosDialect"
+
 
 [tool.poetry.dependencies]
 python = "^2.7 || >=3.6"

@@ -52,7 +52,7 @@ import pandas
 import taosrest
 
 conn = taosrest.connect()
-res: pandas.DataFrame = pandas.read_sql("select * from log.logs", conn)
+df: pandas.DataFrame = pandas.read_sql("select * from log.logs", conn)
 ```
 
 #### Method Two
@@ -62,7 +62,7 @@ import pandas
 from sqlalchemy import create_engine
 
 engine = create_engine("taosrest://root:taosdata@localhost:6030")
-res: pandas.DataFrame = pandas.read_sql("select * from log.logs", engine)
+df: pandas.DataFrame = pandas.read_sql("select * from log.logs", engine)
 ```
 
 ## Examples for `taos` Module
@@ -461,7 +461,7 @@ import pandas
 import taos
 
 conn = taos.connect()
-res: pandas.DataFrame = pandas.read_sql("select * from log.logs", conn)
+df: pandas.DataFrame = pandas.read_sql("select * from log.logs", conn)
 ```
 
 #### Method Two
@@ -471,7 +471,7 @@ import pandas
 from sqlalchemy import create_engine
 
 engine = create_engine("taos://root:taosdata@localhost:6030/log")
-res: pandas.DataFrame = pandas.read_sql("select * from logs", engine)
+df: pandas.DataFrame = pandas.read_sql("select * from logs", engine)
 ```
 
 ## Limitation
