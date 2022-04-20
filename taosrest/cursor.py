@@ -20,6 +20,28 @@ class TaosRestCursor:
 
     @property
     def description(self):
+        """
+        Returns
+        -------
+        This read-only attribute is a sequence of 3-item sequences.
+        Each of these sequences contains information describing one result column:
+        - name
+        - type_code
+        - internal_size
+
+        Type Code
+        ---------
+        - 1：BOOL
+        - 2：TINYINT
+        - 3：SMALLINT
+        - 4：INT
+        - 5：BIGINT
+        - 6：FLOAT
+        - 7：DOUBLE
+        - 8：BINARY
+        - 9：TIMESTAMP
+        - 10：NCHAR
+        """
         if self._response is None:
             return None
         return self._response["column_meta"]
