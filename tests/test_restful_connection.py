@@ -21,7 +21,7 @@ def test_fetch_one():
                             user="root",
                             password="taosdata",
                             database="test",
-                            prot=6041)
+                            port=6041)
     c = conn.cursor()
     c.execute("drop database if exists test")
     c.executemany("create database test")
