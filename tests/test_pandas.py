@@ -33,7 +33,7 @@ def test_pandas_read_from_native_connection():
 
 
 def test_pandas_read_from_sqlalchemy_taosrest():
-    engine = create_engine("taosrest://root:taosdata@localhost:6030")
+    engine = create_engine("taosrest://root:taosdata@localhost:6041")
     df: pandas.DataFrame = pandas.read_sql("select * from test.tb", engine)
     assert isinstance(df.ts[0], datetime)
     assert df.shape == (2, 3)
@@ -44,3 +44,7 @@ def test_pandas_read_from_sqlalchemy_taos():
     df: pandas.DataFrame = pandas.read_sql("select * from test.tb", engine)
     assert isinstance(df.ts[0], datetime)
     assert df.shape == (2, 3)
+
+
+if __name__ == '__main__':
+    test_pandas_read_from_sqlalchemy_taosrest()

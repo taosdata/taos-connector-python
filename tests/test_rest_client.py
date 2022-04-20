@@ -26,6 +26,15 @@ def test_insert_data():
     assert resp["rows"] == 1
 
 
+def test_describe_table():
+    c = RestClient("localhost", 6041, "root", "taosdata")
+    try:
+        c.sql("describe test.noexits")
+        assert False
+    except:
+        pass
+
+
 def test_select_data_with_timestamp_type():
     c = RestClient("localhost", 6041, "root", "taosdata")
     resp = c.sql("select * from test.tb2")

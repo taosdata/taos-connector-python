@@ -41,3 +41,8 @@ class TaosRestConnection:
 
     def cursor(self):
         return TaosRestCursor(self._c)
+
+    @property
+    def server_info(self):
+        resp = self._c.sql("select server_version()")
+        return resp["data"][0][0]

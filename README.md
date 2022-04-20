@@ -61,7 +61,7 @@ df: pandas.DataFrame = pandas.read_sql("select * from log.logs", conn)
 import pandas
 from sqlalchemy import create_engine
 
-engine = create_engine("taosrest://root:taosdata@localhost:6030")
+engine = create_engine("taosrest://root:taosdata@localhost:6041")
 df: pandas.DataFrame = pandas.read_sql("select * from log.logs", engine)
 ```
 

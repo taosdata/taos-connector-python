@@ -11,6 +11,7 @@ from .result import *
 from .statement import *
 from .subscription import *
 from .schemaless import *
+
 try:
     from .sqlalchemy import *
 except:
@@ -20,7 +21,9 @@ from taos._version import __version__
 
 # Globals
 threadsafety = 0
+"""sqlalchemy will read this attribute"""
 paramstyle = "pyformat"
+"""sqlalchemy will read this attribute"""
 
 __all__ = [
     "__version__",
@@ -42,6 +45,7 @@ __all__ = [
     "SmlPrecision",
     "SmlProtocol"
 ]
+
 
 def connect(*args, **kwargs):
     # type: (..., ...) -> TaosConnection

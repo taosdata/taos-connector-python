@@ -42,10 +42,10 @@ class TaosDialect(default.DefaultDialect):
 
     def has_table(self, connection, table_name, schema=None):
         try:
-            cursor = connection.execute("describe {}" % table_name)
-            True
+            connection.execute("describe {}" % table_name)
+            return True
         except:
-            False
+            return False
 
     @reflection.cache
     def get_indexes(self, connection, table_name, schema=None, **kw):
