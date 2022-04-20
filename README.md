@@ -34,7 +34,7 @@ import taosrest
 conn = taosrest.connect(host="localhost",
                         user="root",
                         password="taosdata",
-                        prot=6041)
+                        port=6041)
 cursor = conn.cursor()
 
 cursor.execute("show databases")
