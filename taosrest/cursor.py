@@ -61,7 +61,7 @@ class TaosRestCursor:
             # for INSERT
             self._rowcount = self._response["data"][0][0]
         else:
-            # for SELECT
+            # for SELECT, Show, ...
             self._rowcount = self._response["rows"]
 
     def executemany(self, operation, parameters=None):

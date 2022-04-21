@@ -1,10 +1,8 @@
-from taos.cinterface import *
-from taos.precision import *
-from taos.bind import *
-
-import time
-import datetime
 import pytest
+
+from taos.bind import *
+from taos.cinterface import *
+
 
 @pytest.fixture
 def conn():
