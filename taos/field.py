@@ -23,14 +23,30 @@ def set_tz(tz):
 
 def _convert_millisecond_to_datetime(milli):
     if _priv_tz is None:
-        return _datetime_epoch + timedelta(seconds=milli / 1000.0)
-    return (_utc_datetime_epoch + timedelta(seconds=milli / 1000.0)).astimezone(_priv_tz)
+        try:
+            return _datetime_epoch + timedelta(seconds=milli / 1000.0)
+        except OverflowError:
+            # catch OverflowError and pass
+            pass
+    try:
+        return (_utc_datetime_epoch + timedelta(seconds=milli / 1000.0)).astimezone(_priv_tz)
+    except OverflowError:
+        # catch OverflowError and pass
+        pass
 
 
 def _convert_microsecond_to_datetime(micro):
     if _priv_tz is None:
-        return _datetime_epoch + timedelta(seconds=micro / 1000000.0)
-    return (_utc_datetime_epoch + timedelta(seconds=micro / 1000000.0)).astimezone(_priv_tz)
+        try:
+            return _datetime_epoch + timedelta(seconds=micro / 1000000.0)
+        except OverflowError:
+            # catch OverflowError and pass
+            pass
+    try:
+        return (_utc_datetime_epoch + timedelta(seconds=micro / 1000000.0)).astimezone(_priv_tz)
+    except OverflowError:
+        # catch OverflowError and pass
+        pass
 
 
 def _convert_nanosecond_to_datetime(nanosec):
