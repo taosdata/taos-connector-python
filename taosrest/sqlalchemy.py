@@ -1,27 +1,27 @@
-from sqlalchemy import types as sqltypes
+from sqlalchemy import types as sql_types
 from sqlalchemy.engine import default, reflection
 
 TYPES_MAP = {
-    "bool": sqltypes.Boolean,
-    "timestamp": sqltypes.TIMESTAMP,
-    "tinyint": sqltypes.SmallInteger,
-    "smallint": sqltypes.SmallInteger,
-    "int": sqltypes.Integer,
-    "bigint": sqltypes.BigInteger,
-    "tinyint unsigned": sqltypes.SmallInteger,
-    "smallint unsigned": sqltypes.SmallInteger,
-    "int unsigned": sqltypes.Integer,
-    "bigint unsigned": sqltypes.BigInteger,
-    "float": sqltypes.FLOAT,
-    "double": sqltypes.DECIMAL,
-    "nchar": sqltypes.String,
-    "binary": sqltypes.String,
+    "bool": sql_types.Boolean,
+    "timestamp": sql_types.TIMESTAMP,
+    "tinyint": sql_types.SmallInteger,
+    "smallint": sql_types.SmallInteger,
+    "int": sql_types.Integer,
+    "bigint": sql_types.BigInteger,
+    "tinyint unsigned": sql_types.SmallInteger,
+    "smallint unsigned": sql_types.SmallInteger,
+    "int unsigned": sql_types.Integer,
+    "bigint unsigned": sql_types.BigInteger,
+    "float": sql_types.FLOAT,
+    "double": sql_types.DECIMAL,
+    "nchar": sql_types.String,
+    "binary": sql_types.String,
 }
 
 
-class TaosDialect(default.DefaultDialect):
-    name = "taos"
-    driver = "taos"
+class TaosRestDialect(default.DefaultDialect):
+    name = "taosrest"
+    driver = "taosrest"
     supports_native_boolean = True
     implicit_returning = True
 
@@ -33,16 +33,16 @@ class TaosDialect(default.DefaultDialect):
 
     @classmethod
     def dbapi(cls):
-        import taos
+        import taosrest
 
-        return taos
+        return taosrest
 
     def has_schema(self, connection, schema):
         return False
 
     def has_table(self, connection, table_name, schema=None):
         try:
-            connection.execute("describe {}" % table_name)
+            connection.cursor().execute(f"describe {table_name}")
             return True
         except:
             return False
@@ -57,10 +57,11 @@ class TaosDialect(default.DefaultDialect):
 
     def get_columns(self, connection, table_name, schema=None, **kw):
         try:
-            cursor = connection.execute("describe {}" % table_name)
+            cursor = connection.cursor()
+            cursor.execute("describe {}" % table_name)
             return [row[0] for row in cursor.fetchall()]
         except:
             return []
 
     def _resolve_type(self, type_):
-        return TYPES_MAP.get(type_, sqltypes.UserDefinedType)
+        return TYPES_MAP.get(type_, sql_types.UserDefinedType)

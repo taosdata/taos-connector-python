@@ -1,7 +1,9 @@
 # TDengine Connector for Python
 
-[TDengine](https://github.com/taosdata/TDengine) connector for Python enables python programs to access TDengine,
- using an API which is compliant with the Python DB API 2.0 (PEP-249). It uses TDengine C client library for client server communications.
+[TDengine](https://github.com/taosdata/TDengine) connector for Python enables python programs to access TDengine, using an API which is compliant with the Python DB API 2.0 (PEP-249). It contains two modules:
+
+1. The `taos` module. It uses TDengine C client library for client server communications.
+2. The `taosrest` module. It wraps TDengine RESTful API to Python DB API 2.0 (PEP-249). With this module, you are free to install TDengine C client library.
 
 ## Install
 
@@ -17,17 +19,53 @@ Or with git url:
 pip install git+https://github.com/taosdata/taos-connector-python.git
 ```
 
-If you have installed TDengine server or client with pre-built packages, then you can install the connector from path:
-
-```bash
-pip install /usr/local/taos/connector/python
-```
-
 ## Source Code
 
 [TDengine](https://github.com/taosdata/TDengine) connector for Python source code is hosted on [GitHub](https://github.com/taosdata/taos-connector-python).
 
-## Examples
+## Examples for `taosrest` Module
+
+### Query with PEP-249 API
+
+```python
+import taosrest
+
+# all parameters  are optional
+conn = taosrest.connect(host="localhost",
+                        user="root",
+                        password="taosdata",
+                        port=6041)
+cursor = conn.cursor()
+
+cursor.execute("show databases")
+results: list[tuple] = cursor.fetchall()
+for row in results:
+    print(row)
+```
+
+### Read with Pandas
+
+#### Method one
+
+```python
+import pandas
+import taosrest
+
+conn = taosrest.connect()
+df: pandas.DataFrame = pandas.read_sql("select * from log.logs", conn)
+```
+
+#### Method Two
+
+```python
+import pandas
+from sqlalchemy import create_engine
+
+engine = create_engine("taosrest://root:taosdata@localhost:6041")
+df: pandas.DataFrame = pandas.read_sql("select * from log.logs", engine)
+```
+
+## Examples for `taos` Module
 
 ### Connect options
 
@@ -115,47 +153,47 @@ from taos import *
 from ctypes import *
 import time
 
+
 def fetch_callback(p_param, p_result, num_of_rows):
     print("fetched ", num_of_rows, "rows")
     p = cast(p_param, POINTER(Counter))
     result = TaosResult(p_result)
-    
+
     if num_of_rows == 0:
         print("fetching completed")
         p.contents.done = True
         result.close()
         return
-    
+
     if num_of_rows < 0:
         p.contents.done = True
         result.check_error(num_of_rows)
         result.close()
         return None
-    
+
     for row in result.rows_iter(num_of_rows):
         # print(row)
         None
-    
+
     p.contents.count += result.row_count
     result.fetch_rows_a(fetch_callback, p_param)
-    
 
 
 def query_callback(p_param, p_result, code):
     # type: (c_void_p, c_void_p, c_int) -> None
     if p_result is None:
         return
-    
+
     result = TaosResult(p_result)
     if code == 0:
         result.fetch_rows_a(fetch_callback, p_param)
-    
+
     result.check_error(code)
 
 
 class Counter(Structure):
     _fields_ = [("count", c_int), ("done", c_bool)]
-    
+
     def __str__(self):
         return "{ count: %d, done: %s }" % (self.count, self.done)
 
@@ -164,11 +202,11 @@ def test_query(conn):
     # type: (TaosConnection) -> None
     counter = Counter(count=0)
     conn.query_a("select * from log.log", query_callback, byref(counter))
-    
+
     while not counter.done:
         print("wait query callback")
         time.sleep(1)
-    
+
     print(counter)
     conn.close()
 
@@ -254,7 +292,7 @@ stmt = conn.statement("insert into log values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 params = new_multi_binds(16)
 params[0].timestamp((1626861392589, 1626861392590, 1626861392591))
 params[1].bool((True, None, False))
-params[2].tinyint([-128, -128, None]) # -128 is tinyint null
+params[2].tinyint([-128, -128, None])  # -128 is tinyint null
 params[3].tinyint([0, 127, None])
 params[4].smallint([3, None, 2])
 params[5].int([3, 4, None])
@@ -365,16 +403,16 @@ def test_subscribe_callback(conn):
         print("create table")
         # conn.execute("use %s" % dbname)
         conn.execute("create table if not exists %s.log(ts timestamp, n int)" % dbname)
-        
+
         print("# subscribe with callback")
         sub = conn.subscribe(False, "test", "select * from %s.log" % dbname, 1000, subscribe_callback)
-        
+
         for i in range(10):
             conn.execute("insert into %s.log values(now, %d)" % (dbname, i))
             time.sleep(0.7)
-        
+
         sub.close()
-        
+
         conn.execute("drop database if exists %s" % dbname)
         # conn.close()
     except Exception as err:
@@ -411,10 +449,34 @@ result = conn.query("show tables")
 for row in result:
     print(row)
 
-
 conn.execute("drop database if exists %s" % dbname)
-
 ```
+
+### Read with Pandas
+
+#### Method one
+
+```python
+import pandas
+import taos
+
+conn = taos.connect()
+df: pandas.DataFrame = pandas.read_sql("select * from log.logs", conn)
+```
+
+#### Method Two
+
+```python
+import pandas
+from sqlalchemy import create_engine
+
+engine = create_engine("taos://root:taosdata@localhost:6030/log")
+df: pandas.DataFrame = pandas.read_sql("select * from logs", engine)
+```
+
+## Limitation
+
+- `taosrest` is designed to use with taosAdapter. If your TDengine version is older than v2.4.0.0, taosAdapter may not be available.
 
 ## License
 

@@ -30,9 +30,11 @@ class DatabaseError(Error):
 
     pass
 
+
 class ConnectionError(Error):
-    """Exceptin raised for connection failed"""
+    """Exception raised for connection failed"""
     pass
+
 
 class DataError(DatabaseError):
     """Exception raised for errors that are due to problems with the processed data like division by zero, numeric value out of range."""
@@ -75,10 +77,12 @@ class StatementError(DatabaseError):
 
     pass
 
+
 class ResultError(DatabaseError):
     """Result related APIs."""
 
     pass
+
 
 class SchemalessError(DatabaseError):
     """taos_schemaless_insert errors."""
@@ -100,10 +104,12 @@ class StatementError(DatabaseError):
 
     pass
 
+
 class ResultError(DatabaseError):
     """Result related APIs."""
 
     pass
+
 
 class LinesError(DatabaseError):
     """taos_insert_lines errors."""
