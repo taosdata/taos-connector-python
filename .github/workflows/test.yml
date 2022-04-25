@@ -30,7 +30,7 @@ jobs:
 
       - name: Build TDengine
         run: |
-          git clone --depth 1 https://github.com/taosdata/TDengine.git
+          git clone --depth 1 https://github.com/taosdata/TDengine.git -b 2.4
           cd TDengine
           git submodule update --depth 1 --init --recursive
           mkdir build
@@ -44,8 +44,10 @@ jobs:
           tree TDengine/build/build/
           export C_INCLUDE_PATH=$PWD/TDengine/build/build/bin
           export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
-          sudo ./TDengine/build/build/bin/taosadapter &
-          sudo ./TDengine/build/build/bin/taosd &
+          mkdir -p /tmp/taos/
+          printf "dataDir /tmp/taos\nlogDir /tmp/taos/\n" > /tmp/taos/taos.cfg
+          ./TDengine/build/build/bin/taosadapter &
+          ./TDengine/build/build/bin/taosd -c /tmp/taos/ &
 
       - name: Cache Poetry
         id: cache-poetry
