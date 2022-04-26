@@ -338,6 +338,7 @@ class TaosFields(object):
         return self._fields[item]
 
     def __iter__(self):
+        self._iter = 0
         return self
 
     def __len__(self):

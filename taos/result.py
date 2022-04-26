@@ -55,7 +55,7 @@ class TaosResult(object):
     def fields(self):
         """fields definitions of the current result"""
         if self._result is None:
-            raise ResultError("no result object setted")
+            raise ResultError("no result object")
         if self._fields is None:
             self._fields = taos_fetch_fields(self._result)
 
