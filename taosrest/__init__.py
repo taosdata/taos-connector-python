@@ -1,4 +1,5 @@
 from .connection import TaosRestConnection
+from .cursor import TaosRestCursor
 from .errors import *
 
 threadsafety = 0

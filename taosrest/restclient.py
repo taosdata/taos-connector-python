@@ -1,17 +1,14 @@
-from datetime import datetime
 from urllib.request import urlopen, Request
 from .errors import ConnectionError, ExecutionError
+from iso8601 import parse_date
 import json
 import socket
 
 
 class RestClient:
     """
-     A wrapper for TDengine RESTful API.
+     A wrapper for TDengine REST API.
     """
-
-    TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f%z"
-    """default time format of /rest/sqlutc api"""
 
     def __init__(self, host: str, port: int, user: str, password: str, timeout: int = None):
         """
@@ -49,7 +46,7 @@ class RestClient:
 
         Parameters
         -----------
-        q : SQL statement to execute. Can't be USE statement since RESTful api is stateless.
+        q : SQL statement to execute. Can't be USE statement since REST api is stateless.
 
         Example of Returns
         -------
@@ -95,11 +92,11 @@ class RestClient:
 
     def _convert_time(self, resp: dict):
         """
-        Convert timestamp in string format(RFC 3339) to python's datetime object with time zone info.
+        Convert timestamp in string format to python's datetime object with time zone info.
         """
         meta = resp["column_meta"]
         data = resp["data"]
         for i in range(len(meta)):
             if meta[i][1] == 9:
                 for row in data:
-                    row[i] = datetime.strptime(row[i], RestClient.TIME_FORMAT)
+                    row[i] = parse_date(row[i])
