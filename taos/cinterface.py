@@ -977,6 +977,7 @@ class CTaosInterface(object):
 
         if tz is not None:
             set_tz(pytz.timezone(tz))
+            taos_options(TaosOption.Timezone, tz)
 
     @property
     def config(self):
