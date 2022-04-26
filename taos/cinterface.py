@@ -71,9 +71,9 @@ def taos_get_client_info():
 IS_V3 = False
 
 if taos_get_client_info().split(".")[0] < "3":
-    from .field import CONVERT_FUNC, CONVERT_FUNC_BLOCK, TaosFields, TaosField
+    from .field import CONVERT_FUNC, CONVERT_FUNC_BLOCK, TaosFields, TaosField, set_tz
 else:
-    from .field import CONVERT_FUNC, CONVERT_FUNC_BLOCK, TaosFields, TaosField
+    from .field import CONVERT_FUNC, CONVERT_FUNC_BLOCK, TaosFields, TaosField, set_tz
 
     # use _v3s TaosField overwrite _v2s here, dont change import order
     from .field_v3 import CONVERT_FUNC_BLOCK_v3, TaosFields, TaosField
@@ -977,7 +977,6 @@ class CTaosInterface(object):
 
         if tz is not None:
             set_tz(pytz.timezone(tz))
-            taos_options(TaosOption.Timezone, tz)
 
     @property
     def config(self):
