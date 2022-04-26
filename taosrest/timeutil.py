@@ -37,9 +37,9 @@ class TzInfo(datetime.tzinfo):
 
     def __repr__(self):
         if self.minutes_east == 0:
-            return "rfc3339.UTC_TZ"
+            return "UTC_TZ"
         else:
-            return "rfc3339.tzinfo(%s,%s)" % (self.minutes_east, repr(self.name))
+            return "tzinfo(%s,%s)" % (self.minutes_east, repr(self.name))
 
 
 UTC_TZ = TzInfo(0, 'Z')

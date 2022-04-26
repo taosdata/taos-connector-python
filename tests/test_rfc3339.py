@@ -1,9 +1,15 @@
-from taosrest.timeutil import parse
+from taosrest.timeutil import parse, TzInfo
+
+
+def test_tzinfo():
+    tz = TzInfo()
+    print(repr(tz))
 
 
 def test_parse_time():
     s1 = '2018-10-03T14:38:15+08:00'
     t1 = parse(s1)
+    print('\n', repr(t1))
     assert t1.isoformat() == '2018-10-03T14:38:15+08:00'
     s2 = '2018-10-03T14:38:16.8+08:00'
     t2 = parse(s2)

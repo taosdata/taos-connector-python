@@ -1,23 +1,6 @@
 from sqlalchemy import types as sql_types
 from sqlalchemy.engine import default, reflection
 
-TYPES_MAP = {
-    "bool": sql_types.Boolean,
-    "timestamp": sql_types.TIMESTAMP,
-    "tinyint": sql_types.SmallInteger,
-    "smallint": sql_types.SmallInteger,
-    "int": sql_types.Integer,
-    "bigint": sql_types.BigInteger,
-    "tinyint unsigned": sql_types.SmallInteger,
-    "smallint unsigned": sql_types.SmallInteger,
-    "int unsigned": sql_types.Integer,
-    "bigint unsigned": sql_types.BigInteger,
-    "float": sql_types.FLOAT,
-    "double": sql_types.DECIMAL,
-    "nchar": sql_types.String,
-    "binary": sql_types.String,
-}
-
 
 class TaosRestDialect(default.DefaultDialect):
     name = "taosrest"
@@ -62,6 +45,3 @@ class TaosRestDialect(default.DefaultDialect):
             return [row[0] for row in cursor.fetchall()]
         except:
             return []
-
-    def _resolve_type(self, type_):
-        return TYPES_MAP.get(type_, sql_types.UserDefinedType)

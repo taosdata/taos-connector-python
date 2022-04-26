@@ -3,7 +3,7 @@ from sqlalchemy.engine import default, reflection
 
 TYPES_MAP = {
     "bool": sqltypes.Boolean,
-    "timestamp": sqltypes.TIMESTAMP,
+    "timestamp": sqltypes.DATETIME,
     "tinyint": sqltypes.SmallInteger,
     "smallint": sqltypes.SmallInteger,
     "int": sqltypes.Integer,

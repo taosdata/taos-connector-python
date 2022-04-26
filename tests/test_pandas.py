@@ -40,7 +40,7 @@ def test_pandas_read_from_sqlalchemy_taosrest():
 
 
 def test_pandas_read_from_sqlalchemy_taos():
-    engine = create_engine("taos://root:taosdata@localhost:6030")
+    engine = create_engine("taos://root:taosdata@localhost:6030?timezone=Asia/Shanghai")
     df: pandas.DataFrame = pandas.read_sql("select * from test.tb", engine)
     assert isinstance(df.ts[0], datetime)
     assert df.shape == (2, 3)
