@@ -133,6 +133,8 @@ class TaosConnection(object):
         2.OpenTSDB telnet style API format support
 
         ## Example
+
+        ```python
         import taos
         conn = taos.connect()
         conn.exec("drop database if exists test")
@@ -141,11 +143,13 @@ class TaosConnection(object):
             'cpu_load 1626056811855516532ns 2.0f32 id="tb1",host="host0",interface="eth0"',
         ]
         conn.schemaless_insert(lines, 1, None)
-
+        ```
 
         3.OpenTSDB HTTP JSON format support
 
         ## Example
+
+        ```python
         import taos
         conn = taos.connect()
         conn.exec("drop database if exists test")
@@ -164,7 +168,7 @@ class TaosConnection(object):
         }
         ''']
         conn.schemaless_insert(lines, 2, None)
-
+        ```
         """
         return taos_schemaless_insert(self._conn, lines, protocol, precision)
 
