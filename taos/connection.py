@@ -21,9 +21,9 @@ class TaosConnection(object):
         self._tz = None
         self._chandle = None
 
-        self.config(**kwargs)
+        self._config(**kwargs)
 
-    def config(self, **kwargs):
+    def _config(self, **kwargs):
         # host
         if "host" in kwargs:
             self._host = kwargs["host"]
