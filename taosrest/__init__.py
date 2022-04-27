@@ -1,5 +1,6 @@
 from .connection import TaosRestConnection
 from .cursor import TaosRestCursor
+from .restclient import RestClient
 from .errors import *
 
 threadsafety = 0
