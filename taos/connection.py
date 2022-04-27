@@ -11,7 +11,6 @@ class TaosConnection(object):
     """TDengine connection object"""
 
     def __init__(self, *args, **kwargs):
-        self._conn = None
         self._host = None
         self._user = "root"
         self._password = "taosdata"
@@ -19,11 +18,12 @@ class TaosConnection(object):
         self._port = 0
         self._config = None
         self._tz = None
-        self._chandle = None
+        self._init_config(**kwargs)
 
-        self.config(**kwargs)
+        self._chandle = CTaosInterface(self._config, self._tz)
+        self._conn = self._chandle.connect(self._host, self._user, self._password, self._database, self._port)
 
-    def config(self, **kwargs):
+    def _init_config(self, **kwargs):
         # host
         if "host" in kwargs:
             self._host = kwargs["host"]
@@ -51,9 +51,6 @@ class TaosConnection(object):
         # timezone
         if "timezone" in kwargs:
             self._tz = kwargs["timezone"]
-
-        self._chandle = CTaosInterface(self._config, self._tz)
-        self._conn = self._chandle.connect(self._host, self._user, self._password, self._database, self._port)
 
     def close(self):
         """Close current connection."""
@@ -171,7 +168,6 @@ class TaosConnection(object):
         ```
         """
         return taos_schemaless_insert(self._conn, lines, protocol, precision)
-
 
     def cursor(self):
         # type: () -> TaosCursor
