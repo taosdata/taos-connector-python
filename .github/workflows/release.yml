@@ -21,14 +21,19 @@ jobs:
         run: |
           sudo apt-get install -y python3 python3-pip python-is-python3
 
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+
       - name: Build TDengine
         run: |
-          git clone --depth 1 https://github.com/taosdata/TDengine.git
+          git clone --depth 1 https://github.com/taosdata/TDengine.git -b 2.4
           cd TDengine
           git submodule update --depth 1 --init --recursive
           mkdir build
           cd build
-          cmake ../ -DBUILD_HTTP=true -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/`
+          cmake ../ -DBUILD_HTTP=false -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/`
           make -j
           cd ../../
 
@@ -37,7 +42,11 @@ jobs:
           tree TDengine/build/build/
           export C_INCLUDE_PATH=$PWD/TDengine/build/build/bin
           export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
-          sudo ./TDengine/build/build/bin/taosd &
+          mkdir -p /tmp/taos/
+          printf "dataDir /tmp/taos\nlogDir /tmp/taos/\n" > /tmp/taos/taos.cfg
+          ./TDengine/build/build/bin/taosadapter &
+          ./TDengine/build/build/bin/taosd -c /tmp/taos/ &
+
       - name: Cache Poetry
         id: cache-poetry
         uses: actions/cache@v2.1.5
@@ -106,4 +115,3 @@ jobs:
         run: |
           poetry config pypi-token.pypi $PYPI_TOKEN
           poetry publish --build -n
-
