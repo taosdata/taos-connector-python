@@ -11,6 +11,7 @@ class TaosConnection(object):
     """TDengine connection object"""
 
     def __init__(self, *args, **kwargs):
+        self._conn = None
         self._host = None
         self._user = "root"
         self._password = "taosdata"
@@ -19,7 +20,6 @@ class TaosConnection(object):
         self._config = None
         self._tz = None
         self._init_config(**kwargs)
-
         self._chandle = CTaosInterface(self._config, self._tz)
         self._conn = self._chandle.connect(self._host, self._user, self._password, self._database, self._port)
 
