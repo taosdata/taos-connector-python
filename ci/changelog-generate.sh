@@ -12,19 +12,23 @@ function part() {
   name=$1
   pattern=$2
   changes=$(grep -P '\[\w+-\d+\]\s*<('$pattern')>:' ./releaseNotes.tmp | sed -E 's/ *<('$pattern')>//' |sed 's/[ci skip]\s*//' | awk -F: '{print "- " $1 ":" $2}'|sort|uniq)
-  lines=$(printf "\\$changes\n" |wc -l)
-  # echo $name $pattern $lines >&2
+  changes2=$(grep -P '^('$pattern')(\(.*\))?:' ./releaseNotes.tmp | sed -E 's/^('$pattern')(\(.*\)):\s*/**\2**: /' | sed -E 's/^('$pattern'):\s*//'|sed -E 's/\[ci skip\]\s*//' | awk '{print "- " $0}' |sort|uniq)
+  lines1=$(printf "\\$changes" |wc -l)
+  lines2=$(printf "\\$changes2" |wc -l)
+  lines=$(expr $line1 + $lines2)
+  #echo $name $pattern $lines >&2
   if [ $lines -gt 0 ]; then
     echo "### $name:"
     echo ""
-    echo "$changes"
+    [ $lines1 -gt 0 ] && echo "$changes"
+    [ $lines2 -gt 0 ] && echo "$changes2"
     echo ""
   fi
 }
 
 part "Features" "feature|feat"
 part "Bug Fixes" "bugfix|fix"
-part "Enhancements" "enhance"
+part "Enhancements" "enhance|enh"
 part "Tests" "test"
 part "Documents" "docs|doc"
 
