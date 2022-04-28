@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.3.0 - 2022-04-28
+
+### Features:
+
+- add  RestClient
+- implement PEP249 Connections and Cursor API
+- remove wsclient and refactor folder structure
+- **(rest)**: adapter code for sqlalchemy and pandas
+- **(restful)**: add some test cases
+- **(rest)**: increase version number
+- support 3.0
+
+### Bug Fixes:
+
+- cannot iter on TaosFields twice
+- catch datetime overflow and pass
+- decrease version number
+- failed to convert rfc3339 format time string
+- fix pytest error for v3 check
+- fix set_tz function not found
+- float is_null missed
+- remove buggy line in taos_fetch_row
+- restore taos_options
+- rowcount is -1 for INSERT statement
+- taos_query() result for 3.0
+- typo
+- typos
+- use isnan() or is_null for float/double
+- use taos_is_null()
+
+### Enhancements:
+
+- add time utile to parse rfc3339 format time string
+- ident json
+- **(RestClient)**: support timeout parameter
+- **(rest)**: convert timestamp from 'str' to 'datetime'
+- **(rest)**: export RestClient
+- **(taos)**: make config method private
+- **(taos)**: reanme _config to _init_config
+- use iso8601 to parse date
+
+### Tests:
+
+- add test cases for pandas
+- test rowcount
+
+### Documents:
+
+- add docs to cursor.description
+- add limitation of taosrest
+- fix typo and align parameters order
+- schemaless docs
+- update manual
+- update readme for taosres
+- update user manual
+
 ## v2.2.5 - 2022-04-13
 
 ### Features:
