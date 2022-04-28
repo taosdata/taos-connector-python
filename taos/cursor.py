@@ -74,7 +74,10 @@ class TaosCursor(object):
 
     @property
     def rowcount(self):
-        """Return the rowcount of the object"""
+        """
+        For INSERT statement, rowcount is assigned immediately after execute the statement.
+        For SELECT statement, rowcount will not get correct value until fetched all data.
+        """
         return self._rowcount
 
     @property
@@ -129,7 +132,8 @@ class TaosCursor(object):
 
         if taos_field_count(self._result) == 0:
             affected_rows = taos_affected_rows(self._result)
-            self._affected_rows += affected_rows
+            self._affected_rows = affected_rows
+            self._rowcount = affected_rows
             return affected_rows
         else:
             self._fields = taos_fetch_fields(self._result)
@@ -203,13 +207,13 @@ class TaosCursor(object):
         buffer = [[] for i in range(len(self._fields))]
         self._rowcount = 0
         while True:
-            block, num_of_fields = taos_fetch_row(self._result, self._fields)
+            block, num_of_rows = taos_fetch_row(self._result, self._fields)
             errno = taos_errno(self._result)
             if errno != 0:
                 raise ProgrammingError(taos_errstr(self._result), errno)
-            if num_of_fields == 0:
+            if num_of_rows == 0:
                 break
-            self._rowcount += num_of_fields
+            self._rowcount += num_of_rows
             for i in range(len(self._fields)):
                 buffer[i].extend(block[i])
         return list(map(tuple, zip(*buffer)))
@@ -222,13 +226,13 @@ class TaosCursor(object):
         buffer = [[] for i in range(len(fields))]
         self._rowcount = 0
         while True:
-            block, num_of_fields = taos_fetch_block(self._result, self._fields)
+            block, num_of_rows = taos_fetch_block(self._result, self._fields)
             errno = taos_errno(self._result)
             if errno != 0:
                 raise ProgrammingError(taos_errstr(self._result), errno)
-            if num_of_fields == 0:
+            if num_of_rows == 0:
                 break
-            self._rowcount += num_of_fields
+            self._rowcount += num_of_rows
             for i in range(len(self._fields)):
                 buffer[i].extend(block[i])
         return list(map(tuple, zip(*buffer)))
