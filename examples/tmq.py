@@ -56,10 +56,12 @@ while 1:
         res = TaosResult(result)
         topic = res.get_topic_name()
         vg = res.get_vgroup_id()
-        tb = res.get_table_name()
-        print(f"topic: {topic}\n vgroup id: {vg}\n from table: {tb}")
+        
+        print(f"topic: {topic}\n vgroup id: {vg}")
         for row in res:
             print(row)
+        tb = res.get_table_name()
+        print(f"from table: {tb}")
         tmq.commit(None, 1)
     
 

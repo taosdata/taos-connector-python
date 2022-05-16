@@ -1076,7 +1076,11 @@ _libtaos.tmq_get_table_name.argtypes = (c_void_p,)
 _libtaos.tmq_get_table_name.restype = c_char_p
 
 def tmq_get_table_name(res):
-    return _libtaos.tmq_get_table_name(res)
+    tb_name = _libtaos.tmq_get_table_name(res)
+    if tb_name:
+        return tb_name.decode("utf-8")
+    else:
+        print("change msg.with.table.name to true in tmq config")
 
 def _check_if_supported():
     func = inspect.stack()[1][3]
