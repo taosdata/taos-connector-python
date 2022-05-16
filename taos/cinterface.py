@@ -12,7 +12,7 @@ except BaseException:
     pass
 
 from .error import *
-from .bind import *
+# from .bind import *
 from .schemaless import *
 
 _UNSUPPORTED = {}
