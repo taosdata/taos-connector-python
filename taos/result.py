@@ -160,13 +160,13 @@ class TaosResult(object):
         return taos_stop_query(self._result)
     
     def get_topic_name(self):
-        tmq_get_topic_name(self._result)
+        return tmq_get_topic_name(self._result)
         
     def get_vgroup_id(self):
-        tmq_get_vgroup_id(self._result)
+        return tmq_get_vgroup_id(self._result)
         
     def get_table_name(self):
-        tmq_get_table_name(self._result)
+        return tmq_get_table_name(self._result)
 
     def errno(self):
         """**DO NOT** use this directly unless you know what you are doing"""
