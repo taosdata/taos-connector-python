@@ -115,3 +115,8 @@ class LinesError(DatabaseError):
     """taos_insert_lines errors."""
 
     pass
+
+class TmqError(DatabaseError):
+    """Execption raise in TMQ API"""
+    
+    pass
