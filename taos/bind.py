@@ -1,5 +1,7 @@
 # encoding:UTF-8
 import ctypes
+
+from .cinterface import IS_V3
 from .constants import FieldType
 from .error import *
 from .precision import *
@@ -203,13 +205,15 @@ class TaosMultiBind(ctypes.Structure):
         ("num", c_int),
     ]
 
-    def null(self, num):
+    def null(self, num=1):
         self.buffer_type = FieldType.C_NULL
         self.is_null = cast((c_char * num)(*[1 for _ in range(num)]), c_char_p)
         self.buffer = c_void_p(None)
         self.num = num
 
     def bool(self, values):
+        if type(values) is not tuple and type(values) is not list:
+            values = tuple([values])
         try:
             buffer = cast(values, c_void_p)
         except:
@@ -225,6 +229,8 @@ class TaosMultiBind(ctypes.Structure):
         self.buffer_length = sizeof(c_bool)
 
     def tinyint(self, values):
+        if type(values) is not tuple and type(values) is not list:
+            values = tuple([values])
         self.buffer_type = FieldType.C_TINYINT
         self.buffer_length = sizeof(c_int8)
 
@@ -241,6 +247,8 @@ class TaosMultiBind(ctypes.Structure):
         self.num = len(values)
 
     def smallint(self, values):
+        if type(values) is not tuple and type(values) is not list:
+            values = tuple([values])
         self.buffer_type = FieldType.C_SMALLINT
         self.buffer_length = sizeof(c_int16)
 
@@ -256,6 +264,8 @@ class TaosMultiBind(ctypes.Structure):
         self.num = len(values)
 
     def int(self, values):
+        if type(values) is not tuple and type(values) is not list:
+            values = tuple([values])
         self.buffer_type = FieldType.C_INT
         self.buffer_length = sizeof(c_int32)
 
@@ -271,6 +281,8 @@ class TaosMultiBind(ctypes.Structure):
         self.num = len(values)
 
     def bigint(self, values):
+        if type(values) is not tuple and type(values) is not list:
+            values = tuple([values])
         self.buffer_type = FieldType.C_BIGINT
         self.buffer_length = sizeof(c_int64)
 
@@ -286,6 +298,8 @@ class TaosMultiBind(ctypes.Structure):
         self.num = len(values)
 
     def float(self, values):
+        if type(values) is not tuple and type(values) is not list:
+            values = tuple([values])
         self.buffer_type = FieldType.C_FLOAT
         self.buffer_length = sizeof(c_float)
 
@@ -301,6 +315,8 @@ class TaosMultiBind(ctypes.Structure):
         self.num = len(values)
 
     def double(self, values):
+        if type(values) is not tuple and type(values) is not list:
+            values = tuple([values])
         self.buffer_type = FieldType.C_DOUBLE
         self.buffer_length = sizeof(c_double)
 
@@ -351,10 +367,14 @@ class TaosMultiBind(ctypes.Structure):
         self.length = (c_int32 * len(values))(*[len(b) if b is not None else 0 for b in _bytes])
         self.buffer_length = buffer_length
     def binary(self, values):
+        if type(values) is not tuple and type(values) is not list:
+            values = tuple([values])
         self.buffer_type = FieldType.C_BINARY
         self._str_to_buffer(values)
 
     def timestamp(self, values, precision=PrecisionEnum.Milliseconds):
+        if type(values) is not tuple and type(values) is not list:
+            values = tuple([values])
         try:
             buffer = cast(values, c_void_p)
         except:
@@ -368,15 +388,21 @@ class TaosMultiBind(ctypes.Structure):
 
     def nchar(self, values):
         # type: (list[str]) -> None
+        if type(values) is not tuple and type(values) is not list:
+            values = tuple([values])
         self.buffer_type = FieldType.C_NCHAR
         self._str_to_buffer(values)
 
     def json(self, values):
         # type: (list[str]) -> None
+        if type(values) is not tuple and type(values) is not list:
+            values = tuple([values])
         self.buffer_type = FieldType.C_JSON
         self._str_to_buffer(values)
 
     def tinyint_unsigned(self, values):
+        if type(values) is not tuple and type(values) is not list:
+            values = tuple([values])
         self.buffer_type = FieldType.C_TINYINT_UNSIGNED
         self.buffer_length = sizeof(c_uint8)
 
@@ -392,6 +418,8 @@ class TaosMultiBind(ctypes.Structure):
         self.num = len(values)
 
     def smallint_unsigned(self, values):
+        if type(values) is not tuple and type(values) is not list:
+            values = tuple([values])
         self.buffer_type = FieldType.C_SMALLINT_UNSIGNED
         self.buffer_length = sizeof(c_uint16)
 
@@ -407,6 +435,8 @@ class TaosMultiBind(ctypes.Structure):
         self.num = len(values)
 
     def int_unsigned(self, values):
+        if type(values) is not tuple and type(values) is not list:
+            values = tuple([values])
         self.buffer_type = FieldType.C_INT_UNSIGNED
         self.buffer_length = sizeof(c_uint32)
 
@@ -422,6 +452,8 @@ class TaosMultiBind(ctypes.Structure):
         self.num = len(values)
 
     def bigint_unsigned(self, values):
+        if type(values) is not tuple and type(values) is not list:
+            values = tuple([values])
         self.buffer_type = FieldType.C_BIGINT_UNSIGNED
         self.buffer_length = sizeof(c_uint64)
 
@@ -439,12 +471,18 @@ class TaosMultiBind(ctypes.Structure):
 
 def new_bind_param():
     # type: () -> TaosBind
-    return TaosBind()
+    if IS_V3:
+        return TaosMultiBind()
+    else:
+        return TaosBind()
 
 
 def new_bind_params(size):
     # type: (int) -> Array[TaosBind]
-    return (TaosBind * size)()
+    if IS_V3:
+        return (TaosMultiBind * size)()
+    else:
+        return (TaosBind * size)()
 
 
 def new_multi_bind():
