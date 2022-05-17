@@ -1,7 +1,7 @@
 # encoding:UTF-8
 import ctypes
 
-from .cinterface import taos_get_client_info
+from .cinterface import IS_V3
 from .constants import FieldType
 from .error import *
 from .precision import *
@@ -471,18 +471,18 @@ class TaosMultiBind(ctypes.Structure):
 
 def new_bind_param():
     # type: () -> TaosBind
-    if taos_get_client_info().split(".")[0] < "3":
-        return TaosBind()
-    else:
+    if IS_V3:
         return TaosMultiBind()
+    else:
+        return TaosBind()
 
 
 def new_bind_params(size):
     # type: (int) -> Array[TaosBind]
-    if taos_get_client_info().split(".")[0] < "3":
-        return (TaosBind * size)()
-    else:
+    if IS_V3:
         return (TaosMultiBind * size)()
+    else:
+        return (TaosBind * size)()
 
 
 def new_multi_bind():
