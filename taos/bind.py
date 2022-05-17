@@ -212,7 +212,6 @@ class TaosMultiBind(ctypes.Structure):
         self.num = num
 
     def bool(self, values):
-        print(type(values))
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
         try:
