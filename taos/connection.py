@@ -93,6 +93,10 @@ class TaosConnection(object):
         if self._conn is None:
             return None
         sub = taos_subscribe(self._conn, restart, topic, sql, interval, callback, param)
+        if not sub:
+            errno = taos_errno(c_void_p(None))
+            msg = taos_errstr(c_void_p(None))
+            raise Error(msg, errno)
         return TaosSubscription(sub, callback != None)
 
     def statement(self, sql=None):
