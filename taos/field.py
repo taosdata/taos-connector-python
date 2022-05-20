@@ -264,7 +264,7 @@ CONVERT_FUNC_BLOCK = {
 
 class TaosField(ctypes.Structure):
     _fields_ = [
-        ("_name", ctypes.c_char * 65),
+        ("_name", ctypes.c_char * 129),
         ("_type", ctypes.c_uint8),
         ("_bytes", ctypes.c_uint16),
     ]
