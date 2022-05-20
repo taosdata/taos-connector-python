@@ -5,7 +5,7 @@ from taosrest.restclient import RestClient
 
 def test_auth():
     client = RestClient("localhost", 6041, "root", "taosdata")
-    print(client.token)
+    print(client.taosd_token)
 
 
 def test_show_database():
