@@ -20,6 +20,8 @@ class TaosRestConnection:
             password used to log in
         - port : int, optional.
             port to connect
+        - token : str, optional
+            cloud service token
         - timeout : int, optional.
             the optional timeout parameter specifies a timeout in seconds for blocking operations
         """
@@ -28,7 +30,8 @@ class TaosRestConnection:
         self._user = kwargs["user"] if "user" in kwargs else "root"
         self._password = kwargs["password"] if "password" in kwargs else "taosdata"
         self._timeout = kwargs["timeout"] if "timeout" in kwargs else None
-        self._c = RestClient(self._host, self._port, self._user, self._password, self._timeout)
+        self._token = kwargs["token"] if "token" in kwargs else None
+        self._c = RestClient(self._host, self._port, self._user, self._password, self._token, self._timeout)
 
     def close(self):
         pass
