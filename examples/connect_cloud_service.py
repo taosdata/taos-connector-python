@@ -1,22 +1,15 @@
 import taosrest
+import os
 
 
-def _test_connect():
-    conn = taosrest.connect(host="192.168.1.163",
-                            port=8085,
+def connect_to_cloud_use_token(host, port, token):
+    conn = taosrest.connect(host=host,
+                            port=port,
                             username="root",
                             password="taosdata",
-                            token="c37ef4dbec8708c0227b4e8cb84ffffb9b8711a1")
+                            token=token)
 
     print(conn.server_info)
-
-
-def _test_query():
-    conn = taosrest.connect(host="192.168.1.163",
-                            port=8085,
-                            username="root",
-                            password="taosdata",
-                            token="c37ef4dbec8708c0227b4e8cb84ffffb9b8711a1")
     cursor = conn.cursor()
     cursor.execute("drop database if exists pytest")
     cursor.execute("create database pytest precision 'ns' keep 365")
@@ -25,3 +18,10 @@ def _test_query():
     cursor.execute("select * from pytest.temperature")
     rows = cursor.fetchall()
     print(rows)
+
+
+if __name__ == '__main__':
+    test_host = os.environ["CLOUD_HOST"]
+    test_port = os.environ["CLOUD_PORT"]
+    test_token = os.environ["CLOUD_TOKEN"]
+    connect_to_cloud_use_token(test_host, int(test_port), test_token)
