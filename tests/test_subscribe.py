@@ -14,7 +14,6 @@ def conn():
 
 def test_subscribe(conn):
     # type: (TaosConnection) -> None
-
     dbname = "pytest_taos_subscribe_callback"
     try:
         conn.execute("drop database if exists %s" % dbname)
@@ -28,14 +27,14 @@ def test_subscribe(conn):
         print("# consume from begin")
         for ts, n in sub.consume():
             print(ts, n)
-        
+
         print("# consume new data")
         for i in range(5):
             conn.execute("insert into log values(now, %d)(now+1s, %d)" % (i, i))
             result = sub.consume()
             for ts, n in result:
                 print(ts, n)
-        
+
         print("# consume with a stop condition")
         for i in range(10):
             conn.execute("insert into log values(now, %d)" % int(random() * 10))
@@ -93,6 +92,23 @@ def test_subscribe_callback(conn):
         conn.execute("drop database if exists %s" % dbname)
         conn.close()
         raise err
+
+
+def test_sub_error():
+    conn = taos.connect()
+
+    def query_callback(p_sub, p_result, p_param, code):
+        pass
+
+    restart = True
+    topic = "topic-test-sub-error"
+    sql = "select * from wrongdb.log"
+    interval = 1000
+    try:
+        conn.subscribe(restart, topic, sql, interval, query_callback)
+        assert False
+    except:
+        pass
 
 
 if __name__ == "__main__":
