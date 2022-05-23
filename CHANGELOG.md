@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.3.2 - 2022-05-23
+
+### Features:
+
+- compatible with 3.0 stmt
+- support for cloud service token (#57)
+
+### Bug Fixes:
+
+- fix json tag error in query (#59)
+- no exception subscribe error ocur (#58)
+
+### Tests:
+
+- add test case for taos_stmt_set_tbname_tag
+- test stmt bind passed in 3.0
+
 ## v2.3.1 - 2022-04-28
 
 ### Features:
