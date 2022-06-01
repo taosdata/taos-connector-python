@@ -188,14 +188,85 @@ def test_stmt_set_tbname_tag(conn):
         assert row[13] == "hello"
         assert row[14] == "stmt"
 
-        # conn.execute("drop database if exists %s" % dbname)
+        conn.execute("drop database if exists %s" % dbname)
         conn.close()
     
     except Exception as err:
         conn.execute("drop database if exists %s" % dbname)
         conn.close()
         raise err
+
+def test_stmt_null(conn):
+    dbname = "pytest_taos_stmt_null"
+    
+    try:
+        conn.execute("drop database if exists %s" % dbname)
+        conn.execute("create database if not exists %s" % dbname)
+        conn.select_db(dbname)
+        conn.execute("create table if not exists log(ts timestamp, bo bool, nil tinyint, ti tinyint, si smallint, ii int,\
+             bi bigint, tu tinyint unsigned, su smallint unsigned, iu int unsigned, bu bigint unsigned, \
+             ff float, dd double, bb binary(100), nn nchar(100), tt timestamp) tags (t1 timestamp, t2 bool,\
+             t3 tinyint, t4 tinyint, t5 smallint, t6 int, t7 bigint, t8 tinyint unsigned, t9 smallint unsigned, \
+             t10 int unsigned, t11 bigint unsigned, t12 float, t13 double, t14 binary(100), t15 nchar(100), t16 timestamp)")
+        
+        stmt = conn.statement("insert into ? using log tags (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) \
+            values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+        tags = new_bind_params(16)
+        tags[0].timestamp(None, PrecisionEnum.Milliseconds)
+        tags[1].bool(None)
+        tags[2].null()
+        tags[3].tinyint(None)
+        tags[4].smallint(None)
+        tags[5].int(None)
+        tags[6].bigint(None)
+        tags[7].tinyint_unsigned(None)
+        tags[8].smallint_unsigned(None)
+        tags[9].int_unsigned(None)
+        tags[10].bigint_unsigned(None)
+        tags[11].float(None)
+        tags[12].double(None)
+        tags[13].binary(None)
+        tags[14].nchar(None)
+        tags[15].timestamp(None, PrecisionEnum.Milliseconds)
+        stmt.set_tbname_tags("tb1", tags)
+        params = new_bind_params(16)
+        params[0].timestamp(1626861392589, PrecisionEnum.Milliseconds)
+        params[1].bool(None)
+        params[2].null()
+        params[3].tinyint(None)
+        params[4].smallint(None)
+        params[5].int(None)
+        params[6].bigint(None)
+        params[7].tinyint_unsigned(None)
+        params[8].smallint_unsigned(None)
+        params[9].int_unsigned(None)
+        params[10].bigint_unsigned(None)
+        params[11].float(None)
+        params[12].double(None)
+        params[13].binary(None)
+        params[14].nchar(None)
+        params[15].timestamp(None, PrecisionEnum.Milliseconds)
+
+        stmt.bind_param(params)
+        stmt.execute()
+
+        assert stmt.affected_rows == 1
+
+        result = conn.query("select * from log")
+        row  = result.next()
+        for i in range(1, 32):
+            assert row[i] is None
+
+        conn.execute("drop database if exists %s" % dbname)
+        conn.close()
+    
+    except Exception as err:
+        conn.execute("drop database if exists %s" % dbname)
+        conn.close()
+        raise err
+
 if __name__ == "__main__":
     test_stmt_insert(connect())
     test_stmt_insert_multi(connect())
     test_stmt_set_tbname_tag(connect())
+    test_stmt_null(connect())
