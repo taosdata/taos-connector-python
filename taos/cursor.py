@@ -106,6 +106,7 @@ class TaosCursor(object):
         return True
 
     def execute(self, operation, params=None):
+        # type: (str, Any) -> int
         """Prepare and execute a database operation (query or command)."""
         if not operation:
             return None
@@ -141,6 +142,7 @@ class TaosCursor(object):
 
     def executemany(self, operation, seq_of_parameters):
         """Prepare a database operation (query or command) and then execute it against all parameter sequences or mappings found in the sequence seq_of_parameters."""
+        self.execute(operation)
         pass
 
     def fetchone(self):

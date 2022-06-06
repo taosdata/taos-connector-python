@@ -53,7 +53,17 @@ class Counter(Structure):
 def test_query(conn):
     # type: (TaosConnection) -> None
     counter = Counter(count=0)
-    conn.query_a("select * from log.log", query_callback, byref(counter))
+    conn.execute("drop database if exists pytestquerya")
+    conn.execute("create database pytestquerya")
+    conn.execute("use pytestquerya")
+    cols = ["bool", "tinyint", "smallint", "int", "bigint", "tinyint unsigned", "smallint unsigned", "int unsigned", "bigint unsigned", "float", "double", "binary(100)", "nchar(100)"]
+    s = ','.join("c%d %s" %(i, t) for i, t in enumerate(cols) )
+    print(s)
+    conn.execute("create table tb1(ts timestamp, %s)" % s)
+    for _ in range(100):
+        s = ','.join('null' for c in cols)
+        conn.execute("insert into tb1 values(now, %s)" % s)
+    conn.query_a("select * from tb1", query_callback, byref(counter))
 
     while not counter.done:
         print("wait query callback")

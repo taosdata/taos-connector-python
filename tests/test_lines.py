@@ -19,7 +19,10 @@ def test_schemaless_insert_update_2(conn):
     dbname = "test_schemaless_insert_update_2"
     try:
         conn.execute("drop database if exists %s" % dbname)
-        conn.execute("create database if not exists %s update 2 precision 'ns'" % dbname)
+        if taos.IS_V3:
+            conn.execute("create database if not exists %s schemaless 1 precision 'ns'" % dbname)
+        else:
+            conn.execute("create database if not exists %s update 2 precision 'ns'" % dbname)
         conn.select_db(dbname)
 
         lines = [
@@ -56,7 +59,11 @@ def test_schemaless_insert(conn):
     dbname = "pytest_taos_schemaless_insert"
     try:
         conn.execute("drop database if exists %s" % dbname)
-        conn.execute("create database if not exists %s update 2 precision 'ns'" % dbname)
+        if taos.IS_V3:
+            conn.execute("create database if not exists %s schemaless 1 precision 'ns'" % dbname)
+        else:
+            conn.execute("create database if not exists %s update 2 precision 'ns'" % dbname)
+
         conn.select_db(dbname)
 
         lines = [

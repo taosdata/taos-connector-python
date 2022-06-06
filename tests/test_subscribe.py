@@ -11,9 +11,13 @@ from random import random
 def conn():
     return taos.connect()
 
+def v3(conn):
+    exit(0)
 
 def test_subscribe(conn):
     # type: (TaosConnection) -> None
+    if taos.IS_V3:
+        return
     dbname = "pytest_taos_subscribe_callback"
     try:
         conn.execute("drop database if exists %s" % dbname)
@@ -71,6 +75,8 @@ def subscribe_callback(p_sub, p_result, p_param, errno):
 
 def test_subscribe_callback(conn):
     # type: (TaosConnection) -> None
+    if taos.IS_V3:
+        return
     dbname = "pytest_taos_subscribe_callback"
     try:
         conn.execute("drop database if exists %s" % dbname)
@@ -95,6 +101,8 @@ def test_subscribe_callback(conn):
 
 
 def test_sub_error():
+    if taos.IS_V3:
+        return
     conn = taos.connect()
 
     def query_callback(p_sub, p_result, p_param, code):

@@ -135,3 +135,7 @@ class TaosFields(object):
     def __len__(self):
         """Get len."""
         return self.count
+
+    def __str__(self):
+        """Print"""
+        return ",".join(str(f) for f in self)
