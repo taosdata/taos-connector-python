@@ -1,8 +1,10 @@
-from urllib.request import urlopen, Request
-from .errors import ConnectionError, ExecutionError
-from iso8601 import parse_date
 import json
 import socket
+from urllib.request import urlopen, Request
+
+from iso8601 import parse_date
+
+from .errors import ConnectionError, ExecutionError
 
 
 class RestClient:
@@ -10,34 +12,38 @@ class RestClient:
      A wrapper for TDengine REST API.
     """
 
-    def __init__(self, host: str, port: int, user: str, password: str, token: str = None, timeout: int = None):
+    def __init__(self, url: str, token: str = None, user: str = "root", password: str = "taosdata", timeout: int = None):
         """
         Create a RestClient object.
 
         Parameters
         -----------
-        - host : host to connect
-        - port : port to connect
-        - user : username used to log in
-        - password : password used to log in
+        - url : service address, required. for example: https://192.168.1.103:6041
+        - token : cloud service token, optional
+        - user : username used to log in, optional
+        - password : password used to log in, optional
         - timeout : the optional timeout parameter specifies a timeout in seconds for blocking operations
-        - token : cloud service token
         """
-        self.login_url = f"http://{host}:{port}/rest/login/{user}/{password}"
-        self.sql_utc_url = f"http://{host}:{port}/rest/sqlutc"
+        self._url = url.strip('/')
+        if not self._url.startswith("http://") and not self._url.startswith("https://"):
+            self._url = "http://" + self._url
+        self._timeout = timeout if timeout is not None else socket._GLOBAL_DEFAULT_TIMEOUT
         if token:
-            self.login_url += "?token=" + token
-        self.timeout = timeout if timeout is not None else socket._GLOBAL_DEFAULT_TIMEOUT
-        self.taosd_token = self.get_taosd_token()
-        self.headers = {
-            "Authorization": "Taosd " + self.taosd_token
-        }
+            self._sql_utc_url = f"{self._url}/rest/sqlutc?token={token}"
+            self._headers = {}
+        else:
+            self._login_url = f"{self._url}/rest/login/{user}/{password}"
+            self._sql_utc_url = f"{self._url}/rest/sqlutc"
+            self._taosd_token = self.get_taosd_token()
+            self._headers = {
+                "Authorization": "Taosd " + self._taosd_token
+            }
 
     def get_taosd_token(self) -> str:
         """
         Get authorization token.
         """
-        response = urlopen(self.login_url, timeout=self.timeout)
+        response = urlopen(self._login_url, timeout=self._timeout)
         resp = json.load(response)
         if resp["code"] != 0:
             raise ConnectionError(resp["desc"], resp["code"])
@@ -85,8 +91,8 @@ class RestClient:
         """
 
         data = q.encode("utf8")
-        request = Request(self.sql_utc_url, data, self.headers)
-        response = urlopen(request, timeout=self.timeout)
+        request = Request(self._sql_utc_url, data, self._headers)
+        response = urlopen(request, timeout=self._timeout)
         resp = json.load(response)
         if resp["status"] == "error":
             raise ExecutionError(resp["desc"], resp["code"])

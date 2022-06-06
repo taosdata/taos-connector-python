@@ -6,11 +6,9 @@ from datetime import datetime
 
 
 def test_insert_test_data():
-    conn = taosrest.connect(host="localhost",
+    conn = taosrest.connect(url="localhost:6041",
                             user="root",
-                            password="taosdata",
-                            database="test",
-                            port=6041)
+                            password="taosdata")
     c = conn.cursor()
     c.execute("drop database if exists test")
     c.executemany("create database test")

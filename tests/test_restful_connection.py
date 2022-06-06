@@ -2,8 +2,7 @@ import taosrest
 
 
 def test_fetch_all():
-    conn = taosrest.connect(host="localhost",
-                            user="root",
+    conn = taosrest.connect(url="http://localhost:6041",
                             password="taosdata",
                             database="test",
                             port=6041)
@@ -17,7 +16,7 @@ def test_fetch_all():
 
 
 def test_fetch_one():
-    conn = taosrest.connect(host="localhost",
+    conn = taosrest.connect(url="localhost:6041",
                             user="root",
                             password="taosdata",
                             database="test",
@@ -37,18 +36,17 @@ def test_fetch_one():
 
 
 def test_row_count():
-    conn = taosrest.connect(host="localhost", port=6041, user="root", password="taosdata")
+    conn = taosrest.connect(url="localhost:6041", user="root", password="taosdata")
     cursor = conn.cursor()
     cursor.execute("select * from test.tb")
     assert cursor.rowcount == 2
 
 
 def test_get_server_info():
-    conn = taosrest.connect(host="localhost",
+    conn = taosrest.connect(host="localhost:6041",
                             user="root",
                             password="taosdata",
-                            database="test",
-                            port=6041)
+                            database="test")
 
     version: str = conn.server_info
     assert len(version.split(".")) == 4
