@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.3.3 - 2022-06-06
+
+### Bug Fixes:
+
+- fix null value bind stmt for 3.0 (#60)
+- nullptr
+
 ## v2.3.2 - 2022-05-23
 
 ### Features:
