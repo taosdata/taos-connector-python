@@ -87,7 +87,6 @@ try:
 except Exception as err:
     _UNSUPPORTED["taos_init"] = err
 
-
 _libtaos.taos_connect.restype = ctypes.c_void_p
 _libtaos.taos_fetch_row.restype = ctypes.POINTER(ctypes.c_void_p)
 _libtaos.taos_errstr.restype = ctypes.c_char_p
@@ -112,7 +111,6 @@ except AttributeError:
     None
 finally:
     None
-
 
 _libtaos.taos_options.restype = None
 _libtaos.taos_options.argtypes = (c_int, c_void_p)
@@ -210,7 +208,10 @@ def taos_connect(host=None, user="root", password="taosdata", db=None, port=0):
     connection = cast(_libtaos.taos_connect(_host, _user, _password, _db, _port), c_void_p)
 
     if connection.value is None:
-        raise ConnectionError("connect to TDengine failed")
+        null_ptr = c_void_p(None)
+        errno = taos_errno(null_ptr)
+        errstr = taos_errstr(null_ptr)
+        raise ConnectionError(errstr, errno)
     return connection
 
 
@@ -266,7 +267,10 @@ def taos_connect_auth(host=None, user="root", auth="", db=None, port=0):
     connection = c_void_p(_libtaos.taos_connect_auth(_host, _user, _auth, _db, _port))
 
     if connection.value is None:
-        raise ConnectionError("connect to TDengine failed")
+        null_ptr = c_void_p(None)
+        errno = taos_errno(null_ptr)
+        errstr = taos_errstr(null_ptr)
+        raise ConnectionError(errstr, errno)
     return connection
 
 
@@ -324,6 +328,8 @@ def taos_affected_rows(result):
 
 subscribe_callback_type = CFUNCTYPE(None, c_void_p, c_void_p, c_void_p, c_int)
 _libtaos.taos_subscribe.restype = c_void_p
+
+
 # _libtaos.taos_subscribe.argtypes = c_void_p, c_int, c_char_p, c_char_p, subscribe_callback_type, c_void_p, c_int
 
 

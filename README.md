@@ -31,10 +31,9 @@ pip install git+https://github.com/taosdata/taos-connector-python.git
 import taosrest
 
 # all parameters  are optional
-conn = taosrest.connect(host="localhost",
+conn = taosrest.connect(url="http://localhost:6041",
                         user="root",
-                        password="taosdata",
-                        port=6041)
+                        password="taosdata")
 cursor = conn.cursor()
 
 cursor.execute("show databases")
