@@ -1,14 +1,19 @@
 import datetime
 
 from taosrest.restclient import RestClient
+import taos
 
 
 def test_auth():
+    if taos.IS_V3:
+        return
     client = RestClient("localhost:6041", user="root", password="taosdata")
     print(client._taosd_token)
 
 
 def test_show_database():
+    if taos.IS_V3:
+        return
     client = RestClient("localhost:6041")
     resp = client.sql("show databases")
     print("\n", resp)
@@ -16,6 +21,8 @@ def test_show_database():
 
 
 def test_insert_data():
+    if taos.IS_V3:
+        return
     c = RestClient("localhost:6041", password="taosdata")
     c.sql("drop database if exists test")
     c.sql("create database test")
@@ -32,6 +39,8 @@ def test_insert_data():
 
 
 def test_describe_table():
+    if taos.IS_V3:
+        return
     c = RestClient("localhost:6041")
     try:
         c.sql("describe test.noexits")
@@ -41,6 +50,8 @@ def test_describe_table():
 
 
 def test_select_data_with_timestamp_type():
+    if taos.IS_V3:
+        return
     c = RestClient("localhost:6041")
     resp = c.sql("select * from test.tb2")
     print("\n", resp)
