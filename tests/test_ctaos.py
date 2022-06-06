@@ -77,7 +77,7 @@ def test_stmt(conn, caplog):
 
         params = new_bind_params(14)
         params[0].timestamp(1626861392589, PrecisionEnum.Milliseconds)
-        params[1].null()
+        params[1].tinyint(None)
         params[2].tinyint(2)
         params[3].smallint(3)
         params[4].int(4)

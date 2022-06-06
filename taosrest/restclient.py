@@ -10,7 +10,7 @@ class RestClient:
      A wrapper for TDengine REST API.
     """
 
-    def __init__(self, host: str, port: int, user: str, password: str, timeout: int = None):
+    def __init__(self, host: str, port: int, user: str, password: str, token: str = None, timeout: int = None):
         """
         Create a RestClient object.
 
@@ -21,16 +21,19 @@ class RestClient:
         - user : username used to log in
         - password : password used to log in
         - timeout : the optional timeout parameter specifies a timeout in seconds for blocking operations
+        - token : cloud service token
         """
         self.login_url = f"http://{host}:{port}/rest/login/{user}/{password}"
         self.sql_utc_url = f"http://{host}:{port}/rest/sqlutc"
+        if token:
+            self.login_url += "?token=" + token
         self.timeout = timeout if timeout is not None else socket._GLOBAL_DEFAULT_TIMEOUT
-        self.token = self.get_token()
+        self.taosd_token = self.get_taosd_token()
         self.headers = {
-            "Authorization": "Taosd " + self.token
+            "Authorization": "Taosd " + self.taosd_token
         }
 
-    def get_token(self) -> str:
+    def get_taosd_token(self) -> str:
         """
         Get authorization token.
         """
