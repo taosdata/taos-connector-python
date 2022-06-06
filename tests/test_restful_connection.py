@@ -1,7 +1,10 @@
 import taosrest
+import taos
 
 
 def test_fetch_all():
+    if taos.IS_V3:
+        return
     conn = taosrest.connect(url="http://localhost:6041",
                             password="taosdata",
                             database="test",
@@ -16,6 +19,8 @@ def test_fetch_all():
 
 
 def test_fetch_one():
+    if taos.IS_V3:
+        return
     conn = taosrest.connect(url="localhost:6041",
                             user="root",
                             password="taosdata",
@@ -36,6 +41,8 @@ def test_fetch_one():
 
 
 def test_row_count():
+    if taos.IS_V3:
+        return
     conn = taosrest.connect(url="localhost:6041", user="root", password="taosdata")
     cursor = conn.cursor()
     cursor.execute("select * from test.tb")
@@ -43,6 +50,8 @@ def test_row_count():
 
 
 def test_get_server_info():
+    if taos.IS_V3:
+        return
     conn = taosrest.connect(host="localhost:6041",
                             user="root",
                             password="taosdata",

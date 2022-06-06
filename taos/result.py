@@ -95,35 +95,9 @@ class TaosResult(object):
         if self._result is None:
             raise OperationalError("Invalid use of fetch iterator")
 
-        block, length = taos_fetch_block_raw(self._result)
+        blocks, length = taos_fetch_block(self._result)
         if length == 0:
             raise StopIteration
-        precision = self.precision
-        field_count = self.field_count
-        fields = self.fields
-        blocks = [None] * field_count
-        if not IS_V3:
-            lengths = self.field_lengths()
-            for i in range(field_count):
-                is_null = [taos_is_null(self._result, j, i) for j in range(length)]
-                data = ctypes.cast(block, ctypes.POINTER(ctypes.c_void_p))[i]
-                if fields[i].type not in CONVERT_FUNC_BLOCK:
-                    raise DatabaseError("Invalid data type returned from database")
-                blocks[i] = CONVERT_FUNC_BLOCK[fields[i].type](data, is_null, length, lengths[i], precision)
-        else:
-            for i in range(len(fields)):
-                data = ctypes.cast(block, ctypes.POINTER(ctypes.c_void_p))[i]
-                if fields[i]["type"] not in CONVERT_FUNC_BLOCK_v3 and fields[i]["type"] not in CONVERT_FUNC_BLOCK:
-                    raise DatabaseError("Invalid data type returned from database")
-                offsets = []
-                is_null = []
-                if fields[i]["type"] == FieldType.C_VARCHAR or fields[i]["type"] == FieldType.C_NCHAR:
-                    offsets = taos_get_column_data_offset(self._result, i, length)
-                    blocks[i] = CONVERT_FUNC_BLOCK_v3[fields[i]["type"]](data, is_null, length, offsets, precision)
-                else:
-                    is_null = [taos_is_null(self._result, j, i) for j in range(length)]
-                    blocks[i] = CONVERT_FUNC_BLOCK[fields[i]["type"]](data, is_null, length, offsets, precision)
-
 
         return list(map(tuple, zip(*blocks))), length
 
