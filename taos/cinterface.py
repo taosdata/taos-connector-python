@@ -972,11 +972,11 @@ def tmq_conf_destroy(conf):
     _libtaos.tmq_conf_destroy(conf)
 
 tmq_commit_cb = CFUNCTYPE(c_void_p, c_int, c_void_p, c_void_p)
-_libtaos.tmq_conf_set_offset_commit_cb.argtypes = (c_void_p, tmq_commit_cb, c_void_p)
-_libtaos.tmq_conf_set_offset_commit_cb.restype = None
+_libtaos.tmq_conf_set_auto_commit_cb.argtypes = (c_void_p, tmq_commit_cb, c_void_p)
+_libtaos.tmq_conf_set_auto_commit_cb.restype = None
 
-def tmq_conf_set_offset_commit_cb(conf, cb, param):
-    _libtaos.tmq_conf_set_offset_commit_cb(conf, tmq_commit_cb(cb), param)
+def tmq_conf_set_auto_commit_cb(conf, cb, param):
+    _libtaos.tmq_conf_set_auto_commit_cb(conf, tmq_commit_cb(cb), param)
     
 _libtaos.tmq_consumer_new.restype = c_void_p
 _libtaos.tmq_consumer_new.argtypes = (c_void_p, c_char_p, c_int)
@@ -1086,6 +1086,12 @@ def tmq_get_table_name(res):
         return tb_name.decode("utf-8")
     else:
         print("change msg.with.table.name to true in tmq config")
+        
+_libtaos.tmq_get_db_name.argtypes = (c_void_p,)
+_libtaos.tmq_get_db_name.restype = c_char_p
+
+def tmq_get_db_name(res):
+    return _libtaos.tmq_get_db_name(res).decode("utf-8")
 
 def _check_if_supported():
     func = inspect.stack()[1][3]

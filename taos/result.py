@@ -141,6 +141,9 @@ class TaosResult(object):
         
     def get_table_name(self):
         return tmq_get_table_name(self._result)
+    
+    def get_db_name(self):
+        return tmq_get_db_name(self._result)
 
     def errno(self):
         """**DO NOT** use this directly unless you know what you are doing"""

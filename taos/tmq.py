@@ -9,8 +9,8 @@ class TaosTmqConf(object):
     def set(self, key, value):
         tmq_conf_set(self._conf, key, value)
         
-    def set_offset_commit_cb(self, cb, param):
-        tmq_conf_set_offset_commit_cb(self._conf, cb, param)
+    def set_auto_commit_cb(self, cb, param):
+        tmq_conf_set_auto_commit_cb(self._conf, cb, param)
     
     def destroy(self):
         tmq_conf_destroy(self._conf)
