@@ -12,16 +12,14 @@ class TaosRestConnection:
         """
         Keyword Arguments
         ----------------------------
-        - host : str, optional.
-            host to connect
+        - url : str, optional.
+            url to connect
+        - token : str, optional
+            cloud service token
         - user : str, optional.
             username used to log in
         - password : str, optional.
             password used to log in
-        - port : int | str, optional.
-            port to connect
-        - token : str, optional
-            cloud service token
         - timeout : int, optional.
             the optional timeout parameter specifies a timeout in seconds for blocking operations
         """
