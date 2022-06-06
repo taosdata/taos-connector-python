@@ -1,4 +1,3 @@
-from sqlalchemy import types as sql_types
 from sqlalchemy.engine import default, reflection
 
 

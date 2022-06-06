@@ -256,7 +256,7 @@ class TaosMultiBind(ctypes.Structure):
             try:
                 buffer = buffer_type(*values)
             except:
-                buffer = buffer_type(*[v if v is not None and not IS_V3 else FieldType.C_BOOL_NULL for v in values])
+                buffer = buffer_type(*[v if v is not None else FieldType.C_BOOL_NULL for v in values])
 
         self.buffer = cast(buffer, c_void_p)
         self.num = len(values)
@@ -269,7 +269,6 @@ class TaosMultiBind(ctypes.Structure):
             values = tuple([values])
         self.buffer_type = FieldType.C_TINYINT
         self.buffer_length = sizeof(c_int8)
-
         try:
             buffer = cast(values, c_void_p)
         except:
@@ -277,7 +276,7 @@ class TaosMultiBind(ctypes.Structure):
             try:
                 buffer = buffer_type(*values)
             except:
-                buffer = buffer_type(*[v if v is not None and not IS_V3 else FieldType.C_TINYINT_NULL for v in values])
+                buffer = buffer_type(*[v if v is not None else FieldType.C_TINYINT_NULL for v in values])
         self.buffer = cast(buffer, c_void_p)
         self.num = len(values)
         self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
@@ -295,7 +294,7 @@ class TaosMultiBind(ctypes.Structure):
             try:
                 buffer = buffer_type(*values)
             except:
-                buffer = buffer_type(*[v if v is not None and not IS_V3 else FieldType.C_SMALLINT_NULL for v in values])
+                buffer = buffer_type(*[v if v is not None else FieldType.C_SMALLINT_NULL for v in values])
         self.buffer = cast(buffer, c_void_p)
         self.num = len(values)
         self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
@@ -313,7 +312,7 @@ class TaosMultiBind(ctypes.Structure):
             try:
                 buffer = buffer_type(*values)
             except:
-                buffer = buffer_type(*[v if v is not None and not IS_V3 else FieldType.C_INT_NULL for v in values])
+                buffer = buffer_type(*[v if v is not None else FieldType.C_INT_NULL for v in values])
         self.buffer = cast(buffer, c_void_p)
         self.num = len(values)
         self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
@@ -331,7 +330,7 @@ class TaosMultiBind(ctypes.Structure):
             try:
                 buffer = buffer_type(*values)
             except:
-                buffer = buffer_type(*[v if v is not None and not IS_V3 else FieldType.C_BIGINT_NULL for v in values])
+                buffer = buffer_type(*[v if v is not None else FieldType.C_BIGINT_NULL for v in values])
         self.buffer = cast(buffer, c_void_p)
         self.num = len(values)
         self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
@@ -349,7 +348,7 @@ class TaosMultiBind(ctypes.Structure):
             try:
                 buffer = buffer_type(*values)
             except:
-                buffer = buffer_type(*[v if v is not None and not IS_V3 else FieldType.C_FLOAT_NULL for v in values])
+                buffer = buffer_type(*[v if v is not None else FieldType.C_FLOAT_NULL for v in values])
         self.buffer = cast(buffer, c_void_p)
         self.num = len(values)
         self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
@@ -367,7 +366,7 @@ class TaosMultiBind(ctypes.Structure):
             try:
                 buffer = buffer_type(*values)
             except:
-                buffer = buffer_type(*[v if v is not None and not IS_V3 else FieldType.C_DOUBLE_NULL for v in values])
+                buffer = buffer_type(*[v if v is not None else FieldType.C_DOUBLE_NULL for v in values])
         self.buffer = cast(buffer, c_void_p)
         self.num = len(values)
         self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
@@ -456,7 +455,7 @@ class TaosMultiBind(ctypes.Structure):
             try:
                 buffer = buffer_type(*values)
             except:
-                buffer = buffer_type(*[v if v is not None and not IS_V3 else FieldType.C_TINYINT_UNSIGNED_NULL for v in values])
+                buffer = buffer_type(*[v if v is not None else FieldType.C_TINYINT_UNSIGNED_NULL for v in values])
         self.buffer = cast(buffer, c_void_p)
         self.num = len(values)
         self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
@@ -474,7 +473,7 @@ class TaosMultiBind(ctypes.Structure):
             try:
                 buffer = buffer_type(*values)
             except:
-                buffer = buffer_type(*[v if v is not None and not IS_V3 else FieldType.C_SMALLINT_UNSIGNED_NULL for v in values])
+                buffer = buffer_type(*[v if v is not None else FieldType.C_SMALLINT_UNSIGNED_NULL for v in values])
         self.buffer = cast(buffer, c_void_p)
         self.num = len(values)
         self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
@@ -492,7 +491,7 @@ class TaosMultiBind(ctypes.Structure):
             try:
                 buffer = buffer_type(*values)
             except:
-                buffer = buffer_type(*[v if v is not None and not IS_V3 else FieldType.C_INT_UNSIGNED_NULL for v in values])
+                buffer = buffer_type(*[v if v is not None else FieldType.C_INT_UNSIGNED_NULL for v in values])
         self.buffer = cast(buffer, c_void_p)
         self.num = len(values)
         self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
@@ -510,7 +509,7 @@ class TaosMultiBind(ctypes.Structure):
             try:
                 buffer = buffer_type(*values)
             except:
-                buffer = buffer_type(*[v if v is not None and not IS_V3 else FieldType.C_BIGINT_UNSIGNED_NULL for v in values])
+                buffer = buffer_type(*[v if v is not None else FieldType.C_BIGINT_UNSIGNED_NULL for v in values])
         self.buffer = cast(buffer, c_void_p)
         self.num = len(values)
         self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)

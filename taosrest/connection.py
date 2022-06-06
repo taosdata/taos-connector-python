@@ -12,26 +12,23 @@ class TaosRestConnection:
         """
         Keyword Arguments
         ----------------------------
-        - host : str, optional.
-            host to connect
+        - url : str, optional.
+            url to connect
+        - token : str, optional
+            cloud service token
         - user : str, optional.
             username used to log in
         - password : str, optional.
             password used to log in
-        - port : int, optional.
-            port to connect
-        - token : str, optional
-            cloud service token
         - timeout : int, optional.
             the optional timeout parameter specifies a timeout in seconds for blocking operations
         """
-        self._host = kwargs["host"] if "host" in kwargs else "localhost"
-        self._port = kwargs["port"] if "port" in kwargs else 6041
+        self._url = kwargs["url"] if "url" in kwargs else "http://localhost:6041"
         self._user = kwargs["user"] if "user" in kwargs else "root"
         self._password = kwargs["password"] if "password" in kwargs else "taosdata"
         self._timeout = kwargs["timeout"] if "timeout" in kwargs else None
         self._token = kwargs["token"] if "token" in kwargs else None
-        self._c = RestClient(self._host, self._port, self._user, self._password, self._token, self._timeout)
+        self._c = RestClient(self._url, token=self._token, user=self._user, password=self._password, timeout=self._timeout)
 
     def close(self):
         pass
