@@ -4,7 +4,6 @@ import ctypes
 import platform
 import inspect
 from ctypes import *
-from socket import MSG_TRUNC
 import pytz
 
 try:
