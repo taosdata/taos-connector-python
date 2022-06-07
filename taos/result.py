@@ -132,6 +132,18 @@ class TaosResult(object):
 
     def stop_query(self):
         return taos_stop_query(self._result)
+    
+    def get_topic_name(self):
+        return tmq_get_topic_name(self._result)
+        
+    def get_vgroup_id(self):
+        return tmq_get_vgroup_id(self._result)
+        
+    def get_table_name(self):
+        return tmq_get_table_name(self._result)
+    
+    def get_db_name(self):
+        return tmq_get_db_name(self._result)
 
     def errno(self):
         """**DO NOT** use this directly unless you know what you are doing"""
