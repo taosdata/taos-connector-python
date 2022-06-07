@@ -3,9 +3,6 @@ from .cursor import TaosRestCursor
 from .restclient import RestClient
 from .errors import *
 
-threadsafety = 0
-paramstyle = "pyformat"
-
 
 def connect(**kwargs) -> TaosRestConnection:
     """
