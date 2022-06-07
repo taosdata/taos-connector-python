@@ -128,7 +128,7 @@ class TaosCursor(object):
         self._result = taos_query(self._connection._conn, stmt)
         # print("   << Query ({}) Exec Done".format(localSeqNum))
         if self._logfile:
-            with open(self._logfile, "a") as logfile:
+            with open(self._logfile, "a", encoding="utf-8") as logfile:
                 logfile.write("%s;\n" % operation)
 
         if taos_field_count(self._result) == 0:
