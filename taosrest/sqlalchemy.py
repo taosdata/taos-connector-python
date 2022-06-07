@@ -1,5 +1,21 @@
 from sqlalchemy.engine import default, reflection
 
+import taosrest
+
+
+class AlchemyRestConnection:
+    threadsafety = 0
+    paramstyle = "pyformat"
+    Error = taosrest.Error
+
+    def connect(self, **kwargs):
+        host = kwargs["host"] if "host" in kwargs else "localhost"
+        port = kwargs["port"] if "port" in kwargs else "6041"
+        user = kwargs["user"] if "user" in kwargs else "root"
+        password = kwargs["password"] if "password" in kwargs else "taosdata"
+        url = f"http://{host}:{port}"
+        return taosrest.connect(url=url, user=user, password=password)
+
 
 class TaosRestDialect(default.DefaultDialect):
     name = "taosrest"
@@ -15,9 +31,7 @@ class TaosRestDialect(default.DefaultDialect):
 
     @classmethod
     def dbapi(cls):
-        import taosrest
-
-        return taosrest
+        return AlchemyRestConnection()
 
     def has_schema(self, connection, schema):
         return False

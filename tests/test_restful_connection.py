@@ -6,9 +6,7 @@ def test_fetch_all():
     if taos.IS_V3:
         return
     conn = taosrest.connect(url="http://localhost:6041",
-                            password="taosdata",
-                            database="test",
-                            port=6041)
+                            password="taosdata")
     cursor = conn.cursor()
 
     cursor.execute("show databases")
@@ -23,9 +21,7 @@ def test_fetch_one():
         return
     conn = taosrest.connect(url="localhost:6041",
                             user="root",
-                            password="taosdata",
-                            database="test",
-                            port=6041)
+                            password="taosdata")
     c = conn.cursor()
     c.execute("drop database if exists test")
     c.executemany("create database test")
@@ -54,8 +50,7 @@ def test_get_server_info():
         return
     conn = taosrest.connect(host="localhost:6041",
                             user="root",
-                            password="taosdata",
-                            database="test")
+                            password="taosdata")
 
     version: str = conn.server_info
     assert len(version.split(".")) == 4
