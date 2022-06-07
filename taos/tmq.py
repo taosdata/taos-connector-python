@@ -12,8 +12,11 @@ class TaosTmqConf(object):
     def set_auto_commit_cb(self, cb, param):
         tmq_conf_set_auto_commit_cb(self._conf, cb, param)
     
-    def destroy(self):
+    def __del__(self):
         tmq_conf_destroy(self._conf)
+        
+    def new_consumer(self):
+        return TaosTmq(self)
 
     def conf(self):
         return self._conf
@@ -28,13 +31,17 @@ class TaosTmq(object):
     def unsubscribe(self):
         tmq_unsubscribe(self._tmq)
         
-    def subscription(self, topics):
-        tmq_subscription(self._tmq, topics.list())
+    def subscription(self):
+        return tmq_subscription(self._tmq)
         
     def poll(self, time):
-        return tmq_consumer_poll(self._tmq, time)
+        result = tmq_consumer_poll(self._tmq, time)
+        if result:
+            return TaosResult(result)
+        else:
+            return None
         
-    def close(self):
+    def __del__(self):
         tmq_consumer_close(self._tmq)
         
     def commit(self, offset, _async):
@@ -47,20 +54,12 @@ class TaosTmqList(object):
         
     def append(self, topic):
         tmq_list_append(self._list, topic)
-        
-    def size(self):
-        return tmq_list_get_size(self._list)
     
-    def destroy(self):
+    def __del__(self):
         tmq_list_destroy(self._list)
         
     def to_array(self):
-        array = []
-        c_array =  tmq_list_to_c_array(self._list)
-        size = self.size()
-        for i in range(size):
-            array.append(c_array[i].decode("utf-8"))
-        return array
+        return tmq_list_to_c_array(self._list)
         
     
     def list(self):

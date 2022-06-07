@@ -21,14 +21,14 @@ conf = TaosTmqConf()
 conf.set("group.id", "tg2")
 conf.set("td.connect.user", "root")
 conf.set("td.connect.pass", "taosdata")
-conf.set("enable.auto.commit", "false")
+conf.set("enable.auto.commit", "true")
 conf.set("msg.with.table.name", "true")
 
 def tmq_commit_cb_print(tmq, resp, offset, param=None):
     print(f"commit: {resp}, tmq: {tmq}, offset: {offset}, param: {param}")
     
 conf.set_auto_commit_cb(tmq_commit_cb_print, None)
-tmq = TaosTmq(conf)
+tmq = conf.new_consumer()
 
 print("build topic list")
 
@@ -38,22 +38,13 @@ topic_list.append("topic_ctb_column")
 print("basic consume loop")
 tmq.subscribe(topic_list)
 
-sub_list = TaosTmqList()
+sub_list = tmq.subscription()
 
-tmq.subscription(sub_list)
-
-array = sub_list.to_array()
-size = sub_list.size()
-print("subscribed topics:", end=" ")
-for i in range(size):
-    print(array[i], end=",")
-print("")
-sub_list.destroy()
+print("subscribed topics: ",sub_list)
 
 while 1:
-    result = tmq.poll(1000)
-    if result:
-        res = TaosResult(result)
+    res = tmq.poll(1000)
+    if res:
         topic = res.get_topic_name()
         vg = res.get_vgroup_id()
         db = res.get_db_name()

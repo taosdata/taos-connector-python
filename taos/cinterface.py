@@ -951,149 +951,253 @@ def taos_schemaless_insert(connection, lines, protocol, precision):
     taos_free_result(res)
     return affected_rows
 
-_libtaos.tmq_conf_new.restype = c_void_p
-
+try:
+    _libtaos.tmq_conf_new.restype = c_void_p
+except Exception as err:
+    _UNSUPPORTED["tmq_conf_new"] = err
+    
 def tmq_conf_new():
+    # type: () -> c_void_p
+    _check_if_supported()
     return c_void_p(_libtaos.tmq_conf_new())
 
-_libtaos.tmq_conf_set.restype = c_int
-_libtaos.tmq_conf_set.argtypes = (c_void_p, c_char_p, c_char_p)
+try:
+    _libtaos.tmq_conf_set.restype = c_int
+    _libtaos.tmq_conf_set.argtypes = (c_void_p, c_char_p, c_char_p)
+except Exception as err:
+    _UNSUPPORTED["tmq_conf_set"] = err 
 
 def tmq_conf_set(conf, key, value):
+    # type: (c_void_p, c_char_p, c_char_p) -> None
+    _check_if_supported()
     res = _libtaos.tmq_conf_set(conf, ctypes.c_char_p(key.encode("utf-8")), ctypes.c_char_p(value.encode("utf-8")))
     if res != 0:
         raise TmqError(msg=f"fail to execute tmq_conf_set({key},{value}), code={res}", errno=res)
 
-_libtaos.tmq_conf_destroy.argtypes = (c_void_p,)
-_libtaos.tmq_conf_destroy.restype = None
+try:
+    _libtaos.tmq_conf_destroy.argtypes = (c_void_p,)
+    _libtaos.tmq_conf_destroy.restype = None
+except Exception as err:
+    _UNSUPPORTED["tmq_conf_destroy"] = err
 
 def tmq_conf_destroy(conf):
+    # type (c_void_p,) -> None
+    _check_if_supported()
     _libtaos.tmq_conf_destroy(conf)
 
 tmq_commit_cb = CFUNCTYPE(c_void_p, c_int, c_void_p, c_void_p)
-_libtaos.tmq_conf_set_auto_commit_cb.argtypes = (c_void_p, tmq_commit_cb, c_void_p)
-_libtaos.tmq_conf_set_auto_commit_cb.restype = None
-
-def tmq_conf_set_auto_commit_cb(conf, cb, param):
-    _libtaos.tmq_conf_set_auto_commit_cb(conf, tmq_commit_cb(cb), param)
+try:
+    _libtaos.tmq_conf_set_auto_commit_cb.argtypes = (c_void_p, tmq_commit_cb, c_void_p)
+    _libtaos.tmq_conf_set_auto_commit_cb.restype = None
+except Exception as err:
+    _UNSUPPORTED["tmq_conf_set_auto_commit_cb"] = err
     
-_libtaos.tmq_consumer_new.restype = c_void_p
-_libtaos.tmq_consumer_new.argtypes = (c_void_p, c_char_p, c_int)
+def tmq_conf_set_auto_commit_cb(conf, cb, param):
+    # type (c_void_p, tmq_commit_cb, c_void_p) -> None
+    _check_if_supported()
+    _libtaos.tmq_conf_set_auto_commit_cb(conf, tmq_commit_cb(cb), param)
+
+try:    
+    _libtaos.tmq_consumer_new.restype = c_void_p
+    _libtaos.tmq_consumer_new.argtypes = (c_void_p, c_char_p, c_int)
+except Exception as err:
+    _UNSUPPORTED["tmq_consumer_new"] = err
 
 def tmq_consumer_new(conf, errstrlen=0):
+    # type (c_void_p, c_char_p, c_int) -> c_void_p
+    _check_if_supported()
     buf = ctypes.create_string_buffer(errstrlen)
     tmq = cast(_libtaos.tmq_consumer_new(conf, buf, errstrlen), c_void_p)
     if tmq.value is None:
         raise TmqError("failed on tmq_consumer_new")
     return tmq
-    
-_libtaos.tmq_list_new.restype = c_void_p
+
+try:
+    _libtaos.tmq_list_new.restype = c_void_p
+except Exception as err:
+    _UNSUPPORTED["tmq_list_new"] = err
 
 def tmq_list_new():
+    # type () -> c_void_p
+    _check_if_supported()
     return c_void_p(_libtaos.tmq_list_new())
 
-_libtaos.tmq_list_append.restype = c_int
-_libtaos.tmq_list_append.argtypes = (c_void_p, c_char_p)
+try:
+    _libtaos.tmq_list_append.restype = c_int
+    _libtaos.tmq_list_append.argtypes = (c_void_p, c_char_p)
+except Exception as err:
+    _UNSUPPORTED["tmq_list_append"] = err
 
 def tmq_list_append(list, topic):
+    # type (c_void_p, c_char_p) -> None
+    _check_if_supported()
     res = _libtaos.tmq_list_append(list, ctypes.c_char_p(topic.encode("utf-8")))
     return res
 
-_libtaos.tmq_list_destroy.restype = None
-_libtaos.tmq_list_destroy.argtypes = (c_void_p,)
-
-def tmq_list_destroy(list):
-    _libtaos.tmq_list_destroy(list)
+try:
+    _libtaos.tmq_list_destroy.restype = None
+    _libtaos.tmq_list_destroy.argtypes = (c_void_p,)
+except Exception as err:
+    _UNSUPPORTED["tmq_list_destroy"] = err
     
-_libtaos.tmq_list_get_size.restype = c_int
-_libtaos.tmq_list_get_size.argtypes = (c_void_p,)
+def tmq_list_destroy(list):
+    _check_if_supported()
+    # type (c_void_p,) -> None
+    _libtaos.tmq_list_destroy(list)
 
-def tmq_list_get_size(list):
-    return _libtaos.tmq_list_get_size(list)
+try:    
+    _libtaos.tmq_list_get_size.restype = c_int
+    _libtaos.tmq_list_get_size.argtypes = (c_void_p,)
+except Exception as err:
+    _UNSUPPORTED["tmq_list_get_size"] = err
 
-_libtaos.tmq_list_to_c_array.restype = ctypes.POINTER(ctypes.c_char_p)
-_libtaos.tmq_list_to_c_array.argtypes = (c_void_p,)
+try:
+    _libtaos.tmq_list_to_c_array.restype = ctypes.POINTER(ctypes.c_char_p)
+    _libtaos.tmq_list_to_c_array.argtypes = (c_void_p,)
+except Exception as err:
+    _UNSUPPORTED["tmq_list_to_c_array"] = err
 
 def tmq_list_to_c_array(list):
-    return  _libtaos.tmq_list_to_c_array(list)
+    # type (c_void_p,) -> [string]
+    _check_if_supported()
+    _check_if_supported("tmq_list_get_size")
+    c_array = _libtaos.tmq_list_to_c_array(list)
+    size = _libtaos.tmq_list_get_size(list)
+    res = []
+    for i in range(size):
+        res.append(c_array[i].decode("utf-8"))
+    return res
 
-_libtaos.tmq_subscribe.argtypes = (c_void_p, c_void_p)
-_libtaos.tmq_subscribe.restype = c_int
+try:
+    _libtaos.tmq_subscribe.argtypes = (c_void_p, c_void_p)
+    _libtaos.tmq_subscribe.restype = c_int
+except Exception as err:
+    _UNSUPPORTED["tmq_subscribe"] = err
 
 def tmq_subscribe(tmq, list):
+    # type (c_void_p, c_void_p) -> None
+    _check_if_supported()
     res =  _libtaos.tmq_subscribe(tmq, list)
     if res != 0:
         raise TmqError(msg="failed on tmq_subscribe()", errno=res)
 
-_libtaos.tmq_unsubscribe.argtypes = (c_void_p,)
-_libtaos.tmq_unsubscribe.restype = c_int
+try:
+    _libtaos.tmq_unsubscribe.argtypes = (c_void_p,)
+    _libtaos.tmq_unsubscribe.restype = c_int
+except Exception as err:
+    _UNSUPPORTED["tmq_unsubscribe"] = err
 
 def tmq_unsubscribe(tmq):
+    # type (c_void_p,) -> None
+    _check_if_supported()
     res = _libtaos.tmq_unsubscribe(tmq)
     if res != 0:
         raise TmqError(msg="failed on tmq_unsubscribe()", errno=res)
 
-_libtaos.tmq_subscription.argtypes = (c_void_p, c_void_p)
-_libtaos.tmq_subscription.restype = c_int
+try:
+    _libtaos.tmq_subscription.argtypes = (c_void_p, c_void_p)
+    _libtaos.tmq_subscription.restype = c_int
+except Exception as err:
+    _UNSUPPORTED["tmq_subscription"] = err
 
-def tmq_subscription(tmq, topics):
+def tmq_subscription(tmq):
+    # type (c_void_p, c_void_p) -> [string]
+    _check_if_supported()
+    topics = tmq_list_new()
     res =  _libtaos.tmq_subscription(tmq, byref(topics))
     if res != 0:
         raise TmqError(msg="failed on tmq_subscription()", errno=res)
-
-_libtaos.tmq_consumer_poll.argtypes = (c_void_p, c_int64)
-_libtaos.tmq_consumer_poll.restype = c_void_p
+    res =  tmq_list_to_c_array(topics)
+    tmq_list_destroy(topics)
+    return res;
+    
+try:
+    _libtaos.tmq_consumer_poll.argtypes = (c_void_p, c_int64)
+    _libtaos.tmq_consumer_poll.restype = c_void_p
+except Exception as err:
+    _UNSUPPORTED["tmq_consumer_poll"] = err
 
 def tmq_consumer_poll(tmq, wait_time):
+    # type (c_void_p, c_int64) -> c_void_p
+    _check_if_supported()
     return c_void_p(_libtaos.tmq_consumer_poll(tmq, wait_time))
 
-
-_libtaos.tmq_consumer_close.argtypes = (c_void_p,)
-_libtaos.tmq_consumer_close.restype = c_int
+try:
+    _libtaos.tmq_consumer_close.argtypes = (c_void_p,)
+    _libtaos.tmq_consumer_close.restype = c_int
+except Exception as err:
+    _UNSUPPORTED["tmq_consumer_close"] = err
 
 def tmq_consumer_close(tmq):
+    # type (c_void_p,) -> None
+    _check_if_supported()
     res =  _libtaos.tmq_consumer_close(tmq)
     if res != 0:
         raise TmqError(msg="failed on tmq_consumer_close()", errno=res)
-
-_libtaos.tmq_commit.argtypes = (c_void_p, c_void_p, c_int32)
-_libtaos.tmq_commit.restype = c_int
+try:
+    _libtaos.tmq_commit.argtypes = (c_void_p, c_void_p, c_int32)
+    _libtaos.tmq_commit.restype = c_int
+except Exception as err:
+    _UNSUPPORTED["tmq_commit"] = err
 
 def tmq_commit(tmq, offset, _async):
+    # type (c_void_p, c_void_p, c_int32) -> None
+    _check_if_supported()
     res = _libtaos.tmq_commit(tmq, offset, _async)
     if res != 0:
         raise TmqError(msg="failed on tmq_commit()", errno=res)
-    
-_libtaos.tmq_get_topic_name.argtypes = (c_void_p,)
-_libtaos.tmq_get_topic_name.restype = c_char_p
+
+try:
+    _libtaos.tmq_get_topic_name.argtypes = (c_void_p,)
+    _libtaos.tmq_get_topic_name.restype = c_char_p
+except Exception as err:
+    _UNSUPPORTED["tmq_get_topic_name"] = err
 
 def tmq_get_topic_name(res):
+    # type (c_void_p,) -> string
+    _check_if_supported()
     return _libtaos.tmq_get_topic_name(res).decode("utf-8")
 
-_libtaos.tmq_get_vgroup_id.argtypes = (c_void_p,)
-_libtaos.tmq_get_vgroup_id.restype = c_int
+try:
+    _libtaos.tmq_get_vgroup_id.argtypes = (c_void_p,)
+    _libtaos.tmq_get_vgroup_id.restype = c_int
+except Exception as err:
+    _UNSUPPORTED["tmq_get_vgroup_id"] = err
 
 def tmq_get_vgroup_id(res):
+    # type (c_void_p,) -> int
+    _check_if_supported()
     return _libtaos.tmq_get_vgroup_id(res)
 
-_libtaos.tmq_get_table_name.argtypes = (c_void_p,)
-_libtaos.tmq_get_table_name.restype = c_char_p
+try:
+    _libtaos.tmq_get_table_name.argtypes = (c_void_p,)
+    _libtaos.tmq_get_table_name.restype = c_char_p
+except Exception as err:
+    _UNSUPPORTED["tmq_get_table_name"] = err
 
 def tmq_get_table_name(res):
+    # type (c_void_p,) -> string
+    _check_if_supported()
     tb_name = _libtaos.tmq_get_table_name(res)
     if tb_name:
         return tb_name.decode("utf-8")
     else:
         print("change msg.with.table.name to true in tmq config")
-        
-_libtaos.tmq_get_db_name.argtypes = (c_void_p,)
-_libtaos.tmq_get_db_name.restype = c_char_p
+
+try:        
+    _libtaos.tmq_get_db_name.argtypes = (c_void_p,)
+    _libtaos.tmq_get_db_name.restype = c_char_p
+except Exception as err:
+    _UNSUPPORTED["tmq_get_db_name"] = err
 
 def tmq_get_db_name(res):
+    # type (c_void_p,) -> string
+    _check_if_supported()
     return _libtaos.tmq_get_db_name(res).decode("utf-8")
 
-def _check_if_supported():
-    func = inspect.stack()[1][3]
+def _check_if_supported(func=None):
+    if not func:
+        func = inspect.stack()[1][3]
     if func in _UNSUPPORTED:
         raise InterfaceError(
             "C function %s is not supported in v%s: %s" % (func, taos_get_client_info(), _UNSUPPORTED[func])
