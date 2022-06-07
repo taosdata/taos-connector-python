@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.3.5 - 2022-06-07
+
+### Bug Fixes:
+
+- fix gbk encoding error while use cursor.log() in windows (#67)
+- sqlalchemy use rest connection (#66)
+
 ## v2.3.4 - 2022-06-06
 
 ## v2.3.3 - 2022-06-06
