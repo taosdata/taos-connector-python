@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## v2.3.5 - 2022-06-10
+## v2.3.6 - 2022-06-10
+
+### Enhancement:
+
+- add tests/examples files in source package distribution (#69)
 
 ## v2.3.5 - 2022-06-07
 
