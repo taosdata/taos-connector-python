@@ -7,7 +7,9 @@ license = "MIT"
 readme = "README.md"
 packages = [
   {include = "taos"},
-  {include = "taosrest"}
+  {include = "taosrest"},
+  {include = "tests"},
+  {include = "examples"}
 ]
 
 [tool.poetry.plugins] # Optional super table
