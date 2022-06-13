@@ -9,7 +9,7 @@ from .errors import ConnectionError, ExecutionError
 
 class RestClient:
     """
-     A wrapper for TDengine REST API.
+     A wrapper for TDengine REST API. For detailed info about TDengine REST API refer https://docs.tdengine.com/2.4/reference/rest-api/
     """
 
     def __init__(self, url: str, token: str = None, user: str = "root", password: str = "taosdata", timeout: int = None):
@@ -88,6 +88,9 @@ class RestClient:
         Raises
         ------
         ExecutionError if the return status is "error".
+
+        Reference
+        -----
         """
 
         data = q.encode("utf8")

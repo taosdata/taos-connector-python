@@ -1,6 +1,17 @@
+from typing import List
+
 from .errors import NotSupportedError
 from .cursor import TaosRestCursor
 from .restclient import RestClient
+
+
+class Result:
+    def __init__(self, resp: dict):
+        self.status: str = resp["status"]
+        self.head: List = resp["head"]
+        self.column_meta: List[list] = resp["column_meta"]
+        self.data: List[list] = resp["data"]
+        self.rows: int = resp["rows"]
 
 
 class TaosRestConnection:
@@ -42,7 +53,30 @@ class TaosRestConnection:
     def cursor(self):
         return TaosRestCursor(self._c)
 
+    ############################################################################
+    # Methods bellow are not PEP249 specified.
+    # Add them for giving a similar programming experience as taos.Connection.
+    ############################################################################
+
     @property
     def server_info(self):
         resp = self._c.sql("select server_version()")
         return resp["data"][0][0]
+
+    def execute(self, sql):
+        """
+        execute sql usually INSERT statement and return affected row count.
+        If there is not a column named "affected_rows" in response, then None is returned.
+        """
+        resp = self._c.sql(sql)
+        if resp["head"] == ['affected_rows']:
+            return resp["data"][0][0]
+        else:
+            return None
+
+    def query(self, sql) -> Result:
+        """
+        execute sql and wrap the http response as Result object.
+        """
+        resp = self._c.sql(sql)
+        return Result(resp)

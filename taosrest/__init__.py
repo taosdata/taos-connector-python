@@ -1,4 +1,4 @@
-from .connection import TaosRestConnection
+from .connection import TaosRestConnection, Result
 from .cursor import TaosRestCursor
 from .restclient import RestClient
 from .errors import *

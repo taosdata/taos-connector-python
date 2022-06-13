@@ -2,11 +2,8 @@ import taosrest
 import os
 
 
-def connect_to_cloud_use_token(host, port, token):
-    conn = taosrest.connect(host=host,
-                            port=port,
-                            username="root",
-                            password="taosdata",
+def connect_to_cloud_use_token(url, token):
+    conn = taosrest.connect(url=url,
                             token=token)
 
     print(conn.server_info)
@@ -21,7 +18,6 @@ def connect_to_cloud_use_token(host, port, token):
 
 
 if __name__ == '__main__':
-    test_host = os.environ["CLOUD_HOST"]
-    test_port = os.environ["CLOUD_PORT"]
-    test_token = os.environ["CLOUD_TOKEN"]
-    connect_to_cloud_use_token(test_host, int(test_port), test_token)
+    url = os.environ["TDENGINE_CLOUD_URL"]
+    token = os.environ["TDENGINE_CLOUD_TOKEN"]
+    connect_to_cloud_use_token(url, token)
