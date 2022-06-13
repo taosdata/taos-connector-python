@@ -48,9 +48,29 @@ def test_row_count():
 def test_get_server_info():
     if taos.IS_V3:
         return
-    conn = taosrest.connect(host="localhost:6041",
+    conn = taosrest.connect(url="localhost:6041",
                             user="root",
                             password="taosdata")
 
     version: str = conn.server_info
     assert len(version.split(".")) == 4
+
+
+def test_execute():
+    c = taosrest.connect()
+    c.execute("drop database if exists test")
+    c.execute("create database test")
+    c.execute("create table test.tb (ts timestamp, c1 int, c2 double)")
+    affected_rows = c.execute("insert into test.tb values (now, -100, -200.3) (now+10s, -101, -340.2423424)")
+    assert affected_rows == 2
+    affected_rows = c.execute("select * from test.tb")
+    assert affected_rows is None
+
+
+def test_query():
+    """
+    Note: run it immediately after `test_execute`
+    """
+    c = taosrest.connect()
+    r = c.query("select * from test.tb")
+    assert r.rows == 2

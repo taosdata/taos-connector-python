@@ -1,6 +1,35 @@
+from typing import List, Dict
+
 from .errors import NotSupportedError
 from .cursor import TaosRestCursor
 from .restclient import RestClient
+
+
+class Result:
+    def __init__(self, resp: dict):
+        self.status: str = resp["status"]
+        self.head: List = resp["head"]
+        self.column_meta: List[list] = resp["column_meta"]
+        self.data: List[list] = resp["data"]
+        self.rows: int = resp["rows"]
+
+    @property
+    def field_count(self):
+        return len(self.head)
+
+    @property
+    def fields(self) -> List[Dict]:
+        """
+        return a list of column meta dict which contains three keys:
+            - name: column name
+            - type: column type code
+            - bytes: data length in bytes
+        for more information about column meta, refer https://docs.tdengine.com/2.4/reference/rest-api/#http-return-format
+        """
+        return list(map(lambda meta: {"name": meta[0], "type": meta[1], "bytes": meta[2]}, self.column_meta))
+
+    def __iter__(self):
+        return self.data.__iter__()
 
 
 class TaosRestConnection:
@@ -42,7 +71,30 @@ class TaosRestConnection:
     def cursor(self):
         return TaosRestCursor(self._c)
 
+    ############################################################################
+    # Methods bellow are not PEP249 specified.
+    # Add them for giving a similar programming experience as taos.Connection.
+    ############################################################################
+
     @property
     def server_info(self):
         resp = self._c.sql("select server_version()")
         return resp["data"][0][0]
+
+    def execute(self, sql):
+        """
+        execute sql usually INSERT statement and return affected row count.
+        If there is not a column named "affected_rows" in response, then None is returned.
+        """
+        resp = self._c.sql(sql)
+        if resp["head"] == ['affected_rows']:
+            return resp["data"][0][0]
+        else:
+            return None
+
+    def query(self, sql) -> Result:
+        """
+        execute sql and wrap the http response as Result object.
+        """
+        resp = self._c.sql(sql)
+        return Result(resp)

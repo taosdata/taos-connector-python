@@ -30,7 +30,7 @@ pip install git+https://github.com/taosdata/taos-connector-python.git
 ```python
 import taosrest
 
-# all parameters  are optional
+# all parameters are optional
 conn = taosrest.connect(url="http://localhost:6041",
                         user="root",
                         password="taosdata")
@@ -39,6 +39,22 @@ cursor = conn.cursor()
 cursor.execute("show databases")
 results: list[tuple] = cursor.fetchall()
 for row in results:
+    print(row)
+```
+
+### Query with query method
+
+```python
+from taosrest import connect, TaosRestConnection, Result
+
+conn: TaosRestConnection = connect()
+result: Result = conn.query("show databases")
+
+num_of_fields = result.field_count
+for field in result.fields:
+    print(field)
+
+for row in result:
     print(row)
 ```
 
