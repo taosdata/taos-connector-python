@@ -26,7 +26,7 @@ class Result:
             - bytes: data length in bytes
         for more information about column meta, refer https://docs.tdengine.com/2.4/reference/rest-api/#http-return-format
         """
-        return map(lambda meta: {"name": meta[0], "type": meta[1], "bytes": meta[2]}, self.column_meta)
+        return list(map(lambda meta: {"name": meta[0], "type": meta[1], "bytes": meta[2]}, self.column_meta))
 
     def __iter__(self):
         return self.data.__iter__()
