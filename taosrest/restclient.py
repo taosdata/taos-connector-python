@@ -88,9 +88,6 @@ class RestClient:
         Raises
         ------
         ExecutionError if the return status is "error".
-
-        Reference
-        -----
         """
 
         data = q.encode("utf8")
