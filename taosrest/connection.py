@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 from .errors import NotSupportedError
 from .cursor import TaosRestCursor
@@ -12,6 +12,24 @@ class Result:
         self.column_meta: List[list] = resp["column_meta"]
         self.data: List[list] = resp["data"]
         self.rows: int = resp["rows"]
+
+    @property
+    def field_count(self):
+        return len(self.head)
+
+    @property
+    def fields(self) -> List[Dict]:
+        """
+        return a list of column meta dict which contains three keys:
+            - name: column name
+            - type: column type code
+            - bytes: data length in bytes
+        for more information about column meta, refer https://docs.tdengine.com/2.4/reference/rest-api/#http-return-format
+        """
+        return map(lambda meta: {"name": meta[0], "type": meta[1], "bytes": meta[2]}, self.column_meta)
+
+    def __iter__(self):
+        return self.data.__iter__()
 
 
 class TaosRestConnection:
