@@ -35,4 +35,7 @@ def connect(**kwargs) -> TaosRestConnection:
    ```
 
    """
-    return TaosRestConnection(**kwargs)
+    conn = TaosRestConnection(**kwargs)
+    # test connection
+    conn.execute("select server_version()")
+    return conn

@@ -38,8 +38,6 @@ class RestClient:
             self._headers = {
                 "Authorization": "Taosd " + self._taosd_token
             }
-        # test connection
-        self.sql("select server_version()")
 
     def get_taosd_token(self) -> str:
         """
