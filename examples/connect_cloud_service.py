@@ -6,7 +6,6 @@ def connect_to_cloud_use_token(url, token):
     conn = taosrest.connect(url=url,
                             token=token)
 
-    print(conn.server_info)
     cursor = conn.cursor()
     cursor.execute("drop database if exists pytest")
     cursor.execute("create database pytest precision 'ns' keep 365")
