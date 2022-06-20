@@ -3,4 +3,5 @@ pip3 install pdoc3
 source .env
 pdoc --html --force --output-dir ../docs taosrest
 pdoc --html --force --output-dir ../docs taos
+# copy generated html files to Document Server
 sshpass -p "$DOC_HOST_PWD"  scp -r ../docs/* root@$DOC_HOST:/data/apidocs/taospy/
