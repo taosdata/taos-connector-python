@@ -21,7 +21,8 @@ class RestClient:
      For detailed info about TDengine REST API refer https://docs.tdengine.com/reference/rest-api/
     """
 
-    def __init__(self, url: str, token: str = None,
+    def __init__(self, url: str,
+                 token: str = None,
                  database: str = None,
                  user: str = "root",
                  password: str = "taosdata",

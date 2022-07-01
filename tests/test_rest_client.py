@@ -65,6 +65,15 @@ def test_select_data_with_timestamp_type():
     resp = c.sql("select * from test.tb2")
     print("\n", resp)
     data = resp["data"]
-    assert isinstance(data[0][0], datetime.datetime)
-    assert isinstance(data[0][3], datetime.datetime)
-    #  {'status': 'succ', 'head': ['ts', 'c1', 'c2', 'c3'], 'column_meta': [['ts', 9, 8], ['c1', 4, 4], ['c2', 7, 8], ['c3', 9, 8]], 'data': [[datetime.datetime(2022, 4, 21, 9, 14, 50, 498000, tzinfo=datetime.timezone(datetime.timedelta(seconds=28800))), -100, -200.3, datetime.datetime(2022, 4, 21, 9, 15, 50, 498000, tzinfo=datetime.timezone(datetime.timedelta(seconds=28800)))], [datetime.datetime(2022, 4, 21, 9, 15, 0, 498000, tzinfo=datetime.timezone(datetime.timedelta(seconds=28800))), -101, -340.2423424, datetime.datetime(2022, 4, 21, 9, 16, 50, 498000, tzinfo=datetime.timezone(datetime.timedelta(seconds=28800)))]], 'rows': 2}
+    assert isinstance(data[0][0], datetime.datetime) and data[0][0].tzinfo is not None
+    assert isinstance(data[0][3], datetime.datetime) and data[0][3].tzinfo is not None
+
+
+@check_env
+def test_use_str_timestamp():
+    url = os.environ["TDENGINE_URL"]
+    c = RestClient(url, convert_timestamp=False)
+    resp = c.sql("select * from test.tb2")
+    data = resp["data"]
+    print(data[0][0], data[0][3])
+    assert isinstance(data[0][0], str) and isinstance(data[0][3], str)

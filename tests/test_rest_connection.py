@@ -1,11 +1,16 @@
 import taosrest
-import taos
+import pytest
+import os
+from decorators import check_env
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
+@check_env
 def test_fetch_all():
-    if taos.IS_V3:
-        return
-    conn = taosrest.connect(url="http://localhost:6041",
+    url = os.environ["TDENGINE_URL"]
+    conn = taosrest.connect(url=url,
                             password="taosdata")
     cursor = conn.cursor()
 
@@ -16,10 +21,11 @@ def test_fetch_all():
     print(cursor.description)
 
 
+@check_env
 def test_fetch_one():
-    if taos.IS_V3:
-        return
-    conn = taosrest.connect(url="localhost:6041",
+    url = os.environ["TDENGINE_URL"]
+
+    conn = taosrest.connect(url=url,
                             user="root",
                             password="taosdata")
     c = conn.cursor()
@@ -36,19 +42,20 @@ def test_fetch_one():
         row = c.fetchone()
 
 
+@check_env
 def test_row_count():
-    if taos.IS_V3:
-        return
-    conn = taosrest.connect(url="localhost:6041", user="root", password="taosdata")
+    url = os.environ["TDENGINE_URL"]
+    conn = taosrest.connect(url=url, user="root", password="taosdata")
     cursor = conn.cursor()
     cursor.execute("select * from test.tb")
     assert cursor.rowcount == 2
 
 
+@pytest.mark.skip(reason="know bug TD-16959")
+@check_env
 def test_get_server_info():
-    if taos.IS_V3:
-        return
-    conn = taosrest.connect(url="localhost:6041",
+    url = os.environ["TDENGINE_URL"]
+    conn = taosrest.connect(url=url,
                             user="root",
                             password="taosdata")
 
@@ -56,8 +63,10 @@ def test_get_server_info():
     assert len(version.split(".")) == 4
 
 
+@check_env
 def test_execute():
-    c = taosrest.connect()
+    url = os.environ["TDENGINE_URL"]
+    c = taosrest.connect(url=url)
     c.execute("drop database if exists test")
     c.execute("create database test")
     c.execute("create table test.tb (ts timestamp, c1 int, c2 double)")
@@ -67,10 +76,24 @@ def test_execute():
     assert affected_rows is None
 
 
+@check_env
 def test_query():
     """
     Note: run it immediately after `test_execute`
     """
-    c = taosrest.connect()
+    url = os.environ["TDENGINE_URL"]
+    c = taosrest.connect(url=url)
     r = c.query("select * from test.tb")
     assert r.rows == 2
+
+
+@check_env
+def test_default_database():
+    """
+    Note: run it immediately after `test_query`
+    """
+    url = os.environ["TDENGINE_URL"]
+    c = taosrest.connect(url=url, database="test")
+    r = c.query("select * from tb")
+    assert r.rows == 2
+
