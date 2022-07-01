@@ -12,7 +12,9 @@ load_dotenv()
 
 
 def test_insert_test_data():
-    conn = taos.connect()
+    host = os.environ["TDENGINE_HOST"] if "TDENGINE_HOST" in os.environ else "localhost"
+    port = os.environ["TDENGINE_PORT"] if "TDENGINE_PORT" in os.environ else "6030"
+    conn = taos.connect(host=host, port=int(port))
     c = conn.cursor()
     c.execute("drop database if exists test")
     c.execute("create database test")
@@ -46,7 +48,8 @@ def test_pandas_read_from_sqlalchemy_taosrest():
 
 
 def test_pandas_read_from_sqlalchemy_taos():
-    engine = create_engine("taos://root:taosdata@localhost:6030?timezone=Asia/Shanghai")
+    dsn = os.environ["TDENGINE_DSN"] if "TDENGINE_DSN" in os.environ else "taos://root:taosdata@localhost:6030?timezone=Asia/Shanghai"
+    engine = create_engine(dsn)
     df: pandas.DataFrame = pandas.read_sql("select * from test.tb", engine)
     assert isinstance(df.ts[0], datetime)
     assert df.shape == (2, 3)
