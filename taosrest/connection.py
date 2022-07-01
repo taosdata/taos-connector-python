@@ -7,15 +7,14 @@ from .restclient import RestClient
 
 class Result:
     def __init__(self, resp: dict):
-        self.status: str = resp["status"]
-        self.head: List = resp["head"]
+        self.code: str = resp["code"]
         self.column_meta: List[list] = resp["column_meta"]
         self.data: List[list] = resp["data"]
         self.rows: int = resp["rows"]
 
     @property
     def field_count(self):
-        return len(self.head)
+        return len(self.column_meta)
 
     @property
     def fields(self) -> List[Dict]:
@@ -39,25 +38,37 @@ class TaosRestConnection:
 
     def __init__(self, **kwargs):
         """
-        Keyword Arguments
-        ----------------------------
-        - url : str, optional.
+       Keyword Arguments
+       ----------------------------
+       - url: str, optional, default "http://localhost:6041"
             url to connect
-        - token : str, optional
-            cloud service token
-        - user : str, optional.
-            username used to log in
-        - password : str, optional.
-            password used to log in
-        - timeout : int, optional.
-            the optional timeout parameter specifies a timeout in seconds for blocking operations
+       - token: str, optional, default None
+            TDengine cloud Token, which is required only by TDengine cloud service
+       - user : str, optional, default root
+           username used to log in
+       - password : str, optional, default taosdata
+           password used to log in
+       - database : str, optional, default None
+            default database to use.
+       - timeout : int, optional.
+           the optional timeout parameter specifies a timeout in seconds for blocking operations
+       - convert_timestamp: bool, optional, default true
+            whether to convert timestamp in RFC3339 format to python datatime.
         """
-        self._url = kwargs["url"] if "url" in kwargs else "http://localhost:6041"
-        self._user = kwargs["user"] if "user" in kwargs else "root"
-        self._password = kwargs["password"] if "password" in kwargs else "taosdata"
-        self._timeout = kwargs["timeout"] if "timeout" in kwargs else None
-        self._token = kwargs["token"] if "token" in kwargs else None
-        self._c = RestClient(self._url, token=self._token, user=self._user, password=self._password, timeout=self._timeout)
+        self._url = kwargs.get("url", "http://localhost:6041")
+        self._token = kwargs.get("token")
+        self._user = kwargs.get("user", "root")
+        self._password = kwargs.get("password", "taosdata")
+        self._database = kwargs.get("database")
+        self._timeout = kwargs.get("timeout")
+        self._convert_timestamp = kwargs.get("convert_timestamp", True)
+        self._client = RestClient(self._url,
+                                  token=self._token,
+                                  database=self._database,
+                                  user=self._user,
+                                  password=self._password,
+                                  timeout=self._timeout,
+                                  convert_timestamp=self._convert_timestamp)
 
     def close(self):
         pass
@@ -69,7 +80,7 @@ class TaosRestConnection:
         raise NotSupportedError()
 
     def cursor(self):
-        return TaosRestCursor(self._c)
+        return TaosRestCursor(self._client)
 
     ############################################################################
     # Methods bellow are not PEP249 specified.
@@ -78,16 +89,19 @@ class TaosRestConnection:
 
     @property
     def server_info(self):
-        resp = self._c.sql("select server_version()")
-        return resp["data"][0][0]
+        resp = self._client.sql("select server_version()")
+        if len(resp["data"]) > 0:
+            return resp["data"][0][0]
+        else:
+            return ""
 
     def execute(self, sql):
         """
-        execute sql usually INSERT statement and return affected row count.
+        execute none query statement and return affected row count.
         If there is not a column named "affected_rows" in response, then None is returned.
         """
-        resp = self._c.sql(sql)
-        if resp["head"] == ['affected_rows']:
+        resp = self._client.sql(sql)
+        if resp["column_meta"][0][0] == 'affected_rows':
             return resp["data"][0][0]
         else:
             return None
@@ -96,5 +110,5 @@ class TaosRestConnection:
         """
         execute sql and wrap the http response as Result object.
         """
-        resp = self._c.sql(sql)
+        resp = self._client.sql(sql)
         return Result(resp)

@@ -25,23 +25,10 @@ class TaosRestCursor:
         Returns
         -------
         This read-only attribute is a sequence of 3-item sequences.
-        Each of these sequences contains information describing one result column:
-        - name
-        - type_code
+        Each of these sequences contains information describing one column:
+        - column_name
+        - type_name
         - internal_size
-
-        Type Code
-        ---------
-        - 1：BOOL
-        - 2：TINYINT
-        - 3：SMALLINT
-        - 4：INT
-        - 5：BIGINT
-        - 6：FLOAT
-        - 7：DOUBLE
-        - 8：BINARY
-        - 9：TIMESTAMP
-        - 10：NCHAR
         """
         if self._response is None:
             return None
@@ -57,7 +44,7 @@ class TaosRestCursor:
         self._response = None
         self._index = -1
         self._response = self._c.sql(operation)
-        if self._response["head"] == ['affected_rows']:
+        if self._response["column_meta"][0][0] == 'affected_rows':
             # for INSERT
             self._rowcount = self._response["data"][0][0]
         else:

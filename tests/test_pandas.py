@@ -1,8 +1,14 @@
+import os
+
 import pandas
 import taosrest
 import taos
 from sqlalchemy import create_engine
 from datetime import datetime
+from dotenv import load_dotenv
+from decorators import check_env
+
+load_dotenv()
 
 
 def test_insert_test_data():
@@ -14,10 +20,10 @@ def test_insert_test_data():
     c.execute("insert into test.tb values (now, -100, -200.3) (now+10s, -101, -340.2423424)")
 
 
+@check_env
 def test_pandas_read_from_rest_connection():
-    if taos.IS_V3:
-        return
-    conn = taosrest.connect()
+    url = os.environ["TDENGINE_URL"]
+    conn = taosrest.connect(url=url)
     df: pandas.DataFrame = pandas.read_sql("select * from test.tb", conn)
     assert isinstance(df.ts[0], datetime)
     assert df.shape == (2, 3)
@@ -30,10 +36,10 @@ def test_pandas_read_from_native_connection():
     assert df.shape == (2, 3)
 
 
+@check_env
 def test_pandas_read_from_sqlalchemy_taosrest():
-    if taos.IS_V3:
-        return
-    engine = create_engine("taosrest://root:taosdata@localhost:6041")
+    url = os.environ["SQLALCHEMY_URL"]  # "taosrest://root:taosdata@vm95:6061"
+    engine = create_engine(url)
     df: pandas.DataFrame = pandas.read_sql("select * from test.tb", engine)
     assert isinstance(df.ts[0], datetime)
     assert df.shape == (2, 3)

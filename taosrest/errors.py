@@ -13,7 +13,19 @@ class ExecutionError(Error):
     pass
 
 
-class ConnectionError(Error):
+class HTTPError(Exception):
+    def __init__(self, status_code, msg=None):
+        self.msg = msg
+        self.status_code = status_code
+        self._full_msg = f"HTTP response code {status_code}"
+        if msg:
+            self._full_msg += "." + msg
+
+    def __str__(self):
+        return self._full_msg
+
+
+class ConnectError(Error):
     """Exception raised for connection failed"""
     pass
 
