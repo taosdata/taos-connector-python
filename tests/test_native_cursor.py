@@ -16,3 +16,8 @@ def test_rowcount():
     assert cursor.rowcount == 1
     cursor.close()
     conn.close()
+
+
+def test_load_table_info():
+    taos_conn = taos.connect(host="localhost", user="root", password="taosdata", db=None, port=0, config=None)
+    taos_conn.load_table_info("test.power")
