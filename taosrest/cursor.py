@@ -13,11 +13,18 @@ class TaosRestCursor:
         self._rowcount = -1
         self._response = None
         self._index = -1
+        self._description = None
+        self._logfile = ""
 
     @property
     def rowcount(self):
         """ the number of rows that the last .execute*() produced (for DQL statements like SELECT) or affected (for DML statements like UPDATE or INSERT)."""
         return self._rowcount
+
+    @property
+    def affected_rows(self):
+        """Return the rowcount of insertion"""
+        return self._affected_rows
 
     @property
     def description(self):
@@ -32,7 +39,7 @@ class TaosRestCursor:
         """
         if self._response is None:
             return None
-        return self._response["column_meta"]
+        return self._description
 
     def callproc(self, procname, parameters=None):
         raise NotSupportedError()
@@ -44,15 +51,36 @@ class TaosRestCursor:
         self._response = None
         self._index = -1
         self._response = self._c.sql(operation)
+
+        if self._logfile:
+            with open(self._logfile, "a", encoding="utf-8") as logfile:
+                logfile.write(f"{operation};\n" )
+
         if self._response["column_meta"][0][0] == 'affected_rows':
             # for INSERT
-            self._rowcount = self._response["data"][0][0]
+            self._affected_rows = self._response["data"][0][0]
+            self._rowcount = self._affected_rows
+            return self._affected_rows
         else:
             # for SELECT, Show, ...
+            self._description = self._response["column_meta"]
             self._rowcount = self._response["rows"]
+
+    def log(self, logfile):
+        self._logfile = logfile
 
     def executemany(self, operation, parameters=None):
         self.execute(operation)
+
+    def istype(self, col, datatype):
+        if datatype.upper().strip() == self._description[col][1]:
+            return True
+        return False
+
+    def get_type(self, col):
+        if not self._description :
+            return None
+        return self._description[col][1]
 
     def fetchone(self):
         if self._response is None:
