@@ -58,12 +58,14 @@ class TaosRestCursor:
 
         if self._response["column_meta"][0][0] == 'affected_rows':
             # for INSERT
+            self._description = self._response["column_meta"]
             self._affected_rows = self._response["data"][0][0]
             self._rowcount = self._affected_rows
             return self._affected_rows
         else:
             # for SELECT, Show, ...
             self._description = self._response["column_meta"]
+            self._affected_rows = None
             self._rowcount = self._response["rows"]
 
     def log(self, logfile):
