@@ -1,7 +1,7 @@
 import taos
 
 
-def test_rowcount():
+def test_cursor():
     conn = taos.connect()
     cursor = conn.cursor()
     cursor.execute("DROP DATABASE IF EXISTS test")

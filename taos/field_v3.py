@@ -130,6 +130,7 @@ class TaosFields(object):
 
     def __iter__(self):
         """To iter."""
+        self._iter = 0
         return self
 
     def __len__(self):

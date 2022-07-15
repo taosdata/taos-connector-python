@@ -15,6 +15,7 @@ class TaosRestCursor:
         self._index = -1
         self._description = None
         self._logfile = ""
+        self._affected_rows = None
 
     @property
     def rowcount(self):
@@ -23,7 +24,7 @@ class TaosRestCursor:
 
     @property
     def affected_rows(self):
-        """Return the rowcount of insertion"""
+        """Return the rowcount of insertion. For SELECT statement, it will be None"""
         return self._affected_rows
 
     @property
@@ -54,7 +55,7 @@ class TaosRestCursor:
 
         if self._logfile:
             with open(self._logfile, "a", encoding="utf-8") as logfile:
-                logfile.write(f"{operation};\n" )
+                logfile.write(f"{operation};\n")
 
         if self._response["column_meta"][0][0] == 'affected_rows':
             # for INSERT
@@ -80,7 +81,7 @@ class TaosRestCursor:
         return False
 
     def get_type(self, col):
-        if not self._description :
+        if not self._description:
             return None
         return self._description[col][1]
 

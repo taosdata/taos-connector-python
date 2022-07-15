@@ -34,7 +34,10 @@ def test_fetch_one():
     c.execute("create table test.tb (ts timestamp, c1 int, c2 double)")
     c.execute("insert into test.tb values (now, -100, -200.3) (now+10s, -101, -340.2423424)")
     assert c.rowcount == 2
+    assert c.affected_rows == 2
     c.execute("select * from test.tb")
+    assert c.rowcount == 2
+    assert c.affected_rows is None
     print()
     row = c.fetchone()
     while row is not None:
@@ -51,7 +54,6 @@ def test_row_count():
     assert cursor.rowcount == 2
 
 
-@pytest.mark.skip(reason="know bug TD-16959")
 @check_env
 def test_get_server_info():
     url = os.environ["TDENGINE_URL"]
