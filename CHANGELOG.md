@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.3.7 - 2022-07-18
+
+### Features:
+
+- taosrest support more query methods (#70)
+
+### Bug Fixes:
+
+- iter on TaosFields v3
+
+### Tests:
+
+- test rest cursor
+
+### Documents:
+
+- add build-doc.sh
+- modify as comment
+- update build-doc.sh
+- update build-docs.sh
+
 ## v2.3.6 - 2022-06-10
 
 ### Enhancement:
