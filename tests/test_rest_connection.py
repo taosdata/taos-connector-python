@@ -1,3 +1,5 @@
+import datetime
+
 import taosrest
 import pytest
 import os
@@ -110,18 +112,19 @@ def test_no_timezone():
 
 
 @check_env
-def test_local_timezone():
+def test_str_timezone():
     url = os.environ["TDENGINE_URL"]
     c = taosrest.connect(url=url, timezone="Asia/Shanghai")
     r = c.query("select * from test.tb")
     for row in r:
-        print(row)
+        print(row)  # [datetime.datetime(2022, 7, 26, 13, 56, 58, 746000, tzinfo=<DstTzInfo 'Asia/Shanghai' CST+8:00:00 STD>), -100, -200.3]
 
 
 @check_env
-def test_utc_timezone():
+def test_tzinfo_timezone():
     url = os.environ["TDENGINE_URL"]
-    c = taosrest.connect(url=url, timezone="UTC-8")
+    tz = datetime.datetime.now().tzinfo
+    c = taosrest.connect(url=url, timezone=tz)
     r = c.query("select * from test.tb")
     for row in r:
-        print(row)
+        print(row)  # [datetime.datetime(2022, 7, 26, 13, 56, 58, 746000, tzinfo=<DstTzInfo 'Asia/Shanghai' CST+8:00:00 STD>), -100, -200.3]

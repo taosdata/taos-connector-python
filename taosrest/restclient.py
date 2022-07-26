@@ -30,7 +30,7 @@ class RestClient:
                  password: str = "taosdata",
                  timeout: int = None,
                  convert_timestamp: bool = True,
-                 timezone: str = None):
+                 timezone: [str | datetime.tzinfo] = None):
         """
         Create a RestClient object.
 
@@ -70,7 +70,15 @@ class RestClient:
                 "Authorization": "Taosd " + self._taosd_token
             }
         self._convert_timestamp = convert_timestamp
-        self._timezone = Timezone(timezone) if timezone else None
+
+        if timezone is None:
+            self._timezone = None
+        elif isinstance(timezone, str):
+            self._timezone = Timezone(timezone)
+        elif isinstance(timezone, datetime.tzinfo):
+            self._timezone = timezone
+        else:
+            raise Exception("wrong type of parameter timezone")
 
     def get_taosd_token(self) -> str:
         """
