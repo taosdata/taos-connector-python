@@ -99,3 +99,9 @@ def test_default_database():
     r = c.query("select * from tb")
     assert r.rows == 2
 
+
+@check_env
+def test_timezone():
+    url = os.environ["TDENGINE_URL"]
+    c = taosrest.connect(url=url)
+    print(c.server_info)

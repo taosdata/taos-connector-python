@@ -5,6 +5,8 @@ from urllib.request import urlopen, Request
 from iso8601 import parse_date
 
 from .errors import ConnectError, ExecutionError, HTTPError
+from pytz import timezone as Timezone
+import datetime
 
 error_msgs = {
     400: "parameter error",
@@ -27,7 +29,8 @@ class RestClient:
                  user: str = "root",
                  password: str = "taosdata",
                  timeout: int = None,
-                 convert_timestamp=True):
+                 convert_timestamp: bool = True,
+                 timezone: str = None):
         """
         Create a RestClient object.
 
@@ -67,6 +70,7 @@ class RestClient:
                 "Authorization": "Taosd " + self._taosd_token
             }
         self._convert_timestamp = convert_timestamp
+        self._timezone = Timezone(timezone) if timezone else None
 
     def get_taosd_token(self) -> str:
         """
@@ -112,12 +116,20 @@ class RestClient:
         for i in range(len(meta)):
             if meta[i][1] == "TIMESTAMP":
                 ts_cols.append(i)
-
-        if len(ts_cols) > 0:
+        if len(ts_cols) == 0:
+            return
+        if self._timezone:
             for row in data:
                 for i in ts_cols:
                     if row[i]:
-                        row[i] = parse_date(row[i])
+                        row[i] = parse_date(row[i], default_timezone=self._timezone)
+        else:
+            default_tz = datetime.datetime.now().astimezone().tzinfo
+            for row in data:
+                for i in ts_cols:
+                    if row[i]:
+                        dt = parse_date(row[i], default_timezone=default_tz)
+                        row[i] = dt.replace(tzinfo=None)
 
     def _check_status(self, response):
         status = response.status

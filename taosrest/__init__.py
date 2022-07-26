@@ -22,7 +22,9 @@ def connect(**kwargs) -> TaosRestConnection:
        the optional timeout parameter specifies a timeout in seconds for blocking operations
    - convert_timestamp: bool, optional, default true
         whether to convert timestamp in RFC3339 format to python datatime.
-
+   - timezone: str, optional, default None.
+        when convert_timestamp is true, which timezone to use in the datetime object. The value should be recognized by [pytz package](https://pypi.org/project/pytz/).
+        If None, system timezone will be used and the returned datetime object will be offset-naive (not tzinfo), otherwise the returned datetime will be  offset-aware(with tzinfo)
    Examples
    -----------------------------
     connect to cloud service
