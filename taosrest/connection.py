@@ -54,6 +54,10 @@ class TaosRestConnection:
            the optional timeout parameter specifies a timeout in seconds for blocking operations
        - convert_timestamp: bool, optional, default true
             whether to convert timestamp in RFC3339 format to python datatime.
+        - timezone: str | datetime.tzinfo, optional, default None.
+            When convert_timestamp is true, which timezone to used.
+            When the type of timezone is str, it should be recognized by [pytz package](https://pypi.org/project/pytz/).
+            When the timezone is None, system timezone will be used and the returned datetime object will be offset-naive (no tzinfo), otherwise the returned datetime will be offset-aware(with tzinfo)
         """
         self._url = kwargs.get("url", "http://localhost:6041")
         self._token = kwargs.get("token")
@@ -62,13 +66,15 @@ class TaosRestConnection:
         self._database = kwargs.get("database")
         self._timeout = kwargs.get("timeout")
         self._convert_timestamp = kwargs.get("convert_timestamp", True)
+        self._timezone = kwargs.get("timezone", None)
         self._client = RestClient(self._url,
                                   token=self._token,
                                   database=self._database,
                                   user=self._user,
                                   password=self._password,
                                   timeout=self._timeout,
-                                  convert_timestamp=self._convert_timestamp)
+                                  convert_timestamp=self._convert_timestamp,
+                                  timezone=self._timezone)
 
     def close(self):
         pass

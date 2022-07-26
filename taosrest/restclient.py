@@ -1,8 +1,11 @@
+import datetime
 import json
 import socket
 from urllib.request import urlopen, Request
 
 from iso8601 import parse_date
+from pytz import timezone as Timezone
+from typing import Union
 
 from .errors import ConnectError, ExecutionError, HTTPError
 
@@ -27,7 +30,8 @@ class RestClient:
                  user: str = "root",
                  password: str = "taosdata",
                  timeout: int = None,
-                 convert_timestamp=True):
+                 convert_timestamp: bool = True,
+                 timezone: Union[str, datetime.tzinfo] = None):
         """
         Create a RestClient object.
 
@@ -41,6 +45,10 @@ class RestClient:
         - timeout : the optional timeout parameter specifies a timeout in seconds for blocking operations
         - convert_timestamp: whether to convert timestamp from type str to type datetime with tzinfo.
             The default timezone is UTC. You can use method `datatime.astimezone()` to convert it to your local time.
+        - timezone: str | datetime.tzinfo, optional, default None.
+            When convert_timestamp is true, which timezone to used.
+            When the type of timezone is str, it should be recognized by [pytz package](https://pypi.org/project/pytz/).
+            When the timezone is None, system timezone will be used and the returned datetime object will be offset-naive (no tzinfo), otherwise the returned datetime will be offset-aware(with tzinfo)
         """
         # determine schema://host:post
         self._url = url.strip('/')
@@ -68,6 +76,15 @@ class RestClient:
             }
         self._convert_timestamp = convert_timestamp
 
+        if timezone is None:
+            self._timezone = None
+        elif isinstance(timezone, str):
+            self._timezone = Timezone(timezone)
+        elif isinstance(timezone, datetime.tzinfo):
+            self._timezone = timezone
+        else:
+            raise TypeError("timezone argument must be an instance of str or tzinfo")
+
     def get_taosd_token(self) -> str:
         """
         Get authorization token.
@@ -90,7 +107,6 @@ class RestClient:
         -----------
         q : SQL statement to execute. Can't be USE statement since REST api is stateless.
         """
-
         data = q.encode("utf8")
         request = Request(self._sql_utc_url, data, self._headers)
         response = urlopen(request, timeout=self._timeout)
@@ -112,12 +128,21 @@ class RestClient:
         for i in range(len(meta)):
             if meta[i][1] == "TIMESTAMP":
                 ts_cols.append(i)
-
-        if len(ts_cols) > 0:
+        if len(ts_cols) == 0:
+            return
+        if self._timezone:
             for row in data:
                 for i in ts_cols:
                     if row[i]:
-                        row[i] = parse_date(row[i])
+                        dt = parse_date(row[i])  # UTC
+                        row[i] = dt.astimezone(self._timezone)
+        else:
+            for row in data:
+                for i in ts_cols:
+                    if row[i]:
+                        dt = parse_date(row[i])  # UTC
+                        dt = dt.astimezone()  # local
+                        row[i] = dt.replace(tzinfo=None)  # naive datetime
 
     def _check_status(self, response):
         status = response.status
