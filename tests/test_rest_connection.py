@@ -101,7 +101,27 @@ def test_default_database():
 
 
 @check_env
-def test_timezone():
+def test_no_timezone():
     url = os.environ["TDENGINE_URL"]
     c = taosrest.connect(url=url)
-    print(c.server_info)
+    r = c.query("select * from test.tb")
+    for row in r:
+        print(row)
+
+
+@check_env
+def test_local_timezone():
+    url = os.environ["TDENGINE_URL"]
+    c = taosrest.connect(url=url, timezone="Asia/Shanghai")
+    r = c.query("select * from test.tb")
+    for row in r:
+        print(row)
+
+
+@check_env
+def test_utc_timezone():
+    url = os.environ["TDENGINE_URL"]
+    c = taosrest.connect(url=url, timezone="UTC-8")
+    r = c.query("select * from test.tb")
+    for row in r:
+        print(row)
