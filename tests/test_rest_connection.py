@@ -123,7 +123,7 @@ def test_str_timezone():
 @check_env
 def test_tzinfo_timezone():
     url = os.environ["TDENGINE_URL"]
-    tz = datetime.datetime.now().tzinfo
+    tz = datetime.datetime.now().astimezone().tzinfo
     c = taosrest.connect(url=url, timezone=tz)
     r = c.query("select * from test.tb")
     for row in r:

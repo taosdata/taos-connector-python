@@ -79,7 +79,7 @@ class RestClient:
         elif isinstance(timezone, datetime.tzinfo):
             self._timezone = timezone
         else:
-            raise Exception("wrong type of parameter timezone")
+            raise TypeError("timezone argument must be an instance of str or tzinfo")
 
     def get_taosd_token(self) -> str:
         """
