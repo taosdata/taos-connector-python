@@ -106,7 +106,7 @@ def test_no_timezone():
     c = taosrest.connect(url=url)
     r = c.query("select * from test.tb")
     for row in r:
-        print(row)
+        print(row)  # [datetime.datetime(2022, 7, 26, 5, 56, 58, 746000), -100, -200.3]
 
 
 @check_env

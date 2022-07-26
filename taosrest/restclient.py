@@ -122,14 +122,15 @@ class RestClient:
             for row in data:
                 for i in ts_cols:
                     if row[i]:
-                        row[i] = parse_date(row[i], default_timezone=self._timezone)
+                        dt = parse_date(row[i])  # UTC
+                        row[i] = dt.astimezone(self._timezone)
         else:
-            default_tz = datetime.datetime.now().astimezone().tzinfo
             for row in data:
                 for i in ts_cols:
                     if row[i]:
-                        dt = parse_date(row[i], default_timezone=default_tz)
-                        row[i] = dt.replace(tzinfo=None)
+                        dt = parse_date(row[i])  # UTC
+                        dt = dt.astimezone()  # local
+                        row[i] = dt.replace(tzinfo=None)  # naive datetime
 
     def _check_status(self, response):
         status = response.status
