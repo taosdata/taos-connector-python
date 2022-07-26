@@ -1,12 +1,13 @@
+import datetime
 import json
 import socket
 from urllib.request import urlopen, Request
 
 from iso8601 import parse_date
+from pytz import timezone as Timezone
+from typing import Union
 
 from .errors import ConnectError, ExecutionError, HTTPError
-from pytz import timezone as Timezone
-import datetime
 
 error_msgs = {
     400: "parameter error",
@@ -30,7 +31,7 @@ class RestClient:
                  password: str = "taosdata",
                  timeout: int = None,
                  convert_timestamp: bool = True,
-                 timezone: [str | datetime.tzinfo] = None):
+                 timezone: Union[str, datetime.tzinfo] = None):
         """
         Create a RestClient object.
 
@@ -102,7 +103,6 @@ class RestClient:
         -----------
         q : SQL statement to execute. Can't be USE statement since REST api is stateless.
         """
-
         data = q.encode("utf8")
         request = Request(self._sql_utc_url, data, self._headers)
         response = urlopen(request, timeout=self._timeout)
