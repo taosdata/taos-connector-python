@@ -45,6 +45,10 @@ class RestClient:
         - timeout : the optional timeout parameter specifies a timeout in seconds for blocking operations
         - convert_timestamp: whether to convert timestamp from type str to type datetime with tzinfo.
             The default timezone is UTC. You can use method `datatime.astimezone()` to convert it to your local time.
+        - timezone: str | datetime.tzinfo, optional, default None.
+            When convert_timestamp is true, which timezone to used.
+            When the type of timezone is str, it should be recognized by [pytz package](https://pypi.org/project/pytz/).
+            When the timezone is None, system timezone will be used and the returned datetime object will be offset-naive (no tzinfo), otherwise the returned datetime will be offset-aware(with tzinfo)
         """
         # determine schema://host:post
         self._url = url.strip('/')
