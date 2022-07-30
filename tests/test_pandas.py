@@ -30,6 +30,8 @@ def test_pandas_read_from_rest_connection():
 
 
 def test_pandas_read_from_native_connection():
+    if taos.IS_V3:
+        return
     conn = taos.connect()
     df: pandas.DataFrame = pandas.read_sql("select * from test.tb", conn)
     assert isinstance(df.ts[0], datetime)
@@ -46,6 +48,8 @@ def test_pandas_read_from_sqlalchemy_taosrest():
 
 
 def test_pandas_read_from_sqlalchemy_taos():
+    if taos.IS_V3:
+        return
     engine = create_engine("taos://root:taosdata@localhost:6030?timezone=Asia/Shanghai")
     df: pandas.DataFrame = pandas.read_sql("select * from test.tb", engine)
     assert isinstance(df.ts[0], datetime)
