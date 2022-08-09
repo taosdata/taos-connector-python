@@ -18,6 +18,64 @@ TYPES_MAP = {
     "binary": sqltypes.String,
 }
 
+class AlchemyWsConnection:
+    threadsafety = 1
+    paramstyle = "pyformat"
+
+    def connect(self, **kwargs):
+        host = kwargs["host"] if "host" in kwargs else "localhost"
+        port = kwargs["port"] if "port" in kwargs else "6041"
+        user = kwargs["user"] if "user" in kwargs else "root"
+        password = kwargs["password"] if "password" in kwargs else "taosdata"
+        token = kwargs["token"] if "token" in kwargs else ""
+        url = f"ws://{user}:{password}@{host}:{port}"
+        import taosws
+        return taosws.connect(url)
+
+
+class TaosWsDialect(default.DefaultDialect):
+    name = "taosws"
+    driver = "taosws"
+    supports_native_boolean = True
+    implicit_returning = True
+
+    def do_rollback(self, connection):
+        pass
+
+    def _get_server_version_info(self, connection):
+        return tuple("any")
+
+    @classmethod
+    def dbapi(cls):
+        return AlchemyWsConnection()
+
+    def has_schema(self, connection, schema):
+        return False
+
+    def has_table(self, connection, table_name, schema=None):
+        try:
+            connection.execute("describe {}" % table_name)
+            return True
+        except:
+            return False
+
+    @reflection.cache
+    def get_indexes(self, connection, table_name, schema=None, **kw):
+        """
+        Gets all indexes
+        """
+        # no index is supported by TDengine
+        return []
+
+    def get_columns(self, connection, table_name, schema=None, **kw):
+        try:
+            cursor = connection.execute("describe {}" % table_name)
+            return [row[0] for row in cursor.fetchall()]
+        except:
+            return []
+
+    def _resolve_type(self, type_):
+        return TYPES_MAP.get(type_, sqltypes.UserDefinedType)
 
 class TaosDialect(default.DefaultDialect):
     name = "taos"
