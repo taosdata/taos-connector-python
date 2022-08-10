@@ -1,15 +1,9 @@
-use std::fmt::format;
-
-use pyo3::types::{PyString, PyTuple};
+use pyo3::types::PyTuple;
 use pyo3::PyIterProtocol;
 use pyo3::{create_exception, exceptions::PyException};
 use pyo3::{prelude::*, PyObjectProtocol};
 use taos_query::prelude::Field;
-use taos_query::{
-    common::RawBlock as Block,
-    prelude::{sync::IRowsIter, BorrowedValue},
-    Fetchable,
-};
+use taos_query::{common::RawBlock as Block, prelude::BorrowedValue, Fetchable};
 use taos_ws::sync::*;
 
 create_exception!(taosws, ConnectionError, PyException);
