@@ -186,7 +186,7 @@ class TaosCursor(object):
         if dataType.upper() == "DOUBLE":
             if self._description[col][1] == FieldType.C_DOUBLE:
                 return True
-        if dataType.upper() == "BINARY":
+        if dataType.upper() == "BINARY" or dataType.upper() == "VARCHAR":
             if self._description[col][1] == FieldType.C_BINARY:
                 return True
         if dataType.upper() == "TIMESTAMP":
