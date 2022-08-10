@@ -7,8 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## v2.3.7 - 2022-07-18
+## v2.5.0 - 2022-08-10
 
+### Features:
+
+- add taosws module
+
+### Documents:
+
+- **(taosws)**: add examples using taosws module
+
+## v2.4.0 - 2022-07-18
 ### Features:
 
 - taosrest support more query methods (#70)

@@ -23,6 +23,63 @@ pip install git+https://github.com/taosdata/taos-connector-python.git
 
 [TDengine](https://github.com/taosdata/TDengine) connector for Python source code is hosted on [GitHub](https://github.com/taosdata/taos-connector-python).
 
+## Examples for `taosws` Module
+
+### Query with PEP-249 API using `taosws`
+
+```python
+import taosws
+
+# all parameters are optional
+conn = taosws.connect("taosws://root:taosdata@localhost:6041")
+cursor = conn.cursor()
+
+cursor.execute("show databases")
+results: list[tuple] = cursor.fetchall()
+for row in results:
+    print(row)
+```
+
+### Query with query method using `taosws`
+
+```python
+from taosws import *
+
+conn = connect("taosws://root:taosdata@localhost:6041")
+result = conn.query("show databases")
+
+num_of_fields = result.field_count
+for field in result.fields:
+    print(field)
+
+for row in result:
+    print(row)
+```
+
+### Read with Pandas using `taosws`
+
+#### Method one
+
+```python
+import pandas
+import taosws
+
+conn = taosws.connect("taosws://root:taosdata@localhost:6041")
+df: pandas.DataFrame = pandas.read_sql("show databases", conn)
+df
+```
+
+#### Method Two
+
+```python
+import pandas
+from sqlalchemy import create_engine
+
+engine = create_engine("taosws://root:taosdata@localhost:6041")
+df: pandas.DataFrame = pandas.read_sql("show databases", engine)
+df
+```
+
 ## Examples for `taosrest` Module
 
 ### Query with PEP-249 API

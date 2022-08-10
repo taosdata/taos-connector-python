@@ -1,15 +1,8 @@
 import pandas
 from sqlalchemy import create_engine
 
-engine = create_engine("taos://root:taosdata@localhost:6030/log")
-res = pandas.read_sql("select * from logs", engine)
+for driver in ["taos", "taosws"]:
+    engine = create_engine(f"{driver}://root:taosdata@localhost")
+    res = pandas.read_sql("show databases", engine)
+    print(res)
 
-print(res)
-
-# import pandas
-# import taos
-
-# engine = taos.connect()
-# res = pandas.read_sql("select * from log.logs", engine)
-
-# print(res)
