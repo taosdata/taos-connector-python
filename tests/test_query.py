@@ -28,6 +28,10 @@ def test_query():
     for row in result:
         print(row)
         None
+
+    for row in result.rows_iter():
+        print(row)
+    
     result = conn.query("select * from tb1 limit 1")
     results = result.fetch_all_into_dict()
     print(results)
@@ -37,24 +41,6 @@ def test_query():
     print("elapsed time: ", elapsed)
     result.close()
     conn.close()
-
-
-def test_query_row_iter():
-    """This test will use fetch_row for each row fetching, this is the only way in async callback"""
-    conn = taos.connect()
-    result = conn.query("select * from log.log limit 10000")
-    fields = result.fields
-    for field in fields:
-        print("field: %s" % field)
-    start = datetime.now()
-    for _ in result.rows_iter():
-        None
-    end = datetime.now()
-    elapsed = end - start
-    print("elapsed time: ", elapsed)
-    result.close()
-    conn.close()
-
 
 if __name__ == "__main__":
     test_query()
