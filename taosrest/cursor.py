@@ -78,7 +78,7 @@ class TaosRestCursor:
     def istype(self, col, datatype):
         if datatype.upper().strip() == self._description[col][1]:
             return True
-        if datatype.upper().strip() in ("BINARY", "VARCHAR") and self._description[col][1] == "VARCHAR":
+        if datatype.upper().strip() == "BINARY" and self._description[col][1] == "VARCHAR":
             return True
         return False
 
