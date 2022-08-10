@@ -18,10 +18,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **(taosws)**: add examples using taosws module
 
 ## v2.4.0 - 2022-07-18
-
 ### Features:
 
 - taosrest support more query methods (#70)
+
+### Bug Fixes:
+
+- iter on TaosFields v3
+
+### Tests:
+
+- test rest cursor
 
 ### Documents:
 

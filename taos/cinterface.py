@@ -98,6 +98,7 @@ except Exception as err:
 
 try:
     _libtaos.taos_consume.restype = ctypes.c_void_p
+    _libtaos.taos_consume.argstype = (c_void_p,)
 except Exception as err:
     _UNSUPPORTED["taos_consume"] = err
 
@@ -327,7 +328,6 @@ def taos_affected_rows(result):
 
 
 subscribe_callback_type = CFUNCTYPE(None, c_void_p, c_void_p, c_void_p, c_int)
-_libtaos.taos_subscribe.restype = c_void_p
 
 
 # _libtaos.taos_subscribe.argtypes = c_void_p, c_int, c_char_p, c_char_p, subscribe_callback_type, c_void_p, c_int
@@ -353,10 +353,6 @@ def taos_subscribe(connection, restart, topic, sql, interval, callback=None, par
             interval,
         )
     )
-
-
-_libtaos.taos_consume.restype = c_void_p
-_libtaos.taos_consume.argstype = (c_void_p,)
 
 
 def taos_consume(sub):

@@ -121,13 +121,23 @@ for row in result:
 
 ```python
 import pandas
+import taos
+
+conn = taos.connect()
+df: pandas.DataFrame = pandas.read_sql("select * from log.logs", conn)
+```
+
+#### Method two
+
+```python
+import pandas
 import taosrest
 
 conn = taosrest.connect()
 df: pandas.DataFrame = pandas.read_sql("select * from log.logs", conn)
 ```
 
-#### Method Two
+#### Method three
 
 ```python
 import pandas

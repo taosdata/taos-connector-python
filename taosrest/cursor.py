@@ -13,6 +13,9 @@ class TaosRestCursor:
         self._rowcount = -1
         self._response = None
         self._index = -1
+        self._description = None
+        self._logfile = ""
+        self._affected_rows = None
 
     @property
     def rowcount(self):
@@ -20,32 +23,24 @@ class TaosRestCursor:
         return self._rowcount
 
     @property
+    def affected_rows(self):
+        """Return the rowcount of insertion. For SELECT statement, it will be None"""
+        return self._affected_rows
+
+    @property
     def description(self):
         """
         Returns
         -------
         This read-only attribute is a sequence of 3-item sequences.
-        Each of these sequences contains information describing one result column:
-        - name
-        - type_code
+        Each of these sequences contains information describing one column:
+        - column_name
+        - type_name
         - internal_size
-
-        Type Code
-        ---------
-        - 1：BOOL
-        - 2：TINYINT
-        - 3：SMALLINT
-        - 4：INT
-        - 5：BIGINT
-        - 6：FLOAT
-        - 7：DOUBLE
-        - 8：BINARY
-        - 9：TIMESTAMP
-        - 10：NCHAR
         """
         if self._response is None:
             return None
-        return self._response["column_meta"]
+        return self._description
 
     def callproc(self, procname, parameters=None):
         raise NotSupportedError()
@@ -57,15 +52,38 @@ class TaosRestCursor:
         self._response = None
         self._index = -1
         self._response = self._c.sql(operation)
-        if self._response["head"] == ['affected_rows']:
+
+        if self._logfile:
+            with open(self._logfile, "a", encoding="utf-8") as logfile:
+                logfile.write(f"{operation};\n")
+
+        if self._response["column_meta"][0][0] == 'affected_rows':
             # for INSERT
-            self._rowcount = self._response["data"][0][0]
+            self._description = self._response["column_meta"]
+            self._affected_rows = self._response["data"][0][0]
+            self._rowcount = self._affected_rows
+            return self._affected_rows
         else:
             # for SELECT, Show, ...
+            self._description = self._response["column_meta"]
+            self._affected_rows = None
             self._rowcount = self._response["rows"]
+
+    def log(self, logfile):
+        self._logfile = logfile
 
     def executemany(self, operation, parameters=None):
         self.execute(operation)
+
+    def istype(self, col, datatype):
+        if datatype.upper().strip() == self._description[col][1]:
+            return True
+        return False
+
+    def get_type(self, col):
+        if not self._description:
+            return None
+        return self._description[col][1]
 
     def fetchone(self):
         if self._response is None:
