@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.5.2 - 2022-08-11
+
+### Bug Fixes:
+
+- fix taos-ws-py python version dependency (#88)
+
 ## v2.5.1 - 2022-08-11
 
 ### Features:
