@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.5.1 - 2022-08-11
+
+### Features:
+
+- add taosws module
+- **(rest)**: add timezone option
+
+### Bug Fixes:
+
+- avoid in 2.x
+- do not test pandas api in 3.0
+- remove duplicate (#82)
+
+### Enhancements:
+
+- **(rest)**: add test case
+
+### Tests:
+
+- add test case for tmq
+- **(rest)**: add test case
+- **(rest)**: refine doc
+- timezone
+
+### Documents:
+
+- **(taosws)**: add examples using taosws module
+
 ## v2.5.0 - 2022-08-10
 
 ### Features:
