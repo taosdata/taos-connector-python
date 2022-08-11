@@ -40,6 +40,8 @@ class subscribeThread(threading.Thread):
 
 def test_tmq():
     """This test will test TDengine tmq api validity"""
+    if not IS_V3:
+        return
     conn = taos.connect()
     conn.execute("create database if not exists tmq_test")
     conn.select_db("tmq_test")
