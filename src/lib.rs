@@ -116,7 +116,7 @@ impl PyIterProtocol for TaosResult {
                 for col in 0..block.ncols() {
                     let value = block.get_ref(slf._current, col).unwrap();
                     let value = match value {
-                        BorrowedValue::Null => Option::<()>::None.into_py(py),
+                        BorrowedValue::Null(_) => Option::<()>::None.into_py(py),
                         BorrowedValue::Bool(v) => v.into_py(py),
                         BorrowedValue::TinyInt(v) => v.into_py(py),
                         BorrowedValue::SmallInt(v) => v.into_py(py),
