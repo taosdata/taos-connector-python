@@ -18,4 +18,4 @@ git commit -a -m "release: v$newv"
 git push
 git tag v$newv
 git push --force origin v$newv:v$newv
-bash build_doc.sh
+#bash build_doc.sh
