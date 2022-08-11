@@ -24,7 +24,7 @@ packages = [
 python = ">=3.6.2,<4.0"
 pytz = "*"
 iso8601 = "1.0.2"
-taos-ws-py = ">=0.1.1"
+taos-ws-py = { version = ">=0.1.1", markers = "sys_platform == 'linux'" }
 
 [tool.poetry.dev-dependencies]
 typing = "*"
