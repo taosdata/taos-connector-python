@@ -1,6 +1,9 @@
 name: Test 3.0
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
@@ -86,8 +89,15 @@ jobs:
         run: |
           export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
           source $VENV
-          poetry run pip install psutil pandas
-          poetry run pytest tests
+          poetry run pip install psutil pandas pytest-cov
+          poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest tests
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: coverage.xml
+          fail_ci_if_error: true
+
       - name: Build Artifacts
         run: |
           poetry build
