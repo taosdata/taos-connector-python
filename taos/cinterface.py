@@ -966,6 +966,10 @@ except Exception as err:
 def tmq_conf_set(conf, key, value):
     # type: (c_void_p, c_char_p, c_char_p) -> None
     _check_if_supported()
+
+    if not isinstance(value, str):
+        raise TmqError(msg=f"fail to execute tmq_conf_set({key},{value}), {value} is not string type")
+
     res = _libtaos.tmq_conf_set(conf, ctypes.c_char_p(key.encode("utf-8")), ctypes.c_char_p(value.encode("utf-8")))
     if res != 0:
         raise TmqError(msg=f"fail to execute tmq_conf_set({key},{value}), code={res}", errno=res)
@@ -1027,6 +1031,10 @@ except Exception as err:
 def tmq_list_append(list, topic):
     # type (c_void_p, c_char_p) -> None
     _check_if_supported()
+
+    if not isinstance(topic, str):
+        raise TmqError(f"topic value: {topic} is not string type")
+
     res = _libtaos.tmq_list_append(list, ctypes.c_char_p(topic.encode("utf-8")))
     return res
 
