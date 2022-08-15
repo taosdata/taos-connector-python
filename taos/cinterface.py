@@ -1028,6 +1028,8 @@ def tmq_list_append(list, topic):
     # type (c_void_p, c_char_p) -> None
     _check_if_supported()
     res = _libtaos.tmq_list_append(list, ctypes.c_char_p(topic.encode("utf-8")))
+    if res != 0:
+        raise TmqError(msg="failed on tmq_subscribe()", errno=res)
     return res
 
 try:
