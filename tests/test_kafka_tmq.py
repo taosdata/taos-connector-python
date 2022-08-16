@@ -15,31 +15,29 @@ class insertThread(threading.Thread):
         print("Finish insert data")
 
 class subscribeThread(threading.Thread):
-    def __init__(self, tmq):
+    def __init__(self, consumer):
         threading.Thread.__init__(self)
-        self.tmq = tmq
+        self.consumer = consumer
 
     def run(self):
         print("Start Subscribe")
-        while 1:
-            res = self.tmq.poll(1000)
-            if res:
-                topic = res.get_topic_name()
-                db = res.get_db_name()
+        for msg in self.consumer:
+            topic = msg.get_topic_name()
+            db = msg.get_db_name()
 
-                assert topic == "topic1"
-                assert db == "tmq_test"
+            assert topic == "topic1"
+            assert db == "tmq_test"
 
-                for _ in res:
-                    tb = res.get_table_name()
-                    assert tb == "tb1"
+            for _ in msg:
+                tb = msg.get_table_name()
+                assert tb == "tb1"
+            break
                 
-                break
         print("Finish Subscribe")
 
 
 def test_tmq():
-    """This test will test TDengine tmq api validity"""
+    """This test will test TDengine kafka tmq validity"""
     if not IS_V3:
         return
     conn = taos.connect()
@@ -56,27 +54,13 @@ def test_tmq():
     print("========start create topic")
     conn.execute("drop topic if exists topic1")
     conn.execute("create topic if not exists topic1 as select ts,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14 from stb1")
-    conf = TaosTmqConf()
-    conf.set("group.id", "1")
-    conf.set("td.connect.user", "root")
-    conf.set("td.connect.pass", "taosdata")
-    conf.set("msg.with.table.name", "true")
-    
-
-    tmq = conf.new_consumer()
-
-    print("====== set topic list")
-    topic_list = TaosTmqList()
-    topic_list.append("topic1")    
-
-    print("====== subscribe topic")
-    tmq.subscribe(topic_list)
+    consumer = TaosConsumer('topic1', group_id='123', msg_with_table_name='true')
 
     print("====== check subscription")
-    sub_list = tmq.subscription()
+    sub_list = consumer.subscription()
     assert sub_list[0] == "topic1"
 
-    sThread = subscribeThread(tmq)
+    sThread = subscribeThread(consumer)
 
     iThread = insertThread()
 
@@ -89,7 +73,7 @@ def test_tmq():
 
     print("====== finish test, start clean")
     print("====== unsubscribe topic")
-    tmq.unsubscribe()
+    consumer.unsubscribe()
 
     # drop database and topic
     conn.execute("drop topic if exists topic1")
