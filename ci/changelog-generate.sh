@@ -23,7 +23,7 @@ function part() {
   fi
 }
 
-part "Features" "feature|feat"
+part "Features" "feature|feat|impr"
 part "Bug Fixes" "bugfix|fix"
 part "Enhancements" "enhance|enh"
 part "Tests" "test"
