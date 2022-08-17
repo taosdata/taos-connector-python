@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "taospy"
-version = "2.5.2"
+version = "2.6.0"
 description = "TDengine connector for python"
 authors = ["Taosdata Inc. <support@taosdata.com>"]
 license = "MIT"
@@ -25,7 +25,7 @@ pytz = "*"
 iso8601 = "1.0.2"
 
 [tool.poetry.dependencies.taos-ws-py]
-version = ">=0.1.1"
+version = "2.6.0"
 python = ">=3.7,<4.0"
 optional = true
 markers = "sys_platform == 'linux' and platform_machine == 'x86_64'"

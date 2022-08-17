@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.6.0 - 2022-08-17
+
+### Features:
+
+- add kafka tmq api
+- latest supported python version bumped to v3.7
+
 ## v2.5.2 - 2022-08-11
 
 ### Bug Fixes:
