@@ -6,7 +6,7 @@ if [ "$newv" = "" ]; then
   exit 1
 fi
 echo "__version__ = '$newv'" > taos/_version.py
-sed -Ei 's#^version\s*=.*$#version = "'$newv'"#' pyproject.toml
+sed -Ei '3s#^version\s*=.*$#version = "'$newv'"#' pyproject.toml
 
 sed -n "1,9p" CHANGELOG.md > CHANGELOG.md2
 printf "## v$newv - $(date +%F)\n\n" >> CHANGELOG.md2
