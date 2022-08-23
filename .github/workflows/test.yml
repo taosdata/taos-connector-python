@@ -23,15 +23,11 @@ jobs:
       - name: Setup Python
         run: |
           sudo apt-get install -y python3 python3-pip python-is-python3
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.17
 
-      - name: Build TDengine
+      - name: Build TDengine 2.x
         run: |
-          git clone --depth 1 https://github.com/taosdata/TDengine.git -b 2.4
-          cd TDengine
+          git clone --depth 1 https://github.com/taosdata/TDengine.git -b 2.6 TDengine_v2
+          cd TDengine_v2
           git submodule update --depth 1 --init --recursive
           mkdir build
           cd build
@@ -39,15 +35,15 @@ jobs:
           make -j
           cd ../../
 
-      - name: Start TDengine
+      - name: Start TDengine 2.x
         run: |
-          tree TDengine/build/build/
-          export C_INCLUDE_PATH=$PWD/TDengine/build/build/bin
-          export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
+          tree TDengine_v2/build/build/
+          export C_INCLUDE_PATH=$PWD/TDengine_v2/build/build/bin
+          export LD_LIBRARY_PATH=$PWD/TDengine_v2/build/build/lib
           mkdir -p /tmp/taos/
           printf "dataDir /tmp/taos\nlogDir /tmp/taos/\n" > /tmp/taos/taos.cfg
-          ./TDengine/build/build/bin/taosadapter &
-          ./TDengine/build/build/bin/taosd -c /tmp/taos/ &
+          ./TDengine_v2/build/build/bin/taosadapter &
+          ./TDengine_v2/build/build/bin/taosd -c /tmp/taos/ &
 
       - name: Cache Poetry
         id: cache-poetry
@@ -86,15 +82,56 @@ jobs:
       - name: Install library
         run: poetry install --no-interaction
 
+      - name: Test 2.x
+        run: |
+          export LD_LIBRARY_PATH=$PWD/TDengine_v2/build/build/lib
+          source $VENV
+          poetry run pip install psutil pandas
+          poetry run pytest tests --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest tests
+
+      - name: Stop TDengine 2.4 and clean data
+        run: |
+          kill -9 $(pidof taosd)
+          kill -9 $(pidof taosadapter)
+          rm -rf /tmp/taos/*
+
+      - name: Build TDengine 3.0
+        run: |
+          git clone --recursive --depth 1 https://github.com/taosdata/TDengine.git -b 3.0 TDengine_v3
+          cd TDengine_v3
+          mkdir build
+          cd build
+          cmake ../ -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/`
+          make -j8
+          sudo make install
+          ls -alh /etc/taos/
+          cd ../../
+
+      - name: Start TDengine 3.0
+        run: |
+          tree TDengine_v3/build/build/
+          export C_INCLUDE_PATH=$PWD/TDengine_v3/build/build/bin
+          export LD_LIBRARY_PATH=$PWD/TDengine_v3/build/build/lib
+          mkdir -p /tmp/taos/
+          printf "dataDir /tmp/taos\nlogDir /tmp/taos/\n" > /tmp/taos/taos.cfg
+          TAOS_SUPPORT_VNODES=256 ./TDengine_v3/build/build/bin/taosd -c /tmp/taos/ &
+
       #----------------------------------------------
       #              run test suite
       #----------------------------------------------
-      - name: Test
+      - name: Test 3.0
         run: |
-          export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
+          export LD_LIBRARY_PATH=$PWD/TDengine_v3/build/build/lib
           source $VENV
-          poetry run pip install psutil pandas
-          poetry run pytest tests
+          poetry run pip install psutil pandas pytest-cov
+          poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: coverage.xml
+          fail_ci_if_error: true
+
       - name: Build Artifacts
         run: |
           poetry build
