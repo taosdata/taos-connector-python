@@ -24,9 +24,9 @@ jobs:
         run: |
           sudo apt-get install -y python3 python3-pip python-is-python3
 
-      - name: Build TDengine 2.4
+      - name: Build TDengine 2.x
         run: |
-          git clone --depth 1 https://github.com/taosdata/TDengine.git -b 2.4 TDengine_v2
+          git clone --depth 1 https://github.com/taosdata/TDengine.git -b 2.6 TDengine_v2
           cd TDengine_v2
           git submodule update --depth 1 --init --recursive
           mkdir build
@@ -35,7 +35,7 @@ jobs:
           make -j
           cd ../../
 
-      - name: Start TDengine 2.4
+      - name: Start TDengine 2.x
         run: |
           tree TDengine_v2/build/build/
           export C_INCLUDE_PATH=$PWD/TDengine_v2/build/build/bin
@@ -82,7 +82,7 @@ jobs:
       - name: Install library
         run: poetry install --no-interaction
 
-      - name: Test 2.4
+      - name: Test 2.x
         run: |
           export LD_LIBRARY_PATH=$PWD/TDengine_v2/build/build/lib
           source $VENV
