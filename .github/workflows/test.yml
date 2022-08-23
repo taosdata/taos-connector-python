@@ -40,6 +40,7 @@ jobs:
           tree TDengine_v2/build/build/
           export C_INCLUDE_PATH=$PWD/TDengine_v2/build/build/bin
           export LD_LIBRARY_PATH=$PWD/TDengine_v2/build/build/lib
+          export TDENGINE_URL=localhost:6041
           mkdir -p /tmp/taos/
           printf "dataDir /tmp/taos\nlogDir /tmp/taos/\n" > /tmp/taos/taos.cfg
           ./TDengine_v2/build/build/bin/taosadapter &
@@ -89,7 +90,7 @@ jobs:
           poetry run pip install psutil pandas
           poetry run pytest tests --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest tests
 
-      - name: Stop TDengine 2.4 and clean data
+      - name: Stop TDengine 2.x and clean data
         run: |
           kill -9 $(pidof taosd)
           kill -9 $(pidof taosadapter)
