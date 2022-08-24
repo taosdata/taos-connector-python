@@ -40,7 +40,6 @@ jobs:
           tree TDengine_v2/build/build/
           export C_INCLUDE_PATH=$PWD/TDengine_v2/build/build/bin
           export LD_LIBRARY_PATH=$PWD/TDengine_v2/build/build/lib
-          export TDENGINE_URL=localhost:6041
           mkdir -p /tmp/taos/
           printf "dataDir /tmp/taos\nlogDir /tmp/taos/\n" > /tmp/taos/taos.cfg
           ./TDengine_v2/build/build/bin/taosadapter &
@@ -87,6 +86,7 @@ jobs:
         run: |
           export LD_LIBRARY_PATH=$PWD/TDengine_v2/build/build/lib
           source $VENV
+          export TDENGINE_URL=localhost:6041
           poetry run pip install psutil pandas
           poetry run pytest tests --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest tests
 
