@@ -116,6 +116,7 @@ jobs:
           mkdir -p /tmp/taos/
           printf "dataDir /tmp/taos\nlogDir /tmp/taos/\n" > /tmp/taos/taos.cfg
           TAOS_SUPPORT_VNODES=256 ./TDengine_v3/build/build/bin/taosd -c /tmp/taos/ &
+          ./TDengine_v3/build/build/bin/taosadapter &
 
       #----------------------------------------------
       #              run test suite
