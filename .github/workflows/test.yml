@@ -126,6 +126,7 @@ jobs:
           export LD_LIBRARY_PATH=$PWD/TDengine_v3/build/build/lib
           source $VENV
           export TDENGINE_URL=localhost:6041
+          curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
           poetry run pip install psutil pandas pytest-cov
           poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
 
