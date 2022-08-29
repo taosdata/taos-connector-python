@@ -1,5 +1,6 @@
 import datetime
 import os
+import taos
 
 from dotenv import load_dotenv
 
@@ -39,7 +40,10 @@ def test_insert_data():
     print(resp)
     #  {'status': 'succ', 'head': ['affected_rows'], 'column_meta': [['affected_rows', 4, 4]], 'rows': 1, 'data': [[2]]}
     assert resp["rows"] == 1
-    assert resp["column_meta"] == [['affected_rows', "INT", 4]]
+    if taos.IS_V3:
+        assert resp["column_meta"] == [['affected_rows', "INT", 4]]
+    else:
+        assert resp["column_meta"] == [['affected_rows', 4, 4]]
 
 
 @check_env
@@ -60,9 +64,12 @@ def test_select_data_with_timestamp_type():
     resp = c.sql("select * from test.tb2")
     print("\n", resp)
     data = resp["data"]
-    assert isinstance(data[0][0], datetime.datetime) and data[0][0].tzinfo is not None
-    assert isinstance(data[0][3], datetime.datetime) and data[0][3].tzinfo is not None
-
+    if taos.IS_V3:
+        assert isinstance(data[0][0], datetime.datetime) and data[0][0].tzinfo is None
+        assert isinstance(data[0][3], datetime.datetime) and data[0][3].tzinfo is None
+    else:
+        assert isinstance(data[0][0], str)
+        assert isinstance(data[0][3], str)
 
 @check_env
 def test_use_str_timestamp():

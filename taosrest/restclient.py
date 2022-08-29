@@ -1,6 +1,7 @@
 import datetime
 import json
 import socket
+import taos
 from urllib.request import urlopen, Request
 
 from iso8601 import parse_date
@@ -93,8 +94,12 @@ class RestClient:
         self._check_status(response)
 
         resp = json.load(response)
-        if resp["code"] != 0:
-            raise ConnectError(resp["desc"], resp["code"])
+        if taos.IS_V3:
+            if resp["code"] != 0:
+                raise ConnectError(resp["desc"], resp["code"])
+        else:
+            if resp["status"] != "succ":
+                raise ConnectError(resp["desc"], resp["status"])
         return resp["desc"]
 
     def sql(self, q: str) -> dict:
@@ -112,8 +117,12 @@ class RestClient:
         response = urlopen(request, timeout=self._timeout)
         self._check_status(response)
         resp = json.load(response)
-        if resp["code"] != 0:
-            raise ExecutionError(resp["desc"], resp["code"])
+        if taos.IS_V3:
+            if resp["code"] != 0:
+                raise ConnectError(resp["desc"], resp["code"])
+        else:
+            if resp["status"] != "succ":
+                raise ConnectError(resp["desc"], resp["status"])
         if self._convert_timestamp:
             self._convert_time(resp)
         return resp

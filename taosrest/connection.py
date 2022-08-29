@@ -1,5 +1,5 @@
 from typing import List, Dict
-
+import taos
 from .errors import NotSupportedError
 from .cursor import TaosRestCursor
 from .restclient import RestClient
@@ -7,7 +7,10 @@ from .restclient import RestClient
 
 class Result:
     def __init__(self, resp: dict):
-        self.code: str = resp["code"]
+        if taos.IS_V3:
+            self.code: str = resp["code"]
+        else:
+            self.status: str = resp["status"]
         self.column_meta: List[list] = resp["column_meta"]
         self.data: List[list] = resp["data"]
         self.rows: int = resp["rows"]
