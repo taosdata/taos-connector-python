@@ -64,12 +64,8 @@ def test_select_data_with_timestamp_type():
     resp = c.sql("select * from test.tb2")
     print("\n", resp)
     data = resp["data"]
-    if taos.IS_V3:
-        assert isinstance(data[0][0], datetime.datetime) and data[0][0].tzinfo is None
-        assert isinstance(data[0][3], datetime.datetime) and data[0][3].tzinfo is None
-    else:
-        assert isinstance(data[0][0], str)
-        assert isinstance(data[0][3], str)
+    assert isinstance(data[0][0], datetime.datetime) and data[0][0].tzinfo is None
+    assert isinstance(data[0][3], datetime.datetime) and data[0][3].tzinfo is None
 
 @check_env
 def test_use_str_timestamp():

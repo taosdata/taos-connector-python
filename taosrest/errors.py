@@ -1,8 +1,12 @@
 class Error(Exception):
-    def __init__(self, msg=None, errno=0xffff):
+    def __init__(self, msg=None, errno=0xffff, status=''):
         self.msg = msg
         self.errno = errno
-        self._full_msg = "[0x%04x]: %s" % (self.errno & 0xffff, self.msg)
+        self.status = status
+        if self.status != '':
+            self._full_msg = "[%s]: %s" % (self.status, self.msg)
+        else:
+            self._full_msg = "[0x%04x]: %s" % (self.errno & 0xffff, self.msg)
 
     def __str__(self):
         return self._full_msg

@@ -99,7 +99,7 @@ class RestClient:
                 raise ConnectError(resp["desc"], resp["code"])
         else:
             if resp["status"] != "succ":
-                raise ConnectError(resp["desc"], resp["status"])
+                raise ConnectError(resp["desc"], status=resp["status"])
         return resp["desc"]
 
     def sql(self, q: str) -> dict:
@@ -122,7 +122,7 @@ class RestClient:
                 raise ConnectError(resp["desc"], resp["code"])
         else:
             if resp["status"] != "succ":
-                raise ConnectError(resp["desc"], resp["status"])
+                raise ConnectError(resp["desc"], status=resp["status"])
         if self._convert_timestamp:
             self._convert_time(resp)
         return resp
@@ -135,7 +135,7 @@ class RestClient:
         data = resp["data"]
         ts_cols = []
         for i in range(len(meta)):
-            if meta[i][1] == "TIMESTAMP":
+            if meta[i][1] == "TIMESTAMP" or meta[i][1] == 9:
                 ts_cols.append(i)
         if len(ts_cols) == 0:
             return
