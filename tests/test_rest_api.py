@@ -12,10 +12,8 @@ load_dotenv()
 default_token = "/KfeAzX/f9na8qdtNZmtONryp201ma04bEl8LcvLUd7a8qdtNZmtONryp201ma04"
 
 
-@check_env
 def test_login():
-    url = os.environ["TDENGINE_URL"]
-    response = urlopen(url + "/rest/login/root/taosdata")
+    response = urlopen("http://localhost:6041/rest/login/root/taosdata")
     resp = json.load(response)
     print()
     print(resp)
@@ -23,10 +21,8 @@ def test_login():
     assert "desc" in resp and resp["desc"] == default_token
 
 
-@check_env
 def test_wrong_password():
-    url = os.environ["TDENGINE_URL"]
-    response = urlopen(url + "/rest/login/root/taosdatax")
+    response = urlopen("http://localhost:6041/rest/login/root/taosdatax")
     resp = json.load(response)
     assert resp["code"] == 3
     assert resp["desc"] == "Authentication failure"
@@ -35,7 +31,7 @@ def test_wrong_password():
 @pytest.mark.skip(reason="know bug TD-16959")
 @check_env
 def test_server_version():
-    url = os.environ["TDENGINE_URL"] + "/rest/sql"
+    url = "http://localhost:6041/rest/sql"
     data = "select server_version()".encode("ascii")
 
     headers = {
@@ -55,7 +51,7 @@ def test_wrong_sql():
     """
     {'code': 9730, 'desc': 'Table does not exist: notable'}
      """
-    url = os.environ["TDENGINE_URL"] + "/rest/sql"
+    url = "http://localhost:6041/rest/sql"
     data = "select * from nodb.notable".encode("utf8")
 
     headers = {
