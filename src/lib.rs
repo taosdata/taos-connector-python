@@ -4,7 +4,7 @@ use pyo3::{create_exception, exceptions::PyException};
 use pyo3::{prelude::*, PyObjectProtocol};
 use taos_query::prelude::Field;
 use taos_query::{common::RawBlock as Block, prelude::BorrowedValue, Fetchable};
-use taos_ws::sync::*;
+use taos_ws::query::sync::*;
 
 create_exception!(taosws, ConnectionError, PyException);
 create_exception!(taosws, QueryError, PyException);
