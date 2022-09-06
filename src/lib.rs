@@ -3,8 +3,10 @@ use pyo3::PyIterProtocol;
 use pyo3::{create_exception, exceptions::PyException};
 use pyo3::{prelude::*, PyObjectProtocol};
 use taos_query::prelude::Field;
-use taos_query::{common::RawBlock as Block, prelude::BorrowedValue, Fetchable};
-use taos_ws::query::sync::*;
+use taos_query::TBuilder;
+use taos_query::{common::RawBlock as Block, prelude::BorrowedValue, Fetchable, Queryable};
+use taos_ws::query::{ResultSet, Taos};
+use taos_ws::TaosBuilder;
 
 create_exception!(taosws, ConnectionError, PyException);
 create_exception!(taosws, QueryError, PyException);
@@ -12,7 +14,7 @@ create_exception!(taosws, FetchError, PyException);
 
 #[pyclass]
 struct Taosws {
-    _inner: WsClient,
+    _inner: Taos,
 }
 
 #[pyclass]
@@ -75,7 +77,7 @@ struct TaosResult {
 #[pymethods]
 impl Taosws {
     fn query(&self, sql: &str) -> PyResult<TaosResult> {
-        match self._inner.s_query(sql) {
+        match self._inner.query(sql) {
             Ok(rs) => {
                 let cols = rs.num_of_fields();
                 Ok(TaosResult {
@@ -90,7 +92,7 @@ impl Taosws {
     }
 
     fn execute(&self, sql: &str) -> PyResult<i32> {
-        match self._inner.s_query(sql) {
+        match self._inner.query(sql) {
             Ok(rs) => Ok(rs.affected_rows()),
             Err(err) => Err(QueryError::new_err(err.errstr())),
         }
@@ -105,10 +107,10 @@ impl PyIterProtocol for TaosResult {
     fn __next__(mut slf: PyRefMut<Self>) -> Option<PyObject> {
         if let Some(block) = slf._block.as_ref() {
             if slf._current >= block.nrows() {
-                slf._block = slf._inner.fetch_block().unwrap_or_default();
+                slf._block = slf._inner.fetch_raw_block().unwrap_or_default();
             }
         } else {
-            slf._block = slf._inner.fetch_block().unwrap_or_default();
+            slf._block = slf._inner.fetch_raw_block().unwrap_or_default();
         }
         Python::with_gil(|py| -> Option<PyObject> {
             if let Some(block) = slf._block.as_ref() {
@@ -166,7 +168,10 @@ impl TaosResult {
 
 #[pyfunction]
 fn connect(dsn: &str) -> PyResult<Taosws> {
-    match WsClient::from_dsn(dsn) {
+    match TaosBuilder::from_dsn(dsn)
+        .map_err(|err| ConnectionError::new_err(err.to_string()))?
+        .build()
+    {
         Ok(client) => Ok(Taosws { _inner: client }),
         Err(err) => Err(ConnectionError::new_err(err.errstr())),
     }
