@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.6.3 - 2022-09-06
+
+### Bug Fixes:
+
+- auto detect response version instead of taos.IS_V3
+
+### Tests:
+
+- improve connector test coverage (#91)
+- python function test (#92)
+
 ## v2.6.2 - 2022-08-18
 
 ### Bug Fixes:
