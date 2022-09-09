@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.6.4 - 2022-09-09
+
+### Bug Fixes:
+
+- **(rest)**: fix non timezone error when taosAdapter run in non-UTC env (#96)
+
 ## v2.6.3 - 2022-09-06
 
 ### Bug Fixes:
