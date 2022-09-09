@@ -18,6 +18,7 @@ error_msgs = {
 }
 
 
+
 class RestClient:
     """
      A wrapper for TDengine REST API.
@@ -60,21 +61,29 @@ class RestClient:
         # determine full URL to use and the header to user.
         if token:
             if not database:
-                self._sql_utc_url = f"{self._url}/rest/sql?token={token}"
+                self._sql_utc_url = f"{self._url}/rest/sqlutc?token={token}"
             else:
-                self._sql_utc_url = f"{self._url}/rest/sql/{database}?token={token}"
+                self._sql_utc_url = f"{self._url}/rest/sqlutc/{database}?token={token}"
             self._headers = {}
         else:
             self._login_url = f"{self._url}/rest/login/{user}/{password}"
             if not database:
-                self._sql_utc_url = f"{self._url}/rest/sql"
+                self._sql_utc_url = f"{self._url}/rest/sqlutc"
             else:
-                self._sql_utc_url = f"{self._url}/rest/sql/{database}"
+                self._sql_utc_url = f"{self._url}/rest/sqlutc/{database}"
             self._taosd_token = self.get_taosd_token()
             self._headers = {
                 "Authorization": "Taosd " + self._taosd_token
             }
+
         self._convert_timestamp = convert_timestamp
+
+        try:
+            data = "select 1".encode("utf8")
+            request = Request(self._sql_utc_url, data, self._headers)
+            response = urlopen(request, timeout=self._timeout)
+        except:
+            self._sql_utc_url = self._sql_utc_url.replace("sqlutc", "sql")
 
         if timezone is None:
             self._timezone = None
