@@ -13,48 +13,50 @@ jobs:
     name: "Test on macOS"
     runs-on: macos-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
       - name: Setup coreutils
         run: brew install coreutils
-
-      - name: Setup Postman
-        run: |
-          brew install postman
-      - name: Checkout
-        uses: actions/checkout@v1
 
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.x'
+
+      - name: Set up Go
+        if: steps.changed-files-specific.outputs.any_changed == 'true'
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.14
+
       - name: Build TDengine
         run: |
-          git clone --depth 1 https://github.com/taosdata/TDengine.git
+          git clone --branch 3.0 --depth 1 https://github.com/taosdata/TDengine.git
           cd TDengine
-          git submodule update --depth 1 --init --recursive
           mkdir build
           cd build
-          abs_path () {    
-            echo "$(cd $(dirname "$1");pwd)/$(basename "$1")"
-          }
-          cmake ../ -DBUILD_HTTP=true -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`abs_path ../../local/`
-          make -j
+          cmake ../ -DBUILD_HTTP=false
+          make -j8 && make install
           cd ../../
+
       - name: Start TDengine
         run: |
-          export C_INCLUDE_PATH=$PWD/TDengine/build/build/bin
+          export C_INCLUDE_PATH=$PWD/TDengine/build/build/include
           export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
-          # mkdir -p taos/data taos/log
-          # printf "dataDir ./taos/data\nlogDir ./taos/log\n" > taos/taos.cfg
-          # sudo ./TDengine/build/build/bin/taosd -c taos &
-          # sudo postman pull tdengine/tdengine
-          sudo postman run -d --name tdengine --network host tdengine/tdengine
+
+          taosadapter &
+
+          TAOS_SUPPORT_VNODES=256 taosd &
           sleep 1
+
       - name: Cache Poetry
         id: cache-poetry
         uses: actions/cache@v2.1.5
         with:
           path: ~/.poetry
           key: macos-poetry
+
       #----------------------------------------------
       #  -----  install & configure poetry  -----
       #----------------------------------------------
@@ -74,12 +76,14 @@ jobs:
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+
       #----------------------------------------------
       # install dependencies if cache does not exist
       #----------------------------------------------
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root
+
       #----------------------------------------------
       # install your root project, if required
       #----------------------------------------------
@@ -93,8 +97,10 @@ jobs:
         run: |
           export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
           source $VENV
+          export TDENGINE_URL=localhost:6041
           poetry run pip install psutil pandas
           poetry run pytest tests
+
       - name: Build Artifacts
         run: |
           poetry build
