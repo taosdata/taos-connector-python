@@ -22,11 +22,12 @@ conf.set("group.id", "tg2")
 conf.set("td.connect.user", "root")
 conf.set("td.connect.pass", "taosdata")
 conf.set("enable.auto.commit", "true")
-conf.set("msg.with.table.name", "true")
+
 
 def tmq_commit_cb_print(tmq, resp, offset, param=None):
     print(f"commit: {resp}, tmq: {tmq}, offset: {offset}, param: {param}")
-    
+
+
 conf.set_auto_commit_cb(tmq_commit_cb_print, None)
 tmq = conf.new_consumer()
 
@@ -40,7 +41,7 @@ tmq.subscribe(topic_list)
 
 sub_list = tmq.subscription()
 
-print("subscribed topics: ",sub_list)
+print("subscribed topics: ", sub_list)
 
 while 1:
     res = tmq.poll(1000)
@@ -51,8 +52,3 @@ while 1:
         print(f"topic: {topic}\nvgroup id: {vg}\ndb: {db}")
         for row in res:
             print(row)
-            tb = res.get_table_name()
-            print(f"from table: {tb}")
-    
-
-
