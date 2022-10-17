@@ -44,7 +44,7 @@ __all__ = [
     "TaosStmt",
     "PrecisionEnum",
     "SmlPrecision",
-    "SmlProtocol"
+    "SmlProtocol",
 ]
 
 
