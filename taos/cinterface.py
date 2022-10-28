@@ -951,7 +951,7 @@ try:
     _libtaos.tmq_conf_new.restype = c_void_p
 except Exception as err:
     _UNSUPPORTED["tmq_conf_new"] = err
-    
+
 def tmq_conf_new():
     # type: () -> c_void_p
     _check_if_supported()
@@ -961,7 +961,7 @@ try:
     _libtaos.tmq_conf_set.restype = c_int
     _libtaos.tmq_conf_set.argtypes = (c_void_p, c_char_p, c_char_p)
 except Exception as err:
-    _UNSUPPORTED["tmq_conf_set"] = err 
+    _UNSUPPORTED["tmq_conf_set"] = err
 
 def tmq_conf_set(conf, key, value):
     # type: (c_void_p, c_char_p, c_char_p) -> None
@@ -985,19 +985,19 @@ def tmq_conf_destroy(conf):
     _check_if_supported()
     _libtaos.tmq_conf_destroy(conf)
 
-tmq_commit_cb = CFUNCTYPE(c_void_p, c_int, c_void_p, c_void_p)
+tmq_commit_cb = CFUNCTYPE(None, c_void_p, c_int, c_void_p)
 try:
     _libtaos.tmq_conf_set_auto_commit_cb.argtypes = (c_void_p, tmq_commit_cb, c_void_p)
     _libtaos.tmq_conf_set_auto_commit_cb.restype = None
 except Exception as err:
     _UNSUPPORTED["tmq_conf_set_auto_commit_cb"] = err
-    
+
 def tmq_conf_set_auto_commit_cb(conf, cb, param):
     # type (c_void_p, tmq_commit_cb, c_void_p) -> None
     _check_if_supported()
     _libtaos.tmq_conf_set_auto_commit_cb(conf, tmq_commit_cb(cb), param)
 
-try:    
+try:
     _libtaos.tmq_consumer_new.restype = c_void_p
     _libtaos.tmq_consumer_new.argtypes = (c_void_p, c_char_p, c_int)
 except Exception as err:
@@ -1043,13 +1043,13 @@ try:
     _libtaos.tmq_list_destroy.argtypes = (c_void_p,)
 except Exception as err:
     _UNSUPPORTED["tmq_list_destroy"] = err
-    
+
 def tmq_list_destroy(list):
     _check_if_supported()
     # type (c_void_p,) -> None
     _libtaos.tmq_list_destroy(list)
 
-try:    
+try:
     _libtaos.tmq_list_get_size.restype = c_int
     _libtaos.tmq_list_get_size.argtypes = (c_void_p,)
 except Exception as err:
@@ -1114,7 +1114,7 @@ def tmq_subscription(tmq):
     res =  tmq_list_to_c_array(topics)
     tmq_list_destroy(topics)
     return res;
-    
+
 try:
     _libtaos.tmq_consumer_poll.argtypes = (c_void_p, c_int64)
     _libtaos.tmq_consumer_poll.restype = c_void_p
@@ -1188,7 +1188,7 @@ def tmq_get_table_name(res):
     else:
         print("change msg.with.table.name to true in tmq config")
 
-try:        
+try:
     _libtaos.tmq_get_db_name.argtypes = (c_void_p,)
     _libtaos.tmq_get_db_name.restype = c_char_p
 except Exception as err:
