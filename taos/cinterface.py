@@ -956,6 +956,7 @@ except Exception as err:
     _UNSUPPORTED["tmq_conf_new"] = err
 
 
+
 def tmq_conf_new():
     # type: () -> c_void_p
     _check_if_supported()
@@ -993,8 +994,8 @@ def tmq_conf_destroy(conf):
     _check_if_supported()
     _libtaos.tmq_conf_destroy(conf)
 
+tmq_commit_cb = CFUNCTYPE(None, c_void_p, c_int, c_void_p)
 
-tmq_commit_cb = CFUNCTYPE(c_void_p, c_int, c_void_p, c_void_p)
 try:
     _libtaos.tmq_conf_set_auto_commit_cb.argtypes = (c_void_p, tmq_commit_cb, c_void_p)
     _libtaos.tmq_conf_set_auto_commit_cb.restype = None
