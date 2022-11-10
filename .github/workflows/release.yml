@@ -14,7 +14,10 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Poetry Setup
-        uses: abatilo/actions-poetry@v2.1.6
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: 1.2
+
       - name: Publish to PyPI
         env:
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
@@ -38,7 +41,9 @@ jobs:
           sudo apt-get install -y python3 python3-pip python-is-python3
 
       - name: Poetry Setup
-        uses: abatilo/actions-poetry@v2.1.6
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: 1.2
 
       # Poetry cache with default ~.cache/pypoetry directory.
       # Update it when `poetry.lock` file changed.
