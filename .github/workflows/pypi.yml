@@ -10,7 +10,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v1
       - name: Poetry Setup
-        uses: abatilo/actions-poetry@v2.1.2
+        uses: abatilo/actions-poetry@v2.1.6
       - name: Publish to PyPI
         env:
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
