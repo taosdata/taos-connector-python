@@ -10,7 +10,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v1
@@ -51,7 +51,7 @@ jobs:
         uses: actions/cache@v2.1.5
         with:
           path: ~/.poetry
-          key: ubuntu-20.04-poetry
+          key: ubuntu-22.04-poetry
       #----------------------------------------------
       #  -----  install & configure poetry  -----
       #----------------------------------------------
