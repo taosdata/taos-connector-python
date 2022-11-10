@@ -10,14 +10,14 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v1
 
       - name: Build tools
         run: |
-          sudo apt-get update
+          sudo apt-get update -y
           sudo apt-get install -y build-essential cmake
 
       - name: Setup Python
@@ -51,13 +51,14 @@ jobs:
         uses: actions/cache@v2.1.5
         with:
           path: ~/.poetry
-          key: ubuntu-20.04-poetry
+          key: ubuntu-22.04-poetry
       #----------------------------------------------
       #  -----  install & configure poetry  -----
       #----------------------------------------------
       - name: Install Poetry
-        uses: snok/install-poetry@v1
+        uses: abatilo/actions-poetry@v2
         with:
+          poetry-version: 1.2
           virtualenvs-create: true
           virtualenvs-in-project: true
           installer-parallel: true
@@ -76,7 +77,10 @@ jobs:
       #----------------------------------------------
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root
+        run: |
+          sudo apt install -y gnome-keyring
+          pip3 install --upgrade requests
+          poetry install --no-interaction --no-root
       #----------------------------------------------
       # install your root project, if required
       #----------------------------------------------
@@ -86,7 +90,7 @@ jobs:
       - name: Test 2.x
         run: |
           export LD_LIBRARY_PATH=$PWD/TDengine_v2/build/build/lib
-          source $VENV
+          #source $VENV
           export TDENGINE_URL=localhost:6041
           poetry run pip install psutil pandas
           poetry run pytest tests --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest tests
@@ -134,12 +138,12 @@ jobs:
       - name: Test 3.0
         run: |
           export LD_LIBRARY_PATH=$PWD/TDengine_v3/build/build/lib
-          source $VENV
+          #source $VENV
           export TDENGINE_URL=localhost:6041
           curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
           poetry run pip install psutil pandas pytest-cov
           poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
-        
+
 
       - name: 'Upload taosd logs'
         if: failure()

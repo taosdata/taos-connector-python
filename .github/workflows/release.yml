@@ -8,7 +8,7 @@ on:
 jobs:
   pypi:
     name: Publish to PyPI
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -26,14 +26,14 @@ jobs:
 
   release:
     name: GitHub Release
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
       - name: Build tools
         run: |
-          sudo apt-get update
+          sudo apt-get update -y
           sudo apt-get install -y build-essential cmake
 
       - name: Setup Python
@@ -52,14 +52,17 @@ jobs:
         uses: actions/cache@v2.1.5
         with:
           path: ~/.cache/pypoetry
-          key: ubuntu-20.04-poetry-${{ hashFiles('**/poetry.lock') }}
+          key: ubuntu-22.04-poetry-${{ hashFiles('**/poetry.lock') }}
 
       #----------------------------------------------
       # install dependencies if cache does not exist
       #----------------------------------------------
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root
+        run: |
+          sudo apt install -y gnome-keyring
+          pip3 install --upgrade requests
+          poetry install --no-interaction --no-root
 
       #----------------------------------------------
       # install your root project, if required
