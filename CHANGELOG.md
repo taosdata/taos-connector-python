@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v2.6.5 - 2022-11-10
 
+## v2.6.5 - 2022-11-10
+
 ### Bug Fixes:
 
 - dependency constrait error with poetry 1.2
