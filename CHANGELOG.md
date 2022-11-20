@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.6.6 - 2022-11-20
+
+### Bug Fixes:
+
+- fix tmq crash (#108)
+
 ## v2.6.5 - 2022-11-11
 
 ### Bug Fixes:
