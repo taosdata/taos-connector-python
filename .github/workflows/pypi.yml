@@ -5,15 +5,19 @@ on:
 
 jobs:
   publish:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v1
       - name: Poetry Setup
-        uses: abatilo/actions-poetry@v2.1.2
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: 1.2
+
       - name: Publish to PyPI
         env:
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
         run: |
+          pip3 install --upgrade requests
           poetry config pypi-token.pypi $PYPI_TOKEN
           poetry publish --build
