@@ -76,7 +76,6 @@ jobs:
       # install dependencies if cache does not exist
       #----------------------------------------------
       - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
           sudo apt install -y gnome-keyring
           pip3 install --upgrade requests
