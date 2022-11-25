@@ -59,7 +59,7 @@ class TaosStmt(object):
     def use_result(self):
         """NOTE: Don't use a stmt result more than once."""
         result = taos_stmt_use_result(self._stmt)
-        return TaosResult(result, True)
+        return TaosResult(result, False)
 
     @property
     def affected_rows(self):
