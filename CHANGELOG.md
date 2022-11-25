@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.6.7 - 2022-11-25
+
+### Bug Fixes:
+
+- should not call taos_free_result for stmt (#111)
+- test.yml install dependency always" (#110)
+
+### Documents:
+
+- move topic drop to early phase in python tmq example (#109)
+
 ## v2.6.6 - 2022-11-20
 
 ### Bug Fixes:
