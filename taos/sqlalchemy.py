@@ -18,6 +18,7 @@ TYPES_MAP = {
     "binary": sqltypes.String,
 }
 
+
 class AlchemyWsConnection:
     threadsafety = 1
     paramstyle = "pyformat"
@@ -25,11 +26,12 @@ class AlchemyWsConnection:
     def connect(self, **kwargs):
         host = kwargs["host"] if "host" in kwargs else "localhost"
         port = kwargs["port"] if "port" in kwargs else "6041"
-        user = kwargs["user"] if "user" in kwargs else "root"
+        user = kwargs["username"] if "username" in kwargs else "root"
         password = kwargs["password"] if "password" in kwargs else "taosdata"
         token = kwargs["token"] if "token" in kwargs else ""
         url = f"ws://{user}:{password}@{host}:{port}"
         import taosws
+
         return taosws.connect(url)
 
 
@@ -77,6 +79,21 @@ class TaosWsDialect(default.DefaultDialect):
     def _resolve_type(self, type_):
         return TYPES_MAP.get(type_, sqltypes.UserDefinedType)
 
+
+class AlchemyTaosConnection:
+    paramstyle = "pyformat"
+
+    def connect(self, **kwargs):
+        host = kwargs["host"] if "host" in kwargs else "localhost"
+        port = kwargs["port"] if "port" in kwargs else "6030"
+        user = kwargs["username"] if "username" in kwargs else "root"
+        password = kwargs["password"] if "password" in kwargs else "taosdata"
+
+        import taos
+
+        return taos.connect(host=host, user=user, password=password, port=int(port))
+
+
 class TaosDialect(default.DefaultDialect):
     name = "taos"
     driver = "taos"
@@ -91,9 +108,7 @@ class TaosDialect(default.DefaultDialect):
 
     @classmethod
     def dbapi(cls):
-        import taos
-
-        return taos
+        return AlchemyTaosConnection()
 
     def has_schema(self, connection, schema):
         return False
