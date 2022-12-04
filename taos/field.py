@@ -199,7 +199,7 @@ def _crow_binary_to_python_block(data, is_null, num_of_rows, nbytes=None, precis
         if is_null[i]:
             res.append(None)
         else:
-            rbyte = ctypes.cast(data + nbytes * i, ctypes.POINTER(ctypes.c_short))[:1].pop()
+            rbyte = ctypes.cast(data + nbytes * i, ctypes.POINTER(ctypes.c_uint16))[:1].pop()
             chars = ctypes.cast(c_char_p(data + nbytes * i + 2), ctypes.POINTER(c_char * rbyte))
             buffer = create_string_buffer(rbyte + 1)
             buffer[:rbyte] = chars[0][:rbyte]
