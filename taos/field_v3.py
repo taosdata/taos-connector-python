@@ -12,7 +12,7 @@ def _crow_binary_to_python_block_v3(data, is_null, num_of_rows, offsets, precisi
         if offsets[i] == -1:
             res.append(None)
         else:
-            rbyte = ctypes.cast(data + offsets[i], ctypes.POINTER(ctypes.c_short))[:1].pop()
+            rbyte = ctypes.cast(data + offsets[i], ctypes.POINTER(ctypes.c_uint16))[:1].pop()
             chars = ctypes.cast(ctypes.c_char_p(data + offsets[i] + 2), ctypes.POINTER(ctypes.c_char * rbyte))
             buffer = ctypes.create_string_buffer(rbyte + 1)
             buffer[:rbyte] = chars[0][:rbyte]
@@ -28,7 +28,7 @@ def _crow_nchar_to_python_block_v3(data, is_null, num_of_rows, offsets, precisio
         if offsets[i] == -1:
             res.append(None)
         else:
-            rbyte = ctypes.cast(data + offsets[i], ctypes.POINTER(ctypes.c_short))[:1].pop()
+            rbyte = ctypes.cast(data + offsets[i], ctypes.POINTER(ctypes.c_uint16))[:1].pop()
             chars = ctypes.cast(ctypes.c_char_p(data + offsets[i] + 2), ctypes.POINTER(ctypes.c_char * rbyte))
             buffer = ctypes.create_string_buffer(rbyte + 1)
             buffer[:rbyte] = chars[0][:rbyte]
