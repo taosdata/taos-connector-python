@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.6.8 - 2022-12-05
+
+### Enhancements:
+
+- column max length support up to 64k (#114)
+
 ## v2.6.7 - 2022-11-25
 
 ### Bug Fixes:
