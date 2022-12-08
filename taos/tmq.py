@@ -124,6 +124,7 @@ class TaosTmqConf(object):
 class TaosTmq(object):
     def __init__(self, conf):
         self._tmq  = tmq_consumer_new(conf.conf())
+        self._result = None
         
     def subscribe(self, list):
         tmq_subscribe(self._tmq, list.list())
@@ -135,17 +136,28 @@ class TaosTmq(object):
         return tmq_subscription(self._tmq)
         
     def poll(self, time):
+        # type: (int) -> TaosResult
         result = tmq_consumer_poll(self._tmq, time)
+        
         if result:
-            return TaosResult(result)
+            self._result = TaosResult(result, True)
+            return self._result
         else:
             return None
         
     def __del__(self):
-        tmq_consumer_close(self._tmq)
+        try:
+            tmq_unsubscribe(self._tmq)
+            tmq_consumer_close(self._tmq)
+        except TmqError:
+            pass
         
-    def commit(self, offset, _async):
-        tmq_commit(self._tmq, offset, _async)
+    def commit(self, result):
+        # type: (TaosResult) -> None
+        if result is None and not isinstance(result, TaosResult):
+            tmq_commit_sync(self._tmq, None)
+        else:
+            tmq_commit_sync(self._tmq, result._result)
         
         
 class TaosTmqList(object):
