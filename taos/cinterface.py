@@ -956,7 +956,6 @@ except Exception as err:
     _UNSUPPORTED["tmq_conf_new"] = err
 
 
-
 def tmq_conf_new():
     # type: () -> c_void_p
     _check_if_supported()
@@ -994,7 +993,8 @@ def tmq_conf_destroy(conf):
     _check_if_supported()
     _libtaos.tmq_conf_destroy(conf)
 
-tmq_commit_cb = CFUNCTYPE(c_void_p, c_void_p, c_int, c_void_p)
+
+tmq_commit_cb = CFUNCTYPE(None, c_void_p, c_int, c_void_p)
 
 try:
     _libtaos.tmq_conf_set_auto_commit_cb.argtypes = (c_void_p, tmq_commit_cb, c_void_p)
@@ -1120,8 +1120,12 @@ def tmq_unsubscribe(tmq):
     # type (c_void_p,) -> None
     _check_if_supported()
     res = _libtaos.tmq_unsubscribe(tmq)
+    if res == -1:
+        # -1 means empty subscription topic list..
+        # tmq_unsubscribe will subscribe a empty topic list to clear the consumer task.
+        return
     if res != 0:
-        raise TmqError(msg="failed on tmq_unsubscribe()", errno=res)
+        raise TmqError(msg=f"failed on tmq_unsubscribe() {res}", errno=res)
 
 
 try:
@@ -1172,18 +1176,18 @@ def tmq_consumer_close(tmq):
 
 
 try:
-    _libtaos.tmq_commit.argtypes = (c_void_p, c_void_p, c_int32)
-    _libtaos.tmq_commit.restype = c_int
+    _libtaos.tmq_commit_sync.argtypes = (c_void_p, c_void_p)
+    _libtaos.tmq_commit_sync.restype = c_int
 except Exception as err:
     _UNSUPPORTED["tmq_commit"] = err
 
 
-def tmq_commit(tmq, offset, _async):
-    # type (c_void_p, c_void_p, c_int32) -> None
+def tmq_commit_sync(tmq, offset):
+    # type: (c_void_p, c_void_p) -> None
     _check_if_supported()
-    res = _libtaos.tmq_commit(tmq, offset, _async)
+    res = _libtaos.tmq_commit_sync(tmq, offset)
     if res != 0:
-        raise TmqError(msg="failed on tmq_commit()", errno=res)
+        raise TmqError(msg="failed on tmq_commit_sync()", errno=res)
 
 
 try:
@@ -1194,7 +1198,7 @@ except Exception as err:
 
 
 def tmq_get_topic_name(res):
-    # type (c_void_p,) -> string
+    # type: (c_void_p,) -> str
     _check_if_supported()
     return _libtaos.tmq_get_topic_name(res).decode("utf-8")
 
@@ -1207,7 +1211,7 @@ except Exception as err:
 
 
 def tmq_get_vgroup_id(res):
-    # type (c_void_p,) -> int
+    # type: (c_void_p,) -> int
     _check_if_supported()
     return _libtaos.tmq_get_vgroup_id(res)
 
@@ -1220,7 +1224,7 @@ except Exception as err:
 
 
 def tmq_get_table_name(res):
-    # type (c_void_p,) -> string
+    # type: (c_void_p,) -> str
     _check_if_supported()
     tb_name = _libtaos.tmq_get_table_name(res)
     if tb_name:
@@ -1237,7 +1241,7 @@ except Exception as err:
 
 
 def tmq_get_db_name(res):
-    # type (c_void_p,) -> string
+    # type: (c_void_p,) -> str
     _check_if_supported()
     return _libtaos.tmq_get_db_name(res).decode("utf-8")
 

@@ -24,8 +24,8 @@ conf.set("td.connect.pass", "taosdata")
 conf.set("enable.auto.commit", "true")
 
 
-def tmq_commit_cb_print(tmq, resp, offset, param=None):
-    print(f"commit: {resp}, tmq: {tmq}, offset: {offset}, param: {param}")
+def tmq_commit_cb_print(tmq, resp, param=None):
+    print(f"commit: {resp}, tmq: {tmq}, param: {param}")
 
 
 conf.set_auto_commit_cb(tmq_commit_cb_print, None)
@@ -43,12 +43,25 @@ sub_list = tmq.subscription()
 
 print("subscribed topics: ", sub_list)
 
+c = 0
+l = 0
 while 1:
+    if c > 10:
+        break
     res = tmq.poll(1000)
+    print(f"loop {l}")
+    l += 1
     if res:
+        c += 1
         topic = res.get_topic_name()
         vg = res.get_vgroup_id()
         db = res.get_db_name()
         print(f"topic: {topic}\nvgroup id: {vg}\ndb: {db}")
         for row in res:
             print(row)
+        print("* committed")
+        tmq.commit(res)
+    else:
+        print(f"received empty message at loop {l} (committed {c})")
+
+        # break
