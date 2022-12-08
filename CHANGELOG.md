@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.6.9 - 2022-12-08
+
+### Bug Fixes:
+
+- fix tmq result memory leak
+
 ## v2.6.8 - 2022-12-05
 
 ### Enhancements:
