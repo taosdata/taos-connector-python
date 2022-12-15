@@ -1,8 +1,7 @@
 # encoding:UTF-8
-from .cinterface import taos_fetch_fields
-from .error import *
-from .constants import FieldType
-from .result import *
+from taos.cinterface import *
+from taos.error import *
+from taos.constants import FieldType
 
 
 class TaosCursor(object):
@@ -106,7 +105,7 @@ class TaosCursor(object):
         return True
 
     def execute(self, operation, params=None):
-        # type: (str, Any) -> int
+        # type: (str, Any) -> int|None
         """Prepare and execute a database operation (query or command)."""
         if not operation:
             return None

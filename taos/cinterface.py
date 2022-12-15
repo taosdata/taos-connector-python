@@ -11,8 +11,8 @@ try:
 except BaseException:
     pass
 
-from .error import *
-from .schemaless import *
+from taos.error import *
+from taos.schemaless import *
 
 _UNSUPPORTED = {}
 
@@ -72,13 +72,13 @@ def taos_get_client_info():
 IS_V3 = False
 
 if taos_get_client_info().split(".")[0] < "3":
-    from .field import CONVERT_FUNC, CONVERT_FUNC_BLOCK, TaosFields, TaosField, set_tz
+    from taos.field import CONVERT_FUNC, CONVERT_FUNC_BLOCK, TaosFields, TaosField, set_tz
 else:
-    from .field import CONVERT_FUNC, CONVERT_FUNC_BLOCK, TaosFields, TaosField, set_tz
+    from taos.field import CONVERT_FUNC, CONVERT_FUNC_BLOCK, TaosFields, TaosField, set_tz
 
     # use _v3s TaosField overwrite _v2s here, dont change import order
-    from .field_v3 import CONVERT_FUNC_BLOCK_v3, TaosFields, TaosField
-    from .constants import FieldType
+    from taos.field_v3 import CONVERT_FUNC_BLOCK_v3, TaosFields, TaosField
+    from taos.constants import FieldType
 
     IS_V3 = True
 
@@ -1198,7 +1198,7 @@ except Exception as err:
 
 
 def tmq_get_topic_name(res):
-    # type: (c_void_p,) -> str
+    # type: (c_void_p) -> str
     _check_if_supported()
     return _libtaos.tmq_get_topic_name(res).decode("utf-8")
 
@@ -1211,7 +1211,7 @@ except Exception as err:
 
 
 def tmq_get_vgroup_id(res):
-    # type: (c_void_p,) -> int
+    # type: (c_void_p) -> int
     _check_if_supported()
     return _libtaos.tmq_get_vgroup_id(res)
 
@@ -1224,7 +1224,7 @@ except Exception as err:
 
 
 def tmq_get_table_name(res):
-    # type: (c_void_p,) -> str
+    # type: (c_void_p) -> str
     _check_if_supported()
     tb_name = _libtaos.tmq_get_table_name(res)
     if tb_name:
@@ -1241,7 +1241,7 @@ except Exception as err:
 
 
 def tmq_get_db_name(res):
-    # type: (c_void_p,) -> str
+    # type: (c_void_p) -> str
     _check_if_supported()
     return _libtaos.tmq_get_db_name(res).decode("utf-8")
 
@@ -1258,6 +1258,22 @@ def _check_if_supported(func=None):
 def unsupported_methods():
     for m, e in range(_UNSUPPORTED):
         print("unsupported %s: %s", m, e)
+
+
+try:
+    _libtaos.taos_get_table_vgId.argstype = (c_void_p, c_char_p, c_char_p, POINTER(c_int))
+    _libtaos.taos_get_table_vgId.restype = c_int
+except Exception as err:
+    _UNSUPPORTED["taos_get_table_vgId"] = err
+
+
+def taos_get_table_vg_id(conn, db, table):
+    # type: (c_void_p, str, str) -> int
+    _check_if_supported()
+    vg_id = c_int()
+    _libtaos.taos_get_table_vgId(conn, c_char_p(db.encode('utf-8')), c_char_p(table.encode('utf-8')),
+                                 ctypes.byref(vg_id))
+    return vg_id.value
 
 
 class CTaosInterface(object):

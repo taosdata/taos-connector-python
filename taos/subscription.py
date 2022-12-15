@@ -1,12 +1,12 @@
 from taos.result import TaosResult
-from .cinterface import *
-from .error import *
+from taos.cinterface import taos_consume, taos_unsubscribe
+from taos.error import OperationalError
 
 
 class TaosSubscription(object):
     """TDengine subscription object"""
 
-    def __init__(self, sub, with_callback = False):
+    def __init__(self, sub, with_callback=False):
         self._sub = sub
         self._with_callback = with_callback
 
@@ -30,5 +30,3 @@ class TaosSubscription(object):
 
     def __del__(self):
         self.close()
-
-

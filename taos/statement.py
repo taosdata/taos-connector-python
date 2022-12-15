@@ -1,12 +1,12 @@
 from taos.cinterface import *
-from taos.error import *
-from taos.result import *
+from taos.error import StatementError
+from taos.result import TaosResult
 
 
 class TaosStmt(object):
     """TDengine STMT interface"""
 
-    def __init__(self, stmt, conn = None):
+    def __init__(self, stmt, conn=None):
         self._conn = conn
         self._stmt = stmt
 
@@ -75,4 +75,3 @@ class TaosStmt(object):
 
     def __del__(self):
         self.close()
-
