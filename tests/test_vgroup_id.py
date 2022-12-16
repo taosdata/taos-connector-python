@@ -4,6 +4,12 @@ import taos
 
 def test_get_table_vgroup_id():
     conn = taos.connect()
+    res = conn.query("select server_version()")
+    data = res.fetch_all()
+    res.close()
+    if data[0][0] < '3.0.2.0':
+        return
+
     conn.execute("drop database if exists test_get_table_vgroup_id")
     conn.execute("create database if not exists test_get_table_vgroup_id")
     conn.execute("create stable test_get_table_vgroup_id.meters (ts timestamp, current float, voltage int, phase float)"
