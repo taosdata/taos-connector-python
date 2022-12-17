@@ -13,8 +13,9 @@ class AlchemyRestConnection:
         port = kwargs["port"] if "port" in kwargs else "6041"
         user = kwargs["username"] if "username" in kwargs else "root"
         password = kwargs["password"] if "password" in kwargs else "taosdata"
+        database = kwargs["database"] if "database" in kwargs else None
         url = f"http://{host}:{port}"
-        return taosrest.connect(url=url, user=user, password=password)
+        return taosrest.connect(url=url, user=user, password=password, database=database)
 
 
 class TaosRestDialect(default.DefaultDialect):
