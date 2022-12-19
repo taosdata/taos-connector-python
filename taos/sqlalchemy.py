@@ -28,8 +28,9 @@ class AlchemyWsConnection:
         port = kwargs["port"] if "port" in kwargs else "6041"
         user = kwargs["username"] if "username" in kwargs else "root"
         password = kwargs["password"] if "password" in kwargs else "taosdata"
+        database = kwargs["database"] if "database" in kwargs else None
         token = kwargs["token"] if "token" in kwargs else ""
-        url = f"ws://{user}:{password}@{host}:{port}"
+        url = f"ws://{user}:{password}@{host}:{port}/{database}"
         import taosws
 
         return taosws.connect(url)

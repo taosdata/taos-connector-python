@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.6.10 - 2022-12-19
+
+### Bug Fixes:
+
+- alchemy+rest support db name
+
+### Enhancements:
+
+- support vg id and fix code style (#116)
+
 ## v2.6.9 - 2022-12-08
 
 ### Bug Fixes:
