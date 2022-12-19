@@ -1,13 +1,12 @@
 # encoding:UTF-8
 import ctypes
-import math
+from ctypes import *
+from datetime import datetime, timedelta
+
 import pytz
 
-from datetime import datetime, timedelta
-from ctypes import *
-
-from .constants import FieldType
-from .error import *
+from taos.constants import FieldType
+from taos.error import DatabaseError
 
 _priv_tz = None
 _utc_tz = pytz.timezone("UTC")
@@ -98,7 +97,7 @@ def _crow_smallint_to_python(data, is_null, num_of_rows, nbytes=None, precision=
 
 
 def _crow_smallint_unsigned_to_python(
-    data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN
+        data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN
 ):
     """Function to convert C unsigned smallint row to python row."""
     return [
@@ -258,6 +257,7 @@ CONVERT_FUNC_BLOCK = {
     FieldType.C_BIGINT_UNSIGNED: _crow_bigint_unsigned_to_python,
     FieldType.C_JSON: _crow_nchar_to_python_block,
 }
+
 
 # Corresponding TAOS_FIELD structure in C
 

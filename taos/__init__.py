@@ -1,19 +1,19 @@
 # encoding:UTF-8
-from .connection import TaosConnection
+from taos.connection import TaosConnection
 
 # For some reason, the following is needed for VS Code (through PyLance) to
 # recognize that "error" is a valid module of the "taos" package.
-from .error import *
-from .bind import *
-from .field import *
-from .cursor import *
-from .result import *
-from .statement import *
-from .subscription import *
-from .schemaless import *
+from taos.error import *
+from taos.bind import *
+from taos.field import *
+from taos.cursor import *
+from taos.result import *
+from taos.statement import *
+from taos.subscription import *
+from taos.schemaless import *
 
 try:
-    from .sqlalchemy import *
+    from taos.sqlalchemy import *
 except:
     pass
 

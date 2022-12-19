@@ -1,7 +1,6 @@
-from .cinterface import *
+from taos.cinterface import *
 
-# from .connection import TaosConnection
-from .error import *
+from taos.error import *
 
 from ctypes import c_void_p
 
@@ -132,16 +131,16 @@ class TaosResult(object):
 
     def stop_query(self):
         return taos_stop_query(self._result)
-    
+
     def get_topic_name(self):
         return tmq_get_topic_name(self._result)
-        
+
     def get_vgroup_id(self):
         return tmq_get_vgroup_id(self._result)
-        
+
     def get_table_name(self):
         return tmq_get_table_name(self._result)
-    
+
     def get_db_name(self):
         return tmq_get_db_name(self._result)
 

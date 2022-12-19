@@ -1,7 +1,7 @@
 # encoding:UTF-8
 import ctypes
 
-from .constants import FieldType
+from taos.constants import FieldType
 
 
 def _crow_binary_to_python_block_v3(data, is_null, num_of_rows, offsets, precision=FieldType.C_TIMESTAMP_UNKNOWN):
@@ -42,6 +42,7 @@ CONVERT_FUNC_BLOCK_v3 = {
     FieldType.C_NCHAR: _crow_nchar_to_python_block_v3,
     FieldType.C_JSON: _crow_nchar_to_python_block_v3,
 }
+
 
 # Corresponding TAOS_FIELD structure in C
 

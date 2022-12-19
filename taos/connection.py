@@ -1,10 +1,9 @@
 # encoding:UTF-8
-from types import FunctionType
-from .cinterface import *
-from .cursor import TaosCursor
-from .subscription import TaosSubscription
-from .statement import TaosStmt
-from .result import *
+from taos.cinterface import *
+from taos.cursor import TaosCursor
+from taos.subscription import TaosSubscription
+from taos.statement import TaosStmt
+from taos.result import TaosResult
 
 
 class TaosConnection(object):
@@ -88,7 +87,7 @@ class TaosConnection(object):
         taos_query_a(self._conn, sql, callback, param)
 
     def subscribe(self, restart, topic, sql, interval, callback=None, param=None):
-        # type: (bool, str, str, int, subscribe_callback_type, c_void_p) -> TaosSubscription
+        # type: (bool, str, str, int, subscribe_callback_type, c_void_p) -> TaosSubscription|None
         """Create a subscription."""
         if self._conn is None:
             return None
@@ -97,14 +96,14 @@ class TaosConnection(object):
             errno = taos_errno(c_void_p(None))
             msg = taos_errstr(c_void_p(None))
             raise Error(msg, errno)
-        return TaosSubscription(sub, callback != None)
+        return TaosSubscription(sub, callback is not None)
 
     def statement(self, sql=None):
-        # type: (str | None) -> TaosStmt
+        # type: (str | None) -> TaosStmt|None
         if self._conn is None:
             return None
         stmt = taos_stmt_init(self._conn)
-        if sql != None:
+        if sql is not None:
             taos_stmt_prepare(stmt, sql)
 
         return TaosStmt(stmt)
@@ -195,6 +194,13 @@ class TaosConnection(object):
 
     def __del__(self):
         self.close()
+
+    def get_table_vgroup_id(self, db, table):
+        # type: (str, str) -> int
+        """
+        get table's vgroup id. It's require db name and table name, and return an int type vgroup id.
+        """
+        return taos_get_table_vgId(self._conn, db, table)
 
 
 if __name__ == "__main__":
