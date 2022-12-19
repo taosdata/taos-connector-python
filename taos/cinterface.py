@@ -1267,14 +1267,14 @@ except Exception as err:
     _UNSUPPORTED["taos_get_table_vgId"] = err
 
 
-def taos_get_table_vg_id(conn, db, table):
+def taos_get_table_vgId(conn, db, table):
     # type: (c_void_p, str, str) -> int
     _check_if_supported()
     vg_id = c_int()
     code = _libtaos.taos_get_table_vgId(conn, c_char_p(db.encode('utf-8')), c_char_p(table.encode('utf-8')),
                                         ctypes.byref(vg_id))
     if code != 0:
-        raise InternalError('get vgroup id fail')
+        raise InternalError(taos_errstr(c_void_p(None)))
     return vg_id.value
 
 

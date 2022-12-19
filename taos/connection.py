@@ -200,7 +200,7 @@ class TaosConnection(object):
         """
         get table's vgroup id. It's require db name and table name, and return an int type vgroup id.
         """
-        return taos_get_table_vg_id(self._conn, db, table)
+        return taos_get_table_vgId(self._conn, db, table)
 
 
 if __name__ == "__main__":
