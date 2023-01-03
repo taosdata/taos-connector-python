@@ -1,6 +1,6 @@
 [package]
 name = "taos-ws-py"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -11,13 +11,14 @@ crate-type = ["cdylib"]
 
 [dependencies]
 anyhow = "1"
-pretty_env_logger = "0.4.0"
 log = "0.4"
 serde_json = "1"
-taos-error = { path = "../taos-error" }
-taos-query = { path = "../taos-query" }
-taos-ws = { path = "../taos-ws" }
+shadow-rs = "0.20.0"
+taos = { path = "../taos", default-features = false, features = ["optin", "ws-rustls"] }
+
+[build-dependencies]
+shadow-rs = "0.20.0"
 
 [dependencies.pyo3]
-version = "0.14.1"
-features = ["extension-module"]
+version = "0.17.3"
+features = ["extension-module", "anyhow", "chrono"]
