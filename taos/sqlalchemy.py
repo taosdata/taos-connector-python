@@ -19,23 +19,6 @@ TYPES_MAP = {
 }
 
 
-class AlchemyWsConnection:
-    threadsafety = 1
-    paramstyle = "pyformat"
-
-    def connect(self, **kwargs):
-        host = kwargs["host"] if "host" in kwargs else "localhost"
-        port = kwargs["port"] if "port" in kwargs else "6041"
-        user = kwargs["username"] if "username" in kwargs else "root"
-        password = kwargs["password"] if "password" in kwargs else "taosdata"
-        database = kwargs["database"] if "database" in kwargs else None
-        token = kwargs["token"] if "token" in kwargs else ""
-        url = f"ws://{user}:{password}@{host}:{port}/{database}"
-        import taosws
-
-        return taosws.connect(url)
-
-
 class TaosWsDialect(default.DefaultDialect):
     name = "taosws"
     driver = "taosws"
@@ -46,11 +29,14 @@ class TaosWsDialect(default.DefaultDialect):
         pass
 
     def _get_server_version_info(self, connection):
-        return tuple("any")
+        cursor = connection.execute("select server_version()")
+        return cursor.fetchone()
 
     @classmethod
     def dbapi(cls):
-        return AlchemyWsConnection()
+        import taosws
+
+        return taosws
 
     def has_schema(self, connection, schema):
         return False
