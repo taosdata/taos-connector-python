@@ -1,10 +1,33 @@
 use std::ops::Range;
 
-use pyo3::{prelude::*, types::PyTuple};
+use chrono::{Datelike, Timelike};
+use pyo3::{
+    prelude::*,
+    types::{PyDict, PyTuple},
+};
 use taos::{BorrowedValue, RawBlock};
 
 use crate::ConsumerException;
 
+pub fn to_py_datetime(dt: chrono::NaiveDateTime, py: Python) -> PyResult<PyObject> {
+    let datetime = py.import("datetime")?;
+    let datetime = datetime.getattr("datetime")?;
+    let args = PyTuple::new(
+        py,
+        [
+            dt.year() as i64,
+            dt.month() as i64,
+            dt.day() as _,
+            dt.hour() as _,
+            dt.minute() as _,
+            dt.second() as _,
+            dt.timestamp_subsec_micros() as _,
+        ],
+    );
+
+    Ok(datetime.call(args, None)?.into_py(py))
+}
+// pub fn datetime_to_py(t: chrono py: Python)
 pub unsafe fn get_row_of_block_unchecked(py: Python, block: &RawBlock, index: usize) -> PyObject {
     let mut vec = Vec::new();
     for i in 0..block.ncols() {
@@ -19,7 +42,10 @@ pub unsafe fn get_row_of_block_unchecked(py: Python, block: &RawBlock, index: us
             BorrowedValue::Float(v) => v.into_py(py),
             BorrowedValue::Double(v) => v.into_py(py),
             BorrowedValue::VarChar(v) => v.into_py(py),
-            BorrowedValue::Timestamp(v) => v.to_datetime_with_tz().naive_local().into_py(py),
+            BorrowedValue::Timestamp(v) => match v.precision() {
+                taos::Precision::Nanosecond => v.as_raw_i64().to_object(py),
+                _ => to_py_datetime(v.to_datetime_with_tz().naive_local(), py).unwrap(),
+            },
             BorrowedValue::NChar(v) => v.into_py(py),
             BorrowedValue::UTinyInt(v) => v.into_py(py),
             BorrowedValue::USmallInt(v) => v.into_py(py),

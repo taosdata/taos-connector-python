@@ -12,7 +12,10 @@ use taos::{
     TBuilder, Timeout, TmqBuilder,
 };
 
-use crate::ConsumerException;
+use crate::{
+    common::{get_all_of_block, get_row_of_block_unchecked},
+    ConsumerException,
+};
 
 #[pyclass]
 pub(crate) struct Consumer(Option<taos::Consumer>);
@@ -230,41 +233,8 @@ impl MessageBlock {
         self.block.ncols()
     }
 
-    pub fn fetchall(&self) -> Py<PyAny> {
-        Python::with_gil(|py| {
-            let values = self.block.to_values();
-            let mut vec = Vec::new();
-            for row in values {
-                let tuple = PyTuple::new(
-                    py,
-                    row.into_iter().map(|val| match val {
-                        taos::Value::Null(_) => Option::<()>::None.into_py(py),
-                        taos::Value::Bool(v) => v.into_py(py),
-                        taos::Value::TinyInt(v) => v.into_py(py),
-                        taos::Value::SmallInt(v) => v.into_py(py),
-                        taos::Value::Int(v) => v.into_py(py),
-                        taos::Value::BigInt(v) => v.into_py(py),
-                        taos::Value::Float(v) => v.into_py(py),
-                        taos::Value::Double(v) => v.into_py(py),
-                        taos::Value::VarChar(v) => v.into_py(py),
-                        taos::Value::Timestamp(v) => v.to_datetime_with_tz().into_py(py),
-                        taos::Value::NChar(v) => v.into_py(py),
-                        taos::Value::UTinyInt(v) => v.into_py(py),
-                        taos::Value::USmallInt(v) => v.into_py(py),
-                        taos::Value::UInt(v) => v.into_py(py),
-                        taos::Value::UBigInt(v) => v.into_py(py),
-                        taos::Value::Json(v) => v.to_string().into_py(py),
-                        taos::Value::VarBinary(_) => todo!(),
-                        taos::Value::Decimal(_) => todo!(),
-                        taos::Value::Blob(_) => todo!(),
-                        taos::Value::MediumBlob(_) => todo!(),
-                    }),
-                );
-                vec.push(tuple);
-            }
-
-            vec.into_py(py)
-        })
+    pub fn fetchall(&self) -> Vec<PyObject> {
+        Python::with_gil(|py| get_all_of_block(py, &self.block))
     }
 
     pub fn __iter__(slf: PyRef<Self>) -> MessageBlockIter {
@@ -289,36 +259,9 @@ impl MessageBlockIter {
             Ok(None)
         } else {
             Python::with_gil(|py| {
-                let values = (0..slf.block.ncols())
-                    .map(|col| match slf.block.get_ref(slf.index, col).unwrap() {
-                        BorrowedValue::Null(_) => Option::<()>::None.into_py(py),
-                        BorrowedValue::Bool(v) => v.into_py(py),
-                        BorrowedValue::TinyInt(v) => v.into_py(py),
-                        BorrowedValue::SmallInt(v) => v.into_py(py),
-                        BorrowedValue::Int(v) => v.into_py(py),
-                        BorrowedValue::BigInt(v) => v.into_py(py),
-                        BorrowedValue::Float(v) => v.into_py(py),
-                        BorrowedValue::Double(v) => v.into_py(py),
-                        BorrowedValue::VarChar(v) => v.into_py(py),
-                        BorrowedValue::Timestamp(v) => v.to_datetime_with_tz().into_py(py),
-                        BorrowedValue::NChar(v) => v.into_py(py),
-                        BorrowedValue::UTinyInt(v) => v.into_py(py),
-                        BorrowedValue::USmallInt(v) => v.into_py(py),
-                        BorrowedValue::UInt(v) => v.into_py(py),
-                        BorrowedValue::UBigInt(v) => v.into_py(py),
-                        BorrowedValue::Json(v) => std::str::from_utf8(&v)
-                            .map_err(|err| ConsumerException::new_err(err.to_string()))
-                            .unwrap()
-                            .to_string()
-                            .into_py(py),
-                        BorrowedValue::VarBinary(_) => todo!(),
-                        BorrowedValue::Decimal(_) => todo!(),
-                        BorrowedValue::Blob(_) => todo!(),
-                        BorrowedValue::MediumBlob(_) => todo!(),
-                    })
-                    .collect_vec();
+                let values = unsafe { get_row_of_block_unchecked(py, &slf.block, slf.index) };
                 slf.index += 1;
-                Ok(Some(values.into_py(py)))
+                Ok(Some(values))
             })
         }
     }
