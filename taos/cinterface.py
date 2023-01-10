@@ -970,7 +970,7 @@ except Exception as err:
 
 
 def tmq_conf_set(conf, key, value):
-    # type: (c_void_p, c_char_p, c_char_p) -> None
+    # type: (c_void_p, str, str) -> None
     _check_if_supported()
 
     if not isinstance(value, str):
