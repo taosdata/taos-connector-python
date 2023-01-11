@@ -970,7 +970,7 @@ except Exception as err:
 
 
 def tmq_conf_set(conf, key, value):
-    # type: (c_void_p, c_char_p, c_char_p) -> None
+    # type: (c_void_p, str, str) -> None
     _check_if_supported()
 
     if not isinstance(value, str):
@@ -1229,8 +1229,8 @@ def tmq_get_table_name(res):
     tb_name = _libtaos.tmq_get_table_name(res)
     if tb_name:
         return tb_name.decode("utf-8")
-    else:
-        print("change msg.with.table.name to true in tmq config")
+    # else:
+    #     print("change msg.with.table.name to true in tmq config")
 
 
 try:
@@ -1276,6 +1276,18 @@ def taos_get_table_vgId(conn, db, table):
     if code != 0:
         raise InternalError(taos_errstr(c_void_p(None)))
     return vg_id.value
+
+
+try:
+    _libtaos.tmq_get_res_type.argstype = (c_void_p,)
+    _libtaos.tmq_get_res_type.restype = c_int
+except Exception as err:
+    _UNSUPPORTED["tmq_get_res_type"] = err
+
+
+def tmq_get_res_type(message):
+    # type: (c_void_p) -> int
+    return _libtaos.tmq_get_res_type(message)
 
 
 class CTaosInterface(object):
