@@ -49,35 +49,47 @@ impl Consumer {
         builder.driver = "taos".to_string();
         if let Some(value) = dsn {
             builder = value.parse().map_err(|err| {
-                ConsumerException::new_err(format!("parse dsn(`{value}`) error: {err}"))
+                ConsumerException::new_err(format!("Parse dsn(`{value}`) error: {err}"))
             })?;
         }
         if let Some(args) = conf {
             let mut addr = Address::default();
 
-            if let Some(scheme) = args.get_item("td.connect.websocket.scheme") {
+            if let Some(scheme) = args
+                .get_item("td.connect.websocket.scheme")
+                .or(args.get_item("protocol"))
+                .or(args.get_item("driver"))
+            {
                 let scheme = scheme.downcast::<PyString>().map_err(|err| {
                     ConsumerException::new_err(format!("Invalid td.connect.websocket.scheme value type: {}, only `'ws'|'wss'` is supported", scheme.get_type().to_string()))
                 })?;
                 builder.protocol = Some(scheme.to_string())
             }
             match (
-                args.get_item("td.connect.ip"),
-                args.get_item("td.connect.port"),
+                args.get_item("td.connect.ip").or(args.get_item("host")),
+                args.get_item("td.connect.port").or(args.get_item("port")),
             ) {
                 (Some(host), Some(port)) => {
-                    addr.host
-                        .replace(host.cast_as::<PyString>()?.to_str()?.to_string());
-                    addr.port
-                        .replace(port.cast_as::<pyo3::types::PyInt>()?.extract()?);
+                    addr.host.replace(host.extract::<String>()?);
+                    if port.is_instance_of::<pyo3::types::PyInt>()? {
+                        addr.port.replace(port.extract()?);
+                    } else if port.is_instance_of::<PyString>()? {
+                        addr.port.replace(port.extract::<String>()?.parse()?);
+                    } else {
+                        Err(ConsumerException::new_err(format!("Invalid port: {port}")))?;
+                    }
                 }
                 (Some(host), None) => {
-                    addr.host
-                        .replace(host.cast_as::<PyString>()?.to_str()?.to_string());
+                    addr.host.replace(host.extract::<String>()?);
                 }
                 (_, Some(port)) => {
-                    addr.port
-                        .replace(port.cast_as::<pyo3::types::PyInt>()?.extract()?);
+                    if port.is_instance_of::<pyo3::types::PyInt>()? {
+                        addr.port.replace(port.extract()?);
+                    } else if port.is_instance_of::<PyString>()? {
+                        addr.port.replace(port.extract::<String>()?.parse()?);
+                    } else {
+                        Err(ConsumerException::new_err(format!("Invalid port: {port}")))?;
+                    }
                 }
                 _ => {
                     addr.host.replace("localhost".to_string());
@@ -85,11 +97,20 @@ impl Consumer {
             }
             builder.addresses.push(addr);
 
-            if let Some(value) = args.get_item("td.connect.user") {
+            if let Some(value) = args
+                .get_item("td.connect.user")
+                .or(args.get_item("username"))
+            {
                 builder.username.replace(value.extract()?);
             }
-            if let Some(value) = args.get_item("td.connect.pass") {
+            if let Some(value) = args
+                .get_item("td.connect.pass")
+                .or(args.get_item("password"))
+            {
                 builder.password.replace(value.extract()?);
+            }
+            if let Some(value) = args.get_item("td.connect.token").or(args.get_item("token")) {
+                builder.set("token", value.extract::<String>()?);
             }
 
             if let Some(value) = args.get_item("group.id") {
@@ -114,7 +135,6 @@ impl Consumer {
                 }
             }
         }
-        dbg!(&builder);
         let builder = TmqBuilder::from_dsn(builder)
             .map_err(|err| ConsumerException::new_err(err.to_string()))?;
         Ok(Consumer(Some(builder.build().map_err(|err| {
@@ -174,7 +194,6 @@ impl Message {
         self._offset.as_ref().unwrap().vgroup_id()
     }
 
-    #[deprecated]
     pub fn get_vgroup_id(&self) -> i32 {
         println!("# get_vgroup_id is deprecated, use vgroup() instead.");
         self._offset.as_ref().unwrap().vgroup_id()
