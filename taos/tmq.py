@@ -180,6 +180,12 @@ class TaosTmqList(object):
         return self._list
 
 
+TMQ_RES_INVALID = -1
+TMQ_RES_DATA = 1
+TMQ_RES_TABLE_META = 2
+TMQ_RES_METADATA = 3
+
+
 class MessageBlock:
 
     def __init__(self, block=None, fields=None, row_count=0, col_count=0, table=''):
@@ -278,7 +284,7 @@ class Message:
         """
 
         res_type = tmq_get_res_type(self.msg)
-        if res_type != 1:
+        if res_type == TMQ_RES_TABLE_META or res_type == TMQ_RES_INVALID:
             return None
 
         message_blocks = []

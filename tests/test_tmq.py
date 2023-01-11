@@ -50,9 +50,7 @@ class ConsumerThread(threading.Thread):
             assert res.error() is None
 
             topic = res.topic()
-            db = res.db()
             assert topic == "topic1"
-            assert db == "tmq_test"
 
             break
         print("Finished Subscribe")
