@@ -180,6 +180,61 @@ class TaosTmqList(object):
         return self._list
 
 
+class MessageBlock:
+
+    def __init__(self, block=None, fields=None, row_count=0, col_count=0, table=''):
+        # type (list[tuple], TaosField, int, int, str)
+        self._block = block
+        self._block_iter = None
+        self._fields = fields
+        self._rows = row_count
+        self._cols = col_count
+        self._table = table
+
+    def fields(self):
+        # type: () -> TaosField
+        """
+        Get fields in message block
+        """
+        return self._fields
+
+    def nrows(self):
+        # type: () -> int
+        """
+        get total count of rows of message block
+        """
+        return self._rows
+
+    def ncols(self):
+        # type: () -> int
+        """
+        get total count of rows of message block
+        """
+        return self._cols
+
+    def fetchall(self):
+        # type: () -> list[tuple]
+        """
+        get all data in message block
+        """
+        return list(map(tuple, zip(*self._block)))
+
+    def table(self):
+        # type: () -> str
+        """
+        get table name of message block
+        """
+        return self._table
+
+    def __next__(self):
+        if not self._block_iter:
+            self._block_iter = iter(self.fetchall())
+        return next(self._block_iter)
+
+    def __iter__(self):
+        return self
+
+
 class Message:
 
     def __init__(self, msg: c_void_p = None, error=None):
@@ -190,12 +245,10 @@ class Message:
         err_no = taos_errno(self.msg)
         if err_no:
             self._error = TmqError(msg=taos_errstr(self.msg))
-        self._db = tmq_get_db_name(self.msg)
-        self._table = tmq_get_table_name(self.msg)
-        self._fields = taos_fetch_fields(self.msg)
-        self._topic = tmq_get_topic_name(self.msg)
+        self._value = None
 
-    def error(self) -> TmqError | None:
+    def error(self):
+        # type: () -> TmqError | None
         """
 
         The message object is also used to propagate errors and events, an application must check error() to determine
@@ -206,48 +259,52 @@ class Message:
         """
         return self._error
 
-    def topic(self) -> str:
+    def topic(self):
+        # type: () -> str
         """
 
         :returns: topic name.
-          :rtype: str or None
+          :rtype: str
         """
-        return self._topic
+        return tmq_get_topic_name(self.msg)
 
-    def table(self) -> str:
-        """
-
-        :returns: table name.
-          :rtype: str or None
-        """
-        return self._table
-
-    def db(self) -> str:
+    def database(self):
+        # type () -> str
         """
 
-        :returns: table name.
-          :rtype: str or None
+        :returns: database name.
+          :rtype: str
         """
-        return self._db
+        return tmq_get_db_name(self.msg)
 
-    def value(self) -> list:
+    def value(self):
+        # type: () -> list[MessageBlock]
         """
         :returns: message value (payload).
           :rtype: list[tuple]
         """
-        buffer = [[] for i in range(len(self._fields))]
+        fields = taos_fetch_fields(self.msg)
+        cols = len(fields)
+        blocks = []
         while True:
-            blocks, num_of_fields = taos_fetch_block(result=self.msg, fields=self._fields)
-            if num_of_fields == 0:
+            block, rows = taos_fetch_block(result=self.msg, fields=fields)
+            if rows == 0:
                 break
-            for i in range(len(blocks)):
-                buffer[i].extend(blocks[i])
-        return list(map(tuple, zip(*buffer)))
+            blocks.append(MessageBlock(block=block, fields=fields, row_count=rows, col_count=cols, table=''))
+        return blocks
 
     def __del__(self):
         if not self.msg:
             return
         taos_free_result(self.msg)
+
+    def __next__(self):
+        if not self._value:
+            self._value = iter(self.value())
+        return next(self._value)
+
+    def __iter__(self):
+        return self
 
 
 class Consumer:
@@ -268,33 +325,38 @@ class Consumer:
         'td.connect.db',
     }
 
-    def __init__(self, configs: dict):
-        self._tmq_conf = tmq_conf_new()
-        self._topics = tmq_list_new()
-        self._tmq = None
-
+    def __init__(self, configs):
         if 'group.id' not in configs:
             raise TmqError('missing group.id in consumer config setting')
 
-        for key in configs:
-            if key not in self.default_config:
-                raise TmqError('Unrecognized configs: %s' % key)
-            tmq_conf_set(self._tmq_conf, key=key, value=configs[key])
-
-        self._tmq = tmq_consumer_new(self._tmq_conf)
         self._subscribed = False
+        tmq_conf = tmq_conf_new()
+        try:
+            for key in configs:
+                if key not in self.default_config:
+                    raise TmqError('Unrecognized configs: %s' % key)
+                tmq_conf_set(tmq_conf, key=key, value=configs[key])
 
-    def subscribe(self, topics: [str]):
+                self._tmq = tmq_consumer_new(tmq_conf)
+        finally:
+            tmq_conf_destroy(tmq_conf)
+
+    def subscribe(self, topics):
+        # type ([str]) -> None
         """
         Set subscription to supplied list of topics.
         :param list(str) topics: List of topics (strings) to subscribe to.
         """
         if not topics or len(topics) == 0:
             raise TmqError('Unset topic for Consumer')
+
+        topic_list = tmq_list_new()
         for topic in topics:
-            tmq_list_append(self._topics, topic)
-        tmq_subscribe(self._tmq, self._topics)
+            tmq_list_append(topic_list, topic)
+        tmq_subscribe(self._tmq, topic_list)
+
         self._subscribed = True
+        tmq_list_destroy(topic_list)
 
     def unsubscribe(self):
         """
@@ -303,31 +365,26 @@ class Consumer:
         tmq_unsubscribe(self._tmq)
         self._subscribed = False
 
-    def poll(self, timeout: int = 10) -> Message | None:
+    def poll(self, timeout: float = 1.0):
+        # type (float) -> Message | None
         """
         Consumes a single message and returns events.
 
         The application must check the returned `Message` object's `Message.error()` method to distinguish between
         proper messages (error() returns None).
 
-        :param int timeout: Maximum time to block waiting for message, event or callback (default: 10). (MillSecond)
+        :param float timeout: Maximum time to block waiting for message, event or callback (default: 1). (second)
         :returns: A Message object or None on timeout
         :rtype: `Message` or None
         """
+        mill_timeout = int(timeout * 1000)
         if not self._subscribed:
-            return Message(error=TmqError(msg='unsubscribe topic'))
+            raise TmqError(msg='unsubscribe topic')
 
-        msg = tmq_consumer_poll(self._tmq, wait_time=timeout)
+        msg = tmq_consumer_poll(self._tmq, wait_time=mill_timeout)
         if msg:
             return Message(msg=msg)
         return None
-
-    def _sync_next(self):
-        while True:
-            message = self.poll()
-            if message:
-                break
-        yield message
 
     def close(self):
         """
@@ -336,14 +393,9 @@ class Consumer:
         if self._tmq:
             tmq_consumer_close(self._tmq)
             self._tmq = None
-        if self._tmq_conf:
-            tmq_conf_destroy(self._tmq_conf)
-            self._tmq_conf = None
-        if self._topics:
-            tmq_list_destroy(self._topics)
-            self._topics = None
 
     def commit(self, message):
+        # type (Message) -> None
         """
         Commit a message.
 
@@ -364,3 +416,13 @@ class Consumer:
         if not self._tmq:
             raise StopIteration('Tmq consumer is closed')
         return next(self._sync_next())
+
+    def __iter__(self):
+        return self
+
+    def _sync_next(self):
+        while True:
+            message = self.poll()
+            if message:
+                break
+        yield message
