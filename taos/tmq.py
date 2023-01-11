@@ -185,7 +185,6 @@ class MessageBlock:
     def __init__(self, block=None, fields=None, row_count=0, col_count=0, table=''):
         # type (list[tuple], TaosField, int, int, str)
         self._block = block
-        self._block_iter = None
         self._fields = fields
         self._rows = row_count
         self._cols = col_count
@@ -226,13 +225,8 @@ class MessageBlock:
         """
         return self._table
 
-    def __next__(self):
-        if not self._block_iter:
-            self._block_iter = iter(self.fetchall())
-        return next(self._block_iter)
-
     def __iter__(self):
-        return self
+        return iter(self.fetchall())
 
 
 class Message:
@@ -245,7 +239,6 @@ class Message:
         err_no = taos_errno(self.msg)
         if err_no:
             self._error = TmqError(msg=taos_errstr(self.msg))
-        self._value = None
 
     def error(self):
         # type: () -> TmqError | None
@@ -278,33 +271,50 @@ class Message:
         return tmq_get_db_name(self.msg)
 
     def value(self):
-        # type: () -> list[MessageBlock]
+        # type: () -> list[MessageBlock] | None
         """
         :returns: message value (payload).
           :rtype: list[tuple]
         """
-        fields = taos_fetch_fields(self.msg)
-        cols = len(fields)
-        blocks = []
+
+        res_type = tmq_get_res_type(self.msg)
+        if res_type != 1:
+            return None
+
+        message_blocks = []
         while True:
-            block, rows = taos_fetch_block(result=self.msg, fields=fields)
-            if rows == 0:
+            block, num_rows = taos_fetch_block_raw(self.msg)
+            if num_rows == 0:
                 break
-            blocks.append(MessageBlock(block=block, fields=fields, row_count=rows, col_count=cols, table=''))
-        return blocks
+            field_count = taos_num_fields(self.msg)
+            fields = taos_fetch_fields(self.msg)
+            precision = taos_result_precision(self.msg)
+
+            blocks = [None] * field_count
+            for i in range(len(fields)):
+                if fields[i]["type"] not in CONVERT_FUNC_BLOCK_v3 and fields[i]["type"] not in CONVERT_FUNC_BLOCK:
+                    raise TmqError("Invalid data type returned from database")
+
+                block_data = ctypes.cast(block, ctypes.POINTER(ctypes.c_void_p))[i]
+                if fields[i]["type"] in (FieldType.C_VARCHAR, FieldType.C_NCHAR, FieldType.C_JSON):
+                    offsets = taos_get_column_data_offset(self.msg, i, num_rows)
+                    blocks[i] = CONVERT_FUNC_BLOCK_v3[fields[i]["type"]](block_data, [], num_rows, offsets, precision)
+                else:
+                    is_null = [taos_is_null(self.msg, j, i) for j in range(num_rows)]
+                    blocks[i] = CONVERT_FUNC_BLOCK[fields[i]["type"]](block_data, is_null, num_rows, [], precision)
+
+            message_blocks.append(
+                MessageBlock(block=blocks, fields=fields, row_count=num_rows, col_count=field_count,
+                             table=tmq_get_table_name(self.msg)))
+        return message_blocks
 
     def __del__(self):
         if not self.msg:
             return
         taos_free_result(self.msg)
 
-    def __next__(self):
-        if not self._value:
-            self._value = iter(self.value())
-        return next(self._value)
-
     def __iter__(self):
-        return self
+        return iter(self.value())
 
 
 class Consumer:
@@ -352,7 +362,9 @@ class Consumer:
 
         topic_list = tmq_list_new()
         for topic in topics:
-            tmq_list_append(topic_list, topic)
+            res = tmq_list_append(topic_list, topic)
+            if res != 0:
+                raise TmqError(msg="fail on parse topics", errno=res)
         tmq_subscribe(self._tmq, topic_list)
 
         self._subscribed = True
