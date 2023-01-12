@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyTuple};
+use pyo3::types::{PyDict, PyString, PyTuple};
 use pyo3::{create_exception, exceptions::PyException};
 
 shadow_rs::shadow!(build);
@@ -225,58 +225,85 @@ static PARAMS_STYLE: &str = "pyformat";
 #[pyfunction(args = "**")]
 fn connect(
     dsn: Option<&str>,
-    url: Option<&str>,
-    user: Option<&str>,
-    username: Option<&str>,
-    password: Option<&str>,
-    database: Option<&str>,
-    host: Option<&str>,
-    port: Option<u16>,
-    websocket: Option<bool>,
     args: Option<&PyDict>,
 ) -> PyResult<Connection> {
-    let _ = args;
-    let user = user.or(username);
-    let dsn = dsn.or(url).unwrap_or("taos://");
+    let dsn = dsn.unwrap_or("taos://");
 
     let mut dsn = Dsn::from_str(dsn).map_err(|err| ConnectionError::new_err(err.to_string()))?;
 
-    if let Some(value) = user {
-        dsn.username.replace(value.to_string());
-    }
-    if let Some(value) = password {
-        dsn.password.replace(value.to_string());
-    }
-    if let Some(value) = database {
-        dsn.subject.replace(value.to_string());
-    }
+    if let Some(args) = args {
+        const NONE_TAOS_CFG: &[&str] = &[
+            "user",
+            "username",
+            "password",
+            "database",
+            "host",
+            "port",
+            "websocket",
+            "native",
+        ];
+        if let Some(value) = args.get_item("user").or(args.get_item("username")) {
+            dsn.username.replace(value.to_string());
+        }
+        if let Some(value) = args.get_item("pass").or(args.get_item("password")) {
+            dsn.password.replace(value.to_string());
+        }
+        if let Some(value) = args.get_item("db").or(args.get_item("database")) {
+            dsn.subject.replace(value.to_string());
+        }
 
-    let mut addr = Address::default();
+        let mut addr = Address::default();
 
-    if let Some(scheme) = websocket {
-        if scheme {
-            dsn.protocol = Some("ws".to_string());
+        if let Some(scheme) = args.get_item("websocket").or(args.get_item("ws")) {
+            if scheme.is_instance_of::<pyo3::types::PyBool>()? {
+                if scheme.extract()? {
+                    dsn.protocol = Some("ws".to_string());
+                }
+            } else {
+                dsn.protocol = Some(scheme.extract::<String>()?);
+            }
+        } else if let Some(native) = args.get_item("native") {
+            _ = native;
+        } else if dsn.protocol.is_none() {
+            dsn.protocol.replace("ws".to_string());
         }
-    } else {
-    }
-    match (host, port) {
-        (Some(host), Some(port)) => {
-            addr.host.replace(host.to_string());
-            addr.port.replace(port);
-        }
-        (Some(host), None) => {
-            addr.host.replace(host.to_string());
-        }
-        (_, Some(port)) => {
-            addr.port.replace(port);
-        }
-        _ => {
-            addr.host.replace("localhost".to_string());
-        }
-    }
 
-    if dsn.protocol.is_none() {
-        dsn.protocol.replace("ws".to_string());
+        let host = args.get_item("ip").or(args.get_item("database"));
+        let port = args.get_item("port");
+        match (host, port) {
+            (Some(host), Some(port)) => {
+                addr.host.replace(host.extract::<String>()?);
+                if port.is_instance_of::<pyo3::types::PyInt>()? {
+                    addr.port.replace(port.extract()?);
+                } else if port.is_instance_of::<PyString>()? {
+                    addr.port.replace(port.extract::<String>()?.parse()?);
+                } else {
+                    Err(ConsumerException::new_err(format!("Invalid port: {port}")))?;
+                }
+            }
+            (Some(host), None) => {
+                addr.host.replace(host.extract::<String>()?);
+            }
+            (_, Some(port)) => {
+                if port.is_instance_of::<pyo3::types::PyInt>()? {
+                    addr.port.replace(port.extract()?);
+                } else if port.is_instance_of::<PyString>()? {
+                    addr.port.replace(port.extract::<String>()?.parse()?);
+                } else {
+                    Err(ConsumerException::new_err(format!("Invalid port: {port}")))?;
+                }
+            }
+            _ => {
+                addr.host.replace("localhost".to_string());
+            }
+        }
+
+        for (key, value) in args
+            .into_iter()
+            .filter(|(k, _)| !NONE_TAOS_CFG.contains(&k.extract::<&str>().unwrap()))
+        {
+            dsn.set(key.extract::<&str>()?, value.extract::<&str>()?);
+        }
     }
 
     let builder =

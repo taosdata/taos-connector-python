@@ -1,14 +1,11 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
-use anyhow::Context;
 use pyo3::{
-    ffi::PyLongObject,
     prelude::*,
-    types::{PyDict, PyList, PyString, PyTuple},
+    types::{PyDict, PyList, PyString},
 };
 use taos::{
-    sync::{AsConsumer, Fetchable, Queryable},
-    Address, BorrowedValue, Data, Dsn, IsOffset, Itertools, MessageSet, Meta, Offset, RawBlock,
+    sync::AsConsumer, Address, Data, Dsn, IsOffset, Itertools, MessageSet, Meta, Offset, RawBlock,
     TBuilder, Timeout, TmqBuilder,
 };
 
@@ -100,6 +97,7 @@ impl Consumer {
             if let Some(value) = args
                 .get_item("td.connect.user")
                 .or(args.get_item("username"))
+                .or(args.get_item("user"))
             {
                 builder.username.replace(value.extract()?);
             }
