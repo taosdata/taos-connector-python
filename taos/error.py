@@ -118,6 +118,6 @@ class LinesError(DatabaseError):
 
 
 class TmqError(DatabaseError):
-    """Execption raise in TMQ API"""
+    """Exception raise in TMQ API"""
 
     pass

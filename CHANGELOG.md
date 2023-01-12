@@ -261,7 +261,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Bug Fixes:
 
 - fix json tag error in query (#59)
-- no exception subscribe error ocur (#58)
+- no exception subscribe error occur (#58)
 
 ### Tests:
 
@@ -307,7 +307,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **(rest)**: convert timestamp from 'str' to 'datetime'
 - **(rest)**: export RestClient
 - **(taos)**: make config method private
-- **(taos)**: reanme _config to _init_config
+- **(taos)**: rename _config to _init_config
 - use iso8601 to parse date
 
 ### Tests:
@@ -363,7 +363,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **(rest)**: convert timestamp from 'str' to 'datetime'
 - **(rest)**: export RestClient
 - **(taos)**: make config method private
-- **(taos)**: reanme _config to _init_config
+- **(taos)**: rename _config to _init_config
 - use iso8601 to parse date
 
 ### Tests:
@@ -399,7 +399,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Bug Fixes:
 
-- [TD-14371]:remove unecessary print() lines
+- [TD-14371]:remove unnecessary print() lines
 - [TD-14382]:fix row_count property always be 0
 
 ## v2.2.2 - 2022-03-28
