@@ -325,7 +325,7 @@ def taos_fetch_rows_a(result, callback, param):
 
 def taos_affected_rows(result):
     # type: (c_void_p) -> c_int
-    """The affected rows after runing query"""
+    """The affected rows after running query"""
     return _libtaos.taos_affected_rows(result)
 
 
