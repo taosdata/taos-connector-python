@@ -1,4 +1,4 @@
-name: Maturin
+name: taos-ws-py
 
 on:
   push:
