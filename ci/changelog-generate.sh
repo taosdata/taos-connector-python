@@ -1,11 +1,17 @@
 #!/bin/bash
-
-last=$(git describe --tags --abbrev=0 2>/dev/null)
+path=$1
+prefix=$2
+last=
+if [ "$prefix" = "" ]; then
+  last=$(git describe --tags --abbrev=0 2>/dev/null)
+else
+  last=$(git tag --sort=-committerdate |grep $prefix |head -n1 2>/dev/null)
+fi
 
 if [ "$last" = "" ]; then
-  git log --pretty=format:'%s' | sort -k2n | uniq > ./releaseNotes.tmp
+  git log --pretty=format:'%s' $path | sort -k2n | uniq > ./releaseNotes.tmp
 else
-  git log --pretty=format:'%s' $last..HEAD | sort -k2n | uniq > ./releaseNotes.tmp
+  git log --pretty=format:'%s' $last..HEAD $path | sort -k2n | uniq > ./releaseNotes.tmp
 fi
 
 function part() {
