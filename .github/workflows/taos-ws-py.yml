@@ -213,9 +213,13 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: taos-ws-py
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Publish to PyPI
         env:
-          MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+          MATURIN_USERNAME: ${{ secrets.MATURIN_USERNAME }}
+          MATURIN_PASSWORD: ${{ secrets.MATURIN_PASSWORD }}
         uses: PyO3/maturin-action@v1
         with:
           command: upload
