@@ -29,6 +29,9 @@ version = ">=0.2.0"
 python = ">=3.7,<4.0"
 optional = true
 
+[tool.poetry.extras]
+ws = ["taos-ws-py"]
+
 [tool.poetry.dev-dependencies]
 typing = "*"
 pytest = [
