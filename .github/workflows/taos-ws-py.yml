@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+    tags: taos-ws-py-v*
   pull_request:
     branches:
       - main
