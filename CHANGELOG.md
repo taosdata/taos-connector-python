@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.7.1 - 2023-01-18
+
+### Bug Fixes:
+
+- fix new tmq consumer (#126)
+
 ## v2.7.0 - 2023-01-13
 
 ## v2.6.10 - 2022-12-19
