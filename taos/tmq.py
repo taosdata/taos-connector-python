@@ -345,6 +345,7 @@ class Consumer:
         if 'group.id' not in configs:
             raise TmqError('missing group.id in consumer config setting')
 
+        self._tmq = None
         self._subscribed = False
         tmq_conf = tmq_conf_new()
         try:
@@ -353,7 +354,7 @@ class Consumer:
                     raise TmqError('Unrecognized configs: %s' % key)
                 tmq_conf_set(tmq_conf, key=key, value=configs[key])
 
-                self._tmq = tmq_consumer_new(tmq_conf)
+            self._tmq = tmq_consumer_new(tmq_conf)
         finally:
             tmq_conf_destroy(tmq_conf)
 
