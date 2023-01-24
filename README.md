@@ -6,7 +6,7 @@
 1. The `taos` module. It uses TDengine C client library for client server communications.
 2. The `taosrest` module. It wraps TDengine RESTful API to Python DB API 2.0 (PEP-249). With this module, you are free to install TDengine C client library.
 
-## Install
+## Install taospy
 
 You can use `pip` to install the connector from PyPI:
 
@@ -20,11 +20,19 @@ Or with git url:
 pip install git+https://github.com/taosdata/taos-connector-python.git
 ```
 
+Note: taospy v2.7.2 requirs Python 3.6+. The early version of taospy from v2.5.0 to v2.7.1 requires Python 3.7+.
+
 ## Source Code
 
 [TDengine](https://github.com/taosdata/TDengine) connector for Python source code is hosted on [GitHub](https://github.com/taosdata/taos-connector-python).
 
-## Examples for `taosws` Module
+## Install taos-ws-py
+
+```bash
+pip install taos-ws-py
+```
+
+Note: The taosws module is provided by taos-ws-py package separately from v2.7.2. It is part of early version of taospy. taos-ws-py requires Python 3.7+.
 
 ### Query with PEP-249 API using `taosws`
 
