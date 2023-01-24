@@ -20,13 +20,21 @@ Or with git url:
 pip install git+https://github.com/taosdata/taos-connector-python.git
 ```
 
-Note: taospy v2.7.2 requirs Python 3.6+. The early version of taospy from v2.5.0 to v2.7.1 requires Python 3.7+.
+Note: taospy v2.7.2 requirs Python 3.6+. The early versions of taospy from v2.5.0 to v2.7.1 require Python 3.7+.
 
 ## Source Code
 
 [TDengine](https://github.com/taosdata/TDengine) connector for Python source code is hosted on [GitHub](https://github.com/taosdata/taos-connector-python).
 
 ## Install taos-ws-py
+
+### Install with taospy
+
+```bash
+pip install taospy[ws]
+```
+
+### Install taos-ws-py only
 
 ```bash
 pip install taos-ws-py
