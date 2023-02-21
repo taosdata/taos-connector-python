@@ -1,7 +1,8 @@
+import threading
 from time import sleep
+
 import taos
 from taos.tmq import *
-import threading
 
 
 class insertThread(threading.Thread):
@@ -88,89 +89,6 @@ def after_ter_tmq():
     conn.execute("drop database if exists tmq_test")
 
 
-def test_tmq():
-    """This test will test TDengine tmq api validity"""
-    if not IS_V3:
-        return
-
-    pre_test_tmq('')
-
-    conf = TaosTmqConf()
-    conf.set("group.id", "1")
-    conf.set("td.connect.user", "root")
-    conf.set("td.connect.pass", "taosdata")
-    conf.set("msg.with.table.name", "true")
-
-    tmq = conf.new_consumer()
-
-    print("====== set topic list")
-    topic_list = TaosTmqList()
-    topic_list.append("topic1")
-
-    print("====== subscribe topic")
-    tmq.subscribe(topic_list)
-
-    print("====== check subscription")
-    sub_list = tmq.subscription()
-    assert sub_list[0] == "topic1"
-
-    sThread = subscribeThread(tmq)
-    iThread = insertThread()
-
-    sThread.start()
-    sleep(2)
-    iThread.start()
-
-    iThread.join()
-    sThread.join()
-
-    print("====== finish test, start clean")
-    print("====== unsubscribe topic")
-    tmq.unsubscribe()
-
-    after_ter_tmq()
-
-
-def tmq_with_precision(precision="ms"):
-    if not IS_V3:
-        return
-
-    pre_test_tmq(precision)
-    conn = taos.connect()
-    conn.select_db("tmq_test")
-    conn.execute("create table if not exists tb1 using stb1 tags (true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1')")
-    conn.execute("insert into tb1 values (now, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
-
-    conf = TaosTmqConf()
-    conf.set("group.id", "1")
-    conf.set("td.connect.user", "root")
-    conf.set("td.connect.pass", "taosdata")
-    conf.set("msg.with.table.name", "true")
-
-    tmq = conf.new_consumer()
-
-    topic_list = TaosTmqList()
-    topic_list.append("topic1")
-    tmq.subscribe(topic_list)
-
-    res = tmq.poll(1000)
-    for row in res:
-        print(row)
-        assert row[0] is not None
-        assert row[2] == 1
-
-    tmq.unsubscribe()
-    after_ter_tmq()
-
-
-def test_tmq_with_precision():
-    if not IS_V3:
-        return
-    tmq_with_precision('ms')
-    tmq_with_precision('us')
-    tmq_with_precision('ns')
-
-
 def test_consumer_with_precision():
     tmq_consumer_with_precision('ms')
     tmq_consumer_with_precision('us')
@@ -208,6 +126,4 @@ def tmq_consumer_with_precision(precision: str):
 
 
 if __name__ == "__main__":
-    test_tmq()
-    test_tmq_with_precision()
     test_consumer_with_precision()

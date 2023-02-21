@@ -31,7 +31,7 @@ def test_query():
 
     for row in result.rows_iter():
         print(row)
-    
+
     result = conn.query("select * from tb1 limit 1")
     results = result.fetch_all_into_dict()
     print(results)
@@ -41,6 +41,7 @@ def test_query():
     print("elapsed time: ", elapsed)
     result.close()
     conn.close()
+
 
 if __name__ == "__main__":
     test_query()
