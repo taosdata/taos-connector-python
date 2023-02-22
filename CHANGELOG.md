@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.7.3 - 2023-02-22
+
+### Bug Fixes:
+
+- fix rest and ws for cloud
+
+### Enhancements:
+
+- delete TaosConsumer and TaosTmq api (#129)
+
+### Documents:
+
+- update readme markdown for v2.7.2 to clarify python version requirement (#128)
+
 ## v2.7.2 - 2023-01-23
 
 ### Features:
