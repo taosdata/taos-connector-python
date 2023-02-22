@@ -1,5 +1,6 @@
 from sqlalchemy import types as sqltypes
 from sqlalchemy.engine import default, reflection
+from sqlalchemy import text
 
 TYPES_MAP = {
     "bool": sqltypes.Boolean,
@@ -29,7 +30,7 @@ class TaosWsDialect(default.DefaultDialect):
         pass
 
     def _get_server_version_info(self, connection):
-        cursor = connection.execute("select server_version()")
+        cursor = connection.execute(text("select server_version()"))
         return cursor.fetchone()
 
     @classmethod
@@ -43,7 +44,7 @@ class TaosWsDialect(default.DefaultDialect):
 
     def has_table(self, connection, table_name, schema=None):
         try:
-            connection.execute("describe {}" % table_name)
+            connection.execute(text("describe {}" % table_name))
             return True
         except:
             return False
@@ -58,7 +59,7 @@ class TaosWsDialect(default.DefaultDialect):
 
     def get_columns(self, connection, table_name, schema=None, **kw):
         try:
-            cursor = connection.execute("describe {}" % table_name)
+            cursor = connection.execute(text("describe {}" % table_name))
             return [row[0] for row in cursor.fetchall()]
         except:
             return []
@@ -102,7 +103,7 @@ class TaosDialect(default.DefaultDialect):
 
     def has_table(self, connection, table_name, schema=None):
         try:
-            connection.execute("describe {}" % table_name)
+            connection.execute(text("describe {}" % table_name))
             return True
         except:
             return False
@@ -117,7 +118,7 @@ class TaosDialect(default.DefaultDialect):
 
     def get_columns(self, connection, table_name, schema=None, **kw):
         try:
-            cursor = connection.execute("describe {}" % table_name)
+            cursor = connection.execute(text("describe {}" % table_name))
             return [row[0] for row in cursor.fetchall()]
         except:
             return []
