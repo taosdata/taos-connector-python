@@ -1,4 +1,5 @@
 from sqlalchemy.engine import default, reflection
+from sqlalchemy import text
 
 import taosrest
 
@@ -49,7 +50,7 @@ class TaosRestDialect(default.DefaultDialect):
 
     def has_table(self, connection, table_name, schema=None):
         try:
-            connection.cursor().execute(f"describe {table_name}")
+            connection.execute(text(f"describe {table_name}"))
             return True
         except:
             return False
@@ -64,8 +65,7 @@ class TaosRestDialect(default.DefaultDialect):
 
     def get_columns(self, connection, table_name, schema=None, **kw):
         try:
-            cursor = connection.cursor()
-            cursor.execute("describe {}" % table_name)
+            cursor = connection.execute(text("describe {}" % table_name))
             return [row[0] for row in cursor.fetchall()]
         except:
             return []
