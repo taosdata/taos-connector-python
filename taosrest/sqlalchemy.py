@@ -9,12 +9,18 @@ class AlchemyRestConnection:
     Error = taosrest.Error
 
     def connect(self, **kwargs):
-        host = kwargs["host"] if "host" in kwargs else "localhost"
+        host = kwargs["host"] if "host" in kwargs else None
         port = kwargs["port"] if "port" in kwargs else None
         user = kwargs["username"] if "username" in kwargs else "root"
         password = kwargs["password"] if "password" in kwargs else "taosdata"
         database = kwargs["database"] if "database" in kwargs else None
         token = kwargs["token"] if "token" in kwargs else None
+
+        if not host and not port:
+            host = 'localhost'
+            port = 6041
+        if not host:
+            host = 'localhost'
 
         url = f"http://{host}"
         if port:

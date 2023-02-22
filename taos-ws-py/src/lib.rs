@@ -282,7 +282,6 @@ fn connect(
                 }
             }
             (Some(host), None) => {
-
                 addr.host.replace(host.extract::<String>()?);
             }
             (_, Some(port)) => {
