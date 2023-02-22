@@ -263,12 +263,12 @@ fn connect(
                 dsn.protocol = Some(scheme.extract::<String>()?);
             }
         } else if let Some(native) = args.get_item("native") {
-            _ = native;
+            let _ = native;
         } else if dsn.protocol.is_none() {
             dsn.protocol.replace("ws".to_string());
         }
 
-        let host = args.get_item("ip").or(args.get_item("database"));
+        let host = args.get_item("host").or(args.get_item("ip"));
         let port = args.get_item("port");
         match (host, port) {
             (Some(host), Some(port)) => {
@@ -304,6 +304,7 @@ fn connect(
         {
             dsn.set(key.extract::<&str>()?, value.extract::<&str>()?);
         }
+        dsn.addresses.push(addr);
     }
 
     let builder =
