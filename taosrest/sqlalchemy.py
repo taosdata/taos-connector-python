@@ -10,12 +10,16 @@ class AlchemyRestConnection:
 
     def connect(self, **kwargs):
         host = kwargs["host"] if "host" in kwargs else "localhost"
-        port = kwargs["port"] if "port" in kwargs else "6041"
+        port = kwargs["port"] if "port" in kwargs else None
         user = kwargs["username"] if "username" in kwargs else "root"
         password = kwargs["password"] if "password" in kwargs else "taosdata"
         database = kwargs["database"] if "database" in kwargs else None
-        url = f"http://{host}:{port}"
-        return taosrest.connect(url=url, user=user, password=password, database=database)
+        token = kwargs["token"] if "token" in kwargs else None
+
+        url = f"http://{host}"
+        if port:
+            url += f':{port}'
+        return taosrest.connect(url=url, user=user, password=password, database=database, token=token)
 
 
 class TaosRestDialect(default.DefaultDialect):
