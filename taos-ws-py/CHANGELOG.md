@@ -7,3 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.2.2 - 2023-01-13
 
+## v0.2.3 - 2023-02-22
+
+### Bug Fixes:
+
+- fix rest and ws for cloud
+
