@@ -4,7 +4,7 @@ import pandas
 import taosrest
 import taos
 import taosws
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from datetime import datetime
 from dotenv import load_dotenv
 from decorators import check_env
@@ -33,6 +33,7 @@ def test_pandas_read_from_rest_connection():
 def test_pandas_read_from_native_connection():
     conn = taos.connect()
     df: pandas.DataFrame = pandas.read_sql("select * from test.tb", conn)
+    conn.close()
     assert isinstance(df.ts[0], datetime)
     assert df.shape == (2, 3)
 
@@ -41,14 +42,18 @@ def test_pandas_read_from_native_connection():
 def test_pandas_read_from_sqlalchemy_taosrest():
     url = os.environ["SQLALCHEMY_URL"]  # "taosrest://root:taosdata@vm95:6061"
     engine = create_engine(url)
-    df: pandas.DataFrame = pandas.read_sql("select * from test.tb", engine)
+    conn = engine.connect()
+    df: pandas.DataFrame = pandas.read_sql(text("select * from test.tb"), conn)
+    conn.close()
     assert isinstance(df.ts[0], datetime)
     assert df.shape == (2, 3)
 
 
 def test_pandas_read_from_sqlalchemy_taos():
     engine = create_engine("taos://root:taosdata@localhost:6030?timezone=Asia/Shanghai")
-    df: pandas.DataFrame = pandas.read_sql("select * from test.tb", engine)
+    conn = engine.connect()
+    df: pandas.DataFrame = pandas.read_sql(text("select * from test.tb"), conn)
+    conn.close()
     assert isinstance(df.ts[0], datetime)
     assert df.shape == (2, 3)
 
