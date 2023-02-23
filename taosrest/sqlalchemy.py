@@ -17,11 +17,10 @@ class AlchemyRestConnection:
         database = kwargs["database"] if "database" in kwargs else None
         token = kwargs["token"] if "token" in kwargs else None
 
-        if not host and not port:
-            host = 'localhost'
-            port = 6041
         if not host:
             host = 'localhost'
+        if host == 'localhost' and not port:
+            port = 6041
 
         url = f"http://{host}"
         if port:
