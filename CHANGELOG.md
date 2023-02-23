@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.7.5 - 2023-02-23
+
+### Bug Fixes:
+
+- add default port for taosrest sqlalchemy (#133)
+
 ## v2.7.4 - 2023-02-22
 
 ### Bug Fixes:
