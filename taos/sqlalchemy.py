@@ -25,6 +25,7 @@ class TaosWsDialect(default.DefaultDialect):
     driver = "taosws"
     supports_native_boolean = True
     implicit_returning = True
+    supports_statement_cache = True
 
     def do_rollback(self, connection):
         pass
@@ -37,6 +38,11 @@ class TaosWsDialect(default.DefaultDialect):
     def dbapi(cls):
         import taosws
 
+        return taosws
+
+    @classmethod
+    def import_dbapi(cls):
+        import taosws
         return taosws
 
     def has_schema(self, connection, schema):
@@ -87,6 +93,7 @@ class TaosDialect(default.DefaultDialect):
     driver = "taos"
     supports_native_boolean = True
     implicit_returning = True
+    supports_statement_cache = True
 
     def do_rollback(self, connection):
         pass
@@ -96,6 +103,10 @@ class TaosDialect(default.DefaultDialect):
 
     @classmethod
     def dbapi(cls):
+        return AlchemyTaosConnection()
+
+    @classmethod
+    def import_dbapi(cls):
         return AlchemyTaosConnection()
 
     def has_schema(self, connection, schema):

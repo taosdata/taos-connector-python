@@ -22,7 +22,7 @@ class AlchemyRestConnection:
         if host == 'localhost' and not port:
             port = 6041
 
-        url = f"http://{host}"
+        url = f"https://{host}"
         if port:
             url += f':{port}'
         return taosrest.connect(url=url, user=user, password=password, database=database, token=token)
@@ -33,6 +33,7 @@ class TaosRestDialect(default.DefaultDialect):
     driver = "taosrest"
     supports_native_boolean = True
     implicit_returning = True
+    supports_statement_cache = True
 
     def do_rollback(self, connection):
         pass
@@ -42,6 +43,10 @@ class TaosRestDialect(default.DefaultDialect):
 
     @classmethod
     def dbapi(cls):
+        return AlchemyRestConnection()
+
+    @classmethod
+    def import_dbapi(cls):
         return AlchemyRestConnection()
 
     def has_schema(self, connection, schema):
