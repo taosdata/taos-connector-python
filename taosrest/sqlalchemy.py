@@ -22,7 +22,7 @@ class AlchemyRestConnection:
         if host == 'localhost' and not port:
             port = 6041
 
-        url = f"https://{host}"
+        url = f"http://{host}"
         if port:
             url += f':{port}'
         return taosrest.connect(url=url, user=user, password=password, database=database, token=token)
