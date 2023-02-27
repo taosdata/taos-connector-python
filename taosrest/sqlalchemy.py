@@ -33,6 +33,7 @@ class TaosRestDialect(default.DefaultDialect):
     driver = "taosrest"
     supports_native_boolean = True
     implicit_returning = True
+    supports_statement_cache = True
 
     def do_rollback(self, connection):
         pass
@@ -42,6 +43,10 @@ class TaosRestDialect(default.DefaultDialect):
 
     @classmethod
     def dbapi(cls):
+        return AlchemyRestConnection()
+
+    @classmethod
+    def import_dbapi(cls):
         return AlchemyRestConnection()
 
     def has_schema(self, connection, schema):
