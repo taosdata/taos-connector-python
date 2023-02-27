@@ -42,9 +42,11 @@ jobs:
 
       - name: Start TDengine
         run: |
-          mkdir -p /var/log/taos/
           export C_INCLUDE_PATH=$PWD/TDengine/build/build/include
           export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
+          
+          mkdir -p /tmp/taos/v3/log /tmp/taos/v3/data
+          printf "dataDir /tmp/taos/v3/data\nlogDir /tmp/taos/v3/log\ndebugFlag 135\n" |tee /etc/taos/taos.cfg
 
           TAOS_SUPPORT_VNODES=256 taosd &
           taosadapter &
