@@ -42,12 +42,13 @@ jobs:
 
       - name: Start TDengine
         run: |
+          mkdir -p /var/log/taos/
           export C_INCLUDE_PATH=$PWD/TDengine/build/build/include
           export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
 
-          taosadapter &
-
           TAOS_SUPPORT_VNODES=256 taosd &
+          taosadapter &
+          
           sleep 1
 
       - name: Cache Poetry
