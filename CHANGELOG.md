@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.7.6 - 2023-02-27
+
+### Bug Fixes:
+
+- add pandas-read-sql-tdengine-cloud.py (#134)
+- fix for sqlalchemy warning (#135)
+
 ## v2.7.5 - 2023-02-23
 
 ### Bug Fixes:
