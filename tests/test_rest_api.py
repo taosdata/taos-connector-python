@@ -28,7 +28,6 @@ def test_wrong_password():
     assert resp["desc"] == "Authentication failure"
 
 
-@pytest.mark.skip(reason="know bug TD-16959")
 @check_env
 def test_server_version():
     url = "http://localhost:6041/rest/sql"

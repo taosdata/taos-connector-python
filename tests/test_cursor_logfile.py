@@ -1,4 +1,5 @@
 from os import unlink
+from utils import tear_down_database
 import taos
 
 
@@ -21,6 +22,8 @@ def test_logfile():
     # rowcount can only get correct value after fetching all data
     all_data = cursor.fetchall()
     assert cursor.rowcount == 1
+    db_name = "test"
+    tear_down_database(cursor, db_name)
     cursor.close()
     conn.close()
 
@@ -33,5 +36,6 @@ def test_logfile():
         "CREATE STABLE weather(ts TIMESTAMP, temperature FLOAT) TAGS (location INT);",
         "INSERT INTO t1 USING weather TAGS(1) VALUES (now, 23.5) (now+100a, 23.5);",
         "SELECT tbname, ts, temperature, location FROM weather LIMIT 1;",
+        "DROP DATABASE IF EXISTS test;",
     ]
     unlink("log.txt")

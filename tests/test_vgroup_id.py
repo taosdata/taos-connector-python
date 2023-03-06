@@ -1,5 +1,6 @@
 #! encoding=utf-8
 import taos
+from utils import tear_down_database
 
 
 def test_get_table_vgroup_id():
@@ -25,6 +26,8 @@ def test_get_table_vgroup_id():
     vg_id = conn.get_table_vgroup_id('test_get_table_vgroup_id', 'd1')
     print(vg_id)
     print('\n')
+    db_name = 'test_get_table_vgroup_id'
+    tear_down_database(conn, db_name)
     conn.close()
 
 

@@ -67,6 +67,7 @@ def test_select_data_with_timestamp_type():
     assert isinstance(data[0][0], datetime.datetime) and data[0][0].tzinfo is None
     assert isinstance(data[0][3], datetime.datetime) and data[0][3].tzinfo is None
 
+
 @check_env
 def test_use_str_timestamp():
     url = os.environ["TDENGINE_URL"]
@@ -76,5 +77,14 @@ def test_use_str_timestamp():
     print(data[0][0], data[0][3])
     assert isinstance(data[0][0], str) and isinstance(data[0][3], str)
 
+
+@check_env
+def test_after():
+    url = os.environ["TDENGINE_URL"]
+    c = RestClient(url)
+    c.sql("drop database if exists test")
+
+
 if __name__ == "__main__":
     test_show_database()
+    test_after()
