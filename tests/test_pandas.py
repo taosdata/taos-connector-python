@@ -51,7 +51,7 @@ def test_pandas_read_from_sqlalchemy_taos():
     assert df.shape == (2, 3)
 
 
-def test_after():
+def test_final():
     conn = taos.connect()
     db_name = "test"
     tear_down_database(conn, db_name)
@@ -61,4 +61,3 @@ def test_after():
 if __name__ == '__main__':
     test_insert_test_data()
     test_pandas_read_from_rest_connection()
-    test_after()

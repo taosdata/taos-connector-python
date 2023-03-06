@@ -79,7 +79,7 @@ def test_use_str_timestamp():
 
 
 @check_env
-def test_after():
+def test_final():
     url = os.environ["TDENGINE_URL"]
     c = RestClient(url)
     c.sql("drop database if exists test")
@@ -87,4 +87,4 @@ def test_after():
 
 if __name__ == "__main__":
     test_show_database()
-    test_after()
+    test_final()

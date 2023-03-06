@@ -133,7 +133,7 @@ def test_tzinfo_timezone():
 
 
 @check_env
-def test_after():
+def test_final():
     url = os.environ["TDENGINE_URL"]
     c = taosrest.connect(url=url)
     c.execute("drop database if exists test")
