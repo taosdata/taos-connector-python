@@ -78,8 +78,7 @@ def test_use_str_timestamp():
     assert isinstance(data[0][0], str) and isinstance(data[0][3], str)
 
 
-@check_env
-def test_final():
+def teardown_module(module):
     url = os.environ["TDENGINE_URL"]
     c = RestClient(url)
     c.sql("drop database if exists test")
@@ -87,4 +86,3 @@ def test_final():
 
 if __name__ == "__main__":
     test_show_database()
-    test_final()

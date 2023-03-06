@@ -51,7 +51,7 @@ def test_pandas_read_from_sqlalchemy_taos():
     assert df.shape == (2, 3)
 
 
-def test_final():
+def teardown_module(module):
     conn = taos.connect()
     db_name = "test"
     tear_down_database(conn, db_name)

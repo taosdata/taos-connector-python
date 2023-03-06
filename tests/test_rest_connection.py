@@ -132,8 +132,7 @@ def test_tzinfo_timezone():
             row)  # [datetime.datetime(2022, 7, 26, 13, 56, 58, 746000, tzinfo=datetime.timezone(datetime.timedelta(seconds=28800), 'CST')), -100, -200.3]
 
 
-@check_env
-def test_final():
+def teardown_module(module):
     url = os.environ["TDENGINE_URL"]
     c = taosrest.connect(url=url)
     c.execute("drop database if exists test")
