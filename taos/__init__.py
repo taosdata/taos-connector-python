@@ -45,6 +45,7 @@ __all__ = [
     "PrecisionEnum",
     "SmlPrecision",
     "SmlProtocol",
+    "utils",
 ]
 
 
