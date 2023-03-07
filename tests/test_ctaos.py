@@ -2,6 +2,7 @@ import pytest
 
 from taos.bind import *
 from taos.cinterface import *
+from taos.utils import gen_req_id
 
 
 @pytest.fixture
@@ -50,6 +51,52 @@ def test_simple(conn, caplog):
         taos_close(conn)
     except Exception as err:
         taos_query(conn, "drop database if exists " + dbname)
+        raise err
+
+
+def test_simple_with_req_id(conn, caplog):
+    dbname = "pytest_ctaos_simple"
+    try:
+        req_id = gen_req_id()
+        res = taos_query_with_req_id(conn, "create database if not exists %s" % dbname, req_id)
+        taos_free_result(res)
+
+        taos_select_db(conn, dbname)
+
+        res = taos_query_with_req_id(
+            conn,
+            "create table if not exists log(ts timestamp, level tinyint, content binary(100), ipaddr binary(134))",
+            req_id,
+        )
+        taos_free_result(res)
+
+        res = taos_query_with_req_id(conn, "insert into log values(now, 1, 'hello', 'test')", req_id)
+        taos_free_result(res)
+
+        res = taos_query_with_req_id(conn, "select level,content,ipaddr from log limit 1", req_id)
+
+        fields = taos_fetch_fields_raw(res)
+        field_count = taos_field_count(res)
+
+        fields = taos_fetch_fields(res)
+        for field in fields:
+            print(field)
+
+        # field_lengths = taos_fetch_lengths(res, field_count)
+        # if not field_lengths:
+        #     raise "fetch lengths error"
+
+        row = taos_fetch_row_raw(res)
+        rowstr = taos_print_row(row, fields, field_count)
+        assert rowstr == "1 hello test"
+
+        row, num = taos_fetch_row(res, fields)
+        print(row)
+        taos_free_result(res)
+        taos_query_with_req_id(conn, "drop database if exists " + dbname, req_id)
+        taos_close(conn)
+    except Exception as err:
+        taos_query_with_req_id(conn, "drop database if exists " + dbname)
         raise err
 
 
@@ -110,4 +157,3 @@ def test_stmt(conn, caplog):
     except Exception as err:
         taos_query(conn, "drop database if exists " + dbname)
         raise err
-
