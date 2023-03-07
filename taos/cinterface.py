@@ -303,6 +303,33 @@ def taos_query(connection, sql):
         raise AttributeError("sql is expected as a string")
 
 
+_libtaos.taos_query_with_reqid.restype = c_void_p
+_libtaos.taos_query_with_reqid.argtypes = c_void_p, c_char_p, c_int
+
+
+def taos_query_with_req_id(connection, sql, req_id):
+    # type: (c_void_p, str, int) -> c_void_p
+    """Run SQL with request id
+
+    - sql: str, sql string to run
+    - reqid: int, request id
+
+    @return: TAOS_RES*, result pointer
+
+    """
+    try:
+        ptr = c_char_p(sql.encode("utf-8"))
+        res = c_void_p(_libtaos.taos_query_with_reqid(connection, ptr, req_id))
+        errno = taos_errno(res)
+        if errno != 0:
+            errstr = taos_errstr(res)
+            taos_free_result(res)
+            raise ProgrammingError(errstr, errno)
+        return res
+    except AttributeError:
+        raise AttributeError("sql is expected as a string")
+
+
 async_query_callback_type = CFUNCTYPE(None, c_void_p, c_void_p, c_int)
 _libtaos.taos_query_a.restype = None
 _libtaos.taos_query_a.argtypes = c_void_p, c_char_p, async_query_callback_type, c_void_p
