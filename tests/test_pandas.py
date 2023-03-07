@@ -8,6 +8,7 @@ from sqlalchemy import create_engine, text
 from datetime import datetime
 from dotenv import load_dotenv
 from decorators import check_env
+from utils import tear_down_database
 
 load_dotenv()
 
@@ -48,6 +49,13 @@ def test_pandas_read_from_sqlalchemy_taos():
     conn.close()
     assert isinstance(df.ts[0], datetime)
     assert df.shape == (2, 3)
+
+
+def teardown_module(module):
+    conn = taos.connect()
+    db_name = "test"
+    tear_down_database(conn, db_name)
+    conn.close()
 
 
 if __name__ == '__main__':

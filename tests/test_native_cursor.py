@@ -1,4 +1,5 @@
 import taos
+from utils import tear_down_database
 
 
 def test_cursor():
@@ -14,5 +15,7 @@ def test_cursor():
     # rowcount can only get correct value after fetching all data
     all_data = cursor.fetchall()
     assert cursor.rowcount == 1
+    db_name = "test"
+    tear_down_database(cursor, db_name)
     cursor.close()
     conn.close()
