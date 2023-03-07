@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from utils import tear_down_database
 import taos
 
 
@@ -40,6 +41,8 @@ def test_query():
     elapsed = end - start
     print("elapsed time: ", elapsed)
     result.close()
+    db_name = "test_query_py"
+    tear_down_database(conn, db_name)
     conn.close()
 
 

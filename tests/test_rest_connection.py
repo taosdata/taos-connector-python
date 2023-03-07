@@ -117,7 +117,8 @@ def test_str_timezone():
     c = taosrest.connect(url=url, timezone="Asia/Shanghai")
     r = c.query("select * from test.tb")
     for row in r:
-        print(row)  # [datetime.datetime(2022, 7, 26, 13, 56, 58, 746000, tzinfo=<DstTzInfo 'Asia/Shanghai' CST+8:00:00 STD>), -100, -200.3]
+        print(
+            row)  # [datetime.datetime(2022, 7, 26, 13, 56, 58, 746000, tzinfo=<DstTzInfo 'Asia/Shanghai' CST+8:00:00 STD>), -100, -200.3]
 
 
 @check_env
@@ -127,4 +128,11 @@ def test_tzinfo_timezone():
     c = taosrest.connect(url=url, timezone=tz)
     r = c.query("select * from test.tb")
     for row in r:
-        print(row)  # [datetime.datetime(2022, 7, 26, 13, 56, 58, 746000, tzinfo=datetime.timezone(datetime.timedelta(seconds=28800), 'CST')), -100, -200.3]
+        print(
+            row)  # [datetime.datetime(2022, 7, 26, 13, 56, 58, 746000, tzinfo=datetime.timezone(datetime.timedelta(seconds=28800), 'CST')), -100, -200.3]
+
+
+def teardown_module(module):
+    url = os.environ["TDENGINE_URL"]
+    c = taosrest.connect(url=url)
+    c.execute("drop database if exists test")

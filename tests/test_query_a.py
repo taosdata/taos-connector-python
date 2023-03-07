@@ -3,6 +3,7 @@ from ctypes import *
 import taos
 import pytest
 import time
+from utils import tear_down_database
 
 
 @pytest.fixture
@@ -69,6 +70,8 @@ def test_query(conn):
         print("wait query callback")
         time.sleep(1)
     print(counter)
+    db_name = "pytestquerya"
+    tear_down_database(conn, db_name)
     conn.close()
 
 
