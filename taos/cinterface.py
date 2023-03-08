@@ -340,6 +340,28 @@ def taos_query_a(connection, sql, callback, param):
     _libtaos.taos_query_a(connection, c_char_p(sql.encode("utf-8")), async_query_callback_type(callback), param)
 
 
+# add req_id for async query
+async_query_with_reqid_callback_type = CFUNCTYPE(None, c_void_p, c_void_p, c_int)
+_libtaos.taos_query_a_with_reqid.restype = None
+_libtaos.taos_query_a_with_reqid.argtypes = c_void_p, c_char_p, async_query_with_reqid_callback_type, c_void_p, c_int
+
+
+def taos_query_a_with_req_id(connection, sql, callback, param, req_id):
+    # type: (c_void_p, str, async_query_with_reqid_callback_type, c_void_p, int) -> None
+    """
+    Run SQL with request id
+
+    - sql: str, sql string to run
+    - reqid: int, request id
+
+    @return: None
+
+    """
+    _libtaos.taos_query_a_with_reqid(
+        connection, c_char_p(sql.encode("utf-8")),
+        async_query_with_reqid_callback_type(callback), param, req_id)
+
+
 async_fetch_rows_callback_type = CFUNCTYPE(None, c_void_p, c_void_p, c_int)
 _libtaos.taos_fetch_rows_a.restype = None
 _libtaos.taos_fetch_rows_a.argtypes = c_void_p, async_fetch_rows_callback_type, c_void_p
