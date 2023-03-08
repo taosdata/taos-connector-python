@@ -336,7 +336,7 @@ _libtaos.taos_query_a.argtypes = c_void_p, c_char_p, async_query_callback_type, 
 
 
 def taos_query_a(connection, sql, callback, param):
-    # type: (c_void_p, str, async_query_callback_type, c_void_p) -> c_void_p
+    # type: (c_void_p, str, async_query_callback_type, c_void_p) -> None
     _libtaos.taos_query_a(connection, c_char_p(sql.encode("utf-8")), async_query_callback_type(callback), param)
 
 
@@ -352,7 +352,7 @@ def taos_query_a_with_req_id(connection, sql, callback, param, req_id):
     Run SQL with request id
 
     - sql: str, sql string to run
-    - reqid: int, request id
+    - req_id: int, request id
 
     @return: None
 
@@ -368,7 +368,7 @@ _libtaos.taos_fetch_rows_a.argtypes = c_void_p, async_fetch_rows_callback_type, 
 
 
 def taos_fetch_rows_a(result, callback, param):
-    # type: (c_void_p, async_fetch_rows_callback_type, c_void_p) -> c_void_p
+    # type: (c_void_p, async_fetch_rows_callback_type, c_void_p) -> None
     _libtaos.taos_fetch_rows_a(result, async_fetch_rows_callback_type(callback), param)
 
 
@@ -723,6 +723,24 @@ def taos_stmt_init(connection):
 
 _libtaos.taos_stmt_prepare.restype = c_int
 _libtaos.taos_stmt_prepare.argstype = (c_void_p, c_char_p, c_int)
+
+
+# taos_stmt_init_with_req_id
+
+_libtaos.taos_stmt_init_with_reqid.restype = c_void_p
+_libtaos.taos_stmt_init_with_reqid.argstype = (c_void_p, c_int)
+
+
+def taos_stmt_init_with_req_id(connection, req_id):
+    # type: (c_void_p, int) -> c_void_p
+    """Create a statement query
+
+    connection: c_void_p TAOS*
+    req_id: c_int
+
+    @return: c_void_p, *TAOS_STMT
+    """
+    return c_void_p(_libtaos.taos_stmt_init_with_reqid(connection, req_id))
 
 
 def taos_stmt_prepare(stmt, sql):
