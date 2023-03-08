@@ -1017,6 +1017,34 @@ def taos_schemaless_insert(connection, lines, protocol, precision):
     return affected_rows
 
 
+# taos_schemaless_insert_with_req_id
+
+try:
+    _libtaos.taos_schemaless_insert_with_reqid.restype = c_void_p
+    _libtaos.taos_schemaless_insert_with_reqid.argstype = c_void_p, c_void_p, c_int, c_int, c_int, c_int
+except Exception as err:
+    _UNSUPPORTED["taos_schemaless_insert_with_reqid"] = err
+
+
+def taos_schemaless_insert_with_req_id(connection, lines, protocol, precision, req_id):
+    # type: (c_void_p, list[str] | tuple(str), SmlProtocol, SmlPrecision, int) -> int
+    _check_if_supported()
+    num_of_lines = len(lines)
+    lines = (c_char_p(line.encode("utf-8")) for line in lines)
+    lines_type = ctypes.c_char_p * num_of_lines
+    p_lines = lines_type(*lines)
+    res = c_void_p(_libtaos.taos_schemaless_insert_with_reqid(connection, p_lines, num_of_lines, protocol, precision, req_id))
+    errno = taos_errno(res)
+    affected_rows = taos_affected_rows(res)
+    if errno != 0:
+        errstr = taos_errstr(res)
+        taos_free_result(res)
+        raise SchemalessError(errstr, errno, affected_rows)
+
+    taos_free_result(res)
+    return affected_rows
+
+
 try:
     _libtaos.tmq_conf_new.restype = c_void_p
 except Exception as err:
