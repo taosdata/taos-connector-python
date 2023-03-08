@@ -20,9 +20,11 @@ packages = [
 "taosws" = "taos.sqlalchemy:TaosWsDialect"
 
 [tool.poetry.dependencies]
-python = ">=3.6,<4.0"
+python = ">=3.6.2,<4.0"
 pytz = "*"
 iso8601 = "1.0.2"
+requests = "2.27.1"
+pytest-cov = "^4.0.0"
 
 [tool.poetry.dependencies.taos-ws-py]
 version = ">=0.2.0"
