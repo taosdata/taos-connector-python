@@ -75,5 +75,31 @@ def test_query(conn):
     conn.close()
 
 
+def test_query_with_req_id(conn):
+    # type: (TaosConnection) -> None
+    counter = Counter(count=0)
+    conn.execute("drop database if exists pytestquerya")
+    conn.execute("create database pytestquerya")
+    conn.execute("use pytestquerya")
+    cols = ["bool", "tinyint", "smallint", "int", "bigint", "tinyint unsigned", "smallint unsigned", "int unsigned",
+            "bigint unsigned", "float", "double", "binary(100)", "nchar(100)"]
+    s = ','.join("c%d %s" % (i, t) for i, t in enumerate(cols))
+    print(s)
+    conn.execute("create table tb1(ts timestamp, %s)" % s)
+    for _ in range(100):
+        s = ','.join('null' for c in cols)
+        conn.execute("insert into tb1 values(now, %s)" % s)
+    req_id = utils.gen_req_id()
+    conn.query_a_with_req_id("select * from tb1", query_callback, byref(counter), req_id)
+
+    while not counter.done:
+        print("wait query callback")
+        time.sleep(1)
+    print(counter)
+    db_name = "pytestquerya"
+    tear_down_database(conn, db_name)
+    conn.close()
+
+
 if __name__ == "__main__":
     test_query(taos.connect())
