@@ -81,10 +81,20 @@ class TaosConnection(object):
         result = taos_query(self._conn, sql)
         return TaosResult(result, True, self)
 
+    def query_with_req_id(self, sql, req_id):
+        # type: (str, int) -> TaosResult
+        result = taos_query_with_req_id(self._conn, sql, req_id)
+        return TaosResult(result, True, self)
+
     def query_a(self, sql, callback, param):
         # type: (str, async_query_callback_type, c_void_p) -> None
         """Asynchronously query a sql with callback function"""
         taos_query_a(self._conn, sql, callback, param)
+
+    def query_a_with_req_id(self, sql, callback, param, req_id):
+        # type: (str, async_query_callback_type, c_void_p, int) -> None
+        """Asynchronously query a sql with callback function"""
+        taos_query_a_with_req_id(self._conn, sql, callback, param, req_id)
 
     def subscribe(self, restart, topic, sql, interval, callback=None, param=None):
         # type: (bool, str, str, int, subscribe_callback_type, c_void_p) -> TaosSubscription|None
