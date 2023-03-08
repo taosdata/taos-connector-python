@@ -76,10 +76,9 @@ jobs:
       # install dependencies if cache does not exist
       #----------------------------------------------
       - name: Install dependencies
-        run: |
-          sudo apt update -y
-          sudo apt install -y gnome-keyring
-          poetry install --no-interaction --no-root
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-root
+        
       #----------------------------------------------
       # install your root project, if required
       #----------------------------------------------
