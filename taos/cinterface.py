@@ -320,6 +320,7 @@ def taos_query_with_req_id(connection, sql, req_id):
     @return: TAOS_RES*, result pointer
 
     """
+    _check_if_supported()
     try:
         ptr = c_char_p(sql.encode("utf-8"))
         res = c_void_p(_libtaos.taos_query_with_reqid(connection, ptr, req_id))
@@ -363,6 +364,7 @@ def taos_query_a_with_req_id(connection, sql, callback, param, req_id):
     @return: None
 
     """
+    _check_if_supported()
     _libtaos.taos_query_a_with_reqid(
         connection, c_char_p(sql.encode("utf-8")),
         async_query_with_reqid_callback_type(callback), param, req_id)
@@ -748,6 +750,7 @@ def taos_stmt_init_with_req_id(connection, req_id):
 
     @return: c_void_p, *TAOS_STMT
     """
+    _check_if_supported()
     return c_void_p(_libtaos.taos_stmt_init_with_reqid(connection, req_id))
 
 

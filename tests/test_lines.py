@@ -1,6 +1,7 @@
 from taos.error import OperationalError, SchemalessError
 from taos import connect, new_bind_params, PrecisionEnum
 from taos import *
+from taos.cinterface import *
 
 from ctypes import *
 import taos
@@ -181,7 +182,10 @@ def test_schemaless_insert_with_req_id(conn):
 
         conn.execute("drop database if exists %s" % dbname)
         conn.close()
-
+    except InterfaceError as err:
+        conn.execute("drop database if exists %s" % dbname)
+        conn.close()
+        print(err)
     except Exception as err:
         conn.execute("drop database if exists %s" % dbname)
         conn.close()
