@@ -58,11 +58,16 @@ def test_simple_with_req_id(conn, caplog):
     dbname = "pytest_ctaos_simple"
     try:
         req_id = gen_req_id()
-        res = taos_query_with_req_id(conn, "create database if not exists %s" % dbname, req_id)
+        res = taos_query_with_req_id(
+            conn,
+            "create database if not exists %s" % dbname,
+            req_id,
+        )
         taos_free_result(res)
 
         taos_select_db(conn, dbname)
 
+        req_id = gen_req_id()
         res = taos_query_with_req_id(
             conn,
             "create table if not exists log(ts timestamp, level tinyint, content binary(100), ipaddr binary(134))",
@@ -70,10 +75,20 @@ def test_simple_with_req_id(conn, caplog):
         )
         taos_free_result(res)
 
-        res = taos_query_with_req_id(conn, "insert into log values(now, 1, 'hello', 'test')", req_id)
+        req_id = gen_req_id()
+        res = taos_query_with_req_id(
+            conn,
+            "insert into log values(now, 1, 'hello', 'test')",
+            req_id,
+        )
         taos_free_result(res)
 
-        res = taos_query_with_req_id(conn, "select level,content,ipaddr from log limit 1", req_id)
+        req_id = gen_req_id()
+        res = taos_query_with_req_id(
+            conn,
+            "select level,content,ipaddr from log limit 1",
+            req_id,
+        )
 
         fields = taos_fetch_fields_raw(res)
         field_count = taos_field_count(res)
@@ -93,7 +108,13 @@ def test_simple_with_req_id(conn, caplog):
         row, num = taos_fetch_row(res, fields)
         print(row)
         taos_free_result(res)
-        taos_query_with_req_id(conn, "drop database if exists " + dbname, req_id)
+
+        req_id = gen_req_id()
+        taos_query_with_req_id(
+            conn,
+            "drop database if exists " + dbname,
+            req_id
+        )
         taos_close(conn)
     except InterfaceError as err:
         print(err, err.args)
@@ -165,13 +186,24 @@ def test_stmt_with_req_id(conn, caplog):
     dbname = "pytest_ctaos_stmt"
     try:
         req_id = gen_req_id()
-        res = taos_query_with_req_id(conn, "drop database if exists %s" % dbname, req_id)
+        res = taos_query_with_req_id(
+            conn,
+            "drop database if exists %s" % dbname,
+            req_id,
+        )
         taos_free_result(res)
-        res = taos_query_with_req_id(conn, "create database if not exists %s" % dbname, req_id)
+
+        req_id = gen_req_id()
+        res = taos_query_with_req_id(
+            conn,
+            "create database if not exists %s" % dbname,
+            req_id,
+        )
         taos_free_result(res)
 
         taos_select_db(conn, dbname)
 
+        req_id = gen_req_id()
         res = taos_query_with_req_id(
             conn,
             "create table if not exists log(ts timestamp, nil tinyint, ti tinyint, si smallint, ii int,\
@@ -181,6 +213,7 @@ def test_stmt_with_req_id(conn, caplog):
         )
         taos_free_result(res)
 
+        req_id = gen_req_id()
         stmt = taos_stmt_init_with_req_id(conn, req_id)
 
         taos_stmt_prepare(stmt, "insert into log values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
@@ -204,7 +237,12 @@ def test_stmt_with_req_id(conn, caplog):
         taos_stmt_add_batch(stmt)
         taos_stmt_execute(stmt)
 
-        res = taos_query_with_req_id(conn, "select * from log limit 1", req_id)
+        req_id = gen_req_id()
+        res = taos_query_with_req_id(
+            conn,
+            "select * from log limit 1",
+            req_id,
+        )
 
         fields = taos_fetch_fields(res)
         filed_count = taos_field_count(res)
@@ -213,7 +251,13 @@ def test_stmt_with_req_id(conn, caplog):
         rowstr = taos_print_row(row, fields, filed_count, 100)
 
         taos_free_result(res)
-        taos_query_with_req_id(conn, "drop database if exists " + dbname, req_id)
+
+        req_id = gen_req_id()
+        taos_query_with_req_id(
+            conn,
+            "drop database if exists " + dbname,
+            req_id,
+        )
         taos_close(conn)
 
         assert rowstr == "1626861392589 NULL 2 3 4 5 6 7 8 9 10.100000 10.110000 hello stmt"

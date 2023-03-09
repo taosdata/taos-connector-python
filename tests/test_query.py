@@ -79,6 +79,7 @@ def test_query_with_req_id():
         for row in result.rows_iter():
             print(row)
 
+        req_id = utils.gen_req_id()
         result = conn.query_with_req_id("select * from tb1", req_id)
         results = result.fetch_all_into_dict()
         print(results)
