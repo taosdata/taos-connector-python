@@ -4,11 +4,13 @@ import taos
 import pytest
 import time
 from utils import tear_down_database
+from taos.error import InterfaceError
 
 
 @pytest.fixture
 def conn():
     return taos.connect()
+
 
 def fetch_callback(p_param, p_result, num_of_rows):
     print("fetched ", num_of_rows, "rows")
@@ -25,13 +27,12 @@ def fetch_callback(p_param, p_result, num_of_rows):
         result.check_error(num_of_rows)
         result.close()
         return None
-    
+
     for row in result.rows_iter(num_of_rows):
         # print(row)
         None
     p.contents.count += result.row_count
     result.fetch_rows_a(fetch_callback, p_param)
-    
 
 
 def query_callback(p_param, p_result, code):
@@ -57,8 +58,9 @@ def test_query(conn):
     conn.execute("drop database if exists pytestquerya")
     conn.execute("create database pytestquerya")
     conn.execute("use pytestquerya")
-    cols = ["bool", "tinyint", "smallint", "int", "bigint", "tinyint unsigned", "smallint unsigned", "int unsigned", "bigint unsigned", "float", "double", "binary(100)", "nchar(100)"]
-    s = ','.join("c%d %s" %(i, t) for i, t in enumerate(cols) )
+    cols = ["bool", "tinyint", "smallint", "int", "bigint", "tinyint unsigned", "smallint unsigned", "int unsigned",
+            "bigint unsigned", "float", "double", "binary(100)", "nchar(100)"]
+    s = ','.join("c%d %s" % (i, t) for i, t in enumerate(cols))
     print(s)
     conn.execute("create table tb1(ts timestamp, %s)" % s)
     for _ in range(100):
@@ -73,6 +75,42 @@ def test_query(conn):
     db_name = "pytestquerya"
     tear_down_database(conn, db_name)
     conn.close()
+
+
+def test_query_with_req_id(conn):
+    # type: (TaosConnection) -> None
+    db_name = "pytestquerya"
+    try:
+        counter = Counter(count=0)
+        conn.execute("drop database if exists pytestquerya")
+        conn.execute("create database pytestquerya")
+        conn.execute("use pytestquerya")
+        cols = ["bool", "tinyint", "smallint", "int", "bigint", "tinyint unsigned", "smallint unsigned", "int unsigned",
+                "bigint unsigned", "float", "double", "binary(100)", "nchar(100)"]
+        s = ','.join("c%d %s" % (i, t) for i, t in enumerate(cols))
+        print(s)
+        conn.execute("create table tb1(ts timestamp, %s)" % s)
+        for _ in range(100):
+            s = ','.join('null' for c in cols)
+            conn.execute("insert into tb1 values(now, %s)" % s)
+        req_id = utils.gen_req_id()
+        conn.query_a_with_req_id("select * from tb1", query_callback, byref(counter), req_id)
+
+        while not counter.done:
+            print("wait query callback")
+            time.sleep(1)
+        print(counter)
+        tear_down_database(conn, db_name)
+        conn.close()
+    except InterfaceError as e:
+        print(e)
+        tear_down_database(conn, db_name)
+        conn.close()
+    except Exception as e:
+        print(e)
+        tear_down_database(conn, db_name)
+        conn.close()
+        raise e
 
 
 if __name__ == "__main__":

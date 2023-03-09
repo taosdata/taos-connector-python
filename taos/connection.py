@@ -81,10 +81,20 @@ class TaosConnection(object):
         result = taos_query(self._conn, sql)
         return TaosResult(result, True, self)
 
+    def query_with_req_id(self, sql, req_id):
+        # type: (str, int) -> TaosResult
+        result = taos_query_with_req_id(self._conn, sql, req_id)
+        return TaosResult(result, True, self)
+
     def query_a(self, sql, callback, param):
         # type: (str, async_query_callback_type, c_void_p) -> None
         """Asynchronously query a sql with callback function"""
         taos_query_a(self._conn, sql, callback, param)
+
+    def query_a_with_req_id(self, sql, callback, param, req_id):
+        # type: (str, async_query_callback_type, c_void_p, int) -> None
+        """Asynchronously query a sql with callback function"""
+        taos_query_a_with_req_id(self._conn, sql, callback, param, req_id)
 
     def subscribe(self, restart, topic, sql, interval, callback=None, param=None):
         # type: (bool, str, str, int, subscribe_callback_type, c_void_p) -> TaosSubscription|None
@@ -171,6 +181,69 @@ class TaosConnection(object):
         ```
         """
         return taos_schemaless_insert(self._conn, lines, protocol, precision)
+
+    def schemaless_insert_with_req_id(self, lines, protocol, precision, req_id):
+        # type: (list[str], SmlProtocol, SmlPrecision, int) -> int
+        """
+        1.Line protocol and schemaless support
+
+        ## Example
+
+        ```python
+        import taos
+        conn = taos.connect()
+        conn.exec("drop database if exists test")
+        conn.select_db("test")
+        lines = [
+            'ste,t2=5,t3=L"ste" c1=true,c2=4,c3="string" 1626056811855516532',
+        ]
+        req_id = taos.utils.get_req_id()
+        conn.schemaless_insert_with_req_id(lines, 0, "ns", req_id)
+        ```
+
+        2.OpenTSDB telnet style API format support
+
+        ## Example
+
+        ```python
+        import taos
+        conn = taos.connect()
+        conn.exec("drop database if exists test")
+        conn.select_db("test")
+        lines = [
+            'cpu_load 1626056811855516532ns 2.0f32 id="tb1",host="host0",interface="eth0"',
+        ]
+        req_id = taos.utils.get_req_id()
+        conn.schemaless_insert_with_req_id(lines, 1, None, req_id
+        ```
+
+        3.OpenTSDB HTTP JSON format support
+
+        ## Example
+
+        ```python
+        import taos
+        conn = taos.connect()
+        conn.exec("drop database if exists test")
+        conn.select_db("test")
+        payload = ['''
+        {
+            "metric": "cpu_load_0",
+            "timestamp": 1626006833610123,
+            "value": 55.5,
+            "tags":
+                {
+                    "host": "ubuntu",
+                    "interface": "eth0",
+                    "Id": "tb0"
+                }
+        }
+        ''']
+        req_id = taos.utils.get_req_id()
+        conn.schemaless_insert_with_req_id(lines, 2, None, req_id)
+        ```
+        """
+        return taos_schemaless_insert_with_req_id(self._conn, lines, protocol, precision, req_id)
 
     def cursor(self):
         # type: () -> TaosCursor
