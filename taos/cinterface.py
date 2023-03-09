@@ -331,6 +331,8 @@ def taos_query_with_req_id(connection, sql, req_id):
         return res
     except AttributeError:
         raise AttributeError("sql is expected as a string")
+    except Exception as e:
+        _UNSUPPORTED["taos_query_with_reqid"] = e
 
 
 async_query_callback_type = CFUNCTYPE(None, c_void_p, c_void_p, c_int)
@@ -363,9 +365,12 @@ def taos_query_a_with_req_id(connection, sql, callback, param, req_id):
     @return: None
 
     """
-    _libtaos.taos_query_a_with_reqid(
-        connection, c_char_p(sql.encode("utf-8")),
-        async_query_with_reqid_callback_type(callback), param, req_id)
+    try:
+        _libtaos.taos_query_a_with_reqid(
+            connection, c_char_p(sql.encode("utf-8")),
+            async_query_with_reqid_callback_type(callback), param, req_id)
+    except Exception as e:
+        _UNSUPPORTED["taos_query_a_with_req_id"] = e
 
 
 async_fetch_rows_callback_type = CFUNCTYPE(None, c_void_p, c_void_p, c_int)
@@ -748,7 +753,10 @@ def taos_stmt_init_with_req_id(connection, req_id):
 
     @return: c_void_p, *TAOS_STMT
     """
-    return c_void_p(_libtaos.taos_stmt_init_with_reqid(connection, req_id))
+    try:
+        return c_void_p(_libtaos.taos_stmt_init_with_reqid(connection, req_id))
+    except Exception as e:
+        _UNSUPPORTED["taos_stmt_init_with_req_id"] = e
 
 
 def taos_stmt_prepare(stmt, sql):
