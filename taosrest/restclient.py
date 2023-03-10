@@ -2,10 +2,11 @@ import datetime
 import json
 import socket
 from urllib.request import urlopen, Request
+import requests
 
 from iso8601 import parse_date
 from pytz import timezone as Timezone
-from typing import Union
+from typing import Union, Optional
 
 from .errors import ConnectError, ExecutionError, HTTPError
 
@@ -16,7 +17,6 @@ error_msgs = {
     500: "internal error",
     503: "system resources is not sufficient. It is may be caused by a huge query."
 }
-
 
 
 class RestClient:
@@ -110,7 +110,7 @@ class RestClient:
                 raise ConnectError(resp["desc"], resp["code"])
         return resp["desc"]
 
-    def sql(self, q: str) -> dict:
+    def sql(self, q: str, req_id: Optional[int] = None) -> dict:
         """
         Execute sql and return the JSON response.
 
@@ -119,12 +119,23 @@ class RestClient:
         Parameters
         -----------
         q : SQL statement to execute. Can't be USE statement since REST api is stateless.
+        req_id : request id, optional
         """
         data = q.encode("utf8")
-        request = Request(self._sql_utc_url, data, self._headers)
-        response = urlopen(request, timeout=self._timeout)
-        self._check_status(response)
-        resp = json.load(response)
+        if req_id:
+            url = f"{self._sql_utc_url}?req_id={req_id}"
+        else:
+            url = self._sql_utc_url
+
+        r = requests.post(
+            url,
+            data=data,
+            headers=self._headers,
+            timeout=self._timeout
+        )
+
+        resp = r.json()
+
         if "status" in resp:
             # v2
             if resp["status"] != "succ":
