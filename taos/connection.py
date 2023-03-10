@@ -119,8 +119,8 @@ class TaosConnection(object):
         # type: (str) -> None
         taos_load_table_info(self._conn, tables)
 
-    def schemaless_insert(self, lines: list[str], protocol: SmlProtocol, precision: SmlPrecision,
-                          req_id: Optional[int] = None) -> int:
+    def schemaless_insert(self, lines, protocol, precision, req_id=None):
+        # type: (list[str], SmlProtocol, SmlPrecision, Optional[int]) -> int
         """
         1.Line protocol and schemaless support
 
