@@ -141,7 +141,7 @@ def test_schemaless_insert_with_req_id(conn):
             'stf,t1=4i64,t3="t4",t2=5f64,t4=5f64 c1=3i64,c3=L"passitagin_stf",c2=false,c5=5f64,c6=7u64 1626006933641000000',
         ]
         req_id = utils.gen_req_id()
-        res = conn.schemaless_insert_with_req_id(lines, 1, 0, req_id)
+        res = conn.schemaless_insert(lines, 1, 0, req_id)
         print("affected rows: ", res)
         assert (res == 3)
 
@@ -149,7 +149,7 @@ def test_schemaless_insert_with_req_id(conn):
             'stf,t1=5i64,t3="t4",t2=5f64,t4=5f64 c1=3i64,c3=L"passitagin_stf",c2=false,c5=5f64,c6=7u64 1626006933641000000',
         ]
         req_id = utils.gen_req_id()
-        res = conn.schemaless_insert_with_req_id(lines, 1, 0, req_id)
+        res = conn.schemaless_insert(lines, 1, 0, req_id)
         print("affected rows: ", res)
         assert (res == 1)
         result = conn.query("select * from st")
@@ -169,14 +169,14 @@ def test_schemaless_insert_with_req_id(conn):
         ]
         try:
             req_id = utils.gen_req_id()
-            res = conn.schemaless_insert_with_req_id(lines, 1, 0, req_id)
+            res = conn.schemaless_insert(lines, 1, 0, req_id)
             print(res)
             # assert(False)
         except SchemalessError as e:
             print(e)
 
         req_id = utils.gen_req_id()
-        result = conn.query_with_req_id("select * from st", req_id)
+        result = conn.query("select * from st", req_id)
         all = result.rows_iter()
         for row in all:
             print(row)

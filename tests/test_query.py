@@ -60,7 +60,7 @@ def test_query_with_req_id():
         n = conn.execute("insert into tn1 using tb1 tags('{\"name\":\"value\"}') values(now, null) (now + 10s, 1)")
         print("inserted %d rows" % n)
         req_id = utils.gen_req_id()
-        result = conn.query_with_req_id("select * from tb1", req_id)
+        result = conn.query("select * from tb1", req_id)
         fields = result.fields
         for field in fields:
             print("field: %s" % field)
@@ -80,7 +80,7 @@ def test_query_with_req_id():
             print(row)
 
         req_id = utils.gen_req_id()
-        result = conn.query_with_req_id("select * from tb1", req_id)
+        result = conn.query("select * from tb1", req_id)
         results = result.fetch_all_into_dict()
         print(results)
 

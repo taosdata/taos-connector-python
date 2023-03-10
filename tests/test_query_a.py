@@ -94,7 +94,7 @@ def test_query_with_req_id(conn):
             s = ','.join('null' for c in cols)
             conn.execute("insert into tb1 values(now, %s)" % s)
         req_id = utils.gen_req_id()
-        conn.query_a_with_req_id("select * from tb1", query_callback, byref(counter), req_id)
+        conn.query_a("select * from tb1", query_callback, byref(counter), req_id)
 
         while not counter.done:
             print("wait query callback")
