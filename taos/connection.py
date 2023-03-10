@@ -4,12 +4,13 @@ from taos.cursor import TaosCursor
 from taos.subscription import TaosSubscription
 from taos.statement import TaosStmt
 from taos.result import TaosResult
+from typing import Optional
 
 
 class TaosConnection(object):
     """TDengine connection object"""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs):
         self._conn = None
         self._host = None
         self._user = "root"
@@ -76,32 +77,28 @@ class TaosConnection(object):
         """Simplely execute sql ignoring the results"""
         return self.query(sql).affected_rows
 
-    def query(self, sql):
-        # type: (str) -> TaosResult
-        result = taos_query(self._conn, sql)
-        return TaosResult(result, True, self)
+    def query(self, sql: str, req_id: Optional[int] = None) -> TaosResult:
+        if req_id is None:
+            res = taos_query(self._conn, sql)
+        else:
+            res = taos_query_with_req_id(self._conn, sql, req_id)
+        return TaosResult(res, True, self)
 
-    def query_with_req_id(self, sql, req_id):
-        # type: (str, int) -> TaosResult
-        result = taos_query_with_req_id(self._conn, sql, req_id)
-        return TaosResult(result, True, self)
-
-    def query_a(self, sql, callback, param):
-        # type: (str, async_query_callback_type, c_void_p) -> None
+    def query_a(self, sql: str, callback: async_query_callback_type, param: c_void_p, req_id: Optional[int] = None):
         """Asynchronously query a sql with callback function"""
-        taos_query_a(self._conn, sql, callback, param)
+        if req_id is None:
+            taos_query_a(self._conn, sql, callback, param)
+        else:
+            taos_query_a_with_req_id(self._conn, sql, callback, param, req_id)
 
-    def query_a_with_req_id(self, sql, callback, param, req_id):
-        # type: (str, async_query_callback_type, c_void_p, int) -> None
-        """Asynchronously query a sql with callback function"""
-        taos_query_a_with_req_id(self._conn, sql, callback, param, req_id)
+    def subscribe(self, restart: bool, topic: str, sql: str, interval: int,
+                  callback: Optional[subscribe_callback_type] = None,
+                  param: Optional[c_void_p] = None) -> Optional[TaosSubscription]:
 
-    def subscribe(self, restart, topic, sql, interval, callback=None, param=None):
-        # type: (bool, str, str, int, subscribe_callback_type, c_void_p) -> TaosSubscription|None
         """Create a subscription."""
         if self._conn is None:
             return None
-        sub = taos_subscribe(self._conn, restart, topic, sql, interval, callback, param)
+        sub = taos_subscribe(self._conn, restart, topic, sql, c_int(interval), callback, param)
         if not sub:
             errno = taos_errno(c_void_p(None))
             msg = taos_errstr(c_void_p(None))
@@ -122,8 +119,8 @@ class TaosConnection(object):
         # type: (str) -> None
         taos_load_table_info(self._conn, tables)
 
-    def schemaless_insert(self, lines, protocol, precision):
-        # type: (list[str], SmlProtocol, SmlPrecision) -> int
+    def schemaless_insert(self, lines: list[str], protocol: SmlProtocol, precision: SmlPrecision,
+                          req_id: Optional[int] = None) -> int:
         """
         1.Line protocol and schemaless support
 
@@ -180,70 +177,10 @@ class TaosConnection(object):
         conn.schemaless_insert(lines, 2, None)
         ```
         """
-        return taos_schemaless_insert(self._conn, lines, protocol, precision)
-
-    def schemaless_insert_with_req_id(self, lines, protocol, precision, req_id):
-        # type: (list[str], SmlProtocol, SmlPrecision, int) -> int
-        """
-        1.Line protocol and schemaless support
-
-        ## Example
-
-        ```python
-        import taos
-        conn = taos.connect()
-        conn.exec("drop database if exists test")
-        conn.select_db("test")
-        lines = [
-            'ste,t2=5,t3=L"ste" c1=true,c2=4,c3="string" 1626056811855516532',
-        ]
-        req_id = taos.utils.get_req_id()
-        conn.schemaless_insert_with_req_id(lines, 0, "ns", req_id)
-        ```
-
-        2.OpenTSDB telnet style API format support
-
-        ## Example
-
-        ```python
-        import taos
-        conn = taos.connect()
-        conn.exec("drop database if exists test")
-        conn.select_db("test")
-        lines = [
-            'cpu_load 1626056811855516532ns 2.0f32 id="tb1",host="host0",interface="eth0"',
-        ]
-        req_id = taos.utils.get_req_id()
-        conn.schemaless_insert_with_req_id(lines, 1, None, req_id
-        ```
-
-        3.OpenTSDB HTTP JSON format support
-
-        ## Example
-
-        ```python
-        import taos
-        conn = taos.connect()
-        conn.exec("drop database if exists test")
-        conn.select_db("test")
-        payload = ['''
-        {
-            "metric": "cpu_load_0",
-            "timestamp": 1626006833610123,
-            "value": 55.5,
-            "tags":
-                {
-                    "host": "ubuntu",
-                    "interface": "eth0",
-                    "Id": "tb0"
-                }
-        }
-        ''']
-        req_id = taos.utils.get_req_id()
-        conn.schemaless_insert_with_req_id(lines, 2, None, req_id)
-        ```
-        """
-        return taos_schemaless_insert_with_req_id(self._conn, lines, protocol, precision, req_id)
+        if req_id is None:
+            return taos_schemaless_insert(self._conn, lines, protocol, precision)
+        else:
+            return taos_schemaless_insert_with_req_id(self._conn, lines, protocol, precision, req_id)
 
     def cursor(self):
         # type: () -> TaosCursor
