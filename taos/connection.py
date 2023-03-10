@@ -10,7 +10,7 @@ from typing import Optional
 class TaosConnection(object):
     """TDengine connection object"""
 
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         self._conn = None
         self._host = None
         self._user = "root"
