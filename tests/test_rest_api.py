@@ -15,7 +15,7 @@ default_token = "/KfeAzX/f9na8qdtNZmtONryp201ma04bEl8LcvLUd7a8qdtNZmtONryp201ma0
 @check_env
 def test_login():
     url = os.environ["TDENGINE_URL"]
-    response = urlopen(f"{url}rest/login/root/taosdata")
+    response = urlopen(f"http://{url}/rest/login/root/taosdata")
     resp = json.load(response)
     print(resp)
     assert "code" in resp and resp["code"] == 0
@@ -26,7 +26,7 @@ def test_login():
 def test_wrong_password():
     url = os.environ["TDENGINE_URL"]
     try:
-        urlopen(f"{url}rest/login/root/taosdata")
+        urlopen(f"http://{url}/rest/login/root/taosdata")
     except Exception as e:
         print(f'error: <{e}>')
         assert "HTTP Error 401: Unauthorized" in str(e), "wrong password should return Unauthorized"
