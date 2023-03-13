@@ -118,7 +118,7 @@ class TaosRestConnection:
             return resp["data"][0][0]
         return None
 
-    def query(self, sql, req_id: Optional[int] = None) -> Result:
+    def query(self, sql: str, req_id: Optional[int] = None) -> Result:
         """
         execute sql and wrap the http response as Result object.
         """

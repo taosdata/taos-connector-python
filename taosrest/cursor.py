@@ -1,5 +1,6 @@
 from .errors import *
 from .restclient import RestClient
+from typing import Optional
 
 
 class TaosRestCursor:
@@ -48,7 +49,7 @@ class TaosRestCursor:
     def close(self):
         pass
 
-    def execute(self, operation, parameters=None, req_id=None):
+    def execute(self, operation: str, parameters=None, req_id: Optional[int] = None):
         self._response = None
         self._index = -1
         self._response = self._c.sql(operation, req_id=req_id)
@@ -72,7 +73,7 @@ class TaosRestCursor:
     def log(self, logfile):
         self._logfile = logfile
 
-    def executemany(self, operation, parameters=None, req_id=None):
+    def executemany(self, operation: str, parameters=None, req_id: Optional[int] = None):
         self.execute(operation, parameters, req_id)
 
     def istype(self, col, datatype):
