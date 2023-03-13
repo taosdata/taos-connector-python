@@ -48,10 +48,10 @@ class TaosRestCursor:
     def close(self):
         pass
 
-    def execute(self, operation, parameters=None):
+    def execute(self, operation, parameters=None, req_id=None):
         self._response = None
         self._index = -1
-        self._response = self._c.sql(operation)
+        self._response = self._c.sql(operation, req_id=req_id)
 
         if self._logfile:
             with open(self._logfile, "a", encoding="utf-8") as logfile:
@@ -72,8 +72,8 @@ class TaosRestCursor:
     def log(self, logfile):
         self._logfile = logfile
 
-    def executemany(self, operation, parameters=None):
-        self.execute(operation)
+    def executemany(self, operation, parameters=None, req_id=None):
+        self.execute(operation, parameters, req_id)
 
     def istype(self, col, datatype):
         if datatype.upper().strip() == self._description[col][1]:
