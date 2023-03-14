@@ -4,7 +4,7 @@ from taos.cursor import TaosCursor
 from taos.subscription import TaosSubscription
 from taos.statement import TaosStmt
 from taos.result import TaosResult
-from typing import Optional
+from typing import Optional, List
 
 
 class TaosConnection(object):
@@ -119,7 +119,7 @@ class TaosConnection(object):
         # type: (str) -> None
         taos_load_table_info(self._conn, tables)
 
-    def schemaless_insert(self, lines: list[str], protocol: SmlProtocol, precision: SmlPrecision,
+    def schemaless_insert(self, lines: List[str], protocol: SmlProtocol, precision: SmlPrecision,
                           req_id: Optional[int] = None) -> int:
         """
         1.Line protocol and schemaless support
