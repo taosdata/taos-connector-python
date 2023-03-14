@@ -2,6 +2,7 @@ from typing import List, Dict
 from .errors import NotSupportedError
 from .cursor import TaosRestCursor
 from .restclient import RestClient
+from typing import Optional
 
 
 class Result:
@@ -25,7 +26,8 @@ class Result:
             - name: column name
             - type: column type code
             - bytes: data length in bytes
-        for more information about column meta, refer https://docs.tdengine.com/2.4/reference/rest-api/#http-return-format
+        for more information about column meta,
+         refer https://docs.tdengine.com/2.4/reference/rest-api/#http-return-format
         """
         return list(map(lambda meta: {"name": meta[0], "type": meta[1], "bytes": meta[2]}, self.column_meta))
 
@@ -58,8 +60,10 @@ class TaosRestConnection:
              whether to convert timestamp in RFC3339 format to python datatime.
          - timezone: str | datetime.tzinfo, optional, default None.
              When convert_timestamp is true, which timezone to used.
-             When the type of timezone is str, it should be recognized by [pytz package](https://pypi.org/project/pytz/).
-             When the timezone is None, system timezone will be used and the returned datetime object will be offset-naive (no tzinfo), otherwise the returned datetime will be offset-aware(with tzinfo)
+             When the type of timezone is str, it should be recognized by
+             [pytz package](https://pypi.org/project/pytz/).
+             When the timezone is None, system timezone will be used and the returned datetime object will be
+             offset-naive (no tzinfo), otherwise the returned datetime will be offset-aware(with tzinfo)
         """
         self._url = kwargs.get("url", "http://localhost:6041")
         self._token = kwargs.get("token")
@@ -104,19 +108,19 @@ class TaosRestConnection:
             return resp["data"][0][0]
         return ""
 
-    def execute(self, sql):
+    def execute(self, sql: str, req_id: Optional[int] = None) -> Optional[dict]:
         """
         execute none query statement and return affected row count.
         If there is not a column named "affected_rows" in response, then None is returned.
         """
-        resp = self._client.sql(sql)
+        resp = self._client.sql(sql, req_id=req_id)
         if resp["column_meta"][0][0] == "affected_rows":
             return resp["data"][0][0]
         return None
 
-    def query(self, sql) -> Result:
+    def query(self, sql: str, req_id: Optional[int] = None) -> Result:
         """
         execute sql and wrap the http response as Result object.
         """
-        resp = self._client.sql(sql)
+        resp = self._client.sql(sql, req_id=req_id)
         return Result(resp)
