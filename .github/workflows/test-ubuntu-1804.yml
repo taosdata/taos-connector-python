@@ -22,5 +22,5 @@ jobs:
 
       - name: Setup Python
         run: |
-          sudo apt-get install -y python3.6.2 python3-pip python-is-python3
+          sudo apt-get install -y python3.6.2 python3-pip
 
