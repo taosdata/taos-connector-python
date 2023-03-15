@@ -89,7 +89,9 @@ jobs:
       - name: Pip install dependencies
         run: |
           cd TDengine_v3/tests/
+          pip3 install pip --upgrade
           pip3 install -r requirements.txt
+          pip3 install pyopenssl --upgrade
 
 
       #----------------------------------------------
