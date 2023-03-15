@@ -24,7 +24,7 @@ jobs:
 
       - name: Set up python
         run: |
-          sudo apt-get install -y python3.6.2 python3-pip
+          python --version
 
 
       - name: Cache Poetry
