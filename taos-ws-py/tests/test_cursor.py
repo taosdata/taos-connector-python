@@ -18,6 +18,8 @@ ts = datetime.datetime.now().astimezone()
 data = [("tb1", ts, 1), ("tb2", ts, 2)]
 cursor.execute_many("insert into {} values('{}', {})", data)
 
+cursor.execute("select * from stb")
+
 results = cursor.fetchall()
 
 for row in results:
