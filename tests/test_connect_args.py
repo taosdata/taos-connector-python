@@ -12,3 +12,7 @@ def test_connect_args():
     conn = connect(host)
     assert conn is not None
     conn.close()
+
+
+if __name__ == '__main__':
+    test_connect_args()

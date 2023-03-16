@@ -210,10 +210,14 @@ def taos_connect(host=None, user="root", password="taosdata", db=None, port=0):
 
     connection = cast(_libtaos.taos_connect(_host, _user, _password, _db, _port), c_void_p)
 
+    print(f'**** connection: {connection}, type: {type(connection)}')
+    print(f'**** connection.value: {connection.value}, type: {type(connection.value)}')
+
     if connection.value is None:
         null_ptr = c_void_p(None)
         errno = taos_errno(null_ptr)
         errstr = taos_errstr(null_ptr)
+        print(f'**** errno: {errno}, errstr: {errstr}')
         raise ConnectionError(errstr, errno)
     return connection
 
