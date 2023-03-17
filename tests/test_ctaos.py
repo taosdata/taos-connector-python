@@ -58,7 +58,7 @@ def test_simple_with_req_id(conn, caplog):
     dbname = "pytest_ctaos_simple"
     try:
         req_id = gen_req_id()
-        res = taos_query_with_req_id(
+        res = taos_query_with_reqid(
             conn,
             "create database if not exists %s" % dbname,
             req_id,
@@ -68,7 +68,7 @@ def test_simple_with_req_id(conn, caplog):
         taos_select_db(conn, dbname)
 
         req_id = gen_req_id()
-        res = taos_query_with_req_id(
+        res = taos_query_with_reqid(
             conn,
             "create table if not exists log(ts timestamp, level tinyint, content binary(100), ipaddr binary(134))",
             req_id,
@@ -76,7 +76,7 @@ def test_simple_with_req_id(conn, caplog):
         taos_free_result(res)
 
         req_id = gen_req_id()
-        res = taos_query_with_req_id(
+        res = taos_query_with_reqid(
             conn,
             "insert into log values(now, 1, 'hello', 'test')",
             req_id,
@@ -84,7 +84,7 @@ def test_simple_with_req_id(conn, caplog):
         taos_free_result(res)
 
         req_id = gen_req_id()
-        res = taos_query_with_req_id(
+        res = taos_query_with_reqid(
             conn,
             "select level,content,ipaddr from log limit 1",
             req_id,
@@ -110,7 +110,7 @@ def test_simple_with_req_id(conn, caplog):
         taos_free_result(res)
 
         req_id = gen_req_id()
-        taos_query_with_req_id(
+        taos_query_with_reqid(
             conn,
             "drop database if exists " + dbname,
             req_id
@@ -186,7 +186,7 @@ def test_stmt_with_req_id(conn, caplog):
     dbname = "pytest_ctaos_stmt"
     try:
         req_id = gen_req_id()
-        res = taos_query_with_req_id(
+        res = taos_query_with_reqid(
             conn,
             "drop database if exists %s" % dbname,
             req_id,
@@ -194,7 +194,7 @@ def test_stmt_with_req_id(conn, caplog):
         taos_free_result(res)
 
         req_id = gen_req_id()
-        res = taos_query_with_req_id(
+        res = taos_query_with_reqid(
             conn,
             "create database if not exists %s" % dbname,
             req_id,
@@ -204,7 +204,7 @@ def test_stmt_with_req_id(conn, caplog):
         taos_select_db(conn, dbname)
 
         req_id = gen_req_id()
-        res = taos_query_with_req_id(
+        res = taos_query_with_reqid(
             conn,
             "create table if not exists log(ts timestamp, nil tinyint, ti tinyint, si smallint, ii int,\
              bi bigint, tu tinyint unsigned, su smallint unsigned, iu int unsigned, bu bigint unsigned, \
@@ -214,7 +214,7 @@ def test_stmt_with_req_id(conn, caplog):
         taos_free_result(res)
 
         req_id = gen_req_id()
-        stmt = taos_stmt_init_with_req_id(conn, req_id)
+        stmt = taos_stmt_init_with_reqid(conn, req_id)
 
         taos_stmt_prepare(stmt, "insert into log values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 
@@ -238,7 +238,7 @@ def test_stmt_with_req_id(conn, caplog):
         taos_stmt_execute(stmt)
 
         req_id = gen_req_id()
-        res = taos_query_with_req_id(
+        res = taos_query_with_reqid(
             conn,
             "select * from log limit 1",
             req_id,
@@ -253,7 +253,7 @@ def test_stmt_with_req_id(conn, caplog):
         taos_free_result(res)
 
         req_id = gen_req_id()
-        taos_query_with_req_id(
+        taos_query_with_reqid(
             conn,
             "drop database if exists " + dbname,
             req_id,
