@@ -34,7 +34,7 @@ jobs:
           python-version: "3.10"
           architecture: x64
 
-      - uses: dtolnay/rust-toolchain@nightly
+      - uses: dtolnay/rust-toolchain@stable
         if: steps.rebuild.outputs.any_changed == 'true'
 
       - name: Build wheels - x86_64
@@ -180,7 +180,7 @@ jobs:
         if: steps.rebuild.outputs.any_changed == 'true'
         with:
           target: ${{ matrix.target }}
-          rust-toolchain: nightly
+          rust-toolchain: stable
           working-directory: taos-ws-py
           manylinux: auto
           args: --release --strip
