@@ -335,6 +335,10 @@ def test_schemaless_insert_raw(conn: TaosConnection) -> None:
         conn.execute("drop database if exists %s" % dbname)
         conn.close()
         print(err)
+    except SchemalessError as err:
+        conn.execute("drop database if exists %s" % dbname)
+        conn.close()
+        print(err)
     except Exception as err:
         conn.execute("drop database if exists %s" % dbname)
         conn.close()
