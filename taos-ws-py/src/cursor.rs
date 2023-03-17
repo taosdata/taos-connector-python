@@ -22,30 +22,9 @@ pub(crate) struct Cursor {
     row_in_block: usize,
 }
 
-pub fn run_code() {
-    const CODE: &str = r#"
-    def function(*args, **kwargs):
-        assert args == ("hello",)
-        assert kwargs == {}
-        print("inside Python::with_gil")
-        return "called with args"
-    "#;
-
-    Python::with_gil(|py| {
-        println!("outside rust: Python::with_gil");
-
-        let module = PyModule::from_code(py, CODE, "", "")?;
-        let fun = module.getattr("function")?;
-        let args = ("hello", );
-        let result = fun.call1(args)?;
-        assert_eq!(result.extract::<&str>()?, "called with args");
-        result.extract::<&str>()?;
-    })
-}
 
 impl Cursor {
     pub fn new(taos: Taos) -> Self {
-        run_code();
         Self {
             inner: Some(taos),
             row_count: 0,
