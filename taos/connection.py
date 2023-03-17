@@ -81,7 +81,7 @@ class TaosConnection(object):
         if req_id is None:
             res = taos_query(self._conn, sql)
         else:
-            res = taos_query_with_req_id(self._conn, sql, req_id)
+            res = taos_query_with_reqid(self._conn, sql, req_id)
         return TaosResult(res, True, self)
 
     def query_a(self, sql: str, callback: async_query_callback_type, param: c_void_p, req_id: Optional[int] = None):
@@ -89,7 +89,7 @@ class TaosConnection(object):
         if req_id is None:
             taos_query_a(self._conn, sql, callback, param)
         else:
-            taos_query_a_with_req_id(self._conn, sql, callback, param, req_id)
+            taos_query_a_with_reqid(self._conn, sql, callback, param, req_id)
 
     def subscribe(self, restart: bool, topic: str, sql: str, interval: int,
                   callback: Optional[subscribe_callback_type] = None,
@@ -119,8 +119,14 @@ class TaosConnection(object):
         # type: (str) -> None
         taos_load_table_info(self._conn, tables)
 
-    def schemaless_insert(self, lines: List[str], protocol: SmlProtocol, precision: SmlPrecision,
-                          req_id: Optional[int] = None) -> int:
+    def schemaless_insert(
+            self,
+            lines: List[str],
+            protocol: SmlProtocol,
+            precision: SmlPrecision,
+            req_id: Optional[int] = None,
+            ttl: Optional[int] = None,
+    ) -> int:
         """
         1.Line protocol and schemaless support
 
@@ -177,10 +183,41 @@ class TaosConnection(object):
         conn.schemaless_insert(lines, 2, None)
         ```
         """
-        if req_id is None:
-            return taos_schemaless_insert(self._conn, lines, protocol, precision)
+        if ttl is None:
+            if req_id is None:
+                return taos_schemaless_insert(
+                    self._conn,
+                    lines,
+                    protocol,
+                    precision,
+                )
+            else:
+                return taos_schemaless_insert_with_reqid(
+                    self._conn,
+                    lines,
+                    protocol,
+                    precision,
+                    req_id,
+                )
         else:
-            return taos_schemaless_insert_with_req_id(self._conn, lines, protocol, precision, req_id)
+            if req_id is None:
+                return taos_schemaless_insert_ttl(
+                    self._conn,
+                    lines,
+                    protocol,
+                    precision,
+                    ttl,
+                )
+            else:
+                return taos_schemaless_insert_ttl_with_reqid(
+                    self._conn,
+                    lines,
+                    protocol,
+                    precision,
+                    ttl,
+                    req_id,
+                )
+                pass
 
     def schemaless_insert_raw(
             self,
