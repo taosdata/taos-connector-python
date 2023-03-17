@@ -1,7 +1,6 @@
 use pyo3::{
     prelude::*,
-    types::{PyDict, PySequence, PyString, PyTuple, PyModule},
-    py_run,
+    types::{PyDict, PySequence, PyString, PyTuple},
 };
 use taos::{
     sync::{Fetchable, Queryable},
@@ -21,7 +20,6 @@ pub(crate) struct Cursor {
     block: Option<RawBlock>,
     row_in_block: usize,
 }
-
 
 impl Cursor {
     pub fn new(taos: Taos) -> Self {
