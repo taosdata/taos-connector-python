@@ -182,6 +182,101 @@ class TaosConnection(object):
         else:
             return taos_schemaless_insert_with_req_id(self._conn, lines, protocol, precision, req_id)
 
+    def schemaless_insert_raw(
+            self,
+            lines: str,
+            protocol: SmlProtocol,
+            precision: SmlPrecision,
+            req_id: Optional[int] = None,
+            ttl: Optional[int] = None,
+    ) -> int:
+        """
+        1.Line protocol and schemaless support
+
+        ## Example
+
+        ```python
+        import taos
+        conn = taos.connect()
+        conn.exec("drop database if exists test")
+        conn.select_db("test")
+        lines = 'ste,t2=5,t3=L"ste" c1=true,c2=4,c3="string" 1626056811855516532'
+        conn.schemaless_insert_raw(lines, 0, "ns")
+        ```
+
+        2.OpenTSDB telnet style API format support
+
+        ## Example
+
+        ```python
+        import taos
+        conn = taos.connect()
+        conn.exec("drop database if exists test")
+        conn.select_db("test")
+        lines = 'cpu_load 1626056811855516532ns 2.0f32 id="tb1",host="host0",interface="eth0"'
+        conn.schemaless_insert_raw(lines, 1, None)
+        ```
+
+        3.OpenTSDB HTTP JSON format support
+
+        ## Example
+
+        ```python
+        import taos
+        conn = taos.connect()
+        conn.exec("drop database if exists test")
+        conn.select_db("test")
+        payload = '''
+        {
+            "metric": "cpu_load_0",
+            "timestamp": 1626006833610123,
+            "value": 55.5,
+            "tags":
+                {
+                    "host": "ubuntu",
+                    "interface": "eth0",
+                    "Id": "tb0"
+                }
+        }
+        '''
+        conn.schemaless_insert_raw(lines, 2, None)
+        ```
+        """
+        if ttl is None:
+            if req_id is None:
+                return taos_schemaless_insert_raw(
+                    self._conn,
+                    lines,
+                    protocol,
+                    precision,
+                )
+            else:
+                return taos_schemaless_insert_raw_with_reqid(
+                    self._conn,
+                    lines,
+                    protocol,
+                    precision,
+                    req_id,
+                )
+        else:
+            if req_id is None:
+                return taos_schemaless_insert_raw_ttl(
+                    self._conn,
+                    lines,
+                    protocol,
+                    precision,
+                    ttl,
+                )
+            else:
+                return taos_schemaless_insert_raw_ttl_with_reqid(
+                    self._conn,
+                    lines,
+                    protocol,
+                    precision,
+                    ttl,
+                    req_id,
+                )
+
     def cursor(self):
         # type: () -> TaosCursor
         """Return a new Cursor object using the connection."""
