@@ -31,17 +31,31 @@ class TaosOption:
 
 
 def _load_taos_linux():
-    return ctypes.CDLL("libtaos.so")
+    try:
+        return ctypes.CDLL("libtaos.so")
+    except Exception as e:
+        raise InterfaceError("unable to load taos client library: %s" % e)
 
 
 def _load_taos_darwin():
-    from ctypes.macholib.dyld import dyld_find as _dyld_find
+    try:
+        from ctypes.macholib.dyld import dyld_find as _dyld_find
 
-    return ctypes.CDLL(_dyld_find("libtaos.dylib"))
+        return ctypes.CDLL(_dyld_find("libtaos.dylib"))
+    except Exception as e:
+        raise InterfaceError("unable to load taos client library: %s" % e)
 
 
 def _load_taos_windows():
-    return ctypes.windll.LoadLibrary("taos")
+    try:
+        return ctypes.windll.LoadLibrary("taos")
+    except Exception as e:
+        print("unable to load taos client library: %s" % e)
+        try:
+            from ctypes.util import find_library
+            ctypes.windll.LoadLibrary(find_library("taos"))
+        except Exception as final_err:
+            raise InterfaceError("unable to load taos client library: %s" % final_err)
 
 
 def _load_taos():
@@ -56,7 +70,7 @@ def _load_taos():
     try:
         return load_func[pf]()
     except Exception as err:
-        raise InterfaceError("unable to load taos C library: %s" % err)
+        raise InterfaceError("unable to load taos client library: %s" % err)
 
 
 _libtaos = _load_taos()
