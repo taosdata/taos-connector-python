@@ -161,6 +161,41 @@ impl Cursor {
     }
 
     #[args(py_args = "*", parameters = "**")]
+    pub fn execute_with_req_id(
+        &mut self,
+        operation: &PyString,
+        py_args: &PyTuple,
+        parameters: Option<&PyDict>,
+        req_id: u64,
+    ) -> PyResult<usize> {
+        let sql = Python::with_gil(|py| {
+            let sql: String = if let Some(parameters) = parameters {
+                let local = PyDict::new(py);
+                local.set_item("parameters", parameters)?;
+                local.set_item("operation", operation)?;
+                local.set_item("args", py_args)?;
+                let sql = py.eval("operation.format(*args, **parameters)", None, Some(local))?;
+                sql.extract()?
+            } else {
+                let local = PyDict::new(py);
+                local.set_item("operation", operation)?;
+                local.set_item("args", py_args)?;
+                let sql = py.eval("operation.format(*args)", None, Some(local))?;
+                sql.extract()?
+            };
+            Ok::<_, PyErr>(sql)
+        })?;
+        let result_set = self
+            .inner()?
+            .query_with_req_id(sql, req_id)
+            .map_err(|err| OperationalError::new_err(err.to_string()))?;
+        let affected_rows = result_set.affected_rows();
+        self.result_set.replace(result_set);
+        self.row_count = affected_rows as _;
+        Ok(affected_rows as _)
+    }
+
+    #[args(py_args = "*", parameters = "**")]
     pub fn execute_many(
         &mut self,
         operation: &PyString,
