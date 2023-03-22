@@ -23,5 +23,12 @@ def test_cursor_execute():
 def test_cursor_execute_many():
     ws = taosws.connect("taosws://root:taosdata@localhost:6041")
     cur = ws.cursor()
-    res = cur.execute_many_with_req_id('show dnodes', req_id=1)
+    db = "t_ws"
+    cur.execute("drop database if exists {}", db)
+    cur.execute("create database {}", db)
+    cur.execute("use {name}", name=db)
+    cur.execute("create stable stb (ts timestamp, v1 int) tags(t1 int)")
+
+    data = [{"name": "tb1", "t1": 1}, {"name": "tb2", "t1": 2}]
+    res = cur.execute_many_with_req_id("create table {name} using stb tags({t1})", data)
     print(f'res: {res}')
