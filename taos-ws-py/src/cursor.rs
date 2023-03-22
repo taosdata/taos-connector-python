@@ -2,8 +2,10 @@ use pyo3::{
     prelude::*,
     types::{PyDict, PySequence, PyString, PyTuple},
 };
-use taos::{sync::{Fetchable, Queryable}, BorrowedValue, Itertools, RawBlock, ResultSet, Taos};
-
+use taos::{
+    sync::{Fetchable, Queryable},
+    BorrowedValue, Itertools, RawBlock, ResultSet, Taos,
+};
 use crate::{
     common::{get_all_of_block, get_row_of_block, get_slice_of_block},
     ConnectionError, FetchError, NotSupportedError, OperationalError,
