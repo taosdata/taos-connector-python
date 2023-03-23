@@ -125,8 +125,30 @@ impl Connection {
         }
     }
 
+    pub fn query_with_req_id(&self, sql: &str, req_id: u64) -> PyResult<TaosResult> {
+        match self.current_cursor()?.query_with_req_id(sql, req_id) {
+            Ok(rs) => {
+                let cols = rs.num_of_fields();
+                Ok(TaosResult {
+                    _inner: rs,
+                    _block: None,
+                    _current: 0,
+                    _num_of_fields: cols as _,
+                })
+            }
+            Err(err) => Err(QueryError::new_err(err.to_string())),
+        }
+    }
+
     pub fn execute(&self, sql: &str) -> PyResult<i32> {
         match self.current_cursor()?.query(sql) {
+            Ok(rs) => Ok(rs.affected_rows()),
+            Err(err) => Err(QueryError::new_err(err.to_string())),
+        }
+    }
+
+    pub fn execute_with_req_id(&self, sql: &str, req_id: u64) -> PyResult<i32> {
+        match self.current_cursor()?.query_with_req_id(sql, req_id) {
             Ok(rs) => Ok(rs.affected_rows()),
             Err(err) => Err(QueryError::new_err(err.to_string())),
         }
