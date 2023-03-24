@@ -72,10 +72,9 @@ class TaosConnection(object):
         # type: (str) -> None
         taos_select_db(self._conn, database)
 
-    def execute(self, sql):
-        # type: (str) -> int
+    def execute(self, sql, req_id: Optional[int] = None):
         """Simplely execute sql ignoring the results"""
-        return self.query(sql).affected_rows
+        return self.query(sql, req_id).affected_rows
 
     def query(self, sql: str, req_id: Optional[int] = None) -> TaosResult:
         if req_id is None:

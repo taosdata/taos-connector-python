@@ -245,6 +245,27 @@ conn.execute("drop database pytest")
 conn.close()
 ```
 
+At the same time, you can pass an optional req_id in the parameters.
+
+```python
+import taos
+
+conn = taos.connect()
+conn.execute("create database if not exists pytest", req_id=1)
+
+result = conn.query("show databases")
+num_of_fields = result.field_count
+for field in result.fields:
+    print(field)
+
+for row in result:
+    print(row)
+
+result.close()
+conn.execute("drop database pytest")
+conn.close()
+```
+
 ### Query with async API
 
 ```python
