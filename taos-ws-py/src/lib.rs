@@ -330,6 +330,7 @@ fn connect(
         print!("{:?}", dsn);
         print!("args: {:?}", args);
     }
+    println!("{:?}", dsn);
 
     let builder =
         TaosBuilder::from_dsn(dsn).map_err(|err| ConnectionError::new_err(err.to_string()))?;
