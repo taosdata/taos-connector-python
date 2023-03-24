@@ -1,21 +1,37 @@
 import taosws
 
 
-def test_native_connect():
-    print('-' * 40)
-    print('test_native_connect')
-    conn = taosws.connect()
-    conn.query_with_req_id('show dnodes', 1)
-    print('test_native_connect done')
-    print('-' * 40)
-
-
 def test_ws_connect():
     print('-' * 40)
     print('test_ws_connect')
     conn = taosws.connect('taosws://root:taosdata@localhost:6041')
-    conn.query_with_req_id('show dnodes', 1)
+    r = conn.query_with_req_id('show dnodes', 1)
+    print('r: ', r.fields)
     print('test_ws_connect done')
+    print('-' * 40)
+
+
+def test_default_connect():
+    print('-' * 40)
+    print('test_default_connect')
+    conn = taosws.connect()
+    r = conn.query_with_req_id('show dnodes', 1)
+    print('r: ', r.fields)
+    print('test_default_connect done')
+    print('-' * 40)
+
+
+def test_native_connect():
+    print('-' * 40)
+    print('test_native_connect')
+    try:
+        conn = taosws.connect('taos://root:taosdata@localhost:6030')
+        r = conn.query_with_req_id('show dnodes', 1)
+        print('r: ', r.fields)
+
+    except Exception as e:
+        print('Exception: ', e)
+    print('test_native_connect done')
     print('-' * 40)
 
 
