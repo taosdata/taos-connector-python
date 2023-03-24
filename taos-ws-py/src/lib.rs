@@ -249,7 +249,7 @@ fn connect(
     dsn: Option<&str>,
     args: Option<&PyDict>,
 ) -> PyResult<Connection> {
-    let dsn = dsn.unwrap_or("taos://");
+    let dsn = dsn.unwrap_or("taosws://");
 
     let mut dsn = Dsn::from_str(dsn).map_err(|err| ConnectionError::new_err(err.to_string()))?;
 
@@ -327,8 +327,7 @@ fn connect(
             dsn.set(key.extract::<&str>()?, value.extract::<&str>()?);
         }
         dsn.addresses.push(addr);
-        print!("{:?}", dsn);
-        print!("args: {:?}", args);
+        println!("args: {:?}", args);
     }
     println!("{:?}", dsn);
 
