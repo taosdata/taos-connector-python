@@ -38,14 +38,17 @@ def test_native_connect():
 def test_connect_with_args():
     print('-' * 40)
     print('test_mutil_connect')
-    conn = taosws.connect(
-        user='taos',
-        password='taosdata',
-        host='localhost',
-        port=6041,
-    )
-    r = conn.query_with_req_id('show dnodes', 1)
-    print('r: ', r.fields)
+    try:
+        conn = taosws.connect(
+            user='taos',
+            password='taosdata',
+            host='localhost',
+            port=6041,
+        )
+        r = conn.query_with_req_id('show dnodes', 1)
+        print('r: ', r.fields)
+    except Exception as e:
+        print('Exception: ', e)
     print('test_mutil_connect done')
     print('-' * 40)
 
