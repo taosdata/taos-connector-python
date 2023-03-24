@@ -35,6 +35,21 @@ def test_native_connect():
     print('-' * 40)
 
 
+def test_connect_with_args():
+    print('-' * 40)
+    print('test_mutil_connect')
+    conn = taosws.connect(
+        user='taos',
+        password='taosdata',
+        host='localhost',
+        port=6030,
+    )
+    r = conn.query_with_req_id('show dnodes', 1)
+    print('r: ', r.fields)
+    print('test_mutil_connect done')
+    print('-' * 40)
+
+
 def show_env():
     import os
     print('-' * 40)
@@ -50,4 +65,4 @@ if __name__ == '__main__':
     show_env()
     test_ws_connect()
     test_default_connect()
-    test_native_connect()
+    test_connect_with_args()
