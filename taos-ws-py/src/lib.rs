@@ -62,12 +62,15 @@ create_exception!(taosws, ConsumerException, Error);
 mod common;
 
 mod consumer;
+
 use consumer::{Consumer, Message};
 
 mod cursor;
+
 use cursor::*;
 
 mod field;
+
 use field::TaosField;
 
 #[pyclass]

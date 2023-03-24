@@ -6,10 +6,12 @@ from datetime import datetime
 import taos
 import pytest
 
+
 @pytest.fixture
 def conn():
     # type: () -> taos.TaosConnection
     return connect()
+
 
 def test_stmt_insert(conn):
     # type: (TaosConnection) -> None
@@ -26,7 +28,6 @@ def test_stmt_insert(conn):
              ff float, dd double, bb binary(100), nn nchar(100), tt timestamp)",
         )
         # conn.load_table_info("log")
-        
 
         stmt = conn.statement("insert into log values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
         params = new_bind_params(16)
@@ -53,12 +54,12 @@ def test_stmt_insert(conn):
         assert stmt.affected_rows == 1
 
         result = conn.query("select * from log")
-        row  = result.next()
+        row = result.next()
         print(row)
         assert row[2] is None
         for i in range(3, 11):
             assert row[i] == i - 1
-        #float == may not work as expected
+        # float == may not work as expected
         # assert row[10] == c_float(10.1)
         assert row[12] == 10.11
         assert row[13] == "hello"
@@ -72,6 +73,7 @@ def test_stmt_insert(conn):
         conn.execute("drop database if exists %s" % dbname)
         conn.close()
         raise err
+
 
 def test_stmt_insert_multi(conn):
     # type: (TaosConnection) -> None
@@ -95,7 +97,7 @@ def test_stmt_insert_multi(conn):
         params = new_multi_binds(16)
         params[0].timestamp((1626861392589, 1626861392590, 1626861392591))
         params[1].bool((True, None, False))
-        params[2].tinyint([-128, -128, None]) # -128 is tinyint null
+        params[2].tinyint([-128, -128, None])  # -128 is tinyint null
         params[3].tinyint([0, 127, None])
         params[4].smallint([3, None, 2])
         params[5].int([3, 4, None])
@@ -124,10 +126,11 @@ def test_stmt_insert_multi(conn):
         conn.execute("drop database if exists %s" % dbname)
         conn.close()
         raise err
-    
+
+
 def test_stmt_set_tbname_tag(conn):
     dbname = "pytest_taos_stmt_set_tbname_tag"
-    
+
     try:
         conn.execute("drop database if exists %s" % dbname)
         conn.execute("create database if not exists %s" % dbname)
@@ -137,7 +140,7 @@ def test_stmt_set_tbname_tag(conn):
              ff float, dd double, bb binary(100), nn nchar(100), tt timestamp) tags (t1 timestamp, t2 bool,\
              t3 tinyint, t4 tinyint, t5 smallint, t6 int, t7 bigint, t8 tinyint unsigned, t9 smallint unsigned, \
              t10 int unsigned, t11 bigint unsigned, t12 float, t13 double, t14 binary(100), t15 nchar(100), t16 timestamp)")
-        
+
         stmt = conn.statement("insert into ? using log tags (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) \
             values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
         tags = new_bind_params(16)
@@ -182,7 +185,7 @@ def test_stmt_set_tbname_tag(conn):
         assert stmt.affected_rows == 1
 
         result = conn.query("select * from log")
-        row  = result.next()
+        row = result.next()
         assert row[2] is None
         for i in range(3, 11):
             assert row[i] == i - 1
@@ -193,15 +196,16 @@ def test_stmt_set_tbname_tag(conn):
         conn.execute("drop database if exists %s" % dbname)
         conn.close()
         print("pass test_stmt_set_tbname_tag")
-    
+
     except Exception as err:
         conn.execute("drop database if exists %s" % dbname)
         conn.close()
         raise err
 
+
 def test_stmt_null(conn):
     dbname = "pytest_taos_stmt_null"
-    
+
     try:
         conn.execute("drop database if exists %s" % dbname)
         conn.execute("create database if not exists %s" % dbname)
@@ -211,7 +215,7 @@ def test_stmt_null(conn):
              ff float, dd double, bb binary(100), nn nchar(100), tt timestamp) tags (t1 timestamp, t2 bool,\
              t3 tinyint, t4 tinyint, t5 smallint, t6 int, t7 bigint, t8 tinyint unsigned, t9 smallint unsigned, \
              t10 int unsigned, t11 bigint unsigned, t12 float, t13 double, t14 binary(100), t15 nchar(100), t16 timestamp)")
-        
+
         stmt = conn.statement("insert into ? using log tags (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) \
             values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
         tags = new_bind_params(16)
@@ -256,18 +260,19 @@ def test_stmt_null(conn):
         assert stmt.affected_rows == 3
 
         result = conn.query("select * from log")
-        row  = result.next()
+        row = result.next()
         for i in range(1, 15):
             assert row[i] is None
 
         conn.execute("drop database if exists %s" % dbname)
         conn.close()
         print("pass test_stmt_null")
-    
+
     except Exception as err:
         conn.execute("drop database if exists %s" % dbname)
         conn.close()
         raise err
+
 
 if __name__ == "__main__":
     test_stmt_insert(connect())

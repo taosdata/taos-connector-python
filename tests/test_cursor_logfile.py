@@ -8,9 +8,9 @@ def test_logfile():
     cursor = conn.cursor()
 
     try:
-      unlink("log.txt")
-    except:
-      None
+        unlink("log.txt")
+    except Exception:
+        pass
     cursor.log("log.txt")
     cursor.execute("DROP DATABASE IF EXISTS test")
     cursor.execute("CREATE DATABASE test")
