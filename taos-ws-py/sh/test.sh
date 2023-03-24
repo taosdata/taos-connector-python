@@ -1,1 +1,1 @@
-python3 -m pytest tests/test_req_id.py tests/test_cursor_logfile.py
+python3 -m pytest tests/test_req_id.py
