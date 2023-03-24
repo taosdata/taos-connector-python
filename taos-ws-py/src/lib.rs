@@ -327,6 +327,8 @@ fn connect(
             dsn.set(key.extract::<&str>()?, value.extract::<&str>()?);
         }
         dsn.addresses.push(addr);
+        print!("{:?}", dsn);
+        print!("args: {:?}", args);
     }
 
     let builder =
