@@ -29,7 +29,7 @@ def make_context(config):
 
 def execute_with_req_id():
     conn, db = make_context(env)
-    res = conn.execute_with_req_id('show dnodes')
+    res = conn.execute_with_req_id('show dnodes', 1)
     print(f'res: {res}')
     conn.execute_with_req_id(f"drop database if exists {db}", 1)
     conn.execute_with_req_id(f"create database {db}", 1)

@@ -29,12 +29,12 @@ def make_context(config):
 
 def execute():
     conn, db = make_context(env)
-    res = conn.execute_with_req_id('show dnodes')
+    res = conn.execute('show dnodes')
     print(f'res: {res}')
-    conn.execute_with_req_id(f"drop database if exists {db}")
-    conn.execute_with_req_id(f"create database {db}")
-    conn.execute_with_req_id(f"use {db}")
-    conn.execute_with_req_id("create stable stb (ts timestamp, v1 int) tags(t1 int)")
+    conn.execute(f"drop database if exists {db}")
+    conn.execute(f"create database {db}")
+    conn.execute(f"use {db}")
+    conn.execute("create stable stb (ts timestamp, v1 int) tags(t1 int)")
 
     data = [
         {
@@ -52,7 +52,7 @@ def execute():
     ]
 
     for d in data:
-        res = conn.execute_with_req_id(
+        res = conn.execute(
             f"create table {d.get('name')} using stb tags({d.get('t1')})",
         )
         print(f'res: {res}')
@@ -65,12 +65,12 @@ def execute():
     ]
 
     for d in data:
-        res = conn.execute_with_req_id(
+        res = conn.execute(
             f"insert into {d[0]} values('{d[1]}', {d[2]})",
         )
         print(f'res: {res}')
 
-    row = conn.execute_with_req_id("select * from stb")
+    row = conn.execute("select * from stb")
     print(f'row: {row}')
     conn.close()
 
