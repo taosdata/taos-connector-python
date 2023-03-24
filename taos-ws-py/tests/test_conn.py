@@ -49,4 +49,5 @@ def show_env():
 if __name__ == '__main__':
     show_env()
     test_ws_connect()
+    test_default_connect()
     test_native_connect()
