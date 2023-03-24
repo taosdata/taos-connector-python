@@ -35,7 +35,7 @@ def test_native_connect():
     print('-' * 40)
 
 
-def test_connect_with_args():
+def test_connect_invalid_user():
     print('-' * 40)
     print('test_mutil_connect')
     try:
@@ -68,4 +68,4 @@ if __name__ == '__main__':
     show_env()
     test_ws_connect()
     test_default_connect()
-    test_connect_with_args()
+    test_connect_invalid_user()
