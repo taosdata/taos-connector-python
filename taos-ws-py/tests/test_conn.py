@@ -42,7 +42,7 @@ def test_connect_with_args():
         user='taos',
         password='taosdata',
         host='localhost',
-        port=6030,
+        port=6041,
     )
     r = conn.query_with_req_id('show dnodes', 1)
     print('r: ', r.fields)
