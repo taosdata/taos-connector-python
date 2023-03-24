@@ -29,7 +29,7 @@ def make_context(config):
 
 def query():
     conn, db = make_context(env)
-    res = conn.query('show dnodes', 1)
+    res = conn.query('show dnodes')
     print(f'res: {res}')
     conn.query("drop database if exists {}", db)
     conn.query("create database {}", db)
