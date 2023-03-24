@@ -27,14 +27,14 @@ def make_context(config):
     return conn, db_name
 
 
-def query():
+def execute():
     conn, db = make_context(env)
-    res = conn.query('show dnodes')
+    res = conn.execute('show dnodes')
     print(f'res: {res}')
-    conn.query(f"drop database if exists {db}")
-    conn.query(f"create database {db}")
-    conn.query(f"use {db}")
-    conn.query("create stable stb (ts timestamp, v1 int) tags(t1 int)")
+    conn.execute(f"drop database if exists {db}")
+    conn.execute(f"create database {db}")
+    conn.execute(f"use {db}")
+    conn.execute("create stable stb (ts timestamp, v1 int) tags(t1 int)")
 
     data = [
         {
@@ -52,7 +52,7 @@ def query():
     ]
 
     for d in data:
-        res = conn.query(
+        res = conn.execute(
             f"create table {d.get('name')} using stb tags({d.get('t1')})",
         )
         print(f'res: {res}')
@@ -65,12 +65,12 @@ def query():
     ]
 
     for d in data:
-        res = conn.query(
+        res = conn.execute(
             f"insert into {d[0]} values('{d[1]}', {d[2]})",
         )
         print(f'res: {res}')
 
-    row = conn.query("select * from stb")
+    row = conn.execute("select * from stb")
     print(f'row: {row}')
     assert row is not None
 
@@ -126,5 +126,5 @@ def test_execute_with_req_id():
 
 
 if __name__ == '__main__':
-    query()
+    execute()
     test_execute_with_req_id()
