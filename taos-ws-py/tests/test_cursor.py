@@ -4,12 +4,12 @@ import datetime
 conn = taosws.connect()
 cursor = conn.cursor()
 
-cursor.execute_with_req_id("select 1")
+cursor.execute("select 1")
 db = "t_ws"
-cursor.execute_with_req_id("drop database if exists {}", db)
-cursor.execute_with_req_id("create database {}", db)
-cursor.execute_with_req_id("use {name}", name=db)
-cursor.execute_with_req_id("create stable stb (ts timestamp, v1 int) tags(t1 int)")
+cursor.execute("drop database if exists {}", db)
+cursor.execute("create database {}", db)
+cursor.execute("use {name}", name=db)
+cursor.execute("create stable stb (ts timestamp, v1 int) tags(t1 int)")
 
 data = [{"name": "tb1", "t1": 1}, {"name": "tb2", "t1": 2}]
 cursor.execute_many("create table {name} using stb tags({t1})", data)

@@ -110,7 +110,7 @@ class TaosRestConnection:
 
     def execute(self, sql: str, req_id: Optional[int] = None) -> Optional[dict]:
         """
-        execute_with_req_id none query statement and return affected row count.
+        execute none query statement and return affected row count.
         If there is not a column named "affected_rows" in response, then None is returned.
         """
         resp = self._client.sql(sql, req_id=req_id)
@@ -120,7 +120,7 @@ class TaosRestConnection:
 
     def query(self, sql: str, req_id: Optional[int] = None) -> Result:
         """
-        execute_with_req_id sql and wrap the http response as Result object.
+        execute sql and wrap the http response as Result object.
         """
         resp = self._client.sql(sql, req_id=req_id)
         return Result(resp)

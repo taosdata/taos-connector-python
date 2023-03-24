@@ -132,10 +132,10 @@ def test_stmt_set_tbname_tag(conn):
     dbname = "pytest_taos_stmt_set_tbname_tag"
 
     try:
-        conn.execute_with_req_id("drop database if exists %s" % dbname)
-        conn.execute_with_req_id("create database if not exists %s" % dbname)
+        conn.execute("drop database if exists %s" % dbname)
+        conn.execute("create database if not exists %s" % dbname)
         conn.select_db(dbname)
-        conn.execute_with_req_id("create table if not exists log(ts timestamp, bo bool, nil tinyint, ti tinyint, si smallint, ii int,\
+        conn.execute("create table if not exists log(ts timestamp, bo bool, nil tinyint, ti tinyint, si smallint, ii int,\
              bi bigint, tu tinyint unsigned, su smallint unsigned, iu int unsigned, bu bigint unsigned, \
              ff float, dd double, bb binary(100), nn nchar(100), tt timestamp) tags (t1 timestamp, t2 bool,\
              t3 tinyint, t4 tinyint, t5 smallint, t6 int, t7 bigint, t8 tinyint unsigned, t9 smallint unsigned, \
@@ -180,7 +180,7 @@ def test_stmt_set_tbname_tag(conn):
         params[15].timestamp(1626861392589, PrecisionEnum.Milliseconds)
 
         stmt.bind_param(params)
-        stmt.execute_with_req_id()
+        stmt.execute()
 
         assert stmt.affected_rows == 1
 
@@ -193,12 +193,12 @@ def test_stmt_set_tbname_tag(conn):
         assert row[13] == "hello"
         assert row[14] == "stmt"
 
-        conn.execute_with_req_id("drop database if exists %s" % dbname)
+        conn.execute("drop database if exists %s" % dbname)
         conn.close()
         print("pass test_stmt_set_tbname_tag")
 
     except Exception as err:
-        conn.execute_with_req_id("drop database if exists %s" % dbname)
+        conn.execute("drop database if exists %s" % dbname)
         conn.close()
         raise err
 
@@ -207,10 +207,10 @@ def test_stmt_null(conn):
     dbname = "pytest_taos_stmt_null"
 
     try:
-        conn.execute_with_req_id("drop database if exists %s" % dbname)
-        conn.execute_with_req_id("create database if not exists %s" % dbname)
+        conn.execute("drop database if exists %s" % dbname)
+        conn.execute("create database if not exists %s" % dbname)
         conn.select_db(dbname)
-        conn.execute_with_req_id("create table if not exists log(ts timestamp, bo bool, nil tinyint, ti tinyint, si smallint, ii int,\
+        conn.execute("create table if not exists log(ts timestamp, bo bool, nil tinyint, ti tinyint, si smallint, ii int,\
              bi bigint, tu tinyint unsigned, su smallint unsigned, iu int unsigned, bu bigint unsigned, \
              ff float, dd double, bb binary(100), nn nchar(100), tt timestamp) tags (t1 timestamp, t2 bool,\
              t3 tinyint, t4 tinyint, t5 smallint, t6 int, t7 bigint, t8 tinyint unsigned, t9 smallint unsigned, \
@@ -255,7 +255,7 @@ def test_stmt_null(conn):
         params[15].timestamp([None, None, None])
 
         stmt.bind_param_batch(params)
-        stmt.execute_with_req_id()
+        stmt.execute()
 
         assert stmt.affected_rows == 3
 
@@ -264,12 +264,12 @@ def test_stmt_null(conn):
         for i in range(1, 15):
             assert row[i] is None
 
-        conn.execute_with_req_id("drop database if exists %s" % dbname)
+        conn.execute("drop database if exists %s" % dbname)
         conn.close()
         print("pass test_stmt_null")
 
     except Exception as err:
-        conn.execute_with_req_id("drop database if exists %s" % dbname)
+        conn.execute("drop database if exists %s" % dbname)
         conn.close()
         raise err
 

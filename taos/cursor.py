@@ -19,10 +19,10 @@ class TaosCursor(object):
             > null_ok
 
             This attribute will be None for operations that do not return rows or
-            if the cursor has not had an operation invoked via the .execute_with_req_id*() method yet.
+            if the cursor has not had an operation invoked via the .execute*() method yet.
 
         .rowcount:This read-only attribute specifies the number of rows that the last
-            .execute_with_req_id*() produced (for DQL statements like SELECT) or affected
+            .execute*() produced (for DQL statements like SELECT) or affected
     """
 
     def __init__(self, connection=None):
@@ -74,7 +74,7 @@ class TaosCursor(object):
     @property
     def rowcount(self):
         """
-        For INSERT statement, rowcount is assigned immediately after execute_with_req_id the statement.
+        For INSERT statement, rowcount is assigned immediately after execute the statement.
         For SELECT statement, rowcount will not get correct value until fetched all data.
         """
         return self._rowcount
@@ -106,7 +106,7 @@ class TaosCursor(object):
 
     def execute(self, operation, params=None):
         # type: (str, Any) -> int|None
-        """Prepare and execute_with_req_id a database operation (query or command)."""
+        """Prepare and execute a database operation (query or command)."""
         if not operation:
             return None
 
@@ -140,7 +140,7 @@ class TaosCursor(object):
             return self._handle_result()
 
     def executemany(self, operation, seq_of_parameters):
-        """Prepare a database operation (query or command) and then execute_with_req_id it against all parameter sequences or mappings found in the sequence seq_of_parameters."""
+        """Prepare a database operation (query or command) and then execute it against all parameter sequences or mappings found in the sequence seq_of_parameters."""
         self.execute(operation)
         pass
 

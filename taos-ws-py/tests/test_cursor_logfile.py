@@ -28,7 +28,7 @@ def ctx(request):
 
     conn = taosws.connect(db_url)
     yield conn, db_name
-    conn.execute_with_req_id("DROP DATABASE IF EXISTS %s" % db_name)
+    conn.execute("DROP DATABASE IF EXISTS %s" % db_name)
     conn.close()
 
 
@@ -41,13 +41,13 @@ def test_logfile(ctx):
     except FileNotFoundError:
         pass
     cursor.log("log.txt")
-    cursor.execute_with_req_id("DROP DATABASE IF EXISTS test")
-    cursor.execute_with_req_id("CREATE DATABASE test")
-    cursor.execute_with_req_id("USE test")
-    cursor.execute_with_req_id("CREATE STABLE weather(ts TIMESTAMP, temperature FLOAT) TAGS (location INT)")
-    cursor.execute_with_req_id(f"INSERT INTO t1 USING weather TAGS(1) VALUES (now, 23.5) (now+100a, 23.5)")
+    cursor.execute("DROP DATABASE IF EXISTS test")
+    cursor.execute("CREATE DATABASE test")
+    cursor.execute("USE test")
+    cursor.execute("CREATE STABLE weather(ts TIMESTAMP, temperature FLOAT) TAGS (location INT)")
+    cursor.execute(f"INSERT INTO t1 USING weather TAGS(1) VALUES (now, 23.5) (now+100a, 23.5)")
     assert cursor.rowcount == 2
-    cursor.execute_with_req_id("SELECT tbname, ts, temperature, location FROM weather LIMIT 1")
+    cursor.execute("SELECT tbname, ts, temperature, location FROM weather LIMIT 1")
     # rowcount can only get correct value after fetching all data
     all_data = cursor.fetchall()
     assert cursor.rowcount == 1

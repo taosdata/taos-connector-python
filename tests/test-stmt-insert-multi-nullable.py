@@ -12,11 +12,11 @@ def conn():
 
 def test_stmt_insert_multi_nullable(conn):
     dbname = "pytest_taos_stmt_multi"
-    conn.execute_with_req_id("drop database if exists %s" % dbname)
-    conn.execute_with_req_id("create database if not exists %s" % dbname)
+    conn.execute("drop database if exists %s" % dbname)
+    conn.execute("create database if not exists %s" % dbname)
     conn.select_db(dbname)
 
-    conn.execute_with_req_id(
+    conn.execute(
         "create table if not exists log(ts timestamp, bo bool, nil tinyint, \
             ti tinyint, si smallint, ii int, bi bigint, tu tinyint unsigned, \
             su smallint unsigned, iu int unsigned, bu bigint unsigned, \
@@ -44,7 +44,7 @@ def test_stmt_insert_multi_nullable(conn):
     params[14].nchar([None, None, None])
     params[15].timestamp([None, None, 1626861392591])
     stmt.bind_param_batch(params)
-    stmt.execute_with_req_id()
+    stmt.execute()
 
     assert stmt.affected_rows == 3
 

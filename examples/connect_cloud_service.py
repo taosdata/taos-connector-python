@@ -8,11 +8,11 @@ def connect_to_cloud_use_token(url, token):
 
     print(conn.server_info)
     cursor = conn.cursor()
-    cursor.execute_with_req_id("drop database if exists pytest")
-    cursor.execute_with_req_id("create database pytest precision 'ns' keep 365")
-    cursor.execute_with_req_id("create table pytest.temperature(ts timestamp, temp int)")
-    cursor.execute_with_req_id("insert into pytest.temperature values(now, 1) (now+10b, 2)")
-    cursor.execute_with_req_id("select * from pytest.temperature")
+    cursor.execute("drop database if exists pytest")
+    cursor.execute("create database pytest precision 'ns' keep 365")
+    cursor.execute("create table pytest.temperature(ts timestamp, temp int)")
+    cursor.execute("insert into pytest.temperature values(now, 1) (now+10b, 2)")
+    cursor.execute("select * from pytest.temperature")
     rows = cursor.fetchall()
     print(rows)
 

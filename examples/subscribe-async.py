@@ -23,7 +23,7 @@ def test_subscribe_callback(conn):
         print("create database")
         conn.execute("create database if not exists %s" % dbname)
         print("create table")
-        # conn.execute_with_req_id("use %s" % dbname)
+        # conn.execute("use %s" % dbname)
         conn.execute("create table if not exists %s.log(ts timestamp, n int)" % dbname)
 
         print("# subscribe with callback")

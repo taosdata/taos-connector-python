@@ -82,7 +82,7 @@ impl Cursor {
     ///
     /// The first two items (name and type_code) are mandatory, the other five are optional and are set to None if no meaningful values can be provided.
     ///
-    /// This attribute will be None for operations that do not return rows or if the cursor has not had an operation invoked via the .execute_with_req_id*() method yet.
+    /// This attribute will be None for operations that do not return rows or if the cursor has not had an operation invoked via the .execute*() method yet.
     ///
     /// The type_code can be interpreted by comparing it to the Type Objects specified in the section below.
     #[getter]
@@ -107,7 +107,7 @@ impl Cursor {
         })
     }
 
-    /// This read-only attribute specifies the number of rows that the last .execute_with_req_id*() produced
+    /// This read-only attribute specifies the number of rows that the last .execute*() produced
     ///  (for DQL statements like SELECT) or affected (for DML statements like UPDATE or INSERT).
     #[getter]
     pub fn row_count(&self) -> usize {

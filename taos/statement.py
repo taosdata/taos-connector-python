@@ -53,7 +53,7 @@ class TaosStmt(object):
 
     def execute(self):
         if self._stmt is None:
-            raise StatementError("Invalid use of execute_with_req_id")
+            raise StatementError("Invalid use of execute")
         taos_stmt_execute(self._stmt)
 
     def use_result(self):

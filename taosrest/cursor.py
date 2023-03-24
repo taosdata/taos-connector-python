@@ -20,7 +20,7 @@ class TaosRestCursor:
 
     @property
     def rowcount(self):
-        """ the number of rows that the last .execute_with_req_id*() produced (for DQL statements like SELECT) or affected (for DML statements like UPDATE or INSERT)."""
+        """ the number of rows that the last .execute*() produced (for DQL statements like SELECT) or affected (for DML statements like UPDATE or INSERT)."""
         return self._rowcount
 
     @property

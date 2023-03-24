@@ -17,7 +17,7 @@ def test_fetch_all():
                             password="taosdata")
     cursor = conn.cursor()
 
-    cursor.execute_with_req_id("show databases")
+    cursor.execute("show databases")
     results: list[tuple] = cursor.fetchall()
     for row in results:
         print(row)
@@ -31,7 +31,7 @@ def test_fetch_all_with_req_id():
                             password="taosdata")
     cursor = conn.cursor()
 
-    cursor.execute_with_req_id("show databases", req_id=gen_req_id())
+    cursor.execute("show databases", req_id=gen_req_id())
     results: list[tuple] = cursor.fetchall()
     for row in results:
         print(row)
@@ -46,13 +46,13 @@ def test_fetch_one():
                             user="root",
                             password="taosdata")
     c = conn.cursor()
-    c.execute_with_req_id("drop database if exists test")
+    c.execute("drop database if exists test")
     c.executemany("create database test")
-    c.execute_with_req_id("create table test.tb (ts timestamp, c1 int, c2 double)")
-    c.execute_with_req_id("insert into test.tb values (now, -100, -200.3) (now+10s, -101, -340.2423424)")
+    c.execute("create table test.tb (ts timestamp, c1 int, c2 double)")
+    c.execute("insert into test.tb values (now, -100, -200.3) (now+10s, -101, -340.2423424)")
     assert c.rowcount == 2
     assert c.affected_rows == 2
-    c.execute_with_req_id("select * from test.tb")
+    c.execute("select * from test.tb")
     assert c.rowcount == 2
     assert c.affected_rows is None
     print()
@@ -70,13 +70,13 @@ def test_fetch_one_with_req_id():
                             user="root",
                             password="taosdata")
     c = conn.cursor()
-    c.execute_with_req_id("drop database if exists test", req_id=gen_req_id())
+    c.execute("drop database if exists test", req_id=gen_req_id())
     c.executemany("create database test", req_id=gen_req_id())
-    c.execute_with_req_id("create table test.tb (ts timestamp, c1 int, c2 double)", req_id=gen_req_id())
-    c.execute_with_req_id("insert into test.tb values (now, -100, -200.3) (now+10s, -101, -340.2423424)", req_id=gen_req_id())
+    c.execute("create table test.tb (ts timestamp, c1 int, c2 double)", req_id=gen_req_id())
+    c.execute("insert into test.tb values (now, -100, -200.3) (now+10s, -101, -340.2423424)", req_id=gen_req_id())
     assert c.rowcount == 2
     assert c.affected_rows == 2
-    c.execute_with_req_id("select * from test.tb", req_id=gen_req_id())
+    c.execute("select * from test.tb", req_id=gen_req_id())
     assert c.rowcount == 2
     assert c.affected_rows is None
     print()
@@ -91,7 +91,7 @@ def test_row_count():
     url = os.environ["TDENGINE_URL"]
     conn = taosrest.connect(url=url, user="root", password="taosdata")
     cursor = conn.cursor()
-    cursor.execute_with_req_id("select * from test.tb")
+    cursor.execute("select * from test.tb")
     assert cursor.rowcount == 2
 
 
@@ -100,7 +100,7 @@ def test_row_count_with_req_id():
     url = os.environ["TDENGINE_URL"]
     conn = taosrest.connect(url=url, user="root", password="taosdata")
     cursor = conn.cursor()
-    cursor.execute_with_req_id("select * from test.tb", req_id=gen_req_id())
+    cursor.execute("select * from test.tb", req_id=gen_req_id())
     assert cursor.rowcount == 2
 
 
