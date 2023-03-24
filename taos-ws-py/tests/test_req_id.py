@@ -1,57 +1,135 @@
+import pytest
 import taosws
 import datetime
 
+config = [
+    {
+        'db_protocol': 'taosws',
+        'db_user': "root",
+        'db_pass': "taosdata",
+        'db_host': "td-1",
+        'db_port': 6041,
+        'db_name': "t_ws",
+    }
+]
 
-def test_query():
-    ws = taosws.connect("taosws://root:taosdata@localhost:6041")
-    res = ws.query_with_req_id('show dnodes', 1)
+
+@pytest.fixture(params=config)
+def ctx(request):
+    db_protocol = request.param['db_protocol']
+    db_user = request.param['db_user']
+    db_pass = request.param['db_pass']
+    db_host = request.param['db_host']
+    db_port = request.param['db_port']
+
+    db_url = f"{db_protocol}://{db_user}:{db_pass}@{db_host}:{db_port}"
+
+    db_name = request.param['db_name']
+
+    conn = taosws.connect(db_url)
+    yield conn, db_name
+    conn.execute("DROP DATABASE IF EXISTS %s" % db_name)
+    conn.close()
+
+
+def test_query(ctx):
+    conn, db = ctx
+    # res = conn.query_with_req_id('show dnodes', 1)
+    res = conn.query('show dnodes')
     print(f'res: {res}')
 
 
-def test_execute():
-    ws = taosws.connect("taosws://root:taosdata@localhost:6041")
-    res = ws.execute_with_req_id('show dnodes', 1)
+def test_execute(ctx):
+    conn, db = ctx
+    res = conn.execute_with_req_id('show dnodes', 1)
     print(f'res: {res}')
 
 
-def test_cursor_execute():
-    ws = taosws.connect("taosws://root:taosdata@localhost:6041")
-    cur = ws.cursor()
+def test_cursor_execute(ctx):
+    conn, db = ctx
+    cur = conn.cursor()
     res = cur.execute_with_req_id('show dnodes', 1)
     print(f'res: {res}')
 
 
-def test_cursor_execute_many():
-    ws = taosws.connect("taosws://root:taosdata@localhost:6041")
+def test_cursor_execute_many(ctx):
+    conn, db = ctx
+    ws = conn
     cur = ws.cursor()
+    cur.execute("drop database if exists {}", db)
+    cur.execute("create database {}", db)
+    cur.execute("use {name}", name=db)
+    cur.execute("create stable stb (ts timestamp, v1 int) tags(t1 int)")
+
+    data = [
+        {
+            "name": "tb1",
+            "t1": 1,
+        },
+        {
+            "name": "tb2",
+            "t1": 2,
+        },
+        {
+            "name": "tb3",
+            "t1": 3,
+        }
+    ]
+
+    res = cur.execute_many_with_req_id(
+        "create table {name} using stb tags({t1})",
+        data,
+        1,
+    )
+
+    print(f'res: {res}')
+
+
+def test_full(ctx):
+    conn, db = ctx
+    ws = conn
+    cur = ws.cursor()
+    res = cur.execute_with_req_id('show dnodes', 1)
+    print(f'res: {res}')
     db = "t_ws"
     cur.execute("drop database if exists {}", db)
     cur.execute("create database {}", db)
     cur.execute("use {name}", name=db)
     cur.execute("create stable stb (ts timestamp, v1 int) tags(t1 int)")
 
-    data = [{"name": "tb1", "t1": 1}, {"name": "tb2", "t1": 2}]
-    res = cur.execute_many_with_req_id("create table {name} using stb tags({t1})", data, 1)
+    data = [
+        {
+            "name": "tb1",
+            "t1": 1,
+        },
+        {
+            "name": "tb2",
+            "t1": 2,
+        },
+        {
+            "name": "tb3",
+            "t1": 3,
+        }
+    ]
+
+    res = cur.execute_many_with_req_id(
+        "create table {name} using stb tags({t1})",
+        data,
+        1,
+    )
     print(f'res: {res}')
 
-
-def test_full():
-    ws = taosws.connect("taosws://root:taosdata@localhost:6041")
-    cur = ws.cursor()
-    res = cur.execute_with_req_id('show dnodes', 1)
-    print(f'res: {res}')
-    db = "t_ws"
-    cur.execute("drop database if exists {}", db)
-    cur.execute("create database {}", db)
-    cur.execute("use {name}", name=db)
-    cur.execute("create stable stb (ts timestamp, v1 int) tags(t1 int)")
-
-    data = [{"name": "tb1", "t1": 1}, {"name": "tb2", "t1": 2}]
-    res = cur.execute_many_with_req_id("create table {name} using stb tags({t1})", data, 1)
-    print(f'res: {res}')
     ts = datetime.datetime.now().astimezone()
-    data = [("tb1", ts, 1), ("tb2", ts, 2)]
-    cur.execute_many("insert into {} values('{}', {})", data)
+    data = [
+        ("tb1", ts, 1),
+        ("tb2", ts, 2),
+        ("tb3", ts, 3),
+    ]
+    cur.execute_many_with_req_id(
+        "insert into {} values('{}', {})",
+        data,
+        1,
+    )
     cur.execute_with_req_id('select * from stb', 1)
     row = cur.fetchone()
     print(f'row: {row}')
