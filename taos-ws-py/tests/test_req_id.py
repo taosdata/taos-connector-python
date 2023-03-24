@@ -27,7 +27,9 @@ def ctx(request):
     db_name = request.param['db_name']
 
     conn = taosws.connect(db_url)
+
     yield conn, db_name
+
     conn.execute("DROP DATABASE IF EXISTS %s" % db_name)
     conn.close()
 
