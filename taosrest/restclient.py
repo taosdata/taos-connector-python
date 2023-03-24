@@ -118,7 +118,7 @@ class RestClient:
 
         Parameters
         -----------
-        q : SQL statement to execute. Can't be USE statement since REST api is stateless.
+        q : SQL statement to execute_with_req_id. Can't be USE statement since REST api is stateless.
         req_id : request id, optional
         """
         data = q.encode("utf8")

@@ -51,7 +51,7 @@ import taosws
 conn = taosws.connect("taosws://root:taosdata@localhost:6041")
 cursor = conn.cursor()
 
-cursor.execute("show databases")
+cursor.execute_with_req_id("show databases")
 results: list[tuple] = cursor.fetchall()
 for row in results:
     print(row)
@@ -110,7 +110,7 @@ conn = taosrest.connect(url="http://localhost:6041",
                         password="taosdata")
 cursor = conn.cursor()
 
-cursor.execute("show databases")
+cursor.execute_with_req_id("show databases")
 results: list[tuple] = cursor.fetchall()
 for row in results:
     print(row)
@@ -215,7 +215,7 @@ import taos
 conn = taos.connect()
 cursor = conn.cursor()
 
-cursor.execute("show databases")
+cursor.execute_with_req_id("show databases")
 results = cursor.fetchall()
 for row in results:
     print(row)
@@ -230,7 +230,7 @@ conn.close()
 import taos
 
 conn = taos.connect()
-conn.execute("create database if not exists pytest")
+conn.execute_with_req_id("create database if not exists pytest")
 
 result = conn.query("show databases")
 num_of_fields = result.field_count
@@ -241,7 +241,7 @@ for row in result:
     print(row)
 
 result.close()
-conn.execute("drop database pytest")
+conn.execute_with_req_id("drop database pytest")
 conn.close()
 ```
 
@@ -322,11 +322,11 @@ from taos import *
 conn = connect()
 
 dbname = "pytest_taos_stmt"
-conn.execute("drop database if exists %s" % dbname)
-conn.execute("create database if not exists %s" % dbname)
+conn.execute_with_req_id("drop database if exists %s" % dbname)
+conn.execute_with_req_id("create database if not exists %s" % dbname)
 conn.select_db(dbname)
 
-conn.execute(
+conn.execute_with_req_id(
     "create table if not exists log(ts timestamp, bo bool, nil tinyint, \
         ti tinyint, si smallint, ii int, bi bigint, tu tinyint unsigned, \
         su smallint unsigned, iu int unsigned, bu bigint unsigned, \
@@ -357,7 +357,7 @@ stmt.bind_param(params)
 params[0].timestamp(1626861392590)
 params[15].timestamp(None)
 stmt.bind_param(params)
-stmt.execute()
+stmt.execute_with_req_id()
 
 assert stmt.affected_rows == 2
 
@@ -375,11 +375,11 @@ from taos import *
 conn = connect()
 
 dbname = "pytest_taos_stmt"
-conn.execute("drop database if exists %s" % dbname)
-conn.execute("create database if not exists %s" % dbname)
+conn.execute_with_req_id("drop database if exists %s" % dbname)
+conn.execute_with_req_id("create database if not exists %s" % dbname)
 conn.select_db(dbname)
 
-conn.execute(
+conn.execute_with_req_id(
     "create table if not exists log(ts timestamp, bo bool, nil tinyint, \
         ti tinyint, si smallint, ii int, bi bigint, tu tinyint unsigned, \
         su smallint unsigned, iu int unsigned, bu bigint unsigned, \
@@ -406,7 +406,7 @@ params[13].binary(["abc", "dddafadfadfadfadfa", None])
 params[14].nchar(["涛思数据", None, "a long string with 中文字符"])
 params[15].timestamp([None, None, 1626861392591])
 stmt.bind_param_batch(params)
-stmt.execute()
+stmt.execute_with_req_id()
 
 assert stmt.affected_rows == 3
 
@@ -423,12 +423,12 @@ import random
 
 conn = taos.connect()
 dbname = "pytest_taos_subscribe"
-conn.execute("drop database if exists %s" % dbname)
-conn.execute("create database if not exists %s" % dbname)
+conn.execute_with_req_id("drop database if exists %s" % dbname)
+conn.execute_with_req_id("create database if not exists %s" % dbname)
 conn.select_db(dbname)
-conn.execute("create table if not exists log(ts timestamp, n int)")
+conn.execute_with_req_id("create table if not exists log(ts timestamp, n int)")
 for i in range(10):
-    conn.execute("insert into log values(now, %d)" % i)
+    conn.execute_with_req_id("insert into log values(now, %d)" % i)
 
 sub = conn.subscribe(False, "test", "select * from log", 1000)
 print("# consume from begin")
@@ -437,7 +437,7 @@ for ts, n in sub.consume():
 
 print("# consume new data")
 for i in range(5):
-    conn.execute("insert into log values(now, %d)(now+1s, %d)" % (i, i))
+    conn.execute_with_req_id("insert into log values(now, %d)(now+1s, %d)" % (i, i))
     result = sub.consume()
     for ts, n in result:
         print(ts, n)
@@ -453,7 +453,7 @@ print("## consumed ", len(rows), "rows")
 
 print("# consume with a stop condition")
 for i in range(10):
-    conn.execute("insert into log values(now, %d)" % random.randint(0, 10))
+    conn.execute_with_req_id("insert into log values(now, %d)" % random.randint(0, 10))
     result = sub.consume()
     try:
         ts, n = next(result)
@@ -468,7 +468,7 @@ for i in range(10):
 sub.close()
 # sub.close()
 
-conn.execute("drop database if exists %s" % dbname)
+conn.execute_with_req_id("drop database if exists %s" % dbname)
 # conn.close()
 ```
 
@@ -496,26 +496,26 @@ def test_subscribe_callback(conn):
     dbname = "pytest_taos_subscribe_callback"
     try:
         print("drop if exists")
-        conn.execute("drop database if exists %s" % dbname)
+        conn.execute_with_req_id("drop database if exists %s" % dbname)
         print("create database")
-        conn.execute("create database if not exists %s" % dbname)
+        conn.execute_with_req_id("create database if not exists %s" % dbname)
         print("create table")
-        # conn.execute("use %s" % dbname)
-        conn.execute("create table if not exists %s.log(ts timestamp, n int)" % dbname)
+        # conn.execute_with_req_id("use %s" % dbname)
+        conn.execute_with_req_id("create table if not exists %s.log(ts timestamp, n int)" % dbname)
 
         print("# subscribe with callback")
         sub = conn.subscribe(False, "test", "select * from %s.log" % dbname, 1000, subscribe_callback)
 
         for i in range(10):
-            conn.execute("insert into %s.log values(now, %d)" % (dbname, i))
+            conn.execute_with_req_id("insert into %s.log values(now, %d)" % (dbname, i))
             time.sleep(0.7)
 
         sub.close()
 
-        conn.execute("drop database if exists %s" % dbname)
+        conn.execute_with_req_id("drop database if exists %s" % dbname)
         # conn.close()
     except Exception as err:
-        conn.execute("drop database if exists %s" % dbname)
+        conn.execute_with_req_id("drop database if exists %s" % dbname)
         # conn.close()
         raise err
 
@@ -532,8 +532,8 @@ from taos import SmlProtocol, SmlPrecision
 
 conn = taos.connect()
 dbname = "pytest_line"
-conn.execute("drop database if exists %s" % dbname)
-conn.execute("create database if not exists %s precision 'us'" % dbname)
+conn.execute_with_req_id("drop database if exists %s" % dbname)
+conn.execute_with_req_id("create database if not exists %s precision 'us'" % dbname)
 conn.select_db(dbname)
 
 lines = [
@@ -548,7 +548,7 @@ result = conn.query("show tables")
 for row in result:
     print(row)
 
-conn.execute("drop database if exists %s" % dbname)
+conn.execute_with_req_id("drop database if exists %s" % dbname)
 ```
 
 ### Read with Pandas

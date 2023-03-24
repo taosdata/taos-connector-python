@@ -3,7 +3,7 @@ import datetime
 
 conn = taosws.connect()
 cursor = conn.cursor()
-cursor.execute("select * from test.meters")
+cursor.execute_with_req_id("select * from test.meters")
 
 # PEP-249 fetchone() method
 row = cursor.fetchone()
@@ -18,7 +18,7 @@ many_fixed = cursor.fetchmany(10000)
 all = cursor.fetchall()
 
 # by dict
-cursor.execute("select * from test.meters limit 1")
+cursor.execute_with_req_id("select * from test.meters limit 1")
 all_dict = cursor.fetch_all_into_dict()  # same to cursor.fetchallintodict()
 #[{'ts': datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone(datetime.timedelta(seconds=28800))),
 #  'current': 9.880000114440918,

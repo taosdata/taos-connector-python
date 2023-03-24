@@ -30,7 +30,7 @@ def ctx(request):
 
     yield conn, db_name
 
-    conn.execute("DROP DATABASE IF EXISTS %s" % db_name)
+    conn.execute_with_req_id("DROP DATABASE IF EXISTS %s" % db_name)
     conn.close()
 
 
@@ -58,10 +58,10 @@ def test_cursor_execute_many_with_req_id(ctx):
     conn, db = ctx
     ws = conn
     cur = ws.cursor()
-    cur.execute("drop database if exists {}", db)
-    cur.execute("create database {}", db)
-    cur.execute("use {name}", name=db)
-    cur.execute("create stable stb (ts timestamp, v1 int) tags(t1 int)")
+    cur.execute_with_req_id("drop database if exists {}", db)
+    cur.execute_with_req_id("create database {}", db)
+    cur.execute_with_req_id("use {name}", name=db)
+    cur.execute_with_req_id("create stable stb (ts timestamp, v1 int) tags(t1 int)")
 
     data = [
         {
@@ -91,12 +91,12 @@ def test_execute(ctx):
     conn, db = ctx
     ws = conn
     cur = ws.cursor()
-    res = cur.execute('show dnodes', 1)
+    res = cur.execute_with_req_id('show dnodes', 1)
     print(f'res: {res}')
-    cur.execute("drop database if exists {}", db)
-    cur.execute("create database {}", db)
-    cur.execute("use {name}", name=db)
-    cur.execute("create stable stb (ts timestamp, v1 int) tags(t1 int)")
+    cur.execute_with_req_id("drop database if exists {}", db)
+    cur.execute_with_req_id("create database {}", db)
+    cur.execute_with_req_id("use {name}", name=db)
+    cur.execute_with_req_id("create stable stb (ts timestamp, v1 int) tags(t1 int)")
 
     data = [
         {
@@ -129,7 +129,7 @@ def test_execute(ctx):
         "insert into {} values('{}', {})",
         data,
     )
-    cur.execute('select * from stb')
+    cur.execute_with_req_id('select * from stb')
     row = cur.fetchone()
     print(f'row: {row}')
     assert row is not None

@@ -74,7 +74,7 @@ class TaosConnection(object):
 
     def execute(self, sql):
         # type: (str) -> int
-        """Simplely execute sql ignoring the results"""
+        """Simplely execute_with_req_id sql ignoring the results"""
         return self.query(sql).affected_rows
 
     def query(self, sql: str, req_id: Optional[int] = None) -> TaosResult:
