@@ -28,7 +28,7 @@ def test_stmt_insert_multi_nullable(conn):
     params = new_multi_binds(16)
     params[0].timestamp((1626861392589, 1626861392590, 1626861392591))
     params[1].bool((True, None, False))
-    params[2].tinyint([-128, -128, None]) # -128 is tinyint null
+    params[2].tinyint([-128, -128, None])  # -128 is tinyint null
     params[3].tinyint([0, 127, None])
     params[4].smallint([3, None, 2])
     params[5].int([3, 4, None])
@@ -45,7 +45,6 @@ def test_stmt_insert_multi_nullable(conn):
     params[15].timestamp([None, None, 1626861392591])
     stmt.bind_param_batch(params)
     stmt.execute()
-
 
     assert stmt.affected_rows == 3
 

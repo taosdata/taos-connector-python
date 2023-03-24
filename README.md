@@ -57,6 +57,21 @@ for row in results:
     print(row)
 ```
 
+You can pass an optional req_id in the parameters.
+
+```python
+import taosws
+
+# all parameters are optional
+conn = taosws.connect("taosws://root:taosdata@localhost:6041")
+cursor = conn.cursor()
+
+cursor.execute("show databases", req_id=1)
+results: list[tuple] = cursor.fetchall()
+for row in results:
+    print(row)
+```
+
 ### Query with query method using `taosws`
 
 ```python
@@ -64,6 +79,22 @@ from taosws import *
 
 conn = connect("taosws://root:taosdata@localhost:6041")
 result = conn.query("show databases")
+
+num_of_fields = result.field_count
+for field in result.fields:
+    print(field)
+
+for row in result:
+    print(row)
+```
+
+You can pass an optional req_id in the parameters.
+
+```python
+from taosws import *
+
+conn = connect("taosws://root:taosdata@localhost:6041")
+result = conn.query("show databases", req_id=1)
 
 num_of_fields = result.field_count
 for field in result.fields:
@@ -116,6 +147,23 @@ for row in results:
     print(row)
 ```
 
+You can pass an optional req_id in the parameters.
+
+```python
+import taosrest
+
+# all parameters are optional
+conn = taosrest.connect(url="http://localhost:6041",
+                        user="root",
+                        password="taosdata")
+cursor = conn.cursor()
+
+cursor.execute("show databases", req_id=1)
+results: list[tuple] = cursor.fetchall()
+for row in results:
+    print(row)
+```
+
 ### Query with query method
 
 ```python
@@ -131,6 +179,23 @@ for field in result.fields:
 for row in result:
     print(row)
 ```
+
+You can pass an optional req_id in the parameters.
+
+```python
+from taosrest import connect, TaosRestConnection, Result
+
+conn: TaosRestConnection = connect()
+result: Result = conn.query("show databases", req_id=1)
+
+num_of_fields = result.field_count
+for field in result.fields:
+    print(field)
+
+for row in result:
+    print(row)
+```
+
 
 ### Read with Pandas
 
@@ -224,6 +289,23 @@ cursor.close()
 conn.close()
 ```
 
+You can pass an optional req_id in the parameters.
+
+```python
+import taos
+
+conn = taos.connect()
+cursor = conn.cursor()
+
+cursor.execute("show databases", req_id=1)
+results = cursor.fetchall()
+for row in results:
+    print(row)
+
+cursor.close()
+conn.close()
+```
+
 ### Query with objective API
 
 ```python
@@ -231,6 +313,27 @@ import taos
 
 conn = taos.connect()
 conn.execute("create database if not exists pytest")
+
+result = conn.query("show databases")
+num_of_fields = result.field_count
+for field in result.fields:
+    print(field)
+
+for row in result:
+    print(row)
+
+result.close()
+conn.execute("drop database pytest")
+conn.close()
+```
+
+You can pass an optional req_id in the parameters.
+
+```python
+import taos
+
+conn = taos.connect()
+conn.execute("create database if not exists pytest", req_id=1)
 
 result = conn.query("show databases")
 num_of_fields = result.field_count
@@ -272,7 +375,7 @@ def fetch_callback(p_param, p_result, num_of_rows):
 
     for row in result.rows_iter(num_of_rows):
         # print(row)
-        None
+        pass
 
     p.contents.count += result.row_count
     result.fetch_rows_a(fetch_callback, p_param)
@@ -301,6 +404,76 @@ def test_query(conn):
     # type: (TaosConnection) -> None
     counter = Counter(count=0)
     conn.query_a("select * from log.log", query_callback, byref(counter))
+
+    while not counter.done:
+        print("wait query callback")
+        time.sleep(1)
+
+    print(counter)
+    conn.close()
+
+
+if __name__ == "__main__":
+    test_query(connect())
+```
+
+You can pass an optional req_id in the parameters.
+
+
+```python
+from taos import *
+from ctypes import *
+import time
+
+
+def fetch_callback(p_param, p_result, num_of_rows):
+    print("fetched ", num_of_rows, "rows")
+    p = cast(p_param, POINTER(Counter))
+    result = TaosResult(p_result)
+
+    if num_of_rows == 0:
+        print("fetching completed")
+        p.contents.done = True
+        result.close()
+        return
+
+    if num_of_rows < 0:
+        p.contents.done = True
+        result.check_error(num_of_rows)
+        result.close()
+        return None
+
+    for row in result.rows_iter(num_of_rows):
+        # print(row)
+        pass
+
+    p.contents.count += result.row_count
+    result.fetch_rows_a(fetch_callback, p_param)
+
+
+def query_callback(p_param, p_result, code):
+    # type: (c_void_p, c_void_p, c_int) -> None
+    if p_result is None:
+        return
+
+    result = TaosResult(p_result)
+    if code == 0:
+        result.fetch_rows_a(fetch_callback, p_param)
+
+    result.check_error(code)
+
+
+class Counter(Structure):
+    _fields_ = [("count", c_int), ("done", c_bool)]
+
+    def __str__(self):
+        return "{ count: %d, done: %s }" % (self.count, self.done)
+
+
+def test_query(conn):
+    # type: (TaosConnection) -> None
+    counter = Counter(count=0)
+    conn.query_a("select * from log.log", query_callback, byref(counter), req_id=1)
 
     while not counter.done:
         print("wait query callback")
@@ -543,6 +716,34 @@ conn.schemaless_insert(lines, taos.SmlProtocol.LINE_PROTOCOL, taos.SmlPrecision.
 print("inserted")
 
 conn.schemaless_insert(lines, taos.SmlProtocol.LINE_PROTOCOL, taos.SmlPrecision.NOT_CONFIGURED)
+
+result = conn.query("show tables")
+for row in result:
+    print(row)
+
+conn.execute("drop database if exists %s" % dbname)
+```
+
+You can pass an optional req_id in the parameters.
+
+
+```python
+import taos
+from taos import SmlProtocol, SmlPrecision
+
+conn = taos.connect()
+dbname = "pytest_line"
+conn.execute("drop database if exists %s" % dbname)
+conn.execute("create database if not exists %s precision 'us'" % dbname)
+conn.select_db(dbname)
+
+lines = [
+    'st,t1=3i64,t2=4f64,t3="t3" c1=3i64,c3=L"pass",c2=false,c4=4f64 1626006833639000000',
+]
+conn.schemaless_insert(lines, taos.SmlProtocol.LINE_PROTOCOL, taos.SmlPrecision.NOT_CONFIGURED, req_id=1)
+print("inserted")
+
+conn.schemaless_insert(lines, taos.SmlProtocol.LINE_PROTOCOL, taos.SmlPrecision.NOT_CONFIGURED, req_id=2)
 
 result = conn.query("show tables")
 for row in result:

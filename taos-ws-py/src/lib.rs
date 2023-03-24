@@ -62,12 +62,15 @@ create_exception!(taosws, ConsumerException, Error);
 mod common;
 
 mod consumer;
+
 use consumer::{Consumer, Message};
 
 mod cursor;
+
 use cursor::*;
 
 mod field;
+
 use field::TaosField;
 
 #[pyclass]
@@ -249,7 +252,7 @@ fn connect(
     dsn: Option<&str>,
     args: Option<&PyDict>,
 ) -> PyResult<Connection> {
-    let dsn = dsn.unwrap_or("taos://");
+    let dsn = dsn.unwrap_or("taosws://");
 
     let mut dsn = Dsn::from_str(dsn).map_err(|err| ConnectionError::new_err(err.to_string()))?;
 

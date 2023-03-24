@@ -1,4 +1,6 @@
 # encoding:UTF-8
+from typing import Optional
+
 from taos.cinterface import *
 from taos.error import *
 from taos.constants import FieldType
@@ -104,8 +106,7 @@ class TaosCursor(object):
 
         return True
 
-    def execute(self, operation, params=None):
-        # type: (str, Any) -> int|None
+    def execute(self, operation, params=None, req_id: Optional[int] = None):
         """Prepare and execute a database operation (query or command)."""
         if not operation:
             return None
@@ -124,7 +125,10 @@ class TaosCursor(object):
         # querySeqNum += 1
         # localSeqNum = querySeqNum # avoid race condition
         # print("   >> Exec Query ({}): {}".format(localSeqNum, str(stmt)))
-        self._result = taos_query(self._connection._conn, stmt)
+        if req_id is None:
+            self._result = taos_query(self._connection._conn, stmt)
+        else:
+            self._result = taos_query_with_reqid(self._connection._conn, stmt, req_id)
         # print("   << Query ({}) Exec Done".format(localSeqNum))
         if self._logfile:
             with open(self._logfile, "a", encoding="utf-8") as logfile:
@@ -139,9 +143,9 @@ class TaosCursor(object):
             self._fields = taos_fetch_fields(self._result)
             return self._handle_result()
 
-    def executemany(self, operation, seq_of_parameters):
+    def executemany(self, operation, seq_of_parameters, req_id: Optional[int] = None):
         """Prepare a database operation (query or command) and then execute it against all parameter sequences or mappings found in the sequence seq_of_parameters."""
-        self.execute(operation)
+        self.execute(operation, req_id=req_id)
         pass
 
     def fetchone(self):

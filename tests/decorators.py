@@ -1,8 +1,10 @@
 from functools import wraps
 import os
 
+
 class NoEnvError(Exception):
     pass
+
 
 def check_env(func):
     @wraps(func)

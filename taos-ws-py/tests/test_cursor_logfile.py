@@ -1,15 +1,44 @@
+import pytest
+import taosws
 from os import unlink
-from utils import tear_down_database
-import taos
+
+config = [
+    {
+        'db_protocol': 'taosws',
+        'db_user': "root",
+        'db_pass': "taosdata",
+        'db_host': "td-1",
+        'db_port': 6041,
+        'db_name': "test",
+    }
+]
 
 
-def test_logfile():
-    conn = taos.connect()
+@pytest.fixture(params=config)
+def ctx(request):
+    db_protocol = request.param['db_protocol']
+    db_user = request.param['db_user']
+    db_pass = request.param['db_pass']
+    db_host = request.param['db_host']
+    db_port = request.param['db_port']
+
+    db_url = f"{db_protocol}://{db_user}:{db_pass}@{db_host}:{db_port}"
+
+    db_name = request.param['db_name']
+
+    conn = taosws.connect(db_url)
+    yield conn, db_name
+    conn.execute("DROP DATABASE IF EXISTS %s" % db_name)
+    conn.close()
+
+
+def test_logfile(ctx):
+    conn, db = ctx
     cursor = conn.cursor()
 
     try:
         unlink("log.txt")
-    except Exception:
+    except FileNotFoundError:
         pass
     cursor.log("log.txt")
     cursor.execute("DROP DATABASE IF EXISTS test")
@@ -22,10 +51,7 @@ def test_logfile():
     # rowcount can only get correct value after fetching all data
     all_data = cursor.fetchall()
     assert cursor.rowcount == 1
-    db_name = "test"
-    tear_down_database(cursor, db_name)
     cursor.close()
-    conn.close()
 
     logs = open("log.txt", encoding="utf-8")
     txt = logs.read().splitlines()
