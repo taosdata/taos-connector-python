@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.2.2 - 2023-01-13
 
+## v0.2.4 - 2023-03-28
+
+### Bug Fixes:
+
+- add default port for taosrest sqlalchemy (#133)
+
+### Enhancements:
+
+- support req id ws (#161)
+- TD-19401 support schemaless raw (#159)
+
 ## v0.2.3 - 2023-02-22
 
 ### Bug Fixes:
