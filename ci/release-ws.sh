@@ -17,4 +17,4 @@ mv CHANGELOG.md2 CHANGELOG.md
 git commit -a -m "release(taos-ws-py): v$newv"
 git push
 git tag taos-ws-py-v$newv
-git push --force origin taos-ws-py-v$newv:v$newv
+git push --force origin taos-ws-py-v$newv:taos-ws-py-v$newv
