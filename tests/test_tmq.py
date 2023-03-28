@@ -62,9 +62,11 @@ def pre_test_tmq(precision: str):
     conn.execute("drop topic if exists topic1")
     conn.execute("drop database if exists tmq_test")
     if len(precision) > 0:
-        conn.execute("create database if not exists tmq_test precision '{}'".format(precision))
+        conn.execute(
+            "create database if not exists tmq_test precision '{}' wal_retention_period 3600".format(precision)
+        )
     else:
-        conn.execute("create database if not exists tmq_test")
+        conn.execute("create database if not exists tmq_test wal_retention_period 3600")
     conn.select_db("tmq_test")
     conn.execute(
         "create stable if not exists stb1 (ts timestamp, \
