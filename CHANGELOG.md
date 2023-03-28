@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.7.7 - 2023-03-28
+
+### Bug Fixes:
+
+- recover TaosConnection init args (#150)
+- there was a conflict between the minimum version of Python and t… (#144)
+- update typing in schemaless_insert (#153)
+
+### Enhancements:
+
+- add req_id for rest api (#149)
+- python connector support req_id (#147)
+- support req id ws (#161)
+- TD-19401 support schemaless raw (#159)
+- update function signature (#148)
+
+### Tests:
+
+- add case for connect args (#151)
+- add tear_down function, clean up database after test
+- add workflow (#154)
+- add workflow (#155)
+- add workflow for TDengine, single case (#157)
+- update function name
+- update teardown with module level
+- update wrong password test
+
+### Documents:
+
+- add examples (#163)
+- update doc and examples with schemaless (#164)
+
 ## v2.7.6 - 2023-02-27
 
 ### Bug Fixes:
