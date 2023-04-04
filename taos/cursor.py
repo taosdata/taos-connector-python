@@ -143,10 +143,27 @@ class TaosCursor(object):
             self._fields = taos_fetch_fields(self._result)
             return self._handle_result()
 
-    def executemany(self, operation, seq_of_parameters, req_id: Optional[int] = None):
-        """Prepare a database operation (query or command) and then execute it against all parameter sequences or mappings found in the sequence seq_of_parameters."""
-        self.execute(operation, req_id=req_id)
-        pass
+    def execute_many(self, operation, data_list, req_id: Optional[int] = None):
+        """
+        Prepare a database operation (query or command) and then execute it against all parameter sequences or mappings
+        found in the sequence seq_of_parameters.
+        """
+        sql = operation
+        flag = True
+        affected_rows = 0
+        for line in data_list:
+            if isinstance(line, dict):
+                flag = False
+                # print(f'execute: {sql.format(**line)}')
+                affected_rows += self.execute(sql.format(**line), req_id=req_id)
+            elif isinstance(line, list):
+                sql += f' {tuple(line)} '
+            elif isinstance(line, tuple):
+                sql += f' {line} '
+        if flag:
+            # print(f'execute_many: {sql}')
+            affected_rows += self.execute(sql, req_id=req_id)
+        return affected_rows
 
     def fetchone(self):
         """Fetch the next row of a query result set, returning a single sequence, or None when no more data is available."""
