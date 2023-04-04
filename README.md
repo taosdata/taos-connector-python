@@ -1,10 +1,13 @@
 # TDengine Connector for Python
+
 [![codecov](https://codecov.io/gh/taosdata/taos-connector-python/branch/main/graph/badge.svg?token=BDANN3DBXS)](https://codecov.io/gh/taosdata/taos-connector-python)
 
-[TDengine](https://github.com/taosdata/TDengine) connector for Python enables python programs to access TDengine, using an API which is compliant with the Python DB API 2.0 (PEP-249). It contains two modules:
+[TDengine](https://github.com/taosdata/TDengine) connector for Python enables python programs to access TDengine, using
+an API which is compliant with the Python DB API 2.0 (PEP-249). It contains two modules:
 
 1. The `taos` module. It uses TDengine C client library for client server communications.
-2. The `taosrest` module. It wraps TDengine RESTful API to Python DB API 2.0 (PEP-249). With this module, you are free to install TDengine C client library.
+2. The `taosrest` module. It wraps TDengine RESTful API to Python DB API 2.0 (PEP-249). With this module, you are free
+   to install TDengine C client library.
 
 ## Install taospy
 
@@ -24,7 +27,8 @@ Note: taospy v2.7.2 requirs Python 3.6+. The early versions of taospy from v2.5.
 
 ## Source Code
 
-[TDengine](https://github.com/taosdata/TDengine) connector for Python source code is hosted on [GitHub](https://github.com/taosdata/taos-connector-python).
+[TDengine](https://github.com/taosdata/TDengine) connector for Python source code is hosted
+on [GitHub](https://github.com/taosdata/taos-connector-python).
 
 ## Install taos-ws-py
 
@@ -40,7 +44,8 @@ pip install taospy[ws]
 pip install taos-ws-py
 ```
 
-Note: The taosws module is provided by taos-ws-py package separately from v2.7.2. It is part of early version of taospy. taos-ws-py requires Python 3.7+.
+Note: The taosws module is provided by taos-ws-py package separately from v2.7.2. It is part of early version of taospy.
+taos-ws-py requires Python 3.7+.
 
 ### Query with PEP-249 API using `taosws`
 
@@ -196,7 +201,6 @@ for row in result:
     print(row)
 ```
 
-
 ### Read with Pandas
 
 #### Method one
@@ -240,7 +244,8 @@ Supported config options:
 - **user**: TDengine user name, default is "root".
 - **password**: TDengine user password, default is "taosdata".
 - **database**: Default connection database name, empty if not set.
-- **timezone**: Timezone for timestamp type (which is `datetime` object with tzinfo in python) no matter what the host's timezone is.
+- **timezone**: Timezone for timestamp type (which is `datetime` object with tzinfo in python) no matter what the host's
+  timezone is.
 
 ```python
 import taos
@@ -306,11 +311,78 @@ cursor.close()
 conn.close()
 ```
 
-execute_many is supported:
+#### Execute many
+
+Method execute_many is supported:
+
+There are two ways to use execute_many.
+
+The first way is to pass a data_set as a list of dictionaries, where each dictionary will be expanded into a complete
+statement.
+
+```python
+import taos
+
+conn = taos.connect()
+cursor = conn.cursor()
+
+db_name = "test_db"
+
+cursor.execute(f"DROP DATABASE IF EXISTS {db_name}")
+cursor.execute(f"CREATE DATABASE {db_name}")
+cursor.execute(f"USE {db_name}")
+
+cursor.execute("create stable stb (ts timestamp, v1 int) tags(t1 int)")
+
+create_table_data = [
+    {
+        "name": "tb1",
+        "t1": 1,
+    },
+    {
+        "name": "tb2",
+        "t1": 2,
+    },
+    {
+        "name": "tb3",
+        "t1": 3,
+    }
+]
+
+cursor.execute_many(
+    "create table {name} using stb tags({t1})",
+    create_table_data,
+)
+
+```
+
+The second way is to pass a data_set as a list of tuples, where each tuple represents a different row of the same
+table, and each value within the tuple will become a data row in the SQL statement. All the data together will form a
+complete SQL statement.
+
+```python
+import taos
+
+conn = taos.connect()
+cursor = conn.cursor()
+
+db_name = "test_db"
+
+cursor.execute(f"USE {db_name}")
+
+data_set = [
+    ('2018-10-03 14:38:05.100', 219),
+    ('2018-10-03 14:38:15.300', 218),
+    ('2018-10-03 14:38:16.800', 221),
+]
+
+table_name = "tb1"
+
+cursor.execute_many(f"insert into {table_name} values", data_set)
+
+```
 
 [Example: Insert many lines in one execute](./examples/cursor_execute_many.py)
-
-
 
 ### Query with objective API
 
@@ -424,7 +496,6 @@ if __name__ == "__main__":
 ```
 
 You can pass an optional req_id in the parameters.
-
 
 ```python
 from taos import *
@@ -732,7 +803,6 @@ conn.execute("drop database if exists %s" % dbname)
 
 You can pass an optional req_id in the parameters.
 
-
 ```python
 import taos
 from taos import SmlProtocol, SmlPrecision
@@ -1022,7 +1092,8 @@ df: pandas.DataFrame = pandas.read_sql("select * from logs", engine)
 
 ## Limitation
 
-- `taosrest` is designed to use with taosAdapter. If your TDengine version is older than v2.4.0.0, taosAdapter may not be available.
+- `taosrest` is designed to use with taosAdapter. If your TDengine version is older than v2.4.0.0, taosAdapter may not
+  be available.
 
 ## License
 
