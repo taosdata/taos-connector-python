@@ -306,6 +306,12 @@ cursor.close()
 conn.close()
 ```
 
+execute_many is supported:
+
+[Example: Insert many lines in one execute](./examples/cursor_execute_many.py)
+
+
+
 ### Query with objective API
 
 ```python
