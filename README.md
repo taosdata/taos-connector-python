@@ -1,6 +1,11 @@
 # TDengine Connector for Python
 
-[![codecov](https://codecov.io/gh/taosdata/taos-connector-python/branch/main/graph/badge.svg?token=BDANN3DBXS)](https://codecov.io/gh/taosdata/taos-connector-python)
+| Github Workflow | PyPI Version | PyPI Downloads | CodeCov |
+| --------------- | ------------ | -------------- | ------- |
+| ![workflow](https://img.shields.io/github/actions/workflow/status/taosdata/taos-connector-python/test.yml) | ![PyPI](https://img.shields.io/pypi/v/taospy) | ![PyPI](https://img.shields.io/pypi/dm/taospy) | [![codecov](https://codecov.io/gh/taosdata/taos-connector-python/branch/main/graph/badge.svg?token=BDANN3DBXS)](https://codecov.io/gh/taosdata/taos-connector-python) |
+
+
+
 
 [TDengine](https://github.com/taosdata/TDengine) connector for Python enables python programs to access TDengine, using
 an API which is compliant with the Python DB API 2.0 (PEP-249). It contains two modules:
