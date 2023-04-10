@@ -32,6 +32,8 @@ def test_taos_get_client_info():
 
 
 def test_taos_connect_auth():
+    if not taos.IS_V3:
+        return
     taos_connect_auth(
         host='localhost',
         user='root',
@@ -69,6 +71,8 @@ def test_taos_validate_sql():
 
 
 def test_taos_stmt_errstr():
+    if not taos.IS_V3:
+        return
     conn = taos.connect(**cfg)
 
     dbname = "pytest_taos_stmt"
