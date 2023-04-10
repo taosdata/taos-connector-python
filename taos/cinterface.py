@@ -236,9 +236,6 @@ def taos_connect(host=None, user="root", password="taosdata", db=None, port=0):
 _libtaos.taos_connect_auth.restype = c_void_p
 _libtaos.taos_connect_auth.argtypes = c_char_p, c_char_p, c_char_p, c_char_p, c_uint16
 
-_libtaos.taos_connect_auth.restype = c_void_p
-_libtaos.taos_connect_auth.argtypes = c_char_p, c_char_p, c_char_p, c_char_p, c_uint16
-
 
 def taos_connect_auth(host=None, user="root", auth="", db=None, port=0):
     # type: (None|str, str, str, None|str, int) -> c_void_p
@@ -278,11 +275,11 @@ def taos_connect_auth(host=None, user="root", auth="", db=None, port=0):
 
     # port
     try:
-        _port = c_int(port)
+        _port = c_uint16(port)
     except TypeError:
         raise TypeError("port is expected as an int")
 
-    connection = c_void_p(_libtaos.taos_connect_auth(_host, _user, _auth, _db, _port))
+    connection = cast(_libtaos.taos_connect_auth(_host, _user, _auth, _db, _port), c_void_p)
 
     if connection.value is None:
         null_ptr = c_void_p(None)
