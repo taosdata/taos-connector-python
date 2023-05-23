@@ -21,20 +21,6 @@ def test_default_connect():
     print('-' * 40)
 
 
-def test_native_connect():
-    print('-' * 40)
-    print('test_native_connect')
-    try:
-        conn = taosws.connect('taos://root:taosdata@localhost:6030')
-        r = conn.query_with_req_id('show dnodes', 1)
-        print('r: ', r.fields)
-
-    except Exception as e:
-        print('Exception: ', e)
-    print('test_native_connect done')
-    print('-' * 40)
-
-
 def test_connect_invalid_user():
     print('-' * 40)
     print('test_mutil_connect')
