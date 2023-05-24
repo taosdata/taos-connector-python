@@ -193,10 +193,11 @@ class Consumer:
             res = tmq_list_append(topic_list, topic)
             if res != 0:
                 raise TmqError(msg="fail on parse topics", errno=res)
-        tmq_subscribe(self._tmq, topic_list)
-
-        self._subscribed = True
-        tmq_list_destroy(topic_list)
+        try:
+            tmq_subscribe(self._tmq, topic_list)
+            self._subscribed = True
+        finally:
+            tmq_list_destroy(topic_list)
 
     def unsubscribe(self):
         """
