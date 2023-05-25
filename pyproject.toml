@@ -21,7 +21,7 @@ packages = [
 python = ">=3.6.2,<4.0"
 pytz = "*"
 iso8601 = "1.0.2"
-requests = "2.27.1"
+requests = ">=2.27.1"
 pytest-cov = "^4.0.0"
 
 [tool.poetry.dependencies.taos-ws-py]
