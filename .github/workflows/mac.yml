@@ -32,7 +32,7 @@ jobs:
 
       - name: Build TDengine
         run: |
-          git clone --branch 3.0 --depth 1 https://github.com/taosdata/TDengine.git
+          git clone --branch main --depth 1 https://github.com/taosdata/TDengine.git
           cd TDengine
           mkdir build
           cd build

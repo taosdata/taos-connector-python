@@ -109,7 +109,7 @@ jobs:
 
       - name: Build TDengine 3.0
         run: |
-          git clone --recursive --depth 1 https://github.com/taosdata/TDengine.git -b 3.0 TDengine_v3
+          git clone --recursive --depth 1 https://github.com/taosdata/TDengine.git -b main TDengine_v3
           cd TDengine_v3
           mkdir build
           cd build
