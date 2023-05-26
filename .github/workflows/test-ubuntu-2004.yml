@@ -2,11 +2,7 @@ name: Test on Ubuntu-20.04
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+
 
 jobs:
   test:
