@@ -72,12 +72,12 @@ jobs:
       #----------------------------------------------
       - name: Build TDengine 3.0
         run: |
-          git clone --recursive --depth 1 https://github.com/taosdata/TDengine.git -b 3.0 TDengine_v3
+          git clone --recursive --depth 1 https://github.com/taosdata/TDengine.git -b main TDengine_v3
           cd TDengine_v3
           mkdir build
           cd build
           cmake ../ -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false
-          make -j8
+          make -j4
           sudo make install
           ls -alh /etc/taos/
           cd ../../
@@ -92,6 +92,7 @@ jobs:
           pip3 install pip --upgrade
           pip3 install -r requirements.txt
           pip3 install pyopenssl --upgrade
+          pip3 install decorator
 
 
       #----------------------------------------------
