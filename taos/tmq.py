@@ -186,17 +186,25 @@ class Consumer:
         :param list(str) topics: List of topics (strings) to subscribe to.
         """
         if not topics or len(topics) == 0:
-            raise TmqError('Unset topic for Consumer')
+            raise TmqError("Unset topic for Consumer")
 
-        topic_list = tmq_list_new()
-        for topic in topics:
-            res = tmq_list_append(topic_list, topic)
-            if res != 0:
-                raise TmqError(msg="fail on parse topics", errno=res)
-        tmq_subscribe(self._tmq, topic_list)
+        class TmqListInner:
+            def __init__(self, topics) -> None:
+                self.ptr = tmq_list_new()
+                for topic in topics:
+                    self.append(topic)
 
+            def append(self, item: str):
+                res = tmq_list_append(self.ptr, item)
+                if res != 0:
+                    raise TmqError(msg="fail on parse topics", errno=res)
+
+            def __del__(self):
+                tmq_list_destroy(self.ptr)
+
+        topic_list = TmqListInner(topics)
+        tmq_subscribe(self._tmq, topic_list.ptr)
         self._subscribed = True
-        tmq_list_destroy(topic_list)
 
     def unsubscribe(self):
         """
