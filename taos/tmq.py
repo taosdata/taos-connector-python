@@ -144,6 +144,17 @@ class Message:
         return iter(self.value())
 
 
+class TopicPartition:
+
+    def __init__(self, topic, partition, offset):
+        self.topic = topic  # type: str
+        self.partition = partition  # type: int
+        self.offset = offset  # type: int
+
+    def __str__(self):
+        return "TopicPartition(topic=%s, partition=%s, offset=%s)" % (self.topic, self.partition, self.offset)
+
+
 class Consumer:
     default_config = {
         'group.id',
@@ -225,6 +236,29 @@ class Consumer:
         if msg:
             return Message(msg=msg)
         return None
+
+    def assignment(self):
+        """
+        Returns the current partition assignment as a list of TopicPartition tuples.
+        """
+        topics = tmq_subscription(self._tmq)
+        if not topics:
+            return None
+
+        topic_partitions = []
+        for topic in topics:
+            assignments = tmq_get_topic_assignment(self._tmq, topic)
+            for assignment in assignments:
+                topic_partitions.append(
+                    TopicPartition(topic=topic, partition=assignment[0], offset=assignment[1]))
+        return topic_partitions
+
+    def seek(self, partition):
+        # type (TopicPartition) -> None
+        """
+        Set consume position for partition to offset.
+        """
+        tmq_offset_seek(self._tmq, partition.topic, partition.partition, partition.offset)
 
     def close(self):
         """
