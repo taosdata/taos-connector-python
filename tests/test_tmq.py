@@ -129,6 +129,8 @@ def tmq_consumer_with_precision(precision: str):
 
 
 def test_tmq_assignment():
+    if not IS_V3:
+        return
     pre_test_tmq('')
     conn = taos.connect()
     conn.select_db("tmq_test")
@@ -152,6 +154,8 @@ def test_tmq_assignment():
 
 
 def test_tmq_seek():
+    if not IS_V3:
+        return
     pre_test_tmq('')
     conn = taos.connect()
     conn.select_db("tmq_test")
