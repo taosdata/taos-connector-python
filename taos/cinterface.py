@@ -53,6 +53,7 @@ def _load_taos_windows():
         print("unable to load taos client library: %s" % e)
         try:
             from ctypes.util import find_library
+
             ctypes.windll.LoadLibrary(find_library("taos"))
         except Exception as final_err:
             raise InterfaceError("unable to load taos client library: %s" % final_err)
@@ -360,7 +361,13 @@ def taos_query_a(connection, sql, callback, param):
 try:
     async_query_with_reqid_callback_type = CFUNCTYPE(None, c_void_p, c_void_p, c_int)
     _libtaos.taos_query_a_with_reqid.restype = None
-    _libtaos.taos_query_a_with_reqid.argtypes = c_void_p, c_char_p, async_query_with_reqid_callback_type, c_void_p, c_int
+    _libtaos.taos_query_a_with_reqid.argtypes = (
+        c_void_p,
+        c_char_p,
+        async_query_with_reqid_callback_type,
+        c_void_p,
+        c_int,
+    )
 except Exception as err:
     _UNSUPPORTED["taos_query_a_with_reqid"] = err
 
@@ -378,8 +385,8 @@ def taos_query_a_with_reqid(connection, sql, callback, param, req_id):
     """
     _check_if_supported()
     _libtaos.taos_query_a_with_reqid(
-        connection, c_char_p(sql.encode("utf-8")),
-        async_query_with_reqid_callback_type(callback), param, req_id)
+        connection, c_char_p(sql.encode("utf-8")), async_query_with_reqid_callback_type(callback), param, req_id
+    )
 
 
 async_fetch_rows_callback_type = CFUNCTYPE(None, c_void_p, c_void_p, c_int)
@@ -1029,10 +1036,10 @@ except Exception as err:
 
 
 def taos_schemaless_insert(
-        connection: c_void_p,
-        lines: Union[List[str], Tuple[str]],
-        protocol: SmlProtocol,
-        precision: SmlPrecision,
+    connection: c_void_p,
+    lines: Union[List[str], Tuple[str]],
+    protocol: SmlProtocol,
+    precision: SmlPrecision,
 ):
     _check_if_supported()
     num_of_lines = len(lines)
@@ -1077,11 +1084,11 @@ except Exception as err:
 
 
 def taos_schemaless_insert_ttl(
-        connection: c_void_p,
-        lines: Union[List[str], Tuple[str]],
-        protocol: SmlProtocol,
-        precision: SmlPrecision,
-        ttl: int,
+    connection: c_void_p,
+    lines: Union[List[str], Tuple[str]],
+    protocol: SmlProtocol,
+    precision: SmlPrecision,
+    ttl: int,
 ):
     _check_if_supported()
     num_of_lines = len(lines)
@@ -1128,12 +1135,12 @@ except Exception as err:
 
 
 def taos_schemaless_insert_ttl_with_reqid(
-        connection: c_void_p,
-        lines: Union[List[str], Tuple[str]],
-        protocol: SmlProtocol,
-        precision: SmlPrecision,
-        ttl: int,
-        req_id: int,
+    connection: c_void_p,
+    lines: Union[List[str], Tuple[str]],
+    protocol: SmlProtocol,
+    precision: SmlPrecision,
+    ttl: int,
+    req_id: int,
 ):
     _check_if_supported()
     num_of_lines = len(lines)
@@ -1180,7 +1187,8 @@ def taos_schemaless_insert_with_reqid(connection, lines, protocol, precision, re
     lines_type = ctypes.c_char_p * num_of_lines
     p_lines = lines_type(*lines)
     res = c_void_p(
-        _libtaos.taos_schemaless_insert_with_reqid(connection, p_lines, num_of_lines, protocol, precision, req_id))
+        _libtaos.taos_schemaless_insert_with_reqid(connection, p_lines, num_of_lines, protocol, precision, req_id)
+    )
     errno = taos_errno(res)
     affected_rows = taos_affected_rows(res)
     if errno != 0:
@@ -1209,10 +1217,10 @@ except Exception as err:
 
 
 def taos_schemaless_insert_raw(
-        connection: c_void_p,
-        lines_raw: str,
-        protocol: SmlProtocol,
-        precision: SmlPrecision,
+    connection: c_void_p,
+    lines_raw: str,
+    protocol: SmlProtocol,
+    precision: SmlPrecision,
 ) -> int:
     _check_if_supported()
     length = len(lines_raw)
@@ -1220,16 +1228,7 @@ def taos_schemaless_insert_raw(
     type_p_int = POINTER(c_int)
     total_rows = type_p_int(c_int(0))
 
-    res = c_void_p(
-        _libtaos.taos_schemaless_insert_raw(
-            connection,
-            lines_raw,
-            length,
-            total_rows,
-            protocol,
-            precision
-        )
-    )
+    res = c_void_p(_libtaos.taos_schemaless_insert_raw(connection, lines_raw, length, total_rows, protocol, precision))
 
     errno = taos_errno(res)
     affected_rows = taos_affected_rows(res)
@@ -1265,11 +1264,11 @@ except Exception as err:
 
 
 def taos_schemaless_insert_raw_with_reqid(
-        connection: c_void_p,
-        lines_raw: str,
-        protocol: SmlProtocol,
-        precision: SmlPrecision,
-        req_id: int,
+    connection: c_void_p,
+    lines_raw: str,
+    protocol: SmlProtocol,
+    precision: SmlPrecision,
+    req_id: int,
 ) -> int:
     _check_if_supported()
     length = len(lines_raw)
@@ -1323,11 +1322,11 @@ except Exception as err:
 
 
 def taos_schemaless_insert_raw_ttl(
-        connection: c_void_p,
-        lines_raw: str,
-        protocol: SmlProtocol,
-        precision: SmlPrecision,
-        ttl: int,
+    connection: c_void_p,
+    lines_raw: str,
+    protocol: SmlProtocol,
+    precision: SmlPrecision,
+    ttl: int,
 ) -> int:
     _check_if_supported()
     length = len(lines_raw)
@@ -1382,12 +1381,12 @@ except Exception as err:
 
 
 def taos_schemaless_insert_raw_ttl_with_reqid(
-        connection: c_void_p,
-        lines_raw: str,
-        protocol: SmlProtocol,
-        precision: SmlPrecision,
-        ttl: int,
-        req_id: int,
+    connection: c_void_p,
+    lines_raw: str,
+    protocol: SmlProtocol,
+    precision: SmlPrecision,
+    ttl: int,
+    req_id: int,
 ) -> int:
     _check_if_supported()
     length = len(lines_raw)
@@ -1450,9 +1449,9 @@ def tmq_conf_set(conf, key, value):
     if not isinstance(value, str):
         raise TmqError(msg=f"fail to execute tmq_conf_set({key},{value}), {value} is not string type")
 
-    res = _libtaos.tmq_conf_set(conf, ctypes.c_char_p(key.encode("utf-8")), ctypes.c_char_p(value.encode("utf-8")))
-    if res != 0:
-        raise TmqError(msg=f"fail to execute tmq_conf_set({key},{value}), code={res}", errno=res)
+    tmq_res = _libtaos.tmq_conf_set(conf, ctypes.c_char_p(key.encode("utf-8")), ctypes.c_char_p(value.encode("utf-8")))
+    if tmq_res != 0:
+        raise TmqError(msg=f"fail to execute tmq_conf_set({key},{value}), code={tmq_res}", errno=tmq_res)
 
 
 try:
@@ -1496,8 +1495,21 @@ def tmq_consumer_new(conf, errstrlen=0):
     buf = ctypes.create_string_buffer(errstrlen)
     tmq = cast(_libtaos.tmq_consumer_new(conf, buf, errstrlen), c_void_p)
     if tmq.value is None:
-        raise TmqError("failed on tmq_consumer_new")
+        raise TmqError("failed on tmq_consumer_new()")
     return tmq
+
+
+try:
+    _libtaos.tmq_err2str.restype = c_char_p
+    _libtaos.tmq_err2str.argtypes = (c_int,)
+except Exception as err:
+    _UNSUPPORTED["tmq_err2str"] = err
+
+
+def tmq_err2str(errno):
+    # type (c_int) -> c_char_p
+    _check_if_supported()
+    return c_char_p(_libtaos.tmq_err2str(errno))
 
 
 try:
@@ -1580,7 +1592,7 @@ def tmq_subscribe(tmq, list):
     _check_if_supported()
     res = _libtaos.tmq_subscribe(tmq, list)
     if res != 0:
-        raise TmqError(msg="failed on tmq_subscribe()", errno=res)
+        raise TmqError(msg=f"failed on tmq_subscribe(), errno={res:X}, errmsg={tmq_err2str(res)}", errno=res)
 
 
 try:
@@ -1599,7 +1611,7 @@ def tmq_unsubscribe(tmq):
         # tmq_unsubscribe will subscribe a empty topic list to clear the consumer task.
         return
     if res != 0:
-        raise TmqError(msg=f"failed on tmq_unsubscribe() {res}", errno=res)
+        raise TmqError(msg=f"failed on tmq_unsubscribe(), errno={res:X}, errmsg={tmq_err2str(res)}", errno=res)
 
 
 try:
@@ -1615,7 +1627,7 @@ def tmq_subscription(tmq):
     topics = tmq_list_new()
     res = _libtaos.tmq_subscription(tmq, byref(topics))
     if res != 0:
-        raise TmqError(msg="failed on tmq_subscription()", errno=res)
+        raise TmqError(msg=f"failed on tmq_subscription(), errno={res:X}, errmsg={tmq_err2str(res)}", errno=res)
     res = tmq_list_to_c_array(topics)
     tmq_list_destroy(topics)
     return res
@@ -1646,7 +1658,7 @@ def tmq_consumer_close(tmq):
     _check_if_supported()
     res = _libtaos.tmq_consumer_close(tmq)
     if res != 0:
-        raise TmqError(msg="failed on tmq_consumer_close()", errno=res)
+        raise TmqError(msg=f"failed on tmq_consumer_close(), errno={res:X}, errmsg={tmq_err2str(res)}", errno=res)
 
 
 try:
@@ -1661,7 +1673,7 @@ def tmq_commit_sync(tmq, offset):
     _check_if_supported()
     res = _libtaos.tmq_commit_sync(tmq, offset)
     if res != 0:
-        raise TmqError(msg="failed on tmq_commit_sync()", errno=res)
+        raise TmqError(msg=f"failed on tmq_commit_sync(), errno={res:X}, errmsg={tmq_err2str(res)}", errno=res)
 
 
 try:
@@ -1745,8 +1757,9 @@ def taos_get_table_vgId(conn, db, table):
     # type: (c_void_p, str, str) -> int
     _check_if_supported()
     vg_id = c_int()
-    code = _libtaos.taos_get_table_vgId(conn, c_char_p(db.encode('utf-8')), c_char_p(table.encode('utf-8')),
-                                        ctypes.byref(vg_id))
+    code = _libtaos.taos_get_table_vgId(
+        conn, c_char_p(db.encode("utf-8")), c_char_p(table.encode("utf-8")), ctypes.byref(vg_id)
+    )
     if code != 0:
         raise InternalError(taos_errstr(c_void_p(None)))
     return vg_id.value
