@@ -1,4 +1,5 @@
 import threading
+import time
 from time import sleep
 
 import taos
@@ -125,6 +126,56 @@ def tmq_consumer_with_precision(precision: str):
     consumer.unsubscribe()
 
     after_ter_tmq()
+
+
+def test_tmq_assignment():
+    if not IS_V3:
+        return
+    pre_test_tmq('')
+    conn = taos.connect()
+    conn.select_db("tmq_test")
+    conn.execute("insert into tb1 values (now-4s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+    conn.execute("insert into tb1 values (now-3s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+    conn.execute("insert into tb1 values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
+    conn.execute("insert into tb1 values (now-1s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
+
+    consumer = Consumer({"group.id": "1"})
+    consumer.subscribe(["topic1"])
+
+    assignment = consumer.assignment()
+
+    assert assignment[0].offset == 0
+
+    consumer.poll(1)
+    consumer.poll(1)
+
+    assignment = consumer.assignment()
+    assert assignment[0].offset > 0
+
+
+def test_tmq_seek():
+    if not IS_V3:
+        return
+    pre_test_tmq('')
+    conn = taos.connect()
+    conn.select_db("tmq_test")
+    conn.execute("insert into tb1 values (now-4s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+    conn.execute("insert into tb1 values (now-3s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+    conn.execute("insert into tb1 values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
+    conn.execute("insert into tb1 values (now-1s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
+
+    consumer = Consumer({"group.id": "1"})
+    consumer.subscribe(["topic1"])
+
+    assignment = consumer.assignment()
+
+    consumer.poll(1)
+
+    for partition in assignment:
+        consumer.seek(partition)
+    assignment = consumer.assignment()
+
+    assert assignment[0].offset == 0
 
 
 if __name__ == "__main__":

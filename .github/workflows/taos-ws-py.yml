@@ -3,12 +3,12 @@ name: taos-ws-py
 on:
   push:
     branches:
-      - main
+      - '3.0'
     tags:
       - taos-ws-py-v*
   pull_request:
     branches:
-      - main
+      - '3.0'
 env:
   PYTHON_VERSION: "3.7" # to build abi3 wheels
 
@@ -70,7 +70,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           working-directory: taos-ws-py
-          args: --release --universal2 --strip
+          args: --release --strip --target universal2-apple-darwin
       - name: Install built wheel - universal2
         run: |
           pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels

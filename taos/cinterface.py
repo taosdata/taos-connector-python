@@ -1764,6 +1764,125 @@ def tmq_get_res_type(message):
     return _libtaos.tmq_get_res_type(message)
 
 
+class TmqTopicAssignment(Structure):
+    _fields_ = [
+        ("_vg_id", c_int32),
+        ("_current_offset", c_int64),
+        ("_begin", c_int64),
+        ("_end", c_int64),
+    ]
+
+    @property
+    def vg_id(self):
+        return self._vg_id
+
+    @property
+    def current_offset(self):
+        return self._current_offset
+
+    @property
+    def begin(self):
+        return self._begin
+
+    @property
+    def end(self):
+        return self._end
+
+    def __str__(self):
+        return "vg_id: %s, current_offset: %s, begin: %s, end: %s" % (
+            self.vg_id, self.current_offset, self.begin, self.end
+        )
+
+
+class TmqTopicAssignments(Structure):
+
+    def __init__(self, assignments, count):
+        self._assignments = []
+        if isinstance(assignments, c_void_p):
+            self._assignments = cast(assignments, POINTER(TmqTopicAssignment))
+        if isinstance(assignments, POINTER(TmqTopicAssignment)):
+            self._assignments = assignments
+        self._count = count
+        self._iter = 0
+
+    def as_ptr(self):
+        return self._assignments
+
+    @property
+    def count(self):
+        return self._count
+
+    @property
+    def assignments(self):
+        return self._assignments
+
+    def next(self):
+        return self._next()
+
+    def _next(self):
+        if self._iter < self.count:
+            assignment = self._assignments[self._iter]
+            self._iter += 1
+            return assignment
+        else:
+            raise StopIteration
+
+    def __next__(self):
+        return self._next()
+
+    def __getitem__(self, item):
+        return self._assignments[item]
+
+    def __iter__(self):
+        self._iter = 0
+        return self
+
+    def __len__(self):
+        return self._count
+
+
+try:
+    _libtaos.tmq_get_topic_assignment.argstype = (c_void_p, c_char_p, c_void_p, POINTER(c_int))
+    _libtaos.tmq_get_topic_assignment.restype = c_int
+except Exception as err:
+    _UNSUPPORTED["tmq_get_topic_assignment"] = err
+
+
+def tmq_get_topic_assignment(tmq, topic_name):
+    # type: (c_void_p, str) -> List[()]
+
+    _check_if_supported()
+    num_of_assignment = c_int()
+    assignment = c_void_p()
+    assignments = []
+    code = _libtaos.tmq_get_topic_assignment(tmq, c_char_p(topic_name.encode('utf-8')), byref(assignment),
+                                             ctypes.byref(num_of_assignment))
+    if code != 0:
+        raise TmqError(msg="failed on tmq_get_topic_assignment()", errno=code)
+
+    tmq_assignments = TmqTopicAssignments(assignment, num_of_assignment.value)
+
+    for tmq_assignment in tmq_assignments:
+        assignments.append(
+            (tmq_assignment.vg_id, tmq_assignment.current_offset, tmq_assignment.begin, tmq_assignment.end))
+
+    _libtaos.tmq_free_assignment(assignment)
+    return assignments
+
+
+try:
+    _libtaos.tmq_offset_seek.argstype = (c_void_p, c_char_p, c_int32, c_int64)
+    _libtaos.tmq_offset_seek.restype = c_int
+except Exception as err:
+    _UNSUPPORTED["tmq_offset_seek"] = err
+
+
+def tmq_offset_seek(tmq, topic_name, vgroup_id, offset):
+    code = _libtaos.tmq_offset_seek(tmq, c_char_p(topic_name.encode('utf-8')), c_int32(vgroup_id), c_int64(offset))
+    if code != 0:
+        raise TmqError(msg="failed on tmq_offset_seek()", errno=code)
+
+
 class CTaosInterface(object):
     def __init__(self, config=None, tz=None):
         """
