@@ -110,7 +110,7 @@ impl Connection {
     /// @dsn: Data Source Name string, optional.
     /// @args:
     #[new]
-    pub fn new(dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Self> {
+    pub fn new(_dsn: Option<&str>, _args: Option<&PyDict>) -> PyResult<Self> {
         todo!()
     }
     pub fn query(&self, sql: &str) -> PyResult<TaosResult> {
@@ -248,10 +248,7 @@ static THREAD_SAFETY: u8 = 2;
 static PARAMS_STYLE: &str = "pyformat";
 
 #[pyfunction(args = "**")]
-fn connect(
-    dsn: Option<&str>,
-    args: Option<&PyDict>,
-) -> PyResult<Connection> {
+fn connect(dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Connection> {
     let dsn = dsn.unwrap_or("taosws://");
 
     let mut dsn = Dsn::from_str(dsn).map_err(|err| ConnectionError::new_err(err.to_string()))?;
