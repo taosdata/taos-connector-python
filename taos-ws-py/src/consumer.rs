@@ -4,9 +4,10 @@ use pyo3::{
     prelude::*,
     types::{PyDict, PyList, PyString},
 };
+use taos::sync::{AsConsumer, TBuilder};
 use taos::{
-    sync::AsConsumer, Address, Data, Dsn, IsOffset, Itertools, MessageSet, Meta, Offset, RawBlock,
-    TBuilder, Timeout, TmqBuilder,
+    Address, Data, Dsn, IsOffset, Itertools, MessageSet, Meta, Offset, RawBlock, Timeout,
+    TmqBuilder,
 };
 
 use crate::{
@@ -57,7 +58,7 @@ impl Consumer {
                 .or(args.get_item("protocol"))
                 .or(args.get_item("driver"))
             {
-                let scheme = scheme.downcast::<PyString>().map_err(|err| {
+                let scheme = scheme.downcast::<PyString>().map_err(|_err| {
                     ConsumerException::new_err(format!("Invalid td.connect.websocket.scheme value type: {}, only `'ws'|'wss'` is supported", scheme.get_type().to_string()))
                 })?;
                 builder.protocol = Some(scheme.to_string())
@@ -175,6 +176,39 @@ impl Consumer {
         Ok(())
     }
 
+    /// get topics assignment
+    pub fn assignment(&mut self) -> PyResult<Option<Vec<TopicAssignment>>> {
+        if let Some(assignments) = self.inner()?.assignments() {
+            let result = assignments
+                .into_iter()
+                .map(|(topic, topic_assignments)| {
+                    let py_assignments = topic_assignments
+                        .into_iter()
+                        .map(|item| Assignment {
+                            _vg_id: item.vgroup_id(),
+                            _offset: item.current_offset(),
+                            _begin: item.begin(),
+                            _end: item.end(),
+                        })
+                        .collect();
+                    TopicAssignment {
+                        _topic: topic,
+                        _assignment: py_assignments,
+                    }
+                })
+                .collect();
+            Ok(Some(result))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// seek topic to offset
+    pub fn seek(&mut self, topic: &str, vg_id: i32, offset: i64) -> PyResult<()> {
+        self.inner()?.offset_seek(topic, vg_id, offset).unwrap();
+        Ok(())
+    }
+
     /// Unsubscribe and close the consumer.
     pub fn close(&mut self) {
         if let Some(consumer) = self.0.take() {
@@ -284,10 +318,75 @@ impl MessageBlockIter {
     }
 }
 
+#[derive(Debug)]
+#[pyclass]
+pub(crate) struct TopicAssignment {
+    _topic: String,
+    _assignment: Vec<Assignment>,
+}
+
+#[derive(Debug)]
+#[pyclass]
+pub(crate) struct Assignment {
+    _vg_id: i32,
+    _offset: i64,
+    _begin: i64,
+    _end: i64,
+}
+
+#[pymethods]
+impl TopicAssignment {
+    fn topic(&self) -> &str {
+        self._topic.as_str()
+    }
+
+    fn assignments(&self) -> Vec<Assignment> {
+        let mut assignments = Vec::with_capacity(self._assignment.len());
+        for _assignment in &self._assignment {
+            assignments.push(Assignment {
+                _vg_id: _assignment._vg_id,
+                _offset: _assignment._offset,
+                _begin: _assignment._begin,
+                _end: _assignment._end,
+            });
+        }
+        assignments
+    }
+
+    fn to_string(&self) -> String {
+        let mut s = format!("topic: {},", self._topic);
+        for assignment in &self._assignment {
+            let ass = format!(
+                "vgoup_id: {}, offset: {}, begin: {}, end: {}",
+                assignment._vg_id, assignment._offset, assignment._begin, assignment._end
+            );
+            s.push_str(&ass);
+        }
+        s
+    }
+}
+
+#[pymethods]
+impl Assignment {
+    fn vg_id(&self) -> i32 {
+        self._vg_id
+    }
+    fn offset(&self) -> i64 {
+        self._offset
+    }
+    fn begin(&self) -> i64 {
+        self._begin
+    }
+    fn end(&self) -> i64 {
+        self._end
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
 
+    use pyo3::types::PyList;
     use pyo3::{prelude::*, types::IntoPyDict};
 
     use super::Consumer;
