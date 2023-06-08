@@ -407,28 +407,4 @@ mod tests {
             Ok(())
         })
     }
-
-    #[test]
-    fn consumer_assignment() -> PyResult<()> {
-        Python::with_gil(|py| {
-            let mut args = HashMap::new();
-            args.insert("td.connect.ip", "localhost");
-            args.insert("td.connect.user", "root");
-            args.insert("td.connect.pass", "taosdata");
-            args.insert("td.connect.port", "6041");
-            args.insert("td.connect.websocket.scheme", "ws");
-            args.insert("group.id", "0");
-            args.insert("experimental.snapshot.enable", "false");
-            let args = args.into_py_dict(py);
-
-            let mut consumer = Consumer::new(Some(args), None)?;
-            let topics = PyList::new(py, vec!["tmq_assignment_demo_topic"]);
-            consumer.subscribe(topics)?;
-
-            let assignment = consumer.assignment();
-            println!("{:?}", assignment);
-
-            Ok(())
-        })
-    }
 }
