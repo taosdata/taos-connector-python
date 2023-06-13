@@ -1,12 +1,16 @@
 use std::str::FromStr;
 
+use ::taos::{RawBlock, ResultSet, sync::*};
+use pyo3::{create_exception, exceptions::PyException};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyString, PyTuple};
-use pyo3::{create_exception, exceptions::PyException};
+use taos::taos_query::common::{SchemalessPrecision, SchemalessProtocol, SmlDataBuilder};
+
+use consumer::{Consumer, Message};
+use cursor::*;
+use field::TaosField;
 
 shadow_rs::shadow!(build);
-
-use ::taos::{sync::*, RawBlock, ResultSet};
 
 // PEP249 Exceptions Definition
 //
@@ -63,15 +67,9 @@ mod common;
 
 mod consumer;
 
-use consumer::{Consumer, Message};
-
 mod cursor;
 
-use cursor::*;
-
 mod field;
-
-use field::TaosField;
 
 #[pyclass]
 struct Connection {
@@ -175,6 +173,33 @@ impl Connection {
         Ok(Cursor::new(self.builder()?.build().map_err(|err| {
             ConnectionError::new_err(err.to_string())
         })?))
+    }
+
+    /// schemaless data to taos
+    pub fn schemaless_insert(
+        &self,
+        lines: Vec<String>,
+        protocol: PySchemalessProtocol,
+        precision: PySchemalessPrecision,
+        ttl: i32,
+        req_id: u64,
+    ) -> PyResult<()> {
+        let protocol: SchemalessProtocol = protocol.into();
+        let precision: SchemalessPrecision = precision.into();
+
+        let data = SmlDataBuilder::default()
+            .protocol(protocol)
+            .precision(precision)
+            .data(lines)
+            .ttl(ttl)
+            .req_id(req_id)
+            .build()
+            .map_err(|err| DataError::new_err(err.to_string()))?;
+
+        self.current_cursor()?.put(&data)
+            .map_err(|err| OperationalError::new_err(err.to_string()))?;
+
+        Ok(())
     }
 }
 
@@ -349,6 +374,8 @@ fn taosws(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<TaosResult>()?;
     m.add_class::<Consumer>()?;
     m.add_class::<Message>()?;
+    m.add_class::<PySchemalessProtocol>()?;
+    m.add_class::<PySchemalessPrecision>()?;
 
     m.add_function(wrap_pyfunction!(connect, m)?)?;
     m.add("apilevel", API_LEVEL)?;
@@ -380,4 +407,77 @@ fn taosws(py: Python<'_>, m: &PyModule) -> PyResult<()> {
         ConsumerException
     );
     Ok(())
+}
+
+#[pyfunction]
+pub fn schemaless_protocol(protocol: &str) -> PyResult<PySchemalessProtocol> {
+    let protocol = match protocol {
+        "line" => PySchemalessProtocol::Line,
+        "telnet" => PySchemalessProtocol::Telnet,
+        "json" => PySchemalessProtocol::Json,
+        _ => PySchemalessProtocol::Line
+    };
+    Ok(protocol)
+}
+
+#[pyfunction]
+pub fn schemaless_precision(precision: &str) -> PyResult<PySchemalessPrecision> {
+    let precision = match precision {
+        "hour" => PySchemalessPrecision::Hour,
+        "minute" => PySchemalessPrecision::Minute,
+        "second" => PySchemalessPrecision::Second,
+        "millisecond" => PySchemalessPrecision::Millisecond,
+        "microsecond" => PySchemalessPrecision::Microsecond,
+        "Nanosecond" => PySchemalessPrecision::Nanosecond,
+        _ => PySchemalessPrecision::Millisecond
+    };
+    Ok(precision)
+}
+
+#[pyclass]
+#[derive(Default, Clone, Debug)]
+pub enum PySchemalessProtocol {
+    Unknown,
+    #[default]
+    Line,
+    Telnet,
+    Json,
+}
+
+#[pyclass]
+#[derive(Default, Clone, Debug)]
+pub enum PySchemalessPrecision {
+    NonConfigured,
+    Hour,
+    Minute,
+    Second,
+    #[default]
+    Millisecond,
+    Microsecond,
+    Nanosecond,
+}
+
+impl Into<SchemalessProtocol> for PySchemalessProtocol {
+    fn into(self) -> SchemalessProtocol {
+        match self {
+            PySchemalessProtocol::Unknown => SchemalessProtocol::Unknown,
+            PySchemalessProtocol::Line => SchemalessProtocol::Line,
+            PySchemalessProtocol::Telnet => SchemalessProtocol::Telnet,
+            PySchemalessProtocol::Json => SchemalessProtocol::Json,
+        }
+    }
+}
+
+impl Into<SchemalessPrecision> for PySchemalessPrecision {
+    fn into(self) -> SchemalessPrecision {
+        match self {
+            PySchemalessPrecision::NonConfigured => SchemalessPrecision::NonConfigured,
+            PySchemalessPrecision::Hour => SchemalessPrecision::Hours,
+            PySchemalessPrecision::Minute => SchemalessPrecision::Minutes,
+            PySchemalessPrecision::Second => SchemalessPrecision::Seconds,
+            PySchemalessPrecision::Millisecond => SchemalessPrecision::Millisecond,
+            PySchemalessPrecision::Microsecond => SchemalessPrecision::Millisecond,
+            PySchemalessPrecision::Nanosecond => SchemalessPrecision::Nanosecond,
+        }
+    }
 }
