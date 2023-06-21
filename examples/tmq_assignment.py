@@ -90,8 +90,3 @@ def taosws_get_assignment_and_seek_demo():
     assignments = consumer.assignment()
     for assignment in assignments:
         print(assignment.to_string())
-
-
-if __name__ == '__main__':
-    # taos_get_assignment_and_seek_demo()
-    taosws_get_assignment_and_seek_demo()
