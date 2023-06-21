@@ -19,6 +19,9 @@ jobs:
       - name: Setup coreutils
         run: brew install coreutils
 
+      - name: Setup geos
+        run: brew install geos
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
@@ -30,14 +33,28 @@ jobs:
         with:
           go-version: 1.17
 
+      - name: Determine TDengine branch
+        uses: haya14busa/action-cond@v1
+        id: determine-branch
+        with:
+          cond: ${{ github.base_ref == 'main' }}
+          if_true: 'main'
+          if_false: '3.0'
+
+      - name: Checkout tdengine
+        uses: actions/checkout@v2
+        with:
+          repository: "taosdata/TDengine"
+          path: "TDengine"
+          ref: ${{ steps.determine-branch.outputs.value }}
+
       - name: Build TDengine
         run: |
-          git clone --branch main --depth 1 https://github.com/taosdata/TDengine.git
           cd TDengine
           mkdir build
           cd build
           cmake ../ -DBUILD_HTTP=false
-          make -j8 && make install
+          make -j4 && make install
           cd ../../
 
       - name: Start TDengine

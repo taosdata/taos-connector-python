@@ -1,8 +1,6 @@
 use pyo3::prelude::*;
-use pyo3::types::PyTuple;
-use pyo3::{create_exception, exceptions::PyException};
 
-use ::taos::{sync::*, Field, RawBlock, ResultSet};
+use ::taos::Field;
 
 /// A column metadata description class.
 #[pyclass]
