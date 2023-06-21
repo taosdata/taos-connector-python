@@ -4,7 +4,7 @@ use pyo3::{
 };
 use taos::{
     sync::{Fetchable, Queryable},
-    BorrowedValue, Itertools, RawBlock, ResultSet, Taos,
+    Itertools, RawBlock, ResultSet, Taos,
 };
 
 use crate::{
@@ -232,7 +232,6 @@ impl Cursor {
         Ok(affected_rows)
     }
 
-
     #[args(py_args = "*", parameters = "**")]
     pub fn execute_many_with_req_id(
         &mut self,
@@ -265,11 +264,11 @@ impl Cursor {
         })?;
         let affected_rows = sql
             .into_iter()
-            .map(|sql|
+            .map(|sql| {
                 self.inner()?
                     .query_with_req_id(sql, req_id)
                     .map_err(|err| OperationalError::new_err(err.to_string()))
-            )
+            })
             .try_fold(0, |mut acc, aff| {
                 acc += aff?.affected_rows() as usize;
                 Ok::<usize, PyErr>(acc)

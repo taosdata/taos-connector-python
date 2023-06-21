@@ -20,3 +20,5 @@ cursor.execute(sql)
 
 for row in cursor:
     print(row)
+
+conn.close()

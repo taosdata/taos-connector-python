@@ -6,7 +6,7 @@ def init_tmq_env(db, topic):
     conn = taos.connect()
     conn.execute("drop topic if exists {}".format(topic))
     conn.execute("drop database if exists {}".format(db))
-    conn.execute("create database if not exists {}".format(db))
+    conn.execute("create database if not exists {} WAL_RETENTION_PERIOD 3600000 ".format(db))
     conn.select_db(db)
     conn.execute("create stable if not exists stb1 (ts timestamp, c1 int, c2 float, c3 binary(10)) tags(t1 int)")
     conn.execute("create table if not exists tb1 using stb1 tags(1)")

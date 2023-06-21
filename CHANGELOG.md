@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.7.8 - 2023-06-14
+
+### Bug Fixes:
+
+- tmq error refine (#182)
+
+### Enhancements:
+
+- add cursor.execute_many on native (#168)
+- add unsubscribe fn
+
+### Documents:
+
+- update cmd
+- update readme
+
 ## v2.7.7 - 2023-03-29
 
 ## v2.7.7 - 2023-03-28

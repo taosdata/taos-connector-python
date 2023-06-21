@@ -1,12 +1,18 @@
 use std::str::FromStr;
 
+use ::taos::{RawBlock, ResultSet, sync::*};
+use pyo3::{create_exception, exceptions::PyException};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyString, PyTuple};
-use pyo3::{create_exception, exceptions::PyException};
+use taos::taos_query::common::{SchemalessPrecision, SchemalessProtocol, SmlDataBuilder};
+use taos::taos_query;
+use taos::Value::{BigInt, Bool, Double, Float, Int, Json, NChar, Null, SmallInt, Timestamp, TinyInt, UBigInt, UInt, USmallInt, UTinyInt, VarBinary, VarChar};
+
+use consumer::{Consumer, Message};
+use cursor::*;
+use field::TaosField;
 
 shadow_rs::shadow!(build);
-
-use ::taos::{sync::*, RawBlock, ResultSet};
 
 // PEP249 Exceptions Definition
 //
@@ -63,15 +69,9 @@ mod common;
 
 mod consumer;
 
-use consumer::{Consumer, Message};
-
 mod cursor;
 
-use cursor::*;
-
 mod field;
-
-use field::TaosField;
 
 #[pyclass]
 struct Connection {
@@ -110,7 +110,7 @@ impl Connection {
     /// @dsn: Data Source Name string, optional.
     /// @args:
     #[new]
-    pub fn new(dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Self> {
+    pub fn new(_dsn: Option<&str>, _args: Option<&PyDict>) -> PyResult<Self> {
         todo!()
     }
     pub fn query(&self, sql: &str) -> PyResult<TaosResult> {
@@ -175,6 +175,38 @@ impl Connection {
         Ok(Cursor::new(self.builder()?.build().map_err(|err| {
             ConnectionError::new_err(err.to_string())
         })?))
+    }
+
+    /// schemaless data to taos
+    pub fn schemaless_insert(
+        &self,
+        lines: Vec<String>,
+        protocol: PySchemalessProtocol,
+        precision: PySchemalessPrecision,
+        ttl: i32,
+        req_id: u64,
+    ) -> PyResult<()> {
+        let protocol: SchemalessProtocol = protocol.into();
+        let precision: SchemalessPrecision = precision.into();
+
+        let data = SmlDataBuilder::default()
+            .protocol(protocol)
+            .precision(precision)
+            .data(lines)
+            .ttl(ttl)
+            .req_id(req_id)
+            .build()
+            .map_err(|err| DataError::new_err(err.to_string()))?;
+
+        self.current_cursor()?.put(&data)
+            .map_err(|err| OperationalError::new_err(err.to_string()))?;
+
+        Ok(())
+    }
+
+    pub fn statement(&self) -> PyResult<TaosStmt> {
+        let stmt = TaosStmt::init(self)?;
+        Ok(stmt)
     }
 }
 
@@ -248,10 +280,7 @@ static THREAD_SAFETY: u8 = 2;
 static PARAMS_STYLE: &str = "pyformat";
 
 #[pyfunction(args = "**")]
-fn connect(
-    dsn: Option<&str>,
-    args: Option<&PyDict>,
-) -> PyResult<Connection> {
+fn connect(dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Connection> {
     let dsn = dsn.unwrap_or("taosws://");
 
     let mut dsn = Dsn::from_str(dsn).map_err(|err| ConnectionError::new_err(err.to_string()))?;
@@ -344,6 +373,356 @@ fn connect(
     })
 }
 
+#[pyclass]
+#[derive(Debug)]
+struct TaosStmt {
+    _inner: Stmt,
+}
+
+#[pymethods]
+impl TaosStmt {
+    #[new]
+    fn init(conn: &Connection) -> PyResult<TaosStmt> {
+        let stmt = Stmt::init(conn.current_cursor()?)
+            .map_err(|err| ConnectionError::new_err(err.to_string()))?;
+        let stmt = TaosStmt { _inner: stmt };
+        return Ok(stmt);
+    }
+
+    fn prepare(&mut self, sql: &str) -> PyResult<()> {
+        self._inner.prepare(sql)
+            .map_err(|err| ProgrammingError::new_err(err.to_string()))?;
+        Ok(())
+    }
+
+    fn set_tbname(&mut self, table_name: &str) -> PyResult<()> {
+        self._inner.set_tbname(table_name)
+            .map_err(|err| ProgrammingError::new_err(err.to_string()))?;
+        Ok(())
+    }
+
+    fn set_tags(&mut self, tags: Vec<PyTagView>) -> PyResult<()> {
+        let tags = tags.into_iter().map(|tag| tag._inner).collect_vec();
+        self._inner.set_tags(&*tags)
+            .map_err(|err| ProgrammingError::new_err(err.to_string()))?;
+        Ok(())
+    }
+
+    fn set_tbname_tags(&mut self, table_name: &str, tags: Vec<PyTagView>) -> PyResult<()> {
+        let tags = tags.into_iter().map(|tag| tag._inner).collect_vec();
+        self._inner.set_tbname(table_name)
+            .map_err(|err| ProgrammingError::new_err(err.to_string()))?
+            .set_tags(&*tags)
+            .map_err(|err| ProgrammingError::new_err(err.to_string()))?;
+        Ok(())
+    }
+
+    fn bind_param(&mut self, params: Vec<PyColumnView>) -> PyResult<()> {
+        let params = params.into_iter().map(|tag| tag._inner).collect_vec();
+        self._inner.bind(&*params).map_err(|err| ProgrammingError::new_err(err.to_string()))?;
+        Ok(())
+    }
+
+    fn add_batch(&mut self) -> PyResult<()> {
+        self._inner.add_batch().map_err(|err| ProgrammingError::new_err(err.to_string()))?;
+        Ok(())
+    }
+
+    fn execute(&mut self) -> PyResult<usize> {
+        let rows = self._inner.execute().map_err(|err| QueryError::new_err(err.to_string()))?;
+        Ok(rows)
+    }
+
+    fn affect_rows(&mut self) -> PyResult<usize> {
+        let rows = self._inner.affected_rows();
+        Ok(rows)
+    }
+
+    fn close(&self) -> PyResult<()> {
+        Ok(())
+    }
+}
+
+#[pyclass]
+#[derive(Debug, Clone)]
+enum PyPrecision {
+    Milliseconds,
+    Microseconds,
+    Nanoseconds,
+}
+
+impl Into<Precision> for PyPrecision {
+    fn into(self) -> Precision {
+        match self {
+            PyPrecision::Milliseconds => Precision::Millisecond,
+            PyPrecision::Microseconds => Precision::Microsecond,
+            PyPrecision::Nanoseconds => Precision::Nanosecond,
+        }
+    }
+}
+
+#[pyclass]
+#[derive(Debug, Clone)]
+enum PyColumnType {
+    Bool,
+    TinyInt,
+    SmallInt,
+    Int,
+    BigInt,
+    UTinyInt,
+    USmallInt,
+    UInt,
+    UBigInt,
+    Float,
+    Double,
+    Timestamp,
+    VarChar,
+    NChar,
+    Json,
+    VarBinary,
+}
+
+#[pyclass]
+#[derive(Debug, Clone)]
+struct PyTagView {
+    _inner: Value,
+}
+
+#[pyfunction]
+fn bool_to_tag(value: Option<bool>) -> PyTagView {
+    match value {
+        Some(value) => PyTagView { _inner: Bool(value) },
+        None => PyTagView { _inner: Null(Ty::Bool) },
+    }
+}
+
+#[pyfunction]
+fn tiny_int_to_tag(value: Option<i8>) -> PyTagView {
+    match value {
+        Some(value) => PyTagView { _inner: TinyInt(value) },
+        None => PyTagView { _inner: Null(Ty::TinyInt) },
+    }
+}
+
+#[pyfunction]
+fn small_int_to_tag(value: Option<i16>) -> PyTagView {
+    match value {
+        Some(value) => PyTagView { _inner: SmallInt(value) },
+        None => PyTagView { _inner: Null(Ty::SmallInt) },
+    }
+}
+
+#[pyfunction]
+fn int_to_tag(value: Option<i32>) -> PyTagView {
+    match value {
+        Some(value) => PyTagView { _inner: Int(value) },
+        None => PyTagView { _inner: Null(Ty::Int) },
+    }
+}
+
+#[pyfunction]
+fn big_int_to_tag(value: Option<i64>) -> PyTagView {
+    match value {
+        Some(value) => PyTagView { _inner: BigInt(value) },
+        None => PyTagView { _inner: Null(Ty::BigInt) },
+    }
+}
+
+#[pyfunction]
+fn float_to_tag(value: Option<f32>) -> PyTagView {
+    match value {
+        Some(value) => PyTagView { _inner: Float(value) },
+        None => PyTagView { _inner: Null(Ty::Float) },
+    }
+}
+
+#[pyfunction]
+fn double_to_tag(value: Option<f64>) -> PyTagView {
+    match value {
+        Some(value) => PyTagView { _inner: Double(value) },
+        None => PyTagView { _inner: Null(Ty::Double) },
+    }
+}
+
+#[pyfunction]
+fn varchar_to_tag(value: Option<String>) -> PyTagView {
+    match value {
+        Some(value) => PyTagView { _inner: VarChar(value) },
+        None => PyTagView { _inner: Null(Ty::VarChar) },
+    }
+}
+
+#[pyfunction]
+fn timestamp_to_tag(value: Option<i64>, precision: PyPrecision) -> PyTagView {
+    match value {
+        Some(value) => PyTagView { _inner: Timestamp(taos_query::common::Timestamp::new(value, precision.into())) },
+        None => PyTagView { _inner: Null(Ty::Timestamp) },
+    }
+}
+
+#[pyfunction]
+fn nchar_to_tag(value: Option<String>) -> PyTagView {
+    match value {
+        Some(value) => PyTagView { _inner: NChar(value) },
+        None => PyTagView { _inner: Null(Ty::NChar) },
+    }
+}
+
+#[pyfunction]
+fn u_tiny_int_to_tag(value: Option<u8>) -> PyTagView {
+    match value {
+        Some(value) => PyTagView { _inner: UTinyInt(value) },
+        None => PyTagView { _inner: Null(Ty::UTinyInt) },
+    }
+}
+
+#[pyfunction]
+fn u_small_int_to_tag(value: Option<u16>) -> PyTagView {
+    match value {
+        Some(value) => PyTagView { _inner: USmallInt(value) },
+        None => PyTagView { _inner: Null(Ty::USmallInt) },
+    }
+}
+
+#[pyfunction]
+fn u_int_to_tag(value: Option<u32>) -> PyTagView {
+    match value {
+        Some(value) => PyTagView { _inner: UInt(value) },
+        None => PyTagView { _inner: Null(Ty::UInt) },
+    }
+}
+
+#[pyfunction]
+fn u_big_int_to_tag(value: Option<u64>) -> PyTagView {
+    match value {
+        Some(value) => PyTagView { _inner: UBigInt(value) },
+        None => PyTagView { _inner: Null(Ty::UBigInt) },
+    }
+}
+
+#[pyfunction]
+fn json_to_tag(value: Option<String>) -> PyTagView {
+    match value {
+        Some(value) => PyTagView { _inner: Json(serde_json::Value::String(value)) },
+        None => PyTagView { _inner: Null(Ty::Json) },
+    }
+}
+
+#[pyfunction]
+fn var_binary_to_tag(value: Option<Vec<u8>>) -> PyTagView {
+    match value {
+        Some(value) => PyTagView { _inner: VarBinary(value) },
+        None => PyTagView { _inner: Null(Ty::VarBinary) },
+    }
+}
+
+#[pyclass]
+#[derive(Debug, Clone)]
+struct PyColumnView {
+    _inner: ColumnView,
+}
+
+#[pyfunction]
+fn millis_timestamps_to_column(values: Vec<Option<i64>>) -> PyColumnView {
+    PyColumnView { _inner: ColumnView::from_millis_timestamp(values) }
+}
+
+#[pyfunction]
+fn micros_timestamps_to_column(values: Vec<Option<i64>>) -> PyColumnView {
+    PyColumnView { _inner: ColumnView::from_micros_timestamp(values) }
+}
+
+#[pyfunction]
+fn nanos_timestamps_to_column(values: Vec<Option<i64>>) -> PyColumnView {
+    PyColumnView { _inner: ColumnView::from_nanos_timestamp(values) }
+}
+
+#[pyfunction]
+fn bools_to_column(values: Vec<Option<bool>>) -> PyColumnView {
+    PyColumnView { _inner: ColumnView::from_bools(values) }
+}
+
+#[pyfunction]
+fn tiny_ints_to_column(values: Vec<Option<i8>>) -> PyColumnView {
+    PyColumnView { _inner: ColumnView::from_tiny_ints(values) }
+}
+
+#[pyfunction]
+fn small_ints_to_column(values: Vec<Option<i16>>) -> PyColumnView {
+    PyColumnView { _inner: ColumnView::from_small_ints(values) }
+}
+
+#[pyfunction]
+fn ints_to_column(values: Vec<Option<i32>>) -> PyColumnView {
+    PyColumnView { _inner: ColumnView::from_ints(values) }
+}
+
+#[pyfunction]
+fn big_ints_to_column(values: Vec<Option<i64>>) -> PyColumnView {
+    PyColumnView { _inner: ColumnView::from_big_ints(values) }
+}
+
+#[pyfunction]
+fn unsigned_tiny_ints_to_column(values: Vec<Option<u8>>) -> PyColumnView {
+    PyColumnView { _inner: ColumnView::from_unsigned_tiny_ints(values) }
+}
+
+#[pyfunction]
+fn unsigned_small_ints_to_column(values: Vec<Option<u16>>) -> PyColumnView {
+    PyColumnView { _inner: ColumnView::from_unsigned_small_ints(values) }
+}
+
+#[pyfunction]
+fn unsigned_ints_to_column(values: Vec<Option<u32>>) -> PyColumnView {
+    PyColumnView { _inner: ColumnView::from_unsigned_ints(values) }
+}
+
+#[pyfunction]
+fn unsigned_big_ints_to_column(values: Vec<Option<u64>>) -> PyColumnView {
+    PyColumnView { _inner: ColumnView::from_unsigned_big_ints(values) }
+}
+
+#[pyfunction]
+fn floats_to_column(values: Vec<Option<f32>>) -> PyColumnView {
+    PyColumnView { _inner: ColumnView::from_floats(values) }
+}
+
+#[pyfunction]
+fn doubles_to_column(values: Vec<Option<f64>>) -> PyColumnView {
+    PyColumnView { _inner: ColumnView::from_doubles(values) }
+}
+
+#[pyfunction]
+fn varchar_to_column(values: Vec<Option<String>>) -> PyColumnView {
+    PyColumnView {
+        _inner:
+        ColumnView::from_varchar::<String, Option<String>, std::vec::IntoIter<Option<String>>, Vec<Option<String>>>(values)
+    }
+}
+
+#[pyfunction]
+fn nchar_to_column(values: Vec<Option<String>>) -> PyColumnView {
+    PyColumnView {
+        _inner:
+        ColumnView::from_nchar::<String, Option<String>, std::vec::IntoIter<Option<String>>, Vec<Option<String>>>(values)
+    }
+}
+
+#[pyfunction]
+fn json_to_column(values: Vec<Option<String>>) -> PyColumnView {
+    PyColumnView {
+        _inner:
+        ColumnView::from_json::<String, Option<String>, std::vec::IntoIter<Option<String>>, Vec<Option<String>>>(values)
+    }
+}
+
+#[pyfunction]
+fn binary_to_column(values: Vec<Option<String>>) -> PyColumnView {
+    PyColumnView {
+        _inner: ColumnView::from_varchar::<String, Option<String>, std::vec::IntoIter<Option<String>>, Vec<Option<String>>>(values)
+    }
+}
+
 #[pymodule]
 fn taosws(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<Connection>()?;
@@ -352,8 +731,51 @@ fn taosws(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<TaosResult>()?;
     m.add_class::<Consumer>()?;
     m.add_class::<Message>()?;
+    m.add_class::<PySchemalessProtocol>()?;
+    m.add_class::<PySchemalessPrecision>()?;
+    m.add_class::<TaosStmt>()?;
+    m.add_class::<PyPrecision>()?;
+    m.add_class::<PyTagView>()?;
+    m.add_class::<PyColumnView>()?;
 
     m.add_function(wrap_pyfunction!(connect, m)?)?;
+
+    m.add_function(wrap_pyfunction!(bool_to_tag, m)?)?;
+    m.add_function(wrap_pyfunction!(tiny_int_to_tag, m)?)?;
+    m.add_function(wrap_pyfunction!(small_int_to_tag, m)?)?;
+    m.add_function(wrap_pyfunction!(int_to_tag, m)?)?;
+    m.add_function(wrap_pyfunction!(big_int_to_tag, m)?)?;
+    m.add_function(wrap_pyfunction!(float_to_tag, m)?)?;
+    m.add_function(wrap_pyfunction!(double_to_tag, m)?)?;
+    m.add_function(wrap_pyfunction!(varchar_to_tag, m)?)?;
+    m.add_function(wrap_pyfunction!(timestamp_to_tag, m)?)?;
+    m.add_function(wrap_pyfunction!(nchar_to_tag, m)?)?;
+    m.add_function(wrap_pyfunction!(u_tiny_int_to_tag, m)?)?;
+    m.add_function(wrap_pyfunction!(u_small_int_to_tag, m)?)?;
+    m.add_function(wrap_pyfunction!(u_int_to_tag, m)?)?;
+    m.add_function(wrap_pyfunction!(u_big_int_to_tag, m)?)?;
+    m.add_function(wrap_pyfunction!(json_to_tag, m)?)?;
+    m.add_function(wrap_pyfunction!(var_binary_to_tag, m)?)?;
+
+    m.add_function(wrap_pyfunction!(millis_timestamps_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(micros_timestamps_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(nanos_timestamps_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(bools_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(tiny_ints_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(small_ints_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(ints_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(big_ints_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(unsigned_tiny_ints_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(unsigned_small_ints_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(unsigned_ints_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(unsigned_big_ints_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(floats_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(doubles_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(varchar_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(nchar_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(json_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(binary_to_column, m)?)?;
+
     m.add("apilevel", API_LEVEL)?;
     m.add("threadsafety", THREAD_SAFETY)?;
     m.add("paramstyle", PARAMS_STYLE)?;
@@ -383,4 +805,77 @@ fn taosws(py: Python<'_>, m: &PyModule) -> PyResult<()> {
         ConsumerException
     );
     Ok(())
+}
+
+#[pyfunction]
+pub fn schemaless_protocol(protocol: &str) -> PyResult<PySchemalessProtocol> {
+    let protocol = match protocol {
+        "line" => PySchemalessProtocol::Line,
+        "telnet" => PySchemalessProtocol::Telnet,
+        "json" => PySchemalessProtocol::Json,
+        _ => PySchemalessProtocol::Line
+    };
+    Ok(protocol)
+}
+
+#[pyfunction]
+pub fn schemaless_precision(precision: &str) -> PyResult<PySchemalessPrecision> {
+    let precision = match precision {
+        "hour" => PySchemalessPrecision::Hour,
+        "minute" => PySchemalessPrecision::Minute,
+        "second" => PySchemalessPrecision::Second,
+        "millisecond" => PySchemalessPrecision::Millisecond,
+        "microsecond" => PySchemalessPrecision::Microsecond,
+        "Nanosecond" => PySchemalessPrecision::Nanosecond,
+        _ => PySchemalessPrecision::Millisecond
+    };
+    Ok(precision)
+}
+
+#[pyclass]
+#[derive(Default, Clone, Debug)]
+pub enum PySchemalessProtocol {
+    Unknown,
+    #[default]
+    Line,
+    Telnet,
+    Json,
+}
+
+#[pyclass]
+#[derive(Default, Clone, Debug)]
+pub enum PySchemalessPrecision {
+    NonConfigured,
+    Hour,
+    Minute,
+    Second,
+    #[default]
+    Millisecond,
+    Microsecond,
+    Nanosecond,
+}
+
+impl Into<SchemalessProtocol> for PySchemalessProtocol {
+    fn into(self) -> SchemalessProtocol {
+        match self {
+            PySchemalessProtocol::Unknown => SchemalessProtocol::Unknown,
+            PySchemalessProtocol::Line => SchemalessProtocol::Line,
+            PySchemalessProtocol::Telnet => SchemalessProtocol::Telnet,
+            PySchemalessProtocol::Json => SchemalessProtocol::Json,
+        }
+    }
+}
+
+impl Into<SchemalessPrecision> for PySchemalessPrecision {
+    fn into(self) -> SchemalessPrecision {
+        match self {
+            PySchemalessPrecision::NonConfigured => SchemalessPrecision::NonConfigured,
+            PySchemalessPrecision::Hour => SchemalessPrecision::Hours,
+            PySchemalessPrecision::Minute => SchemalessPrecision::Minutes,
+            PySchemalessPrecision::Second => SchemalessPrecision::Seconds,
+            PySchemalessPrecision::Millisecond => SchemalessPrecision::Millisecond,
+            PySchemalessPrecision::Microsecond => SchemalessPrecision::Millisecond,
+            PySchemalessPrecision::Nanosecond => SchemalessPrecision::Nanosecond,
+        }
+    }
 }

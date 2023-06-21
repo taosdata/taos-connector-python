@@ -42,3 +42,5 @@ assert stmt.affected_rows == 3
 result = conn.query("select * from log")
 for row in result:
     print(row)
+
+conn.close()

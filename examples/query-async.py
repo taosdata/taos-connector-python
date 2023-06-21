@@ -49,7 +49,7 @@ class Counter(Structure):
 def test_query(conn):
     # type: (TaosConnection) -> None
     counter = Counter(count=0)
-    conn.query_a("select * from log.log", query_callback, byref(counter))
+    conn.query_a("select * from power.meters", query_callback, byref(counter))
 
     while not counter.done:
         print("wait query callback")

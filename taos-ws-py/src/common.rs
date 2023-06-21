@@ -1,10 +1,7 @@
 use std::ops::Range;
 
 use chrono::{Datelike, Timelike};
-use pyo3::{
-    prelude::*,
-    types::{PyDict, PyTuple},
-};
+use pyo3::{prelude::*, types::PyTuple};
 use taos::{BorrowedValue, RawBlock};
 
 use crate::ConsumerException;

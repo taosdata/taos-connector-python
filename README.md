@@ -11,8 +11,7 @@
 an API which is compliant with the Python DB API 2.0 (PEP-249). It contains two modules:
 
 1. The `taos` module. It uses TDengine C client library for client server communications.
-2. The `taosrest` module. It wraps TDengine RESTful API to Python DB API 2.0 (PEP-249). With this module, you are free
-   to install TDengine C client library.
+2. The `taosrest` module. It wraps TDengine RESTful API to Python DB API 2.0 (PEP-249). With this module, you do not need to install the TDengine C client library.
 
 ## Install taospy
 

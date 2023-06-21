@@ -15,3 +15,5 @@ k1 = conn.query("select info->'k1' as k1 from s1").fetch_all_into_dict()
 print(k1)
 
 conn.execute("drop database py_test_json_type")
+
+conn.close()
