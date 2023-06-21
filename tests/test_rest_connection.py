@@ -112,7 +112,8 @@ def test_get_server_info():
                             password="taosdata")
 
     version: str = conn.server_info
-    assert len(version.split(".")) == 4
+    # 3.0.5.0 or 3.0.6.0.alpha
+    assert len(version.split(".")) == 4 or len(version.split(".")) == 5
 
 
 @check_env
