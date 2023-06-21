@@ -108,7 +108,7 @@ class TaosRestConnection:
             return resp["data"][0][0]
         return ""
 
-    def execute(self, sql: str, req_id: Optional[int] = None) -> Optional[dict]:
+    def execute(self, sql: str, req_id: Optional[int] = None) -> Optional[int]:
         """
         execute none query statement and return affected row count.
         If there is not a column named "affected_rows" in response, then None is returned.
