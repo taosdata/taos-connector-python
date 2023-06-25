@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.7.9 - 2023-06-25
+
+### Bug Fixes:
+
+- fix mem leak
+
+### Enhancements:
+
+- support assignment and seek
+- support assignment and seek via ws
+- support schemaless via ws
+- support stmt via ws
+
 ## v2.7.8 - 2023-06-14
 
 ### Bug Fixes:
