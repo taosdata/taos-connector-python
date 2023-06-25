@@ -50,6 +50,6 @@ for row in result:
     print(row)
 
 # No need to explicitly close, but ok for you
-# result.close()
-# stmt.close()
-# conn.close()
+result.close()
+stmt.close()
+conn.close()

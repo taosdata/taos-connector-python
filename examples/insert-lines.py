@@ -21,3 +21,4 @@ for row in result:
 
 
 conn.execute("drop database if exists %s" % dbname)
+conn.close()

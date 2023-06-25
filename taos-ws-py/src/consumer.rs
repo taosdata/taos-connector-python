@@ -146,6 +146,13 @@ impl Consumer {
             .subscribe(topics.extract::<Vec<String>>()?)
             .map_err(|err| ConsumerException::new_err(format!("{err}")))
     }
+
+    pub fn unsubscribe(&mut self) {
+        if let Some(consumer) = self.0.take() {
+            consumer.unsubscribe();
+        }
+    }
+    
     ///
     pub fn poll(&mut self, timeout: Option<f64>) -> PyResult<Option<Message>> {
         let timeout = if let Some(timeout) = timeout {

@@ -3,10 +3,10 @@ name: Test on Ubuntu-20.04
 on:
   push:
     branches:
-      - main
+      - '3.0'
   pull_request:
     branches:
-      - main
+      - '3.0'
 
 jobs:
   test:
@@ -19,7 +19,7 @@ jobs:
       - name: Build tools
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y build-essential cmake libgeos-dev
+          sudo apt-get install -y build-essential cmake libgeos-dev git libssl-dev libgflags2.2 libgflags-dev libsnappy-dev libjansson-dev
 
 
       - name: Set up python
@@ -90,7 +90,7 @@ jobs:
           cd TDengine_v3
           mkdir build
           cd build
-          cmake ../ -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false
+          cmake ../ -DBUILD_JDBC=false -DBUILD_TOOLS=true -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false
           make -j4
           sudo make install
           ls -alh /etc/taos/
@@ -120,6 +120,22 @@ jobs:
           poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
 
 
+      - name: Test examples 3.0
+        run: |
+          cd examples || ls -l
+          pip3 install .. > /dev/null || echo "failed to install taospy from source code"
+          pip3 install taos-ws-py > /dev/null || echo "failed to install taos-ws-py"
+          pip3 install pandas sqlalchemy > /dev/null || echo "failed to install pandas"
+          taosBenchmark -d power -t 10 -n 10 -y
+          for i in `find . -name "*.py"   \
+            |grep -Ev "cloud|trades|v2|websocket_with_req_id|tmq_consumer|rest_cursor|rest_client.py|import-json|connect_rest_examples|schemaless_insert"`;           \
+            do printf "$i " && python $i > /dev/null                            \
+                && echo -e "\033[32m $i success! \033[0m"                       \
+                  | tee -a ~/examples-success.txt                               \
+                || echo -e "\033[31m $i failed! \033[0m"                        \
+                  | tee -a ~/examples-failed.txt;                               \
+                done
+
       - name: 'Upload taosd logs'
         if: failure()
         uses: actions/upload-artifact@v3
@@ -127,3 +143,13 @@ jobs:
           name: log-v3-taosd
           path: /tmp/taos/v3/log/
           retention-days: 1
+
+      - name: Check Test Result
+        run: |
+          if [ -f ~/examples-failed.txt ]; then
+            cat ~/examples-failed.txt
+            exit 1
+          elif [ -f ~/examples-success.txt ]; then
+            cat ~/examples-success.txt
+          fi
+
