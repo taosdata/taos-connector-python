@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.2.2 - 2023-01-13
 
+## v0.2.5 - 2023-06-25
+
+### Enhancements:
+
+- add unsubscribe fn
+- support assignment and seek via ws
+- support schemaless via ws
+- support stmt via ws
+
+### Documents:
+
+- update cmd
+
 ## v0.2.4 - 2023-03-29
 
 ## v0.2.4 - 2023-03-28
