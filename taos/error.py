@@ -99,18 +99,6 @@ class SchemalessError(DatabaseError):
     #     return self.affected_rows
 
 
-class StatementError(DatabaseError):
-    """Exception raised in STMT API."""
-
-    pass
-
-
-class ResultError(DatabaseError):
-    """Result related APIs."""
-
-    pass
-
-
 class LinesError(DatabaseError):
     """taos_insert_lines errors."""
 
