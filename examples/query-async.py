@@ -2,6 +2,7 @@ from taos import *
 from ctypes import *
 import time
 
+
 def fetch_callback(p_param, p_result, num_of_rows):
     print("fetched ", num_of_rows, "rows")
     p = cast(p_param, POINTER(Counter))
@@ -18,13 +19,12 @@ def fetch_callback(p_param, p_result, num_of_rows):
         result.check_error(num_of_rows)
         result.close()
         return None
-    
+
     for row in result.rows_iter(num_of_rows):
         # print(row)
         None
     p.contents.count += result.row_count
     result.fetch_rows_a(fetch_callback, p_param)
-    
 
 
 def query_callback(p_param, p_result, code):
@@ -48,6 +48,12 @@ class Counter(Structure):
 
 def test_query(conn):
     # type: (TaosConnection) -> None
+
+    conn.execute('create database if not exists power')
+    conn.execute(
+        'CREATE STABLE if not exists power.meters (ts TIMESTAMP, current FLOAT, voltage INT, phase FLOAT) '
+        'TAGS (location BINARY(64), groupId INT)')
+
     counter = Counter(count=0)
     conn.query_a("select * from power.meters", query_callback, byref(counter))
 
