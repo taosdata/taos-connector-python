@@ -1,6 +1,5 @@
 import datetime
 import json
-import socket
 from urllib.request import urlopen, Request
 import requests
 
@@ -56,7 +55,7 @@ class RestClient:
         if not self._url.startswith("http://") and not self._url.startswith("https://"):
             self._url = "http://" + self._url
         # timeout
-        self._timeout = timeout if timeout is not None else socket._GLOBAL_DEFAULT_TIMEOUT
+        self._timeout = timeout
 
         # determine full URL to use and the header to user.
         if token:
