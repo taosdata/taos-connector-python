@@ -322,7 +322,9 @@ fn connect(dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Connection> {
             dsn.protocol.replace("ws".to_string());
         }
 
-        let host = args.get_item("host").or(args.get_item("ip"));
+        let host = args.get_item("host")
+            .or(args.get_item("url"))
+            .or(args.get_item("ip"));
         let port = args.get_item("port");
         match (host, port) {
             (Some(host), Some(port)) => {
@@ -348,7 +350,7 @@ fn connect(dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Connection> {
                 }
             }
             _ => {
-                addr.host.replace("localhost".to_string());
+                // addr.host.replace("localhost".to_string());
             }
         }
 
