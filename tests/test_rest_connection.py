@@ -6,6 +6,7 @@ import os
 from decorators import check_env
 from dotenv import load_dotenv
 from taos.utils import gen_req_id
+from taosrest import HTTPError
 
 load_dotenv()
 
@@ -249,6 +250,15 @@ def test_tzinfo_timezone_with_req_id():
         print(row)
         # [datetime.datetime(2022, 7, 26, 13, 56, 58, 746000,
         # tzinfo=datetime.timezone(datetime.timedelta(seconds=28800), 'CST')), -100, -200.3]
+
+
+def test_wrong_token():
+    try:
+        conn = taosrest.connect(url="https://gw.us-east.azure.cloud.tdengine.com", token="wrong_token")
+        result = conn.execute("select server_version()")
+    except HTTPError as e:
+        print(e)
+        assert e.status_code == 401
 
 
 def teardown_module(module):
