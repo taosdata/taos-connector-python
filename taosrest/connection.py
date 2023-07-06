@@ -1,5 +1,5 @@
 from typing import List, Dict
-from .errors import NotSupportedError
+from .errors import NotSupportedError, ConnectError
 from .cursor import TaosRestCursor
 from .restclient import RestClient
 from typing import Optional
@@ -40,6 +40,17 @@ class TaosRestConnection:
     Implement [PEP 249 Connection API](https://peps.python.org/pep-0249/#connection-objects)
     """
 
+    default_configs = {
+        'url',
+        'token',
+        'user',
+        'password',
+        'database',
+        'timeout',
+        'convert_timestamp',
+        'timezone'
+    }
+
     def __init__(self, **kwargs):
         """
         Keyword Arguments
@@ -65,6 +76,10 @@ class TaosRestConnection:
              When the timezone is None, system timezone will be used and the returned datetime object will be
              offset-naive (no tzinfo), otherwise the returned datetime will be offset-aware(with tzinfo)
         """
+        for key in kwargs:
+            if key not in self.default_configs:
+                raise ConnectError('Unrecognized configs: %s' % key)
+
         self._url = kwargs.get("url", "http://localhost:6041")
         self._token = kwargs.get("token")
         self._user = kwargs.get("user", "root")
