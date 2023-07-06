@@ -133,6 +133,9 @@ class RestClient:
             timeout=self._timeout
         )
 
+        if not r.ok:
+            raise HTTPError(r.status_code, error_msgs.get(r.status_code, "unknown error"))
+
         resp = r.json()
 
         if "status" in resp:
