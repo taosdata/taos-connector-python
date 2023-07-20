@@ -146,10 +146,12 @@ class Message:
 
 class TopicPartition:
 
-    def __init__(self, topic, partition, offset):
+    def __init__(self, topic, partition, offset, begin=0, end=0):
         self.topic = topic  # type: str
         self.partition = partition  # type: int
         self.offset = offset  # type: int
+        self.begin = begin  # type: int
+        self.end = end  # type: int
 
     def __str__(self):
         return "TopicPartition(topic=%s, partition=%s, offset=%s)" % (self.topic, self.partition, self.offset)
@@ -258,7 +260,8 @@ class Consumer:
             assignments = tmq_get_topic_assignment(self._tmq, topic)
             for assignment in assignments:
                 topic_partitions.append(
-                    TopicPartition(topic=topic, partition=assignment[0], offset=assignment[1]))
+                    TopicPartition(topic=topic, partition=assignment[0], offset=assignment[1], begin=assignment[2],
+                                   end=assignment[3]))
         return topic_partitions
 
     def seek(self, partition):
