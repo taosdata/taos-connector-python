@@ -135,6 +135,14 @@ class Message:
                              table=tmq_get_table_name(self.msg)))
         return message_blocks
 
+    def offset(self):
+        # type: () -> int
+        """
+        :returns: message offset.
+          :rtype: int
+        """
+        return tmq_get_vgroup_offset(self.msg)
+
     def __del__(self):
         if not self.msg:
             return
@@ -279,20 +287,76 @@ class Consumer:
             tmq_consumer_close(self._tmq)
             self._tmq = None
 
-    def commit(self, message):
-        # type (Message) -> None
+    def commit(self, message: Message = None, offsets: [TopicPartition] = None):
+        # type (Message, [TopicPartition], bool) -> None
         """
         Commit a message.
 
-        The `message` parameters are mutually exclusive. If `message` is None, the current partition assignment's
-        offsets are used instead. Use this method to commit offsets if you have 'enable.auto.commit' set to False.
+        The `message` and `offsets` parameters are mutually exclusive. If neither is set, the current partition
+        assignment's offsets are used instead. Use this method to commit offsets if you have 'enable.auto.commit' set
+        to False.
 
-        :param Message message: Commit the message's offset.
+        :param Message message: Commit the message's offset+1. Note: By convention, committed offsets reflect the next
+            message to be consumed, **not** the last message consumed.
+        :param list(TopicPartition) offsets: List of topic+partitions+offsets to commit.
         """
-        if message is None and not isinstance(message, Message):
-            tmq_commit_sync(self._tmq, None)
-        else:
+        if message:
+            if not isinstance(message, Message):
+                raise TmqError(msg='Invalid message type')
             tmq_commit_sync(self._tmq, message.msg)
+            return
+
+        if offsets and isinstance(offsets, list):
+            for offset in offsets:
+                if not isinstance(offset, TopicPartition):
+                    raise TmqError(msg='Invalid offset type')
+                tmq_commit_offset_sync(self._tmq, offset.topic, offset.partition, offset.offset)
+            return
+
+        tmq_commit_sync(self._tmq, None)
+
+    def committed(self, partitions):
+        # type ([TopicPartition]) -> [TopicPartition]
+        """
+        Retrieve committed offsets for the specified partitions.
+
+        :param list(TopicPartition) partitions: List of topic+partitions to query for stored offsets.
+        :returns: List of topic+partitions with offset and possibly error set.
+        :rtype: list(TopicPartition)
+        """
+        for partition in partitions:
+            if not isinstance(partition, TopicPartition):
+                raise TmqError(msg='Invalid partition type')
+            offset = tmq_committed(self._tmq, partition.topic, partition.partition)
+            partition.offset = offset
+
+        return partitions
+
+    def position(self, partitions):
+        # type ([TopicPartition]) -> [TopicPartition]
+        """
+        Retrieve current positions (offsets) for the specified partitions.
+
+        :param list(TopicPartition) partitions: List of topic+partitions to return current offsets for.
+        :returns: List of topic+partitions with offset and possibly error set.
+        :rtype: list(TopicPartition)
+        """
+        for partition in partitions:
+            if not isinstance(partition, TopicPartition):
+                raise TmqError(msg='Invalid partition type')
+            offset = tmq_position(self._tmq, partition.topic, partition.partition)
+            partition.offset = offset
+
+        return partitions
+
+    def list_topics(self) -> [str]:
+        # type () -> [str]
+        """
+        Request subscription topics from the tmq.
+
+        :rtype: topics list
+        """
+        return tmq_subscription(self._tmq)
 
     def __del__(self):
         self.close()

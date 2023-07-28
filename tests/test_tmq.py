@@ -88,8 +88,11 @@ def pre_test_tmq(precision: str):
 def after_ter_tmq():
     conn = taos.connect()
     # drop database and topic
-    conn.execute("drop topic if exists topic1")
-    conn.execute("drop database if exists tmq_test")
+    try:
+        conn.execute("drop topic if exists topic1")
+        conn.execute("drop database if exists tmq_test")
+    except Exception:
+        pass
 
 
 def test_consumer_with_precision():
@@ -110,22 +113,23 @@ def tmq_consumer_with_precision(precision: str):
         "msg.with.table.name": "true"
     })
     consumer.subscribe(["topic1"])
+    try:
+        sThread = ConsumerThread(consumer)
+        iThread = insertThread()
 
-    sThread = ConsumerThread(consumer)
-    iThread = insertThread()
+        sThread.start()
+        sleep(2)
+        iThread.start()
 
-    sThread.start()
-    sleep(2)
-    iThread.start()
+        iThread.join()
+        sThread.join()
 
-    iThread.join()
-    sThread.join()
-
-    print("====== finish test, start clean")
-    print("====== unsubscribe topic")
-    consumer.unsubscribe()
-
-    after_ter_tmq()
+        print("====== finish test, start clean")
+        print("====== unsubscribe topic")
+    finally:
+        consumer.unsubscribe()
+        consumer.close()
+        after_ter_tmq()
 
 
 def test_tmq_assignment():
@@ -142,15 +146,20 @@ def test_tmq_assignment():
     consumer = Consumer({"group.id": "1"})
     consumer.subscribe(["topic1"])
 
-    assignment = consumer.assignment()
+    try:
+        assignment = consumer.assignment()
 
-    assert assignment[0].offset == 0
+        assert assignment[0].offset == 0
 
-    consumer.poll(1)
-    consumer.poll(1)
+        consumer.poll(1)
+        consumer.poll(1)
 
-    assignment = consumer.assignment()
-    assert assignment[0].offset > 0
+        assignment = consumer.assignment()
+        assert assignment[0].offset > 0
+    finally:
+        consumer.unsubscribe()
+        consumer.close()
+        after_ter_tmq()
 
 
 def test_tmq_seek():
@@ -166,16 +175,65 @@ def test_tmq_seek():
 
     consumer = Consumer({"group.id": "1"})
     consumer.subscribe(["topic1"])
+    try:
+        assignment = consumer.assignment()
+        consumer.poll(1)
 
-    assignment = consumer.assignment()
+        for partition in assignment:
+            consumer.seek(partition)
 
-    consumer.poll(1)
+        assignment = consumer.assignment()
+        assert assignment[0].offset == 0
+    finally:
+        consumer.unsubscribe()
+        consumer.close()
+        after_ter_tmq()
 
-    for partition in assignment:
-        consumer.seek(partition)
-    assignment = consumer.assignment()
 
-    assert assignment[0].offset == 0
+def test_tmq_list_topics():
+    if not IS_V3:
+        return
+    pre_test_tmq('')
+    consumer = Consumer({"group.id": "1"})
+    consumer.subscribe(["topic1"])
+    try:
+        topics = consumer.list_topics()
+        assert topics == ["topic1"]
+    finally:
+        consumer.unsubscribe()
+        consumer.close()
+        after_ter_tmq()
+
+
+def test_tmq_committed_and_position():
+    if not IS_V3:
+        return
+    pre_test_tmq('')
+
+    conn = taos.connect()
+    conn.select_db("tmq_test")
+    conn.execute("insert into tb1 values (now-4s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+    conn.execute("insert into tb1 values (now-3s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+    conn.execute("insert into tb1 values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
+    conn.execute("insert into tb1 values (now-1s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
+
+    consumer = Consumer({"group.id": "1"})
+    consumer.subscribe(["topic1"])
+
+    try:
+        consumer.poll(1)
+        res = consumer.poll(1)
+        consumer.commit()
+        topic_partitions = consumer.assignment()
+        committees = consumer.committed(topic_partitions)
+        assert committees[0].offset > 0
+        positions = consumer.position(topic_partitions)
+        assert positions[0].offset > 0
+        assert positions[0].offset == committees[0].offset
+    finally:
+        consumer.unsubscribe()
+        consumer.close()
+        after_ter_tmq()
 
 
 if __name__ == "__main__":
