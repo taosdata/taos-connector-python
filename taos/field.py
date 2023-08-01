@@ -10,7 +10,10 @@ from taos.error import DatabaseError
 
 _priv_tz = None
 _utc_tz = pytz.timezone("UTC")
-_datetime_epoch = datetime.fromtimestamp(0)
+try:
+    _datetime_epoch = datetime.fromtimestamp(0)
+except OSError:
+    _datetime_epoch = datetime.fromtimestamp(86400) - timedelta(seconds=86400)
 _utc_datetime_epoch = _utc_tz.localize(datetime.utcfromtimestamp(0))
 
 
