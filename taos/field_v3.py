@@ -3,6 +3,40 @@ import ctypes
 
 from taos.constants import FieldType
 
+#
+# def _crow_binary_to_python_block_v3(data, is_null, num_of_rows, offsets, precision=FieldType.C_TIMESTAMP_UNKNOWN):
+#     """Function to convert C binary row to python row."""
+#     assert offsets is not None
+#     res = []
+#     for i in range(abs(num_of_rows)):
+#         if offsets[i] == -1:
+#             res.append(None)
+#         else:
+#             rbyte = ctypes.cast(data + offsets[i], ctypes.POINTER(ctypes.c_uint16))[:1].pop()
+#             chars = ctypes.cast(ctypes.c_char_p(data + offsets[i] + 2), ctypes.POINTER(ctypes.c_char * rbyte))
+#             buffer = ctypes.create_string_buffer(rbyte + 1)
+#             buffer[:rbyte] = chars[0][:rbyte]
+#             res.append(ctypes.cast(buffer, ctypes.c_char_p).value.decode("utf-8"))
+#     return res
+#
+#
+# def _crow_nchar_to_python_block_v3(data, is_null, num_of_rows, offsets, precision=FieldType.C_TIMESTAMP_UNKNOWN):
+#     """Function to convert C nchar row to python row."""
+#     assert offsets is not None
+#     res = []
+#     for i in range(abs(num_of_rows)):
+#         if offsets[i] == -1:
+#             res.append(None)
+#         else:
+#             rbyte = ctypes.cast(data + offsets[i], ctypes.POINTER(ctypes.c_uint16))[:1].pop()
+#             chars = ctypes.cast(ctypes.c_char_p(data + offsets[i] + 2), ctypes.POINTER(ctypes.c_char * rbyte))
+#             buffer = ctypes.create_string_buffer(rbyte + 1)
+#             buffer[:rbyte] = chars[0][:rbyte]
+#             res.append(ctypes.cast(buffer, ctypes.c_char_p).value.decode("utf-8"))
+#     return res
+
+_RTYPE = ctypes.c_uint16
+_RTYPE_SIZE = ctypes.sizeof(_RTYPE)
 
 def _crow_binary_to_python_block_v3(data, is_null, num_of_rows, offsets, precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C binary row to python row."""
@@ -12,11 +46,9 @@ def _crow_binary_to_python_block_v3(data, is_null, num_of_rows, offsets, precisi
         if offsets[i] == -1:
             res.append(None)
         else:
-            rbyte = ctypes.cast(data + offsets[i], ctypes.POINTER(ctypes.c_uint16))[:1].pop()
-            chars = ctypes.cast(ctypes.c_char_p(data + offsets[i] + 2), ctypes.POINTER(ctypes.c_char * rbyte))
-            buffer = ctypes.create_string_buffer(rbyte + 1)
-            buffer[:rbyte] = chars[0][:rbyte]
-            res.append(ctypes.cast(buffer, ctypes.c_char_p).value.decode("utf-8"))
+            rbyte = _RTYPE.from_address(data + offsets[i]).value
+            chars = (ctypes.c_char * rbyte).from_address(data + offsets[i] + _RTYPE_SIZE).raw.decode("utf-8")
+            res.append(chars)
     return res
 
 
@@ -28,11 +60,9 @@ def _crow_nchar_to_python_block_v3(data, is_null, num_of_rows, offsets, precisio
         if offsets[i] == -1:
             res.append(None)
         else:
-            rbyte = ctypes.cast(data + offsets[i], ctypes.POINTER(ctypes.c_uint16))[:1].pop()
-            chars = ctypes.cast(ctypes.c_char_p(data + offsets[i] + 2), ctypes.POINTER(ctypes.c_char * rbyte))
-            buffer = ctypes.create_string_buffer(rbyte + 1)
-            buffer[:rbyte] = chars[0][:rbyte]
-            res.append(ctypes.cast(buffer, ctypes.c_char_p).value.decode("utf-8"))
+            rbyte = _RTYPE.from_address(data + offsets[i]).value
+            chars = (ctypes.c_char * rbyte).from_address(data + offsets[i] + _RTYPE_SIZE).raw.decode("utf-8")
+            res.append(chars)
     return res
 
 
