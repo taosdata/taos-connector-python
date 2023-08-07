@@ -138,20 +138,30 @@ def test_tmq_assignment():
     pre_test_tmq('')
     conn = taos.connect()
     conn.select_db("tmq_test")
-    conn.execute("insert into tb1 values (now-4s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
-    conn.execute("insert into tb1 values (now-3s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
-    conn.execute("insert into tb1 values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
-    conn.execute("insert into tb1 values (now-1s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
+    conn.execute(
+        "insert into t1 using stb1 tags(true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now-4s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+    conn.execute(
+        "insert into t2 using stb1 tags(false, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now-3s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+    conn.execute(
+        "insert into t3 using stb1 tags(true, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, '2', '2') values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
 
     consumer = Consumer({"group.id": "1"})
     consumer.subscribe(["topic1"])
 
     try:
         assignment = consumer.assignment()
-
         assert assignment[0].offset == 0
 
         consumer.poll(1)
+        consumer.poll(1)
+
+        conn.execute(
+            "insert into t1 using stb1 tags(true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+        conn.execute(
+            "insert into t2 using stb1 tags(false, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+        conn.execute(
+            "insert into t3 using stb1 tags(true, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, '2', '2') values (now, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
+
         consumer.poll(1)
 
         assignment = consumer.assignment()
