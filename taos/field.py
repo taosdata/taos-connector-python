@@ -17,6 +17,7 @@ except OSError:
 _utc_datetime_epoch = _utc_tz.localize(datetime.utcfromtimestamp(0))
 _priv_datetime_epoch = None
 
+
 def set_tz(tz):
     # type: (str) -> None
     global _priv_tz, _priv_datetime_epoch
