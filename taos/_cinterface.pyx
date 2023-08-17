@@ -1,5 +1,6 @@
 import datetime as dt
-from taos.error import ProgrammingError
+from taos.error import ProgrammingError, OperationalError
+from taos._cinterface cimport *
 
 cpdef print_type_size():
     print("bool:", sizeof(bool))
@@ -302,3 +303,176 @@ SIZED_TYPE = (
     TSDB_DATA_TYPE_UINT,
     TSDB_DATA_TYPE_UBIGINT,
 )
+
+
+cdef class TaosConnection:
+    cdef char *_host
+    cdef char *_user
+    cdef char *_password
+    cdef char *_database
+    cdef uint16_t _port
+    cdef char *_tz
+    cdef char *_config
+    cdef TAOS *_raw_conn
+
+    def __cinit__(self, host=None, user="root", password="taosdata", database=None, port=None, tz=None, config=None):
+        host = host.encode("utf-8") if host else None
+        user = user.encode("utf-8") if user else None
+        password = password.encode("utf-8") if password else None
+        database =database.encode("utf-8") if database else None
+        port = port if port else 0
+        tz = tz.encode("utf-8") if tz else None
+        config = config.encode("utf-8") if tz else None
+
+        self._host = <char*>host
+        self._user = <char*>user
+        self._password = <char*>password
+        self._database = <char*>database
+        self._port = port
+        self._tz = <char*>tz
+        self._config = <char*>config
+        self._init_options()
+        self._init_conn()
+        self._check_err()
+
+    def _init_options(self):
+        if self._tz:
+            print("SET TZ:", <bytes>self._tz)
+            taos_options(TSDB_OPTION.TSDB_OPTION_TIMEZONE, self._tz)
+
+        if self._config:
+            print("SET CONFIGDIR:", <bytes>self._config)
+            taos_options(TSDB_OPTION.TSDB_OPTION_CONFIGDIR, self._config)
+
+    def _init_conn(self):
+        print(<bytes>self._host, <bytes>self._user, <bytes>self._password, <bytes>self._database, self._port)
+        self._raw_conn = taos_connect(self._host, self._user, self._password, self._database, self._port)
+
+    def _check_err(self):
+        if taos_errno(self._raw_conn) != 0:
+            errstr = taos_errstr(self._raw_conn)
+            print("ERROR:", <bytes>errstr)
+
+    def __dealloc__(self):
+        self.close()
+
+    def close(self):
+        if self._raw_conn is not NULL:
+            taos_close(self._raw_conn)
+            self._raw_conn = NULL
+
+    @property
+    def client_info(self):
+        return (<bytes>taos_get_client_info()).decode("utf-8")
+
+    @property
+    def server_info(self):
+        # type: () -> str
+        if self._raw_conn is NULL:
+            return
+        return (<bytes>taos_get_server_info(self._raw_conn)).decode("utf-8")
+
+    cpdef select_db(self, char *database):
+        # type: (str) -> None
+        taos_select_db(self._raw_conn, database)
+
+    cpdef query(self, str sql, req_id = None):
+        sql_chars = sql.encode("utf-8")
+        if req_id is None:
+            res = taos_query(self._raw_conn, <char*>sql_chars)
+        else:
+            res = taos_query_with_reqid(self._raw_conn, <char*>sql_chars, req_id)
+
+        return TaosResult(<size_t>res)
+
+
+cdef class TaosResult:
+    cdef TAOS_RES *_res
+    cdef TAOS_FIELD *_fields
+    cdef int _field_count
+    cdef int _precision
+    cdef int _row_count
+
+    def __cinit__(self, size_t res):
+        self._res = <TAOS_RES*>res
+        self._fields = taos_fetch_fields(self._res)
+        self._field_count = taos_field_count(self._res)
+        self._precision = taos_result_precision(self._res)
+        self._row_count = 0
+
+    @property
+    def field_count(self):
+        return self._field_count
+
+    @property
+    def precision(self):
+        return self._precision
+
+    @property
+    def affected_rows(self):
+        return taos_affected_rows(self._res)
+
+    @property
+    def row_count(self):
+        return self._row_count
+
+    def _fetch_block(self):
+        cdef TAOS_ROW pblock
+        num_of_rows = taos_fetch_block(self._res, &pblock)
+        if num_of_rows == 0:
+            return [], 0
+
+        blocks = [None] * self._field_count
+        dt_epoch  = dt.datetime.fromtimestamp(0)
+        cdef int i
+        for i in range(self._field_count):
+            data = pblock[i]
+            field = self._fields[i]
+
+            if field.type in (TSDB_DATA_TYPE_VARCHAR, TSDB_DATA_TYPE_NCHAR, TSDB_DATA_TYPE_JSON):
+                offsets = taos_get_column_data_offset(self._res, i)
+                blocks[i] = taos_parse_string(<size_t>data, num_of_rows, offsets)
+            elif field.type in SIZED_TYPE:
+                is_null = taos_get_column_data_is_null(self._res, i, num_of_rows)
+                blocks[i] = CONVERT_FUNC[field.type](<size_t>data, num_of_rows, is_null)
+            elif field.type in (TSDB_DATA_TYPE_TIMESTAMP, ):
+                is_null = taos_get_column_data_is_null(self._res, i, num_of_rows)
+                blocks[i] = taos_parse_timestamp(<size_t>data, num_of_rows, is_null, self._precision, dt_epoch)
+            else:
+                pass
+
+        return blocks, abs(num_of_rows)
+
+    cpdef fetch_block(self):
+        if self._res is NULL:
+            raise OperationalError("Invalid use of fetch iterator")
+
+        return self._fetch_block()
+
+    cpdef fetch_all(self):
+        if self._res is NULL:
+            raise OperationalError("Invalid use of fetchall")
+
+        blocks = []
+        self._row_count = 0
+        while True:
+            block, num_of_rows = self._fetch_block()
+
+            errno = taos_errno(self._res)
+            if errno != 0:
+                raise ProgrammingError(taos_errstr(self._res), errno)
+
+            if num_of_rows == 0:
+                break
+
+            self._row_count += num_of_rows
+            blocks.append(block)
+
+        return [r for b in blocks for r in map(tuple, zip(*b))]
+
+    def __dealloc__(self):
+        if self._res is not NULL:
+            taos_free_result(self._res)
+
+        self._res = NULL
+        self._fields = NULL

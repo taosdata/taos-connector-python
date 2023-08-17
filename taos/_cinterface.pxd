@@ -9,6 +9,14 @@ cdef extern from "taos.h":
         char name[65]
         int8_t type
         int32_t bytes
+    ctypedef enum TSDB_OPTION:
+        TSDB_OPTION_LOCALE
+        TSDB_OPTION_CHARSET
+        TSDB_OPTION_TIMEZONE
+        TSDB_OPTION_CONFIGDIR
+        TSDB_OPTION_SHELL_ACTIVITY_TIMER
+        TSDB_OPTION_USE_ADAPTER
+        TSDB_MAX_OPTIONS
     int TSDB_DATA_TYPE_NULL
     int TSDB_DATA_TYPE_BOOL
     int TSDB_DATA_TYPE_TINYINT
@@ -43,3 +51,11 @@ cdef extern from "taos.h":
     char *taos_errstr(TAOS_RES *res)
     TAOS *taos_connect(const char *ip, const char *user, const char *password, const char *db, uint16_t port)
     void taos_close(TAOS *taos)
+    int taos_options(TSDB_OPTION option, const void *arg, ...)
+    const char *taos_get_client_info()
+    const char *taos_get_server_info(TAOS *taos)
+    int taos_select_db(TAOS *taos, const char *db)
+    TAOS_RES *taos_query(TAOS *taos, const char *sql)
+    TAOS_RES *taos_query_with_reqid(TAOS *taos, const char *sql, int64_t reqId)
+    int taos_affected_rows(TAOS_RES *res)
+    void taos_free_result(TAOS_RES *res)
