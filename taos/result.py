@@ -121,13 +121,13 @@ class TaosResult(object):
         return list(map(tuple, zip(*buffer)))
 
     def _fetch_all_using_cython(self):
-        from taos._cinterface import fetch_all_cython
+        from taos._cinterface import fetch_all as _fetch_all
         from taos.field import _datetime_epoch, _priv_datetime_epoch
         dt_epoch = _priv_datetime_epoch if _priv_datetime_epoch else _datetime_epoch
         if self._result is None:
             raise OperationalError("Invalid use of fetchall")
 
-        return fetch_all_cython(self._result.value, dt_epoch=dt_epoch)
+        return _fetch_all(self._result.value, dt_epoch)
 
     def fetch_all_into_dict(self):
         """Fetch all rows and convert it to dict"""
