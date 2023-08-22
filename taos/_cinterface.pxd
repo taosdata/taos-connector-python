@@ -87,3 +87,6 @@ cdef extern from "taos.h":
     int taos_stmt_bind_param_batch(TAOS_STMT *stmt, TAOS_MULTI_BIND *bind)
     int taos_get_table_vgId(TAOS *taos, const char *db, const char *table, int *vgId)
     int taos_load_table_info(TAOS *taos, const char *tableNameList)
+
+cdef list taos_get_column_data_is_null(TAOS_RES *res, int field, int rows)
+cdef taos_fetch_block_v3(TAOS_RES *res, TAOS_FIELD *fields, int field_count, dt_epoch)
