@@ -17,6 +17,8 @@ TYPES_MAP = {
     "double": sqltypes.DECIMAL,
     "nchar": sqltypes.String,
     "binary": sqltypes.String,
+    "varchar": sqltypes.String,
+    "varbinary": sqltypes.String,
 }
 
 

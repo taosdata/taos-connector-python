@@ -41,6 +41,7 @@ CONVERT_FUNC_BLOCK_v3 = {
     FieldType.C_BINARY: _crow_binary_to_python_block_v3,
     FieldType.C_NCHAR: _crow_nchar_to_python_block_v3,
     FieldType.C_JSON: _crow_nchar_to_python_block_v3,
+    FieldType.C_VARBINARY: _crow_binary_to_python_block_v3,
 }
 
 
