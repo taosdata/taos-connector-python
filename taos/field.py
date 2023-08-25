@@ -15,19 +15,21 @@ try:
 except OSError:
     _datetime_epoch = datetime.fromtimestamp(86400) - timedelta(seconds=86400)
 _utc_datetime_epoch = _utc_tz.localize(datetime.utcfromtimestamp(0))
+_priv_datetime_epoch = None
 
 
 def set_tz(tz):
     # type: (str) -> None
-    global _priv_tz
+    global _priv_tz, _priv_datetime_epoch
     _priv_tz = tz
+    _priv_datetime_epoch = _utc_datetime_epoch.astimezone(_priv_tz)
 
 
 def _convert_millisecond_to_datetime(milli):
     try:
         if _priv_tz is None:
             return _datetime_epoch + timedelta(seconds=milli / 1000.0)
-        return (_utc_datetime_epoch + timedelta(seconds=milli / 1000.0)).astimezone(_priv_tz)
+        return _priv_datetime_epoch + timedelta(seconds=milli / 1000.0)
     except OverflowError:
         # catch OverflowError and pass
         print("WARN: datetime overflow!")
@@ -38,7 +40,7 @@ def _convert_microsecond_to_datetime(micro):
     try:
         if _priv_tz is None:
             return _datetime_epoch + timedelta(seconds=micro / 1000000.0)
-        return (_utc_datetime_epoch + timedelta(seconds=micro / 1000000.0)).astimezone(_priv_tz)
+        return _priv_datetime_epoch + timedelta(seconds=micro / 1000000.0)
     except OverflowError:
         # catch OverflowError and pass
         print("WARN: datetime overflow!")
