@@ -33,4 +33,4 @@ cdef list _parse_float(size_t ptr, int num_of_rows, list is_null)
 
 cdef list _parse_double(size_t ptr, int num_of_rows, list is_null)
 
-cdef list _parse_timestamp(size_t ptr, int num_of_rows, list is_null, int precision, dt_epoch)
+cdef list _parse_timestamp(size_t ptr, int num_of_rows, list is_null, int precision, object dt_epoch)

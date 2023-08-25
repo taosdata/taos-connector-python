@@ -5,20 +5,8 @@ import datetime as dt
 import pytz
 from collections import namedtuple
 from taos.error import ProgrammingError, OperationalError, ConnectionError, DatabaseError, StatementError, InternalError
-from taos._parser cimport *
-
-cpdef print_type_size():
-    print("bool:", sizeof(bool))
-    print("int8_t", sizeof(int8_t))
-    print("int16_t", sizeof(int16_t))
-    print("int32_t", sizeof(int32_t))
-    print("int64_t", sizeof(int64_t))
-    print("uint8_t", sizeof(uint8_t))
-    print("uint16_t", sizeof(uint16_t))
-    print("uint32_t", sizeof(uint32_t))
-    print("uint64_t", sizeof(uint64_t))
-    print("int", sizeof(int))
-    print("uint", sizeof(unsigned int))
+from taos._parser cimport (_parse_bool, _parse_int8_t, _parse_int16_t, _parse_int, _parse_int64_t, _parse_float, _parse_double, _parse_timestamp, 
+                            _parse_uint8_t, _parse_uint16_t, _parse_uint, _parse_uint64_t, _parse_string)
 
 cdef list taos_get_column_data_is_null(TAOS_RES *res, int field, int rows):
     cdef list is_null = []

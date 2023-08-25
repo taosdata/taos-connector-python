@@ -1,12 +1,13 @@
 # cython: profile=True
 
+from typing import Optional
 from taos._cinterface cimport *
-from taos._parser cimport *
+from taos._parser cimport _parse_string, _parse_timestamp, _parse_binary_string, _parse_nchar_string
 from taos._cinterface import SIZED_TYPE, UNSIZED_TYPE, CONVERT_FUNC
 import datetime as dt
 import pytz
 from collections import namedtuple
-from taos.error import ProgrammingError, OperationalError, ConnectionError, DatabaseError, StatementError, InternalError
+from taos.error import ProgrammingError, OperationalError, ConnectionError, DatabaseError, StatementError, InternalError, TmqError
 
 _priv_tz = None
 _utc_tz = pytz.timezone("UTC")
@@ -22,6 +23,7 @@ def set_tz(tz):
     global _priv_tz, _priv_datetime_epoch
     _priv_tz = tz
     _priv_datetime_epoch = _utc_datetime_epoch.astimezone(_priv_tz)
+
 
 cdef void async_callback_wrapper(void *param, TAOS_RES *res, int code) nogil:
     with gil:
@@ -54,30 +56,30 @@ cdef class TaosConnection:
     def __cinit__(self, host=None, user="root", password="taosdata", database=None, port=None, timezone=None, config=None):
         if host:
             host = host.encode("utf-8")
-            self._host = <char*>host
+            self._host = host
 
         if user:
             user = user.encode("utf-8")
-            self._user = <char*>user
+            self._user = user
 
         if password:
             password = password.encode("utf-8")
-            self._password = <char*>password
+            self._password = password
 
         if database:
             database =database.encode("utf-8")
-            self._database = <char*>database
+            self._database = database
 
         if port:
             self._port = port
 
         if timezone:
             timezone = timezone.encode("utf-8")
-            self._tz = <char*>timezone
+            self._tz = timezone
 
         if config:
             config = config.encode("utf-8")
-            self._config = <char*>config
+            self._config = config
 
         self._init_options()
         self._init_conn()
@@ -111,18 +113,18 @@ cdef class TaosConnection:
 
     @property
     def client_info(self):
-        return (<bytes>taos_get_client_info()).decode("utf-8")
+        return taos_get_client_info().decode("utf-8")
 
     @property
     def server_info(self):
         # type: () -> str
         if self._raw_conn is NULL:
             return
-        return (<bytes>taos_get_server_info(self._raw_conn)).decode("utf-8")
+        return taos_get_server_info(self._raw_conn).decode("utf-8")
 
     def select_db(self, database: str):
         _database = database.encode("utf-8")
-        res = taos_select_db(self._raw_conn, <char*>_database)
+        res = taos_select_db(self._raw_conn, _database)
         if res != 0:
             raise DatabaseError("select database error", res)
 
@@ -132,23 +134,34 @@ cdef class TaosConnection:
     def query(self, sql: str, req_id: Optional[int] = None):
         _sql = sql.encode("utf-8")
         if req_id is None:
-            res = taos_query(self._raw_conn, <char*>_sql)
+            res = taos_query(self._raw_conn, _sql)
         else:
-            res = taos_query_with_reqid(self._raw_conn, <char*>_sql, req_id)
+            res = taos_query_with_reqid(self._raw_conn, _sql, req_id)
 
         return TaosResult(<size_t>res)
 
     def query_a(self, sql: str, callback, req_id: Optional[int] = None):
         _sql = sql.encode("utf-8")
         if req_id is None:
-            taos_query_a(self._raw_conn, <char*>_sql, async_callback_wrapper, <void*>callback)
+            taos_query_a(self._raw_conn, _sql, async_callback_wrapper, <void*>callback)
         else:
-            taos_query_a_with_reqid(self._raw_conn, <char*>_sql, async_callback_wrapper, <void*>callback, req_id)
+            taos_query_a_with_reqid(self._raw_conn, _sql, async_callback_wrapper, <void*>callback, req_id)
+
+    def subscribe(self, configs: dict[str, str], callback):
+        if self._raw_conn is NULL:
+            return None
+
+        tmq_conf = tmq_conf_new()
+        for k, v in configs.items():
+            _k = k.encode("utf-8")
+            _v = v.encode("utf-8")
+            tmq_conf_res = tmq_conf_set(tmq_conf, _k, _v)
+            print("tmq_conf_res:", <int>tmq_conf_res)
 
     def load_table_info(self, tables: list):
         # type: (str) -> None
         _tables = ",".join(tables).encode("utf-8")
-        taos_load_table_info(self._raw_conn, <char*>_tables)
+        taos_load_table_info(self._raw_conn, _tables)
 
     def commit(self):
         """Commit any pending transaction to the database.
@@ -173,7 +186,7 @@ cdef class TaosConnection:
         cdef int vg_id
         _db = db.encode("utf-8")
         _table = table.encode("utf-8")
-        code = taos_get_table_vgId(self._raw_conn, <char*>_db, <char*>_table, &vg_id)
+        code = taos_get_table_vgId(self._raw_conn, _db, _table, &vg_id)
         if code != 0:
             raise InternalError(taos_errstr(NULL))
         return vg_id
@@ -243,7 +256,7 @@ cdef class TaosResult:
 
     @property
     def fields(self):
-        return [TaosField((<bytes>f.name).decode("utf-8"), f.type, f.bytes) for f in self._fields[:self._field_count]]
+        return [TaosField(f.name.decode("utf-8"), f.type, f.bytes) for f in self._fields[:self._field_count]]
 
     @property
     def field_count(self):
@@ -395,6 +408,229 @@ cdef class TaosResult:
 
         self._res = NULL
         self._fields = NULL
+
+
+cdef class TaosCursor:
+    cdef list _description
+    cdef TaosConnection _connection
+    cdef TaosResult _result
+
+    def __init__(self, connection: TaosConnection=None) -> None:
+        self._description = []
+        self._connection = connection
+        self._result = None
+
+    def __iter__(self):
+        for block, num_of_rows in self._result.blocks_iter():
+            for row in block:
+                yield row
+
+    @property
+    def description(self):
+        return self._description
+
+    @property
+    def rowcount(self):
+        return self._result.row_count
+
+    @property
+    def affected_rows(self):
+        """Return the rowcount of insertion"""
+        return self._result.affected_rows
+
+    def execute(self, sql, params=None, req_id: Optional[int] = None):
+        """Prepare and execute a database operation (query or command)."""
+        if not self._connection:
+            raise ProgrammingError("Cursor is not connected")
+
+        self._reset_result()
+
+        self._result = self._connection.query(sql, req_id)
+        self._description = [(f.name.decode("utf-8"), f.type, None, None, None, None, False) for f in self._result.fields]
+
+    def fetchone(self):
+        return next(self)
+
+    def fetchall(self):
+        return [r for r in self]
+        
+    def close(self):
+        if self._connection is None:
+            return False
+
+        self._reset_result()
+        self._connection = None
+
+        return True
+
+    def _reset_result(self):
+        """Reset the result to unused version."""
+        self._description = []
+        self._result = None
+
+    def __del__(self):
+        self.close()
+
+
+cdef class TaosTopicAssignment:
+    cdef int32_t _vg_id
+    cdef int64_t _current_offset
+    cdef int64_t _begin
+    cdef int64_t _end
+
+    def __cinit__(self, int32_t vg_id, int64_t current_offset, int64_t begin, int64_t end):
+        self._vg_id = vg_id
+        self._current_offset = current_offset
+        self._begin = begin
+        self._end = end
+
+    @property
+    def vg_id(self):
+        return self._vg_id
+
+    @property
+    def current_offset(self):
+        return self._current_offset
+
+    @property
+    def begin(self):
+        return self._begin
+
+    @property
+    def end(self):
+        return self._end
+
+
+cdef class TaosConsumer:
+    cdef dict _configs
+    cdef tmq_conf_t *_tmq_conf
+    cdef tmq_t *_tmq
+
+    def __cinit__(self, configs: dict[str, str]):
+        self._configs = configs
+        self._tmq_conf = tmq_conf_new()
+        for k, v in self._configs.items():
+            _k = k.encode("utf-8")
+            _v = v.encode("utf-8")
+            tmq_conf_res = tmq_conf_set(self._tmq_conf, _k, _v)
+            if tmq_conf_res != tmq_conf_res_t.TMQ_CONF_OK:
+                tmq_conf_destroy(self._tmq_conf)
+                self._tmq_conf = NULL
+                raise Exception("set up tmq config failed!")
+
+        self._tmq = tmq_consumer_new(self._tmq_conf, NULL, 0)
+        if self._tmq is NULL:
+            raise Exception("setup tmq failed")
+    
+    def subscribe(self, topics: list[str]):
+        tmq_list = tmq_list_new()
+        if tmq_list is NULL:
+            raise Exception("set up tmq list failed!")
+        
+        for tp in topics:
+            _tp = tp.encode("utf-8")
+            tmq_errno = tmq_list_append(tmq_list, _tp)
+            if tmq_errno != 0:
+                tmq_list_destroy(tmq_list)
+                raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+
+        tmq_errno = tmq_subscribe(self._tmq, tmq_list)
+        if tmq_errno != 0:
+            tmq_list_destroy(tmq_list)
+            raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+
+    def unsubscribe(self):
+        tmq_errno = tmq_unsubscribe(self._tmq)
+        if tmq_errno != 0:
+            raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+
+    def poll(self, timeout: int):
+        res = tmq_consumer_poll(self._tmq, timeout)
+        if res is NULL:
+            return None
+        
+        return TaosResult(<size_t>res)
+
+    def commit(self, taos_res: TaosResult):
+        self.result_commit(taos_res)
+
+    def result_commit(self, taos_res: TaosResult):
+        tmq_errno = tmq_commit_sync(self._tmq, taos_res._res)
+        if tmq_errno != 0:
+            raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+
+    def offset_commit(self, topic: str, vg_id: int, offset: int):
+        _topic = topic.encode("utf-8")
+        tmq_errno = tmq_commit_offset_sync(self._tmq, _topic, vg_id, offset)
+        if tmq_errno != 0:
+            raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+
+    def get_topic_assignment(self, topic: str):
+        cdef int32_t num_of_assignment
+        cdef tmq_topic_assignment *assignment_ptr = NULL
+        _topic = topic.encode("utf-8")
+        tmq_errno = tmq_get_topic_assignment(self._tmq, _topic, &assignment_ptr, &num_of_assignment)
+        if tmq_errno != 0:
+            tmq_free_assignment(assignment_ptr)
+            raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+
+        cdef tmq_topic_assignment *assignment
+        topic_assignments = []
+        for i in range(num_of_assignment):
+            assignment = &assignment_ptr[i]
+            tta = TaosTopicAssignment(assignment.vgId, assignment.currentOffset, assignment.begin, assignment.end)
+            topic_assignments.append(tta)
+
+        tmq_free_assignment(assignment_ptr)
+
+        return topic_assignments
+
+    def offset_seek(self, topic: str, vg_id: int, offset: int):
+        _topic = topic.encode("utf-8")
+        tmq_errno = tmq_offset_seek(self._tmq, _topic, vg_id, offset)
+        if tmq_errno != 0:
+            raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+
+    def position(self, topic: str, vg_id: int):
+        _topic = topic.encode("utf-8")
+        pos = tmq_position(self._tmq, _topic, vg_id)
+        if pos < 0:
+            raise TmqError(tmq_err2str(pos), pos)
+        
+        return pos
+    
+    def committed(self, topic: str, vg_id: int):
+        _topic = topic.encode("utf-8")
+        offset = tmq_committed(self._tmq, _topic, vg_id)
+        if offset == -2147467247:
+            return None
+        
+        if offset < 0:
+            raise TmqError(tmq_err2str(offset), offset)
+
+        return offset
+
+    def get_topic_name(self, taos_res: TaosResult):
+        return tmq_get_topic_name(taos_res._res)
+
+    def get_db_name(self, taos_res: TaosResult):
+        return tmq_get_db_name(taos_res._res)
+
+    def get_vgroup_id(self, taos_res: TaosResult):
+        return tmq_get_vgroup_id(taos_res._res)
+
+    def get_vgroup_offset(self, taos_res: TaosResult):
+        return tmq_get_vgroup_offset(taos_res._res)
+
+    def __dealloc__(self):
+        if self._tmq_conf is not NULL:
+            tmq_conf_destroy(self._tmq_conf)
+            self._tmq_conf = NULL
+
+        if self._tmq is not NULL:
+            tmq_consumer_close(self._tmq)
+            self._tmq = NULL
+
 
 # class TaosStmt(object):
 #     cdef TAOS_STMT *_stmt

@@ -88,5 +88,55 @@ cdef extern from "taos.h":
     int taos_get_table_vgId(TAOS *taos, const char *db, const char *table, int *vgId)
     int taos_load_table_info(TAOS *taos, const char *tableNameList)
 
+    ctypedef struct tmq_t:
+        pass
+
+    ctypedef struct tmq_conf_t:
+        pass
+
+    ctypedef struct tmq_list_t:
+        pass
+
+    ctypedef enum tmq_conf_res_t:
+        TMQ_CONF_UNKNOWN
+        TMQ_CONF_INVALID
+        TMQ_CONF_OK
+
+    ctypedef struct tmq_topic_assignment:
+        int32_t vgId
+        int64_t currentOffset
+        int64_t begin
+        int64_t end
+
+    tmq_conf_t *tmq_conf_new()
+    tmq_conf_res_t tmq_conf_set(tmq_conf_t *conf, const char *key, const char *value)
+    void tmq_conf_destroy(tmq_conf_t *conf)
+
+    tmq_list_t *tmq_list_new()
+    int32_t tmq_list_append(tmq_list_t *, const char *)
+    void tmq_list_destroy(tmq_list_t *)
+    int32_t tmq_list_get_size(const tmq_list_t *)
+    char **tmq_list_to_c_array(const tmq_list_t *)
+
+    tmq_t *tmq_consumer_new(tmq_conf_t *conf, char *errstr, int32_t errstrLen)
+    int32_t tmq_subscribe(tmq_t *tmq, const tmq_list_t *topic_list)
+    int32_t tmq_unsubscribe(tmq_t *tmq)
+    TAOS_RES *tmq_consumer_poll(tmq_t *tmq, int64_t timeout)
+    int32_t tmq_consumer_close(tmq_t *tmq)
+    int32_t tmq_commit_sync(tmq_t *tmq, const TAOS_RES *msg)
+    int32_t tmq_commit_offset_sync(tmq_t *tmq, const char *pTopicName, int32_t vgId, int64_t offset)
+    int32_t tmq_get_topic_assignment(tmq_t *tmq, const char *pTopicName, tmq_topic_assignment **assignment,int32_t *numOfAssignment)
+    void tmq_free_assignment(tmq_topic_assignment* pAssignment)
+    int32_t tmq_offset_seek(tmq_t *tmq, const char *pTopicName, int32_t vgId, int64_t offset)
+    int64_t tmq_position(tmq_t *tmq, const char *pTopicName, int32_t vgId)
+    int64_t tmq_committed(tmq_t *tmq, const char *pTopicName, int32_t vgId)
+
+    const char *tmq_get_topic_name(TAOS_RES *res)
+    const char *tmq_get_db_name(TAOS_RES *res)
+    int32_t tmq_get_vgroup_id(TAOS_RES *res)
+    int64_t tmq_get_vgroup_offset(TAOS_RES* res)
+    const char *tmq_err2str(int32_t code)
+
+
 cdef list taos_get_column_data_is_null(TAOS_RES *res, int field, int rows)
-cdef taos_fetch_block_v3(TAOS_RES *res, TAOS_FIELD *fields, int field_count, dt_epoch)
+cdef taos_fetch_block_v3(TAOS_RES *res, TAOS_FIELD *fields, int field_count, object dt_epoch)

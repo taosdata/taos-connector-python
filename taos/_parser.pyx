@@ -30,8 +30,8 @@ cdef list _parse_string(size_t ptr, int num_of_rows, int *offsets):
             res.append(None)
         else:
             rbyte_ptr = ptr + offsets[i]
-            rbyte = (<unsigned short *>rbyte_ptr)[0]
-            c_char_ptr = rbyte_ptr + sizeof(unsigned short)
+            rbyte = (<uint16_t*>rbyte_ptr)[0]
+            c_char_ptr = rbyte_ptr + sizeof(uint16_t)
             py_string = (<char *>c_char_ptr)[:rbyte].decode("utf-8")
             res.append(py_string)
 
