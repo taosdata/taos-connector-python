@@ -159,3 +159,5 @@ docs
 *.swp
 *~
 .env
+taos/*.c
+taos/*.cpp
