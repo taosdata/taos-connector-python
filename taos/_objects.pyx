@@ -526,7 +526,7 @@ cdef class TaosCursor:
         self._reset_result()
         sql = operation
         self._result = self._connection.query(sql, req_id)
-        self._description = [(f.name.decode("utf-8"), f.type, None, None, None, None, False) for f in self._result.fields]
+        self._description = [(f.name, f.type, None, None, None, None, False) for f in self._result.fields]
 
         if self._result.field_count == 0:
             return self.affected_rows
