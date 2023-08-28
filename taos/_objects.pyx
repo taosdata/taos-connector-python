@@ -1,5 +1,6 @@
 # cython: profile=True
 
+import asyncio
 from typing import Optional
 from taos._cinterface cimport *
 from taos._parser cimport _parse_string, _parse_timestamp, _parse_binary_string, _parse_nchar_string
@@ -25,22 +26,44 @@ def set_tz(tz):
     _priv_datetime_epoch = _utc_datetime_epoch.astimezone(_priv_tz)
 
 
-cdef void async_callback_wrapper(void *param, TAOS_RES *res, int code) nogil:
+cdef void async_result_future_wrapper(void *param, TAOS_RES *res, int code) nogil:
     with gil:
-        callback = <object>param
-        print("callback:", callback, <size_t>res, code)
-        dt_epoch = _priv_datetime_epoch if _priv_datetime_epoch else _datetime_epoch
-        fields = taos_fetch_fields(res)
-        field_count = taos_field_count(res)
-        taos_fields = [TaosField((<bytes>f.name).decode("utf-8"), f.type, f.bytes) for f in fields[:field_count]]
-        block, num_of_rows = taos_fetch_block_v3(res, fields, field_count, dt_epoch)
-        errno = taos_errno(res)
+        fut = <object>param
+        print("callback:", fut, <size_t>res, code)
+        if code != 0:
+            e = ProgrammingError(taos_errstr(res), code)
+            fut.get_loop().call_soon_threadsafe(fut.set_exception, e)
+        else:
+            taos_result = TaosResult(<size_t>res)
+            fut.get_loop().call_soon_threadsafe(fut.set_result, taos_result)
 
-        if errno != 0:
-            raise ProgrammingError(taos_errstr(res), errno)
 
-        for row in map(tuple, zip(*block)):
-            callback(row, taos_fields)
+cdef void async_rows_future_wrapper(void *param, TAOS_RES *res, int num_of_rows) nogil:
+    cdef int i = 0
+    with gil:
+        taos_result, fut = <tuple>param
+        print("callback:", taos_result, fut, <size_t>res, num_of_rows)
+        rows = []
+        if num_of_rows > 0:
+            for row in taos_result.rows_iter():
+                rows.append(row)
+                i += 1
+                if i >= num_of_rows:
+                    break
+
+        fut.get_loop().call_soon_threadsafe(fut.set_result, rows)
+
+
+cdef void async_block_future_wrapper(void *param, TAOS_RES *res, int num_of_rows) nogil:
+    cdef int i = 0
+    with gil:
+        taos_result, fut = <tuple>param
+        print("callback:", taos_result, fut, <size_t>res, num_of_rows)
+        block, n = [], 0
+        if num_of_rows > 0:
+            block, n = taos_result.fetch_block()
+
+        fut.get_loop().call_soon_threadsafe(fut.set_result, (block, n))
 
 
 cdef class TaosConnection:
@@ -106,11 +129,6 @@ cdef class TaosConnection:
     def __dealloc__(self):
         self.close()
 
-    def close(self):
-        if self._raw_conn is not NULL:
-            taos_close(self._raw_conn)
-            self._raw_conn = NULL
-
     @property
     def client_info(self):
         return taos_get_client_info().decode("utf-8")
@@ -140,12 +158,17 @@ cdef class TaosConnection:
 
         return TaosResult(<size_t>res)
 
-    def query_a(self, sql: str, callback, req_id: Optional[int] = None):
+    async def query_async(self, sql: str, req_id: Optional[int] = None):
+        loop = asyncio.get_event_loop()
         _sql = sql.encode("utf-8")
+        fut = loop.create_future()
         if req_id is None:
-            taos_query_a(self._raw_conn, _sql, async_callback_wrapper, <void*>callback)
+            taos_query_a(self._raw_conn, _sql, async_result_future_wrapper, <void*>fut)
         else:
-            taos_query_a_with_reqid(self._raw_conn, _sql, async_callback_wrapper, <void*>callback, req_id)
+            taos_query_a_with_reqid(self._raw_conn, _sql, async_result_future_wrapper, <void*>fut, req_id)
+
+        res = await fut
+        return res
 
     def subscribe(self, configs: dict[str, str], callback):
         if self._raw_conn is NULL:
@@ -163,6 +186,11 @@ cdef class TaosConnection:
         _tables = ",".join(tables).encode("utf-8")
         taos_load_table_info(self._raw_conn, _tables)
 
+    def close(self):
+        if self._raw_conn is not NULL:
+            taos_close(self._raw_conn)
+            self._raw_conn = NULL
+
     def commit(self):
         """Commit any pending transaction to the database.
 
@@ -173,6 +201,9 @@ cdef class TaosConnection:
     def rollback(self):
         """Void functionality"""
         pass
+
+    def cursor(self):
+        return TaosCursor(self)
 
     def clear_result_set(self):
         """Clear unused result set on this connection."""
@@ -358,6 +389,7 @@ cdef class TaosResult:
 
         cdef TAOS_ROW taos_row
         cdef int i
+        cdef int[1] offsets = [-2]
         dt_epoch = _priv_datetime_epoch if _priv_datetime_epoch else _datetime_epoch
         is_null = [False]
 
@@ -370,10 +402,8 @@ cdef class TaosResult:
             for i in range(self._field_count):
                 data = taos_row[i]
                 field = self._fields[i]
-                if field.type in (TSDB_DATA_TYPE_BINARY, TSDB_DATA_TYPE_VARBINARY):
-                    row[i] = _parse_binary_string(<size_t>data, 1, field.bytes)[0]
-                elif field.type in (TSDB_DATA_TYPE_NCHAR, TSDB_DATA_TYPE_VARCHAR):
-                    row[i] = _parse_nchar_string(<size_t>data, 1, field.bytes)[0]
+                if field.type in UNSIZED_TYPE:
+                    row[i] = _parse_string(<size_t>data, 1, offsets)[0]
                 elif field.type in SIZED_TYPE:
                     row[i] = CONVERT_FUNC[field.type](<size_t>data, 1, is_null)[0]
                 elif field.type in (TSDB_DATA_TYPE_TIMESTAMP, ):
@@ -396,11 +426,39 @@ cdef class TaosResult:
 
             yield [r for r in map(tuple, zip(*block))], num_of_rows
 
-    def fetch_rows_a(self, callback):
-        taos_fetch_rows_a(self._res, async_callback_wrapper, <void*>callback)
+    async def rows_iter_a(self):
+        if self._res is NULL:
+            raise OperationalError("Invalid use of rows_iter_a")
 
-    def taos_fetch_raw_block_a(self, callback):
-        taos_fetch_raw_block_a(self._res, async_callback_wrapper, <void*>callback)
+        loop = asyncio.get_event_loop()
+        while True:
+            fut = loop.create_future()
+            param = (self, fut)
+            taos_fetch_rows_a(self._res, async_rows_future_wrapper, <void*>param)
+
+            rows = await fut
+            if not rows:
+                break
+            
+            for row in rows:
+                yield row
+
+    async def blocks_iter_a(self):
+        if self._res is NULL:
+            raise OperationalError("Invalid use of blocks_iter_a")
+
+        loop = asyncio.get_event_loop()
+        while True:
+            fut = loop.create_future()
+            param = (self, fut)
+            taos_fetch_rows_a(self._res, async_block_future_wrapper, <void*>param)
+            # taos_fetch_raw_block_a(self._res, async_block_future_wrapper, <void*>param)
+
+            block, n = await fut
+            if not block:
+                break
+            
+            yield block, n
 
     def __dealloc__(self):
         if self._res is not NULL:
@@ -421,9 +479,12 @@ cdef class TaosCursor:
         self._result = None
 
     def __iter__(self):
-        for block, num_of_rows in self._result.blocks_iter():
+        for block, _ in self._result.blocks_iter():
             for row in block:
                 yield row
+
+    def next(self):
+        return next(self)
 
     @property
     def description(self):
@@ -438,22 +499,13 @@ cdef class TaosCursor:
         """Return the rowcount of insertion"""
         return self._result.affected_rows
 
-    def execute(self, sql, params=None, req_id: Optional[int] = None):
-        """Prepare and execute a database operation (query or command)."""
-        if not self._connection:
-            raise ProgrammingError("Cursor is not connected")
+    def callproc(self, procname, *args):
+        """Call a stored database procedure with the given name.
 
-        self._reset_result()
+        Void functionality since no stored procedures.
+        """
+        pass
 
-        self._result = self._connection.query(sql, req_id)
-        self._description = [(f.name.decode("utf-8"), f.type, None, None, None, None, False) for f in self._result.fields]
-
-    def fetchone(self):
-        return next(self)
-
-    def fetchall(self):
-        return [r for r in self]
-        
     def close(self):
         if self._connection is None:
             return False
@@ -462,6 +514,73 @@ cdef class TaosCursor:
         self._connection = None
 
         return True
+
+    def execute(self, operation, params=None, req_id: Optional[int] = None):
+        """Prepare and execute a database operation (query or command)."""
+        if not operation:
+            return
+
+        if not self._connection:
+            raise ProgrammingError("Cursor is not connected")
+
+        self._reset_result()
+        sql = operation
+        self._result = self._connection.query(sql, req_id)
+        self._description = [(f.name.decode("utf-8"), f.type, None, None, None, None, False) for f in self._result.fields]
+
+        if self._result.field_count == 0:
+            return self.affected_rows
+        else:
+            return self._result
+
+    def execute_many(self, operation, data_list, req_id: Optional[int] = None):
+        """
+        Prepare a database operation (query or command) and then execute it against all parameter sequences or mappings
+        found in the sequence seq_of_parameters.
+        """
+        sql = operation
+        flag = True
+        affected_rows = 0
+        for line in data_list:
+            if isinstance(line, dict):
+                flag = False
+                # print(f'execute: {sql.format(**line)}')
+                affected_rows += self.execute(sql.format(**line), req_id=req_id)
+            elif isinstance(line, list):
+                sql += f' {tuple(line)} '
+            elif isinstance(line, tuple):
+                sql += f' {line} '
+        if flag:
+            # print(f'execute_many: {sql}')
+            affected_rows += self.execute(sql, req_id=req_id)
+        return affected_rows
+
+    def fetchone(self):
+        try:
+            row = next(self)
+        except StopIteration:
+            row = None
+        return row
+
+    def fetchmany(self, size=None):
+        size = size or 1
+        rows = []
+        for row in self:
+            rows.append(row)
+        
+        return rows
+
+    def fetchall(self):
+        return [r for r in self]
+
+    def nextset(self):
+        pass
+
+    def setinputsize(self, sizes):
+        pass
+
+    def setutputsize(self, size, column=None):
+        pass
 
     def _reset_result(self):
         """Reset the result to unused version."""
