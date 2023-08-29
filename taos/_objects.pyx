@@ -29,7 +29,6 @@ def set_tz(tz):
 cdef void async_result_future_wrapper(void *param, TAOS_RES *res, int code) nogil:
     with gil:
         fut = <object>param
-        print("callback:", fut, <size_t>res, code)
         if code != 0:
             e = ProgrammingError(taos_errstr(res), code)
             fut.get_loop().call_soon_threadsafe(fut.set_exception, e)
@@ -42,7 +41,6 @@ cdef void async_rows_future_wrapper(void *param, TAOS_RES *res, int num_of_rows)
     cdef int i = 0
     with gil:
         taos_result, fut = <tuple>param
-        print("callback:", taos_result, fut, <size_t>res, num_of_rows)
         rows = []
         if num_of_rows > 0:
             for row in taos_result.rows_iter():
@@ -58,7 +56,6 @@ cdef void async_block_future_wrapper(void *param, TAOS_RES *res, int num_of_rows
     cdef int i = 0
     with gil:
         taos_result, fut = <tuple>param
-        print("callback:", taos_result, fut, <size_t>res, num_of_rows)
         block, n = [], 0
         if num_of_rows > 0:
             block, n = taos_result.fetch_block()
@@ -179,10 +176,8 @@ cdef class TaosConnection:
             _k = k.encode("utf-8")
             _v = v.encode("utf-8")
             tmq_conf_res = tmq_conf_set(tmq_conf, _k, _v)
-            print("tmq_conf_res:", <int>tmq_conf_res)
 
     def load_table_info(self, tables: list):
-        # type: (str) -> None
         _tables = ",".join(tables).encode("utf-8")
         taos_load_table_info(self._raw_conn, _tables)
 
@@ -544,14 +539,12 @@ cdef class TaosCursor:
         for line in data_list:
             if isinstance(line, dict):
                 flag = False
-                # print(f'execute: {sql.format(**line)}')
                 affected_rows += self.execute(sql.format(**line), req_id=req_id)
             elif isinstance(line, list):
                 sql += f' {tuple(line)} '
             elif isinstance(line, tuple):
                 sql += f' {line} '
         if flag:
-            # print(f'execute_many: {sql}')
             affected_rows += self.execute(sql, req_id=req_id)
         return affected_rows
 
@@ -628,6 +621,9 @@ cdef class TaosConsumer:
     def __cinit__(self, configs: dict[str, str]):
         self._configs = configs
         self._tmq_conf = tmq_conf_new()
+        if self._tmq_conf:
+            raise TmqError("new tmq conf failed")
+
         for k, v in self._configs.items():
             _k = k.encode("utf-8")
             _v = v.encode("utf-8")
@@ -635,16 +631,16 @@ cdef class TaosConsumer:
             if tmq_conf_res != tmq_conf_res_t.TMQ_CONF_OK:
                 tmq_conf_destroy(self._tmq_conf)
                 self._tmq_conf = NULL
-                raise Exception("set up tmq config failed!")
+                raise TmqError("set tmq conf failed!")
 
         self._tmq = tmq_consumer_new(self._tmq_conf, NULL, 0)
         if self._tmq is NULL:
-            raise Exception("setup tmq failed")
+            raise TmqError("new tmq consumer failed")
     
     def subscribe(self, topics: list[str]):
         tmq_list = tmq_list_new()
         if tmq_list is NULL:
-            raise Exception("set up tmq list failed!")
+            raise TmqError("new tmq list failed!")
         
         for tp in topics:
             _tp = tp.encode("utf-8")
