@@ -123,6 +123,7 @@ cdef extern from "taos.h":
     tmq_t *tmq_consumer_new(tmq_conf_t *conf, char *errstr, int32_t errstrLen)
     int32_t tmq_subscribe(tmq_t *tmq, const tmq_list_t *topic_list)
     int32_t tmq_unsubscribe(tmq_t *tmq)
+    int32_t tmq_subscription(tmq_t *tmq, tmq_list_t **topics)
     TAOS_RES *tmq_consumer_poll(tmq_t *tmq, int64_t timeout)
     int32_t tmq_consumer_close(tmq_t *tmq)
     int32_t tmq_commit_sync(tmq_t *tmq, const TAOS_RES *msg)

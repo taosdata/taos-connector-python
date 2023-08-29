@@ -91,7 +91,7 @@ cdef class TaosConnection:
             self._database = database
 
         if port:
-            self._port = port
+            self._port = port or 0
 
         if timezone:
             timezone = timezone.encode("utf-8")
@@ -107,8 +107,7 @@ cdef class TaosConnection:
 
     def _init_options(self):
         if self._tz:
-            tz = <bytes>self._tz
-            set_tz(pytz.timezone(tz.decode("utf-8")))
+            set_tz(pytz.timezone(self._tz.decode("utf-8")))
             taos_options(TSDB_OPTION.TSDB_OPTION_TIMEZONE, self._tz)
 
         if self._config:
@@ -584,25 +583,39 @@ cdef class TaosCursor:
         self.close()
 
 
-cdef class TaosTopicAssignment:
-    cdef int32_t _vg_id
-    cdef int64_t _current_offset
+# ---------------------------------------- TMQ --------------------------------------------------------------- v
+cdef void async_commit_future_wrapper(tmq_t *tmq, int32_t code, void *param) nogil:
+    with gil:
+        fut = <object>param
+        fut.get_loop().call_soon_threadsafe(fut.set_result, code)
+
+
+cdef class TopicPartition:
+    cdef char *_topic
+    cdef int32_t _partition
+    cdef int64_t _offset
     cdef int64_t _begin
     cdef int64_t _end
 
-    def __cinit__(self, int32_t vg_id, int64_t current_offset, int64_t begin, int64_t end):
-        self._vg_id = vg_id
-        self._current_offset = current_offset
+    def __cinit__(self, str topic, int32_t partition, int64_t offset, int64_t begin, int64_t end):
+        _topic = topic.encode("utf-8")
+        self._topic = _topic
+        self._partition = partition
+        self._offset = offset
         self._begin = begin
         self._end = end
 
     @property
-    def vg_id(self):
-        return self._vg_id
+    def topic(self):
+        return self._topic.decode("utf-8")
 
     @property
-    def current_offset(self):
-        return self._current_offset
+    def partition(self):
+        return self._partition
+
+    @property
+    def offset(self):
+        return self._offset
 
     @property
     def begin(self):
@@ -613,20 +626,37 @@ cdef class TaosTopicAssignment:
         return self._end
 
 
-# ---------------------------------------- TMQ --------------------------------------------------------------- v
-
-cdef void async_commit_future_wrapper(tmq_t *tmq, int32_t code, void *param) nogil:
-    with gil:
-        fut = <object>param
-        fut.get_loop().call_soon_threadsafe(fut.set_result, code)
-
-
 cdef class TaosConsumer:
     cdef dict _configs
     cdef tmq_conf_t *_tmq_conf
     cdef tmq_t *_tmq
+    cdef bool _subscribed
+    default_config = {
+        'group.id',
+        'client.id',
+        'msg.with.table.name',
+        'enable.auto.commit',
+        'auto.commit.interval.ms',
+        'auto.offset.reset',
+        'experimental.snapshot.enable',
+        'enable.heartbeat.background',
+        'experimental.snapshot.batch.size',
+        'td.connect.ip',
+        'td.connect.user',
+        'td.connect.pass',
+        'td.connect.port',
+        'td.connect.db',
+    }
 
     def __cinit__(self, configs: dict[str, str]):
+        self._init_config()
+        self._init_consumer()
+        self._subscribed = False
+
+    def _init_config(self, configs: dict[str, str]):
+        if 'group.id' not in configs:
+            raise TmqError('missing group.id in consumer config setting')
+
         self._configs = configs
         self._tmq_conf = tmq_conf_new()
         if self._tmq_conf:
@@ -641,6 +671,10 @@ cdef class TaosConsumer:
                 self._tmq_conf = NULL
                 raise TmqError("set tmq conf failed!")
 
+    def _init_consumer(self):
+        if self._tmq_conf is NULL:
+            raise TmqError('tmq_conf is NULL')
+        
         self._tmq = tmq_consumer_new(self._tmq_conf, NULL, 0)
         if self._tmq is NULL:
             raise TmqError("new tmq consumer failed")
@@ -661,11 +695,15 @@ cdef class TaosConsumer:
         if tmq_errno != 0:
             tmq_list_destroy(tmq_list)
             raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+        
+        self._subscribed = True
 
     def unsubscribe(self):
         tmq_errno = tmq_unsubscribe(self._tmq)
         if tmq_errno != 0:
             raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+        
+        self._subscribed = False
 
     def close(self):
         if self._tmq_conf is not NULL:
@@ -677,8 +715,12 @@ cdef class TaosConsumer:
             tmq_consumer_close(self._tmq)
             self._tmq = NULL
 
-    def poll(self, timeout: int):
-        res = tmq_consumer_poll(self._tmq, timeout)
+    def poll(self, float timeout=1.0):
+        if not self._subscribed:
+            raise TmqError("unsubscribe topic")
+
+        timeout_ms = int(timeout * 1000)
+        res = tmq_consumer_poll(self._tmq, timeout_ms)
         if res is NULL:
             return None
         
@@ -718,50 +760,95 @@ cdef class TaosConsumer:
         if tmq_errno != 0:
             raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
 
-    def get_topic_assignment(self, topic: str):
+    def assignment(self):
+        cdef int32_t i
         cdef int32_t num_of_assignment
-        cdef tmq_topic_assignment *assignment_ptr = NULL
-        _topic = topic.encode("utf-8")
-        tmq_errno = tmq_get_topic_assignment(self._tmq, _topic, &assignment_ptr, &num_of_assignment)
+        cdef tmq_topic_assignment *p_assignment = NULL
+
+        topics = self.list_topics()
+        topic_partitions = []
+        for topic in topics:
+            _topic = topic.encode("utf-8")
+            tmq_errno = tmq_get_topic_assignment(self._tmq, _topic, &p_assignment, &num_of_assignment)
+            if tmq_errno != 0:
+                tmq_free_assignment(p_assignment)
+                raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+
+            for i in range(num_of_assignment):
+                assignment = p_assignment[i]
+                tp = TopicPartition(topic, assignment.vgId, assignment.currentOffset, assignment.begin, assignment.end)
+                topic_partitions.append(tp)
+
+            tmq_free_assignment(p_assignment)
+
+        return topic_partitions
+
+    def seek(self, partition: TopicPartition):
+        """
+        Set consume position for partition to offset.
+        """
+        tmq_errno = tmq_offset_seek(self._tmq, partition._topic, partition._partition, partition._offset)
         if tmq_errno != 0:
-            tmq_free_assignment(assignment_ptr)
             raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
 
-        cdef tmq_topic_assignment *assignment
-        topic_assignments = []
-        for i in range(num_of_assignment):
-            assignment = &assignment_ptr[i]
-            tta = TaosTopicAssignment(assignment.vgId, assignment.currentOffset, assignment.begin, assignment.end)
-            topic_assignments.append(tta)
+        tmq_offset_seek(self._tmq, partition.topic, partition.partition, partition.offset)
 
-        tmq_free_assignment(assignment_ptr)
+    def committed(self, partitions: list[TopicPartition]) -> list[TopicPartition]:
+        """
+        Retrieve committed offsets for the specified partitions.
 
-        return topic_assignments
+        :param list(TopicPartition) partitions: List of topic+partitions to query for stored offsets.
+        :returns: List of topic+partitions with offset and possibly error set.
+        :rtype: list(TopicPartition)
+        """
+        for partition in partitions:
+            if not isinstance(partition, TopicPartition):
+                raise TmqError(msg='Invalid partition type')
+            offset = tmq_committed(self._tmq, partition._topic, partition._partition)
 
-    def offset_seek(self, topic: str, vg_id: int, offset: int):
-        _topic = topic.encode("utf-8")
-        tmq_errno = tmq_offset_seek(self._tmq, _topic, vg_id, offset)
+            if offset < 0:
+                raise TmqError(tmq_err2str(offset), offset)
+            
+            partition._offset = offset
+
+        return partitions
+
+    def position(self, partitions: list[TopicPartition]) -> list[TopicPartition]:
+        """
+        Retrieve current positions (offsets) for the specified partitions.
+
+        :param list(TopicPartition) partitions: List of topic+partitions to return current offsets for.
+        :returns: List of topic+partitions with offset and possibly error set.
+        :rtype: list(TopicPartition)
+        """
+        for partition in partitions:
+            if not isinstance(partition, TopicPartition):
+                raise TmqError(msg='Invalid partition type')
+            offset = tmq_position(self._tmq, partition._topic, partition._partition)
+
+            if offset < 0:
+                raise TmqError(tmq_err2str(offset), offset)
+
+            partition._offset = offset
+
+        return partitions
+
+    def list_topics(self):
+        cdef int i
+        cdef tmq_list_t *topics
+        tmq_errno = tmq_subscription(self._tmq, &topics)
         if tmq_errno != 0:
             raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
 
-    def position(self, topic: str, vg_id: int):
-        _topic = topic.encode("utf-8")
-        pos = tmq_position(self._tmq, _topic, vg_id)
-        if pos < 0:
-            raise TmqError(tmq_err2str(pos), pos)
-        
-        return pos
-    
-    def committed(self, topic: str, vg_id: int):
-        _topic = topic.encode("utf-8")
-        offset = tmq_committed(self._tmq, _topic, vg_id)
-        if offset == -2147467247:
-            return None
-        
-        if offset < 0:
-            raise TmqError(tmq_err2str(offset), offset)
+        n = tmq_list_get_size(topics)
+        ca = tmq_list_to_c_array(topics)
+        tp_list = []
+        for i in range(n):
+            tp_list.append(ca[i])
 
-        return offset
+        tmq_list_destroy(topics)
+
+        return tp_list
 
     def get_topic_name(self, taos_res: TaosResult):
         return tmq_get_topic_name(taos_res._res)
