@@ -613,6 +613,14 @@ cdef class TaosTopicAssignment:
         return self._end
 
 
+# ---------------------------------------- TMQ --------------------------------------------------------------- v
+
+cdef void async_commit_future_wrapper(tmq_t *tmq, int32_t code, void *param) nogil:
+    with gil:
+        fut = <object>param
+        fut.get_loop().call_soon_threadsafe(fut.set_result, code)
+
+
 cdef class TaosConsumer:
     cdef dict _configs
     cdef tmq_conf_t *_tmq_conf
@@ -659,6 +667,16 @@ cdef class TaosConsumer:
         if tmq_errno != 0:
             raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
 
+    def close(self):
+        if self._tmq_conf is not NULL:
+            tmq_conf_destroy(self._tmq_conf)
+            self._tmq_conf = NULL
+
+        if self._tmq is not NULL:
+            tmq_unsubscribe(self._tmq)
+            tmq_consumer_close(self._tmq)
+            self._tmq = NULL
+
     def poll(self, timeout: int):
         res = tmq_consumer_poll(self._tmq, timeout)
         if res is NULL:
@@ -669,14 +687,34 @@ cdef class TaosConsumer:
     def commit(self, taos_res: TaosResult):
         self.result_commit(taos_res)
 
+    async def commit_a(self, taos_res: TaosResult):
+        await self.result_commit_a(taos_res)
+
     def result_commit(self, taos_res: TaosResult):
         tmq_errno = tmq_commit_sync(self._tmq, taos_res._res)
+        if tmq_errno != 0:
+            raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+
+    async def result_commit_a(self, taos_res: TaosResult):
+        loop = asyncio.get_event_loop()
+        fut = loop.create_future()
+        tmq_commit_async(self._tmq, taos_res._res, async_commit_future_wrapper, <void*>fut)
+        tmq_errno = await fut
         if tmq_errno != 0:
             raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
 
     def offset_commit(self, topic: str, vg_id: int, offset: int):
         _topic = topic.encode("utf-8")
         tmq_errno = tmq_commit_offset_sync(self._tmq, _topic, vg_id, offset)
+        if tmq_errno != 0:
+            raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+    
+    async def offset_commit_a(self, topic: str, vg_id: int, offset: int):
+        loop = asyncio.get_event_loop()
+        fut = loop.create_future()
+        _topic = topic.encode("utf-8")
+        tmq_commit_offset_async(self._tmq, _topic, vg_id, offset, async_commit_future_wrapper, <void*>fut)
+        tmq_errno = await fut
         if tmq_errno != 0:
             raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
 
@@ -738,14 +776,9 @@ cdef class TaosConsumer:
         return tmq_get_vgroup_offset(taos_res._res)
 
     def __dealloc__(self):
-        if self._tmq_conf is not NULL:
-            tmq_conf_destroy(self._tmq_conf)
-            self._tmq_conf = NULL
+        self.close()
 
-        if self._tmq is not NULL:
-            tmq_consumer_close(self._tmq)
-            self._tmq = NULL
-
+# ---------------------------------------- TMQ --------------------------------------------------------------- ^
 
 # class TaosStmt(object):
 #     cdef TAOS_STMT *_stmt

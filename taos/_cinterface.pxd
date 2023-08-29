@@ -97,6 +97,8 @@ cdef extern from "taos.h":
     ctypedef struct tmq_list_t:
         pass
 
+    ctypedef void tmq_commit_cb(tmq_t *tmq, int32_t code, void *param) except *
+
     ctypedef enum tmq_conf_res_t:
         TMQ_CONF_UNKNOWN
         TMQ_CONF_INVALID
@@ -125,6 +127,8 @@ cdef extern from "taos.h":
     int32_t tmq_consumer_close(tmq_t *tmq)
     int32_t tmq_commit_sync(tmq_t *tmq, const TAOS_RES *msg)
     int32_t tmq_commit_offset_sync(tmq_t *tmq, const char *pTopicName, int32_t vgId, int64_t offset)
+    void tmq_commit_async(tmq_t *tmq, const TAOS_RES *msg, tmq_commit_cb *cb, void *param)
+    void tmq_commit_offset_async(tmq_t *tmq, const char *pTopicName, int32_t vgId, int64_t offset, tmq_commit_cb *cb, void *param)
     int32_t tmq_get_topic_assignment(tmq_t *tmq, const char *pTopicName, tmq_topic_assignment **assignment,int32_t *numOfAssignment)
     void tmq_free_assignment(tmq_topic_assignment* pAssignment)
     int32_t tmq_offset_seek(tmq_t *tmq, const char *pTopicName, int32_t vgId, int64_t offset)
