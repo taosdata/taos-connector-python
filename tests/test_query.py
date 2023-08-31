@@ -126,5 +126,25 @@ def test_varbinary():
     conn.execute("drop database if exists test_varbinary_py")
 
 
+def test_varbinary_with_cursor():
+    if not IS_V3:
+        return
+    conn = taos.connect()
+    cursor = conn.cursor()
+    conn.execute("drop database if exists test_varbinary_py")
+    conn.execute("create database if not exists test_varbinary_py")
+    conn.execute("use test_varbinary_py")
+    conn.execute('create table t(ts timestamp, c1 int, c2 binary(10), c3 varbinary(32));')
+    conn.execute(
+        "insert into t values(now, 1, 'aaaa', '\\x8f4e3e')(now+1s, 2, 'bbbb','\\x8f4e3e')(now+2s, 3, 'cccc','\\x8f4e3e')")
+    # entire columns query
+    cursor.execute(f'''select * from t;''')
+    res = cursor.fetchall()
+    print(res)
+
+    conn.execute("drop database if exists test_varbinary_py")
+    cursor.close()
+
+
 if __name__ == "__main__":
     test_query()
