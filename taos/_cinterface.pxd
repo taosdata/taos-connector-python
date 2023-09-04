@@ -142,6 +142,14 @@ cdef extern from "taos.h":
     int64_t tmq_get_vgroup_offset(TAOS_RES* res)
     const char *tmq_err2str(int32_t code)
 
+    ctypedef enum tmq_res_t:
+        TMQ_RES_INVALID
+        TMQ_RES_DATA
+        TMQ_RES_TABLE_META
+        TMQ_RES_METADATA
+
+    const char *tmq_get_table_name(TAOS_RES *res)
+    tmq_res_t   tmq_get_res_type(TAOS_RES *res)
 
 cdef list taos_get_column_data_is_null(TAOS_RES *res, int field, int rows)
 cdef taos_fetch_block_v3(TAOS_RES *res, TAOS_FIELD *fields, int field_count, object dt_epoch)

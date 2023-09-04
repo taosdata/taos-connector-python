@@ -1,7 +1,7 @@
 # cython: profile=True
 
 import asyncio
-from typing import Optional
+from typing import Optional, List
 from taos._cinterface cimport *
 from taos._parser cimport _parse_string, _parse_timestamp, _parse_binary_string, _parse_nchar_string
 from taos._cinterface import SIZED_TYPE, UNSIZED_TYPE, CONVERT_FUNC
@@ -597,7 +597,7 @@ cdef class TopicPartition:
     cdef int64_t _begin
     cdef int64_t _end
 
-    def __cinit__(self, str topic, int32_t partition, int64_t offset, int64_t begin, int64_t end):
+    def __cinit__(self, str topic, int32_t partition, int64_t offset, int64_t begin=0, int64_t end=0):
         _topic = topic.encode("utf-8")
         self._topic = _topic
         self._partition = partition
@@ -626,6 +626,122 @@ cdef class TopicPartition:
         return self._end
 
 
+cdef class MessageBlock:
+    cdef list _block
+    cdef list _fields
+    cdef int _nrows
+    cdef int _ncols
+    cdef str _table
+
+    def __init__(self, block=None, fields=None, nrows=0, ncols=0, table=""):
+        self._block = block or []
+        self._fields = fields or []
+        self._nrows = nrows
+        self._ncols = ncols
+        self._table = table
+
+    def fields(self):
+        return self._fields
+
+    def nrows(self):
+        return self._nrows
+
+    def ncols(self):
+        return self._ncols
+
+    def table(self):
+        return self._table
+
+    def fetchall(self):
+        return [r for r in self]
+
+    def __iter__(self):
+        return zip(*self._block)
+
+
+cdef class Message:
+    cdef TAOS_RES *_res
+    cdef int _err_no
+    cdef char *_err_str
+
+    def __cinit__(self, size_t res):
+        self._res = <TAOS_RES*>res
+        self._err_no = taos_errno(self._res)
+        self._err_str = taos_errstr(self._res)
+
+    def error(self):
+        return TmqError(self._err_str) if self._err_no else None
+
+    def topic(self):
+        return tmq_get_topic_name(self._res)
+
+    def database(self):
+        return tmq_get_db_name(self._res)
+
+    def vgroup(self):
+        return tmq_get_vgroup_id(self._res)
+
+    def offset(self):
+        return tmq_get_vgroup_offset(self._res)
+    
+    def _fetch_message_block(self):
+        cdef TAOS_ROW pblock
+        num_of_rows = taos_fetch_block(self._res, &pblock)
+        if num_of_rows == 0:
+            return None
+
+        field_count = taos_field_count(self._res)
+        _fields = taos_fetch_fields(self._res)
+        fields = [TaosField(f.name.decode("utf-8"), f.type, f.bytes) for f in _fields[:field_count]]
+        precision = taos_result_precision(self._res)
+
+        _table = tmq_get_table_name(self._res)
+        table = "" if _table is NULL else _table.decode("utf-8")
+
+        block = [None] * field_count
+        dt_epoch = _priv_datetime_epoch if _priv_datetime_epoch else _datetime_epoch
+        cdef int i
+        for i in range(field_count):
+            data = pblock[i]
+            field = _fields[i]
+
+            if field.type in UNSIZED_TYPE:
+                offsets = taos_get_column_data_offset(self._res, i)
+                block[i] = _parse_string(<size_t>data, num_of_rows, offsets)
+            elif field.type in SIZED_TYPE:
+                is_null = taos_get_column_data_is_null(self._res, i, num_of_rows)
+                block[i] = CONVERT_FUNC[field.type](<size_t>data, num_of_rows, is_null)
+            elif field.type in (TSDB_DATA_TYPE_TIMESTAMP, ):
+                is_null = taos_get_column_data_is_null(self._res, i, num_of_rows)
+                block[i] = _parse_timestamp(<size_t>data, num_of_rows, is_null, precision, dt_epoch)
+            else:
+                pass
+
+        return MessageBlock(block, fields, num_of_rows, field_count, table)
+
+    def value(self):
+        res_type = tmq_get_res_type(self._res)
+        if res_type in (tmq_res_t.TMQ_RES_TABLE_META, tmq_res_t.TMQ_RES_INVALID):
+            return None
+
+        message_blocks = []
+        while True:
+            mb = self._fetch_message_block()
+            if not mb:
+                break
+            
+            message_blocks.append(mb)
+
+        return message_blocks
+
+    def __dealloc__(self):
+        if self._res is not NULL:
+            taos_free_result(self._res)
+
+        self._res = NULL
+        self._err_no = 0
+        self._err_str = NULL
+    
 cdef class TaosConsumer:
     cdef dict _configs
     cdef tmq_conf_t *_tmq_conf
@@ -649,7 +765,7 @@ cdef class TaosConsumer:
     }
 
     def __cinit__(self, configs: dict[str, str]):
-        self._init_config()
+        self._init_config(configs)
         self._init_consumer()
         self._subscribed = False
 
@@ -659,7 +775,7 @@ cdef class TaosConsumer:
 
         self._configs = configs
         self._tmq_conf = tmq_conf_new()
-        if self._tmq_conf:
+        if self._tmq_conf is NULL:
             raise TmqError("new tmq conf failed")
 
         for k, v in self._configs.items():
@@ -724,41 +840,65 @@ cdef class TaosConsumer:
         if res is NULL:
             return None
         
-        return TaosResult(<size_t>res)
+        return Message(<size_t>res)
 
-    def commit(self, taos_res: TaosResult):
-        self.result_commit(taos_res)
+    def commit(self, message: Message=None, offsets: List[TopicPartition]=None):
+        if message:
+            self.message_commit(message)
+            return 
 
-    async def commit_a(self, taos_res: TaosResult):
-        await self.result_commit_a(taos_res)
+        if offsets:
+            self.offsets_commit(offsets)
+            return
 
-    def result_commit(self, taos_res: TaosResult):
-        tmq_errno = tmq_commit_sync(self._tmq, taos_res._res)
-        if tmq_errno != 0:
-            raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+        tmq_commit_sync(self._tmq, NULL)
 
-    async def result_commit_a(self, taos_res: TaosResult):
+    async def commit_a(self, message: Message=None, offsets: List[TopicPartition]=None):
+        if message:
+            await self.message_commit_a(message)
+            return
+
+        if offsets:
+            self.offsets_commit_a(offsets)
+
         loop = asyncio.get_event_loop()
         fut = loop.create_future()
-        tmq_commit_async(self._tmq, taos_res._res, async_commit_future_wrapper, <void*>fut)
+        tmq_commit_async(self._tmq, NULL, async_commit_future_wrapper, <void*>fut)
         tmq_errno = await fut
         if tmq_errno != 0:
             raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
 
-    def offset_commit(self, topic: str, vg_id: int, offset: int):
-        _topic = topic.encode("utf-8")
-        tmq_errno = tmq_commit_offset_sync(self._tmq, _topic, vg_id, offset)
+    def message_commit(self, message: Message):
+        tmq_errno = tmq_commit_sync(self._tmq, message._res)
         if tmq_errno != 0:
             raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+
+    async def message_commit_a(self, message: Message):
+        loop = asyncio.get_event_loop()
+        fut = loop.create_future()
+        tmq_commit_async(self._tmq, message._res, async_commit_future_wrapper, <void*>fut)
+        tmq_errno = await fut
+        if tmq_errno != 0:
+            raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+
+    def offsets_commit(self, topic_partitions: List[TopicPartition]):
+        for tp in topic_partitions:
+            tmq_errno = tmq_commit_offset_sync(self._tmq, tp._topic, tp._partition, tp._offset)
+            if tmq_errno != 0:
+                raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
     
-    async def offset_commit_a(self, topic: str, vg_id: int, offset: int):
+    async def offsets_commit_a(self, topic_partitions: List[TopicPartition]):
         loop = asyncio.get_event_loop()
-        fut = loop.create_future()
-        _topic = topic.encode("utf-8")
-        tmq_commit_offset_async(self._tmq, _topic, vg_id, offset, async_commit_future_wrapper, <void*>fut)
-        tmq_errno = await fut
-        if tmq_errno != 0:
-            raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+        futs = []
+        for tp in topic_partitions:
+            fut = loop.create_future()
+            tmq_commit_offset_async(self._tmq, tp._topic, tp._partition, tp._offset, async_commit_future_wrapper, <void*>fut)
+            futs.append(fut)
+        
+        tmq_errnos = await asyncio.gather(futs, return_exceptions=True)
+        for tmq_errno in tmq_errnos:
+            if tmq_errno != 0:
+                raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
 
     def assignment(self):
         cdef int32_t i
@@ -850,17 +990,11 @@ cdef class TaosConsumer:
 
         return tp_list
 
-    def get_topic_name(self, taos_res: TaosResult):
-        return tmq_get_topic_name(taos_res._res)
-
-    def get_db_name(self, taos_res: TaosResult):
-        return tmq_get_db_name(taos_res._res)
-
-    def get_vgroup_id(self, taos_res: TaosResult):
-        return tmq_get_vgroup_id(taos_res._res)
-
-    def get_vgroup_offset(self, taos_res: TaosResult):
-        return tmq_get_vgroup_offset(taos_res._res)
+    def __iter__(self):
+        while self._tmq:
+            message = self.poll()
+            if message:
+                yield message
 
     def __dealloc__(self):
         self.close()
