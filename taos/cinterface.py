@@ -66,7 +66,7 @@ def _load_taos():
         "Windows": _load_taos_windows,
     }
     pf = platform.system()
-    if load_func[pf] is None:
+    if pf not in load_func:
         raise InterfaceError("unsupported platform: %s" % pf)
     try:
         return load_func[pf]()

@@ -80,14 +80,15 @@ class AlchemyTaosConnection:
     paramstyle = "pyformat"
 
     def connect(self, **kwargs):
-        host = kwargs["host"] if "host" in kwargs else "localhost"
-        port = kwargs["port"] if "port" in kwargs else "6030"
-        user = kwargs["username"] if "username" in kwargs else "root"
-        password = kwargs["password"] if "password" in kwargs else "taosdata"
+        host = kwargs.get("host", "localhost")
+        port = kwargs.get("port", "6030")
+        user = kwargs.get("username", "root")
+        password = kwargs.get("password", "taosdata")
+        database = kwargs.get("database", None)
 
         import taos
 
-        return taos.connect(host=host, user=user, password=password, port=int(port))
+        return taos.connect(host=host, user=user, password=password, port=int(port), database=database)
 
 
 class TaosDialect(default.DefaultDialect):
