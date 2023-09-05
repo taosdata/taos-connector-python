@@ -18,6 +18,19 @@ cdef extern from "taos.h":
         TSDB_OPTION_SHELL_ACTIVITY_TIMER
         TSDB_OPTION_USE_ADAPTER
         TSDB_MAX_OPTIONS
+    ctypedef enum TSDB_SML_PROTOCOL_TYPE:
+        TSDB_SML_UNKNOWN_PROTOCOL
+        TSDB_SML_LINE_PROTOCOL 
+        TSDB_SML_TELNET_PROTOCOL
+        TSDB_SML_JSON_PROTOCOL
+    ctypedef enum TSDB_SML_TIMESTAMP_TYPE:
+        TSDB_SML_TIMESTAMP_NOT_CONFIGURED
+        TSDB_SML_TIMESTAMP_HOURS
+        TSDB_SML_TIMESTAMP_MINUTES
+        TSDB_SML_TIMESTAMP_SECONDS
+        TSDB_SML_TIMESTAMP_MILLI_SECONDS
+        TSDB_SML_TIMESTAMP_MICRO_SECONDS
+        TSDB_SML_TIMESTAMP_NANO_SECONDS
     ctypedef struct TAOS_MULTI_BIND:
         int       buffer_type
         void     *buffer
@@ -75,18 +88,31 @@ cdef extern from "taos.h":
     void taos_query_a_with_reqid(TAOS *taos, const char *sql, __taos_async_fn_t fp, void *param, int64_t reqid)
     void taos_fetch_raw_block_a(TAOS_RES *res, __taos_async_fn_t fp, void *param)
     const void *taos_get_raw_block(TAOS_RES *res)
+
     TAOS_STMT *taos_stmt_init(TAOS *taos)
     int taos_stmt_prepare(TAOS_STMT *stmt, const char *sql, unsigned long length)
     int taos_stmt_set_tbname(TAOS_STMT *stmt, const char *name)
     int taos_stmt_set_tbname_tags(TAOS_STMT *stmt, const char *name, TAOS_MULTI_BIND *tags)
     int taos_stmt_affected_rows(TAOS_STMT *stmt)
     TAOS_RES *taos_stmt_use_result(TAOS_STMT *stmt)
+    int taos_stmt_close(TAOS_STMT *stmt)
     int taos_stmt_execute(TAOS_STMT *stmt)
     int taos_stmt_add_batch(TAOS_STMT *stmt)
     int taos_stmt_bind_param(TAOS_STMT *stmt, TAOS_MULTI_BIND *bind)
     int taos_stmt_bind_param_batch(TAOS_STMT *stmt, TAOS_MULTI_BIND *bind)
     int taos_get_table_vgId(TAOS *taos, const char *db, const char *table, int *vgId)
     int taos_load_table_info(TAOS *taos, const char *tableNameList)
+    char *taos_stmt_errstr(TAOS_STMT *stmt)
+
+    TAOS_RES *taos_schemaless_insert(TAOS *taos, char *lines[], int numLines, int protocol, int precision)
+    TAOS_RES *taos_schemaless_insert_with_reqid(TAOS *taos, char *lines[], int numLines, int protocol, int precision, int64_t reqid)
+    TAOS_RES *taos_schemaless_insert_raw(TAOS *taos, char *lines, int len, int32_t *totalRows, int protocol, int precision)
+    TAOS_RES *taos_schemaless_insert_raw_with_reqid(TAOS *taos, char *lines, int len, int32_t *totalRows, int protocol, int precision, int64_t reqid)
+    TAOS_RES *taos_schemaless_insert_ttl(TAOS *taos, char *lines[], int numLines, int protocol, int precision, int32_t ttl)
+    TAOS_RES *taos_schemaless_insert_ttl_with_reqid(TAOS *taos, char *lines[], int numLines, int protocol, int precision, int32_t ttl, int64_t reqid)
+    TAOS_RES *taos_schemaless_insert_raw_ttl(TAOS *taos, char *lines, int len, int32_t *totalRows, int protocol, int precision, int32_t ttl)
+    TAOS_RES *taos_schemaless_insert_raw_ttl_with_reqid(TAOS *taos, char *lines, int len, int32_t *totalRows, int protocol, int precision, int32_t ttl, int64_t reqid)      
+
 
     ctypedef struct tmq_t:
         pass

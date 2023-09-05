@@ -1,5 +1,6 @@
 # cython: profile=True
 
+from libc.stdlib cimport malloc, free
 import asyncio
 from typing import Optional, List
 from taos._cinterface cimport *
@@ -8,7 +9,8 @@ from taos._cinterface import SIZED_TYPE, UNSIZED_TYPE, CONVERT_FUNC
 import datetime as dt
 import pytz
 from collections import namedtuple
-from taos.error import ProgrammingError, OperationalError, ConnectionError, DatabaseError, StatementError, InternalError, TmqError
+from taos.error import ProgrammingError, OperationalError, ConnectionError, DatabaseError, StatementError, InternalError, TmqError, SchemalessError
+from taos.constants import FieldType
 
 _priv_tz = None
 _utc_tz = pytz.timezone("UTC")
@@ -152,6 +154,12 @@ cdef class TaosConnection:
         else:
             res = taos_query_with_reqid(self._raw_conn, _sql, req_id)
 
+        errno = taos_errno(res)
+        if errno != 0:
+            errstr = taos_errstr(res)
+            taos_free_result(res)
+            raise ProgrammingError(errstr, errno)
+
         return TaosResult(<size_t>res)
 
     async def query_async(self, sql: str, req_id: Optional[int] = None):
@@ -166,15 +174,23 @@ cdef class TaosConnection:
         res = await fut
         return res
 
-    def subscribe(self, configs: dict[str, str], callback):
+    def statement(self, sql: Optional[str]=None):
         if self._raw_conn is NULL:
             return None
 
-        tmq_conf = tmq_conf_new()
-        for k, v in configs.items():
-            _k = k.encode("utf-8")
-            _v = v.encode("utf-8")
-            tmq_conf_res = tmq_conf_set(tmq_conf, _k, _v)
+        stmt = taos_stmt_init(self._raw_conn)
+        if stmt is NULL:
+            raise StatementError("init taos statement failed!")
+
+        if sql:
+            _sql = sql.encode("utf-8")
+            code = taos_stmt_prepare(stmt, _sql, len(_sql))
+            if code != 0:
+                stmt_errstr = taos_stmt_errstr(stmt).decode("utf-8")
+                raise StatementError(stmt_errstr, code)
+
+        return TaosStmt(<size_t>stmt)
+        
 
     def load_table_info(self, tables: list):
         _tables = ",".join(tables).encode("utf-8")
@@ -184,6 +200,244 @@ cdef class TaosConnection:
         if self._raw_conn is not NULL:
             taos_close(self._raw_conn)
             self._raw_conn = NULL
+
+    def schemaless_insert(
+            self,
+            lines: List[str],
+            protocol: TSDB_SML_PROTOCOL_TYPE,
+            precision: TSDB_SML_TIMESTAMP_TYPE,
+            req_id: Optional[int] = None,
+            ttl: Optional[int] = None,
+    ) -> int:
+        """
+        1.Line protocol and schemaless support
+
+        ## Example
+
+        ```python
+        import taos
+        conn = taos.connect()
+        conn.exec("drop database if exists test")
+        conn.select_db("test")
+        lines = [
+            'ste,t2=5,t3=L"ste" c1=true,c2=4,c3="string" 1626056811855516532',
+        ]
+        conn.schemaless_insert(lines, 0, "ns")
+        ```
+
+        2.OpenTSDB telnet style API format support
+
+        ## Example
+
+        ```python
+        import taos
+        conn = taos.connect()
+        conn.exec("drop database if exists test")
+        conn.select_db("test")
+        lines = [
+            'cpu_load 1626056811855516532ns 2.0f32 id="tb1",host="host0",interface="eth0"',
+        ]
+        conn.schemaless_insert(lines, 1, None)
+        ```
+
+        3.OpenTSDB HTTP JSON format support
+
+        ## Example
+
+        ```python
+        import taos
+        conn = taos.connect()
+        conn.exec("drop database if exists test")
+        conn.select_db("test")
+        payload = ['''
+        {
+            "metric": "cpu_load_0",
+            "timestamp": 1626006833610123,
+            "value": 55.5,
+            "tags":
+                {
+                    "host": "ubuntu",
+                    "interface": "eth0",
+                    "Id": "tb0"
+                }
+        }
+        ''']
+        conn.schemaless_insert(lines, 2, None)
+        ```
+        """
+        num_of_lines = len(lines)
+        _lines = <char**>malloc(num_of_lines * sizeof(char*))
+        if _lines is NULL:
+            raise MemoryError()
+
+        for i in range(num_of_lines):
+            _line = lines[i].encode("utf-8")
+            _lines[i] = _line
+
+        if ttl is None:
+            if req_id is None:
+                res = taos_schemaless_insert(
+                    self._raw_conn,
+                    _lines,
+                    num_of_lines,
+                    protocol,
+                    precision,
+                )
+            else:
+                res = taos_schemaless_insert_with_reqid(
+                    self._raw_conn,
+                    _lines,
+                    num_of_lines,
+                    protocol,
+                    precision,
+                    req_id,
+                )
+        else:
+            if req_id is None:
+                res = taos_schemaless_insert_ttl(
+                    self._raw_conn,
+                    _lines,
+                    num_of_lines,
+                    protocol,
+                    precision,
+                    ttl,
+                )
+            else:
+                res = taos_schemaless_insert_ttl_with_reqid(
+                    self._raw_conn,
+                    _lines,
+                    num_of_lines,
+                    protocol,
+                    precision,
+                    ttl,
+                    req_id,
+                )
+        
+        free(_lines)
+        errno = taos_errno(res)
+        affected_rows = taos_affected_rows(res)
+        if errno != 0:
+            errstr = taos_errstr(res)
+            taos_free_result(res)
+            raise SchemalessError(errstr, errno, affected_rows)
+
+        return TaosResult(<size_t>res)
+
+    def schemaless_insert_raw(
+            self,
+            lines: str,
+            protocol: TSDB_SML_PROTOCOL_TYPE,
+            precision: TSDB_SML_TIMESTAMP_TYPE,
+            req_id: Optional[int] = None,
+            ttl: Optional[int] = None,
+    ) -> int:
+        """
+        1.Line protocol and schemaless support
+
+        ## Example
+
+        ```python
+        import taos
+        conn = taos.connect()
+        conn.exec("drop database if exists test")
+        conn.select_db("test")
+        lines = 'ste,t2=5,t3=L"ste" c1=true,c2=4,c3="string" 1626056811855516532'
+        conn.schemaless_insert_raw(lines, 0, "ns")
+        ```
+
+        2.OpenTSDB telnet style API format support
+
+        ## Example
+
+        ```python
+        import taos
+        conn = taos.connect()
+        conn.exec("drop database if exists test")
+        conn.select_db("test")
+        lines = 'cpu_load 1626056811855516532ns 2.0f32 id="tb1",host="host0",interface="eth0"'
+        conn.schemaless_insert_raw(lines, 1, None)
+        ```
+
+        3.OpenTSDB HTTP JSON format support
+
+        ## Example
+
+        ```python
+        import taos
+        conn = taos.connect()
+        conn.exec("drop database if exists test")
+        conn.select_db("test")
+        payload = '''
+        {
+            "metric": "cpu_load_0",
+            "timestamp": 1626006833610123,
+            "value": 55.5,
+            "tags":
+                {
+                    "host": "ubuntu",
+                    "interface": "eth0",
+                    "Id": "tb0"
+                }
+        }
+        '''
+        conn.schemaless_insert_raw(lines, 2, None)
+        ```
+        """
+        cdef int32_t total_rows
+        _lines = lines.encode("utf-8")
+        _length = len(_lines)
+
+        if ttl is None:
+            if req_id is None:
+                res = taos_schemaless_insert_raw(
+                    self._raw_conn,
+                    _lines,
+                    _length,
+                    &total_rows,
+                    protocol,
+                    precision,
+                )
+            else:
+                res = taos_schemaless_insert_raw_with_reqid(
+                    self._raw_conn,
+                    _lines,
+                    _length,
+                    &total_rows,
+                    protocol,
+                    precision,
+                    req_id,
+                )
+        else:
+            if req_id is None:
+                res = taos_schemaless_insert_raw_ttl(
+                    self._raw_conn,
+                    _lines,
+                    _length,
+                    &total_rows,
+                    protocol,
+                    precision,
+                    ttl,
+                )
+            else:
+                res = taos_schemaless_insert_raw_ttl_with_reqid(
+                    self._raw_conn,
+                    _lines,
+                    _length,
+                    &total_rows,
+                    protocol,
+                    precision,
+                    ttl,
+                    req_id,
+                )
+
+        errno = taos_errno(res)
+        affected_rows = taos_affected_rows(res)
+        if errno != 0:
+            errstr = taos_errstr(res)
+            taos_free_result(res)
+            raise SchemalessError(errstr, errno, affected_rows)
+        
+        return TaosResult(<size_t>res)
 
     def commit(self):
         """Commit any pending transaction to the database.
@@ -999,83 +1253,446 @@ cdef class TaosConsumer:
     def __dealloc__(self):
         self.close()
 
-# ---------------------------------------- TMQ --------------------------------------------------------------- ^
+# ---------------------------------------- statement --------------------------------------------------------------- ^
 
-# class TaosStmt(object):
-#     cdef TAOS_STMT *_stmt
-#
-#     def __cinit__(self, size_t stmt):
-#         self._stmt = <TAOS_STMT*>stmt
-#
-#     def set_tbname(self, name: str):
-#         if self._stmt is NULL:
-#             raise StatementError("Invalid use of set_tbname")
-#
-#         _name = name.decode("utf-8")
-#         taos_stmt_set_tbname(self._stmt, <char*>_name)
-#
-#     def prepare(self, sql: str):
-#         _sql = sql.decode("utf-8")
-#         taos_stmt_prepare(self._stmt, <char*>_sql, len(_sql))
-#
-#     def set_tbname_tags(self, name: str, tags: list):
-#         # type: (str, Array[TaosBind]) -> None
-#         """Set table name with tags, tags is array of BindParams"""
-#         if self._stmt is NULL:
-#             raise StatementError("Invalid use of set_tbname_tags")
-#         taos_stmt_set_tbname_tags(self._stmt, name, NULL)
-#
-#     def bind_param(self, params, add_batch=True):
-#         # type: (Array[TaosBind], bool) -> None
-#         if self._stmt is None:
-#             raise StatementError("Invalid use of stmt")
-#         taos_stmt_bind_param(self._stmt, params)
-#         if add_batch:
-#             taos_stmt_add_batch(self._stmt)
-#
-#     def bind_param_batch(self, binds, add_batch=True):
-#         # type: (Array[TaosMultiBind], bool) -> None
-#         if self._stmt is NULL:
-#             raise StatementError("Invalid use of stmt")
-#         taos_stmt_bind_param_batch(self._stmt, binds)
-#         if add_batch:
-#             taos_stmt_add_batch(self._stmt)
-#
-#     def add_batch(self):
-#         if self._stmt is NULL:
-#             raise StatementError("Invalid use of stmt")
-#         taos_stmt_add_batch(self._stmt)
-#
-#     def execute(self):
-#         if self._stmt is NULL:
-#             raise StatementError("Invalid use of execute")
-#         taos_stmt_execute(self._stmt)
-#
-#     def use_result(self):
-#         """NOTE: Don't use a stmt result more than once."""
-#         result = taos_stmt_use_result(self._stmt)
-#         return TaosResult(<size_t>result)
-#
-#     @property
-#     def affected_rows(self):
-#         # type: () -> int
-#         return taos_stmt_affected_rows(self._stmt)
-#
-#     def close(self):
-#         """Close stmt."""
-#         if self._stmt is NULL:
-#             return
-#         taos_stmt_close(self._stmt)
-#         self._stmt = NULL
-#
-#     def __dealloc__(self):
-#         self.close()
-#
-#
-# class TaosMultiBind:
-#     cdef int       buffer_type
-#     cdef void     *buffer
-#     cdef uintptr_t buffer_length
-#     cdef int32_t  *length
-#     cdef char     *is_null
-#     cdef int       num
+cdef class TaosStmt:
+    cdef TAOS_STMT *_stmt
+
+    def __cinit__(self, size_t stmt):
+        self._stmt = <TAOS_STMT*>stmt
+
+    def _check_stmt_error(self, errno: int):
+        if errno != 0:
+            raise StatementError(taos_stmt_errstr(self._stmt), errno)
+
+    def set_tbname(self, name: str):
+        if self._stmt is NULL:
+            raise StatementError("Invalid use of set_tbname")
+
+        _name = name.decode("utf-8")
+        errno = taos_stmt_set_tbname(self._stmt, _name)
+        self._check_stmt_error(errno)
+
+    def prepare(self, sql: str):
+        if self._stmt is NULL:
+            raise StatementError("Invalid use of set_tbname")
+
+        _sql = sql.decode("utf-8")
+        errno = taos_stmt_prepare(self._stmt, _sql, len(_sql))
+        self._check_stmt_error(errno)
+
+    def set_tbname_tags(self, name: str, tags: list):
+        """Set table name with tags, tags is array of BindParams"""
+        if self._stmt is NULL:
+            raise StatementError("Invalid use of set_tbname_tags")
+
+        errno = taos_stmt_set_tbname_tags(self._stmt, name, NULL)
+        self._check_stmt_error(errno)
+
+    def bind_param(self, TaosMultiBind[:] params, add_batch=True):
+        if self._stmt is NULL:
+            raise StatementError("Invalid use of stmt")
+
+        length = len(params)
+        multi_binds = <TAOS_MULTI_BIND*>malloc(length * sizeof(TAOS_MULTI_BIND))
+        for i in range(length):
+            multi_binds[i] = params[i]._inner
+        errno = taos_stmt_bind_param(self._stmt, multi_binds)
+        free(multi_binds)
+        self._check_stmt_error(errno)
+
+        if add_batch:
+            self.add_batch()
+
+    def bind_param_batch(self, TaosMultiBind[:] params, add_batch=True):
+        if self._stmt is NULL:
+            raise StatementError("Invalid use of stmt")
+
+        length = len(params)
+        multi_binds = <TAOS_MULTI_BIND*>malloc(length * sizeof(TAOS_MULTI_BIND))
+        for i in range(length):
+            multi_binds[i] = params[i]._inner
+        errno = taos_stmt_bind_param_batch(self._stmt, multi_binds)
+        free(multi_binds)
+        self._check_stmt_error(errno)
+
+        if add_batch:
+            self.add_batch()
+
+    def add_batch(self):
+        if self._stmt is NULL:
+            raise StatementError("Invalid use of stmt")
+        
+        errno = taos_stmt_add_batch(self._stmt)
+        self._check_stmt_error(errno)
+
+    def execute(self):
+        if self._stmt is NULL:
+            raise StatementError("Invalid use of execute")
+
+        errno = taos_stmt_execute(self._stmt)
+        self._check_stmt_error(errno)
+
+    def use_result(self):
+        if self._stmt is NULL:
+            raise StatementError("Invalid use of use_result")
+        
+        res = taos_stmt_use_result(self._stmt)
+        if res is NULL:
+            raise StatementError(taos_stmt_errstr(self._stmt))
+
+        return TaosResult(<size_t>res)
+
+    @property
+    def affected_rows(self):
+        # type: () -> int
+        return taos_stmt_affected_rows(self._stmt)
+
+    def close(self):
+        """Close stmt."""
+        if self._stmt is NULL:
+            return
+
+        errno = taos_stmt_close(self._stmt)
+        self._check_stmt_error(errno)
+        self._stmt = NULL
+
+    def __dealloc__(self):
+        self.close()
+
+cdef class TaosMultiBind:
+    cdef TAOS_MULTI_BIND _inner
+
+    def bool(self, values):
+        self._inner.buffer_type = FieldType.C_BOOL
+        self._inner.buffer_length = sizeof(bool)
+        self._inner.num = len(values)
+        _buffer = <int8_t*>malloc(self._inner.num * self._inner.buffer_length)
+        _is_null = <char*>malloc(self._inner.num * sizeof(char))
+
+        for i in range(self._inner.num):
+            v = values[i]
+            if v is None:
+                _buffer[i] = <int8_t>FieldType.C_BOOL_NULL
+                _is_null[i] = 1
+            else:
+                _buffer[i] = <int8_t>v
+                _is_null[i] = 0
+        
+        self._inner.buffer = <void*>_buffer
+        self._inner.is_null = <char*>_is_null
+
+    def tinyint(self, values):
+        self._inner.buffer_type = FieldType.C_TINYINT
+        self._inner.buffer_length = sizeof(int8_t)
+        self._inner.num = len(values)
+        _buffer = <int8_t*>malloc(self._inner.num * self._inner.buffer_length)
+        _is_null = <char*>malloc(self._inner.num * sizeof(char))
+
+        for i in range(self._inner.num):
+            v = values[i]
+            if v is None:
+                _buffer[i] = <int8_t>FieldType.C_TINYINT_NULL
+                _is_null[i] = 1
+            else:
+                _buffer[i] = <int8_t>v
+                _is_null[i] = 0
+        
+        self._inner.buffer = <void*>_buffer
+        self._inner.is_null = <char*>_is_null
+
+    def smallint(self, values):
+        self._inner.buffer_type = FieldType.C_SMALLINT
+        self._inner.buffer_length = sizeof(int16_t)
+        self._inner.num = len(values)
+        _buffer = <int16_t*>malloc(self._inner.num * self._inner.buffer_length)
+        _is_null = <char*>malloc(self._inner.num * sizeof(char))
+
+        for i in range(self._inner.num):
+            v = values[i]
+            if v is None:
+                _buffer[i] = <int16_t>FieldType.C_SMALLINT_NULL
+                _is_null[i] = 1
+            else:
+                _buffer[i] = <int16_t>v
+                _is_null[i] = 0
+        
+        self._inner.buffer = <void*>_buffer
+        self._inner.is_null = <char*>_is_null
+
+    def int(self, values):
+        self._inner.buffer_type = FieldType.C_INT
+        self._inner.buffer_length = sizeof(int32_t)
+        self._inner.num = len(values)
+        _buffer = <int32_t*>malloc(self._inner.num * self._inner.buffer_length)
+        _is_null = <char*>malloc(self._inner.num * sizeof(char))
+
+        for i in range(self._inner.num):
+            v = values[i]
+            if v is None:
+                _buffer[i] = <int32_t>FieldType.C_INT_NULL
+                _is_null[i] = 1
+            else:
+                _buffer[i] = <int32_t>v
+                _is_null[i] = 0
+        
+        self._inner.buffer = <void*>_buffer
+        self._inner.is_null = <char*>_is_null
+
+    def bigint(self, values):
+        self._inner.buffer_type = FieldType.C_BIGINT
+        self._inner.buffer_length = sizeof(int64_t)
+        self._inner.num = len(values)
+        _buffer = <int64_t*>malloc(self._inner.num * self._inner.buffer_length)
+        _is_null = <char*>malloc(self._inner.num * sizeof(char))
+
+        for i in range(self._inner.num):
+            v = values[i]
+            if v is None:
+                _buffer[i] = <int64_t>FieldType.C_BIGINT_NULL
+                _is_null[i] = 1
+            else:
+                _buffer[i] = <int64_t>v
+                _is_null[i] = 0
+        
+        self._inner.buffer = <void*>_buffer
+        self._inner.is_null = <char*>_is_null
+
+    def float(self, values):
+        self._inner.buffer_type = FieldType.C_FLOAT
+        self._inner.buffer_length = sizeof(float)
+        self._inner.num = len(values)
+        _buffer = <float*>malloc(self._inner.num * self._inner.buffer_length)
+        _is_null = <char*>malloc(self._inner.num * sizeof(char))
+
+        for i in range(self._inner.num):
+            v = values[i]
+            if v is None:
+                _buffer[i] = <float>FieldType.C_FLOAT_NULL
+                _is_null[i] = 1
+            else:
+                _buffer[i] = <float>v
+                _is_null[i] = 0
+        
+        self._inner.buffer = <void*>_buffer
+        self._inner.is_null = <char*>_is_null
+
+    def double(self, values):
+        self._inner.buffer_type = FieldType.C_DOUBLE
+        self._inner.buffer_length = sizeof(double)
+        self._inner.num = len(values)
+        _buffer = <double*>malloc(self._inner.num * self._inner.buffer_length)
+        _is_null = <char*>malloc(self._inner.num * sizeof(char))
+
+        for i in range(self._inner.num):
+            v = values[i]
+            if v is None:
+                _buffer[i] = <double>FieldType.C_DOUBLE_NULL
+                _is_null[i] = 1
+            else:
+                _buffer[i] = <double>v
+                _is_null[i] = 0
+        
+        self._inner.buffer = <void*>_buffer
+        self._inner.is_null = <char*>_is_null
+
+    def tinyint_unsigned(self, values):
+        self._inner.buffer_type = FieldType.C_TINYINT_UNSIGNED
+        self._inner.buffer_length = sizeof(uint8_t)
+        self._inner.num = len(values)
+        _buffer = <uint8_t*>malloc(self._inner.num * self._inner.buffer_length)
+        _is_null = <char*>malloc(self._inner.num * sizeof(char))
+
+        for i in range(self._inner.num):
+            v = values[i]
+            if v is None:
+                _buffer[i] = <uint8_t>FieldType.C_TINYINT_UNSIGNED_NULL
+                _is_null[i] = 1
+            else:
+                _buffer[i] = <uint8_t>v
+                _is_null[i] = 0
+        
+        self._inner.buffer = <void*>_buffer
+        self._inner.is_null = <char*>_is_null
+
+    def smallint_unsigned(self, values):
+        self._inner.buffer_type = FieldType.C_SMALLINT_UNSIGNED
+        self._inner.buffer_length = sizeof(uint16_t)
+        self._inner.num = len(values)
+        _buffer = <uint16_t*>malloc(self._inner.num * self._inner.buffer_length)
+        _is_null = <char*>malloc(self._inner.num * sizeof(char))
+
+        for i in range(self._inner.num):
+            v = values[i]
+            if v is None:
+                _buffer[i] = <uint16_t>FieldType.C_SMALLINT_UNSIGNED_NULL
+                _is_null[i] = 1
+            else:
+                _buffer[i] = <uint16_t>v
+                _is_null[i] = 0
+        
+        self._inner.buffer = <void*>_buffer
+        self._inner.is_null = <char*>_is_null
+
+    def int_unsigned(self, values):
+        self._inner.buffer_type = FieldType.C_INT_UNSIGNED
+        self._inner.buffer_length = sizeof(uint32_t)
+        self._inner.num = len(values)
+        _buffer = <uint32_t*>malloc(self._inner.num * self._inner.buffer_length)
+        _is_null = <char*>malloc(self._inner.num * sizeof(char))
+
+        for i in range(self._inner.num):
+            v = values[i]
+            if v is None:
+                _buffer[i] = <uint32_t>FieldType.C_INT_UNSIGNED_NULL
+                _is_null[i] = 1
+            else:
+                _buffer[i] = <uint32_t>v
+                _is_null[i] = 0
+        
+        self._inner.buffer = <void*>_buffer
+        self._inner.is_null = <char*>_is_null
+
+    def bigint_unsigned(self, values):
+        self._inner.buffer_type = FieldType.C_BIGINT_UNSIGNED
+        self._inner.buffer_length = sizeof(uint64_t)
+        self._inner.num = len(values)
+        _buffer = <uint64_t*>malloc(self._inner.num * self._inner.buffer_length)
+        _is_null = <char*>malloc(self._inner.num * sizeof(char))
+
+        for i in range(self._inner.num):
+            v = values[i]
+            if v is None:
+                _buffer[i] = <uint64_t>FieldType.C_BIGINT_UNSIGNED_NULL
+                _is_null[i] = 1
+            else:
+                _buffer[i] = <uint64_t>v
+                _is_null[i] = 0
+        
+        self._inner.buffer = <void*>_buffer
+        self._inner.is_null = <char*>_is_null
+
+    def timestamp(self, values, precision):
+        self._inner.buffer_type = FieldType.C_TIMESTAMP
+        self._inner.buffer_length = sizeof(int64_t)
+        self._inner.num = len(values)
+        _buffer = <int64_t*>malloc(self._inner.num * self._inner.buffer_length)
+        _is_null = <char*>malloc(self._inner.num * sizeof(char))
+
+        dt_epoch = _priv_datetime_epoch if _priv_datetime_epoch else _datetime_epoch
+
+        if len(values) > 0:
+            if isinstance(values[0], dt.datetime):
+                values = [int(round((v - dt_epoch).total_seconds() * 10**(3*(precision+1)))) for v in values]
+            elif isinstance(values[0], str):
+                for i, v in enumerate(values):
+                    v = dt.datetime.fromisoformat(v)
+                    values[i] = int(round((v - dt_epoch).total_seconds() * 10**(3*(precision+1))))
+            elif isinstance(values[0], float):
+                values = [int(round(v * 10**(3*(precision+1)))) for v in values]
+            else:
+                pass
+
+        for i in range(self._inner.num):
+            v = values[i]
+            if v is None:
+                _buffer[i] = <int64_t>FieldType.C_BIGINT_NULL
+                _is_null[i] = 1
+            else:
+                _buffer[i] = <int64_t>v
+                _is_null[i] = 0
+        
+        self._inner.buffer = <void*>_buffer
+        self._inner.is_null = <char*>_is_null
+
+
+    def binary(self, values):
+        _bytes = [v.encode("utf-8") for v in values if v is not None]
+        self._inner.buffer_type = FieldType.C_BINARY
+        self._inner.buffer_length = max(len(b) for b in _bytes if b is not None)
+        self._inner.num = len(values)
+        _length = <int32_t*>malloc(self._inner.num * sizeof(int32_t))
+        _buffer = <char*>malloc(self._inner.num * self._inner.buffer_length)
+        _is_null = <char*>malloc(self._inner.num * sizeof(char))
+
+
+        for i in range(self._inner.num):
+            offset = i * self._inner.buffer_length
+            v = _bytes[i]
+            if v is None:
+                _buffer[offset] = b"\x00"
+                _is_null[i] = 1
+                _length[i] = 0
+            else:
+                _buffer[i] = v
+                _is_null[i] = 0
+                _length[i] = len(v)
+
+        self._inner.buffer = <void*>_buffer
+        self._inner.is_null = <char*>_is_null
+        self._inner.length = _length
+
+    def nchar(self, values):
+        _bytes = [v.encode("utf-8") for v in values if v is not None]
+        self._inner.buffer_type = FieldType.C_NCHAR
+        self._inner.buffer_length = max(len(b) for b in _bytes if b is not None)
+        self._inner.num = len(values)
+        _length = <int32_t*>malloc(self._inner.num * sizeof(int32_t))
+        _buffer = <char*>malloc(self._inner.num * self._inner.buffer_length)
+        _is_null = <char*>malloc(self._inner.num * sizeof(char))
+
+
+        for i in range(self._inner.num):
+            offset = i * self._inner.buffer_length
+            v = _bytes[i]
+            if v is None:
+                _buffer[offset] = b"\x00"
+                _is_null[i] = 1
+                _length[i] = 0
+            else:
+                _buffer[i] = v
+                _is_null[i] = 0
+                _length[i] = len(v)
+
+        self._inner.buffer = <void*>_buffer
+        self._inner.is_null = <char*>_is_null
+        self._inner.length = _length
+
+    def json(self, values):
+        _bytes = [v.encode("utf-8") for v in values if v is not None]
+        self._inner.buffer_type = FieldType.C_JSON
+        self._inner.buffer_length = max(len(b) for b in _bytes if b is not None)
+        self._inner.num = len(values)
+        _length = <int32_t*>malloc(self._inner.num * sizeof(int32_t))
+        _buffer = <char*>malloc(self._inner.num * self._inner.buffer_length)
+        _is_null = <char*>malloc(self._inner.num * sizeof(char))
+
+
+        for i in range(self._inner.num):
+            offset = i * self._inner.buffer_length
+            v = _bytes[i]
+            if v is None:
+                _buffer[offset] = b"\x00"
+                _is_null[i] = 1
+                _length[i] = 0
+            else:
+                _buffer[i] = v
+                _is_null[i] = 0
+                _length[i] = len(v)
+
+        self._inner.buffer = <void*>_buffer
+        self._inner.is_null = <char*>_is_null
+        self._inner.length = _length
+
+    def __dealloc__(self):
+        if self._inner.buffer is not NULL:
+            free(self._inner.buffer)
+            self._inner.buffer = NULL
+
+        if self._inner.is_null is not NULL:
+            free(self._inner.is_null)
+            self._inner.is_null = NULL
+
+        if self._inner.length is not NULL:
+            free(self._inner.length)
+            self._inner.length = NULL
