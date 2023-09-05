@@ -202,6 +202,9 @@ class TaosBind(ctypes.Structure):
             self.buffer = cast(pointer(c_uint64(value)), c_void_p)
             self.buffer_length = sizeof(c_uint64)
 
+    def varchar(self, value):
+        self.binary(value)
+
 
 def _datetime_to_timestamp(value, precision):
     # type: (datetime | float | int | str | c_int64, PrecisionEnum) -> c_int64
@@ -513,6 +516,12 @@ class TaosMultiBind(ctypes.Structure):
         self.buffer = cast(buffer, c_void_p)
         self.num = len(values)
         self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
+
+    def varchar(self, values):
+        if type(values) is not tuple and type(values) is not list:
+            values = tuple([values])
+        self.buffer_type = FieldType.C_VARCHAR
+        self._str_to_buffer(values)
 
 
 def new_bind_param():
