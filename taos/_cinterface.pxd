@@ -111,20 +111,14 @@ cdef extern from "taos.h":
     TAOS_RES *taos_schemaless_insert_ttl(TAOS *taos, char *lines[], int numLines, int protocol, int precision, int32_t ttl)
     TAOS_RES *taos_schemaless_insert_ttl_with_reqid(TAOS *taos, char *lines[], int numLines, int protocol, int precision, int32_t ttl, int64_t reqid)
     TAOS_RES *taos_schemaless_insert_raw_ttl(TAOS *taos, char *lines, int len, int32_t *totalRows, int protocol, int precision, int32_t ttl)
-    TAOS_RES *taos_schemaless_insert_raw_ttl_with_reqid(TAOS *taos, char *lines, int len, int32_t *totalRows, int protocol, int precision, int32_t ttl, int64_t reqid)      
-
-
+    TAOS_RES *taos_schemaless_insert_raw_ttl_with_reqid(TAOS *taos, char *lines, int len, int32_t *totalRows, int protocol, int precision, int32_t ttl, int64_t reqid)
     ctypedef struct tmq_t:
         pass
-
     ctypedef struct tmq_conf_t:
         pass
-
     ctypedef struct tmq_list_t:
         pass
-
     ctypedef void tmq_commit_cb(tmq_t *tmq, int32_t code, void *param) except *
-
     ctypedef enum tmq_conf_res_t:
         TMQ_CONF_UNKNOWN
         TMQ_CONF_INVALID
