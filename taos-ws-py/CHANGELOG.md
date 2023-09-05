@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.2.2 - 2023-01-13
 
+## v0.2.6 - 2023-09-05
+
+### Bug Fixes:
+
+- delete default host in taosws
+
 ## v0.2.5 - 2023-06-25
 
 ### Enhancements:
