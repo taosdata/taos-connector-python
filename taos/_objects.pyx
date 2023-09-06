@@ -29,12 +29,16 @@ def set_tz(tz):
     _priv_tz = tz
     _priv_datetime_epoch = _utc_datetime_epoch.astimezone(_priv_tz)
 
+cdef _check_malloc(void *ptr):
+    if ptr is NULL:
+        raise MemoryError()
 
 cdef void async_result_future_wrapper(void *param, TAOS_RES *res, int code) nogil:
     with gil:
         fut = <object>param
         if code != 0:
-            e = ProgrammingError(taos_errstr(res), code)
+            errstr = taos_errstr(res).decode("utf-8")
+            e = ProgrammingError(errstr, code)
             fut.get_loop().call_soon_threadsafe(fut.set_exception, e)
         else:
             taos_result = TaosResult(<size_t>res)
@@ -78,53 +82,49 @@ cdef class TaosConnection:
     cdef char *_config
     cdef TAOS *_raw_conn
 
-    def __cinit__(self, host=None, user="root", password="taosdata", database=None, port=None, timezone=None, config=None):
-        if host:
-            host = host.encode("utf-8")
-            self._host = host
-
-        if user:
-            user = user.encode("utf-8")
-            self._user = user
-
-        if password:
-            password = password.encode("utf-8")
-            self._password = password
-
-        if database:
-            database =database.encode("utf-8")
-            self._database = database
-
-        if port:
-            self._port = port or 0
-
-        if timezone:
-            timezone = timezone.encode("utf-8")
-            self._tz = timezone
-
-        if config:
-            config = config.encode("utf-8")
-            self._config = config
-
-        self._init_options()
-        self._init_conn()
+    def __cinit__(self, **kwargs):
+        self._init_options(**kwargs)
+        self._init_conn(**kwargs)
         self._check_conn_error()
 
-    def _init_options(self):
-        if self._tz:
-            set_tz(pytz.timezone(self._tz.decode("utf-8")))
+    def _init_options(self, **kwargs):
+        if "timezone" in kwargs:
+            _tz = kwargs["timezone"].encode("utf-8")
+            self._tz = _tz
+            set_tz(pytz.timezone(kwargs["timezone"]))
             taos_options(TSDB_OPTION.TSDB_OPTION_TIMEZONE, self._tz)
 
-        if self._config:
+        if "config" in kwargs:
+            _config = kwargs["config"].encode("utf-8")
+            self._config = _config
             taos_options(TSDB_OPTION.TSDB_OPTION_CONFIGDIR, self._config)
 
-    def _init_conn(self):
+    def _init_conn(self, **kwargs):
+        if "host" in kwargs:
+            _host = kwargs["host"].encode("utf-8")
+            self._host = _host
+
+        if "user" in kwargs:
+            _user = kwargs["user"].encode("utf-8")
+            self._user = _user
+
+        if "password" in kwargs:
+            _password = kwargs["password"].encode("utf-8")
+            self._password = _password
+
+        if "database" in kwargs:
+            _database = kwargs["database"].encode("utf-8")
+            self._database = _database
+
+        if "port" in kwargs:
+            self._port = int(kwargs.get("port", 0))
+
         self._raw_conn = taos_connect(self._host, self._user, self._password, self._database, self._port)
 
     def _check_conn_error(self):
         errno = taos_errno(self._raw_conn)
         if errno != 0:
-            errstr = taos_errstr(self._raw_conn)
+            errstr = taos_errstr(self._raw_conn).decode("utf-8")
             raise ConnectionError(errstr, errno)
 
     def __dealloc__(self):
@@ -143,9 +143,9 @@ cdef class TaosConnection:
 
     def select_db(self, str database):
         _database = database.encode("utf-8")
-        res = taos_select_db(self._raw_conn, _database)
-        if res != 0:
-            raise DatabaseError("select database error", res)
+        errno = taos_select_db(self._raw_conn, _database)
+        if errno != 0:
+            raise DatabaseError("select database error", errno)
 
     def execute(self, str sql, req_id: Optional[int] = None) -> int:
         return self.query(sql, req_id).affected_rows
@@ -159,7 +159,7 @@ cdef class TaosConnection:
 
         errno = taos_errno(res)
         if errno != 0:
-            errstr = taos_errstr(res)
+            errstr = taos_errstr(res).decode("utf-8")
             taos_free_result(res)
             raise ProgrammingError(errstr, errno)
 
@@ -189,16 +189,17 @@ cdef class TaosConnection:
             _sql = sql.encode("utf-8")
             errno = taos_stmt_prepare(stmt, _sql, len(_sql))
             if errno != 0:
-                raise StatementError(taos_stmt_errstr(stmt), errno)
+                stmt_errstr = taos_stmt_errstr(stmt).decode("utf-8")
+                raise StatementError(stmt_errstr, errno)
 
         return TaosStmt(<size_t>stmt)
         
-
     def load_table_info(self, tables: List[str]):
         _tables = ",".join(tables).encode("utf-8")
         errno = taos_load_table_info(self._raw_conn, _tables)
         if errno != 0:
-            raise OperationalError(taos_errstr(NULL), errno)
+            errstr = taos_errstr(NULL).decode("utf-8")
+            raise OperationalError(errstr, errno)
 
     def close(self):
         if self._raw_conn is not NULL:
@@ -321,7 +322,7 @@ cdef class TaosConnection:
         errno = taos_errno(res)
         affected_rows = taos_affected_rows(res)
         if errno != 0:
-            errstr = taos_errstr(res)
+            errstr = taos_errstr(res).decode("utf-8")
             taos_free_result(res)
             raise SchemalessError(errstr, errno, affected_rows)
 
@@ -437,7 +438,7 @@ cdef class TaosConnection:
         errno = taos_errno(res)
         affected_rows = taos_affected_rows(res)
         if errno != 0:
-            errstr = taos_errstr(res)
+            errstr = taos_errstr(res).decode("utf-8")
             taos_free_result(res)
             raise SchemalessError(errstr, errno, affected_rows)
         
@@ -470,7 +471,8 @@ cdef class TaosConnection:
         _table = table.encode("utf-8")
         errno = taos_get_table_vgId(self._raw_conn, _db, _table, &vg_id)
         if errno != 0:
-            raise InternalError(taos_errstr(NULL), errno)
+            errstr = taos_errstr(NULL).decode("utf-8")
+            raise InternalError(errstr, errno)
         return vg_id
 
 
@@ -564,7 +566,7 @@ cdef class TaosResult:
     def _check_result_error(self):
         errno = taos_errno(self._res)
         if errno != 0:
-            errstr = taos_errstr(self._res)
+            errstr = taos_errstr(self._res).decode("utf-8")
             raise ProgrammingError(errstr, errno)
 
     def _fetch_block(self) -> Tuple[List, int]:
@@ -942,7 +944,7 @@ cdef class Message:
         self._err_str = taos_errstr(self._res)
 
     def error(self) -> Optional[TmqError]:
-        return TmqError(self._err_str) if self._err_no else None
+        return TmqError(self._err_str.decode("utf-8"), self._err_no) if self._err_no else None
 
     def topic(self) -> Optional[str]:
         _topic = tmq_get_topic_name(self._res)
@@ -1071,6 +1073,11 @@ cdef class TaosConsumer:
         self._tmq = tmq_consumer_new(self._tmq_conf, NULL, 0)
         if self._tmq is NULL:
             raise TmqError("new tmq consumer failed")
+
+    def _check_tmq_error(self, tmq_errno):
+        if tmq_errno != 0:
+            tmq_errstr = tmq_err2str(tmq_errno).decode("utf-8")
+            raise TmqError(tmq_errstr, tmq_errno)
     
     def subscribe(self, topics: List[str]):
         tmq_list = tmq_list_new()
@@ -1081,20 +1088,21 @@ cdef class TaosConsumer:
             _tp = tp.encode("utf-8")
             tmq_errno = tmq_list_append(tmq_list, _tp)
             if tmq_errno != 0:
+                tmq_errstr = tmq_err2str(tmq_errno).decode("utf-8")
                 tmq_list_destroy(tmq_list)
-                raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+                raise TmqError(tmq_errstr, tmq_errno)
 
         tmq_errno = tmq_subscribe(self._tmq, tmq_list)
         if tmq_errno != 0:
+            tmq_errstr = tmq_err2str(tmq_errno).decode("utf-8")
             tmq_list_destroy(tmq_list)
-            raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+            raise TmqError(tmq_errstr, tmq_errno)
         
         self._subscribed = True
 
     def unsubscribe(self):
         tmq_errno = tmq_unsubscribe(self._tmq)
-        if tmq_errno != 0:
-            raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+        self._check_tmq_error(tmq_errno)
         
         self._subscribed = False
 
@@ -1128,7 +1136,8 @@ cdef class TaosConsumer:
             self.offsets_commit(offsets)
             return
 
-        tmq_commit_sync(self._tmq, NULL)
+        tmq_errno = tmq_commit_sync(self._tmq, NULL)
+        self._check_tmq_error(tmq_errno)
 
     async def commit_a(self, message: Message=None, offsets: List[TopicPartition]=None):
         if message:
@@ -1142,27 +1151,23 @@ cdef class TaosConsumer:
         fut = loop.create_future()
         tmq_commit_async(self._tmq, NULL, async_commit_future_wrapper, <void*>fut)
         tmq_errno = await fut
-        if tmq_errno != 0:
-            raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+        self._check_tmq_error(tmq_errno)
 
     def message_commit(self, message: Message):
         tmq_errno = tmq_commit_sync(self._tmq, message._res)
-        if tmq_errno != 0:
-            raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+        self._check_tmq_error(tmq_errno)
 
     async def message_commit_a(self, message: Message):
         loop = asyncio.get_event_loop()
         fut = loop.create_future()
         tmq_commit_async(self._tmq, message._res, async_commit_future_wrapper, <void*>fut)
         tmq_errno = await fut
-        if tmq_errno != 0:
-            raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+        self._check_tmq_error(tmq_errno)
 
     def offsets_commit(self, topic_partitions: List[TopicPartition]):
         for tp in topic_partitions:
             tmq_errno = tmq_commit_offset_sync(self._tmq, tp._topic, tp._partition, tp._offset)
-            if tmq_errno != 0:
-                raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+            self._check_tmq_error(tmq_errno)
     
     async def offsets_commit_a(self, topic_partitions: List[TopicPartition]):
         loop = asyncio.get_event_loop()
@@ -1174,8 +1179,7 @@ cdef class TaosConsumer:
         
         tmq_errnos = await asyncio.gather(futs, return_exceptions=True)
         for tmq_errno in tmq_errnos:
-            if tmq_errno != 0:
-                raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+            self._check_tmq_error(tmq_errno)
 
     def assignment(self) -> List[TopicPartition]:
         cdef int32_t i
@@ -1188,8 +1192,9 @@ cdef class TaosConsumer:
             _topic = topic.encode("utf-8")
             tmq_errno = tmq_get_topic_assignment(self._tmq, _topic, &p_assignment, &num_of_assignment)
             if tmq_errno != 0:
+                tmq_errstr = tmq_err2str(tmq_errno).decode("utf-8")
                 tmq_free_assignment(p_assignment)
-                raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+                raise TmqError(tmq_errstr, tmq_errno)
 
             for i in range(num_of_assignment):
                 assignment = p_assignment[i]
@@ -1205,8 +1210,7 @@ cdef class TaosConsumer:
         Set consume position for partition to offset.
         """
         tmq_errno = tmq_offset_seek(self._tmq, partition._topic, partition._partition, partition._offset)
-        if tmq_errno != 0:
-            raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+        self._check_tmq_error(tmq_errno)
 
     def committed(self, partitions: List[TopicPartition]) -> List[TopicPartition]:
         """
@@ -1218,12 +1222,10 @@ cdef class TaosConsumer:
         """
         for partition in partitions:
             if not isinstance(partition, TopicPartition):
-                raise TmqError(msg='Invalid partition type')
+                raise TmqError("Invalid partition type")
             
-            offset = tmq_committed(self._tmq, partition._topic, partition._partition)
-
-            if offset < 0:
-                raise TmqError(tmq_err2str(offset), offset)
+            tmq_errno = offset = tmq_committed(self._tmq, partition._topic, partition._partition)
+            self._check_tmq_error(tmq_errno)
             
             partition._offset = offset
 
@@ -1239,11 +1241,10 @@ cdef class TaosConsumer:
         """
         for partition in partitions:
             if not isinstance(partition, TopicPartition):
-                raise TmqError(msg='Invalid partition type')
-            offset = tmq_position(self._tmq, partition._topic, partition._partition)
+                raise TmqError("Invalid partition type")
 
-            if offset < 0:
-                raise TmqError(tmq_err2str(offset), offset)
+            tmq_errno = offset = tmq_position(self._tmq, partition._topic, partition._partition)
+            self._check_tmq_error(tmq_errno)
 
             partition._offset = offset
 
@@ -1253,8 +1254,7 @@ cdef class TaosConsumer:
         cdef int i
         cdef tmq_list_t *topics
         tmq_errno = tmq_subscription(self._tmq, &topics)
-        if tmq_errno != 0:
-            raise TmqError(tmq_err2str(tmq_errno), tmq_errno)
+        self._check_tmq_error(tmq_errno)
 
         n = tmq_list_get_size(topics)
         ca = tmq_list_to_c_array(topics)
@@ -1285,7 +1285,8 @@ cdef class TaosStmt:
 
     def _check_stmt_error(self, int errno):
         if errno != 0:
-            raise StatementError(taos_stmt_errstr(self._stmt), errno)
+            stmt_errstr = taos_stmt_errstr(self._stmt).decode("utf-8")
+            raise StatementError(stmt_errstr, errno)
 
     def set_tbname(self, str name):
         if self._stmt is NULL:
@@ -1297,7 +1298,7 @@ cdef class TaosStmt:
 
     def prepare(self, str sql):
         if self._stmt is NULL:
-            raise StatementError("Invalid use of set_tbname")
+            raise StatementError("Invalid use of prepare")
 
         _sql = sql.encode("utf-8")
         errno = taos_stmt_prepare(self._stmt, _sql, len(_sql))
@@ -1314,7 +1315,7 @@ cdef class TaosStmt:
 
     def bind_param(self, TaosMultiBinds binds, bool add_batch=True):
         if self._stmt is NULL:
-            raise StatementError("Invalid use of stmt")
+            raise StatementError("Invalid use of bind_param")
 
         errno = taos_stmt_bind_param(self._stmt, binds._binds)
         self._check_stmt_error(errno)
@@ -1324,7 +1325,7 @@ cdef class TaosStmt:
 
     def bind_param_batch(self, TaosMultiBinds binds, bool add_batch=True):
         if self._stmt is NULL:
-            raise StatementError("Invalid use of stmt")
+            raise StatementError("Invalid use of bind_param_batch")
 
         errno = taos_stmt_bind_param_batch(self._stmt, binds._binds)
         self._check_stmt_error(errno)
@@ -1334,7 +1335,7 @@ cdef class TaosStmt:
 
     def add_batch(self):
         if self._stmt is NULL:
-            raise StatementError("Invalid use of stmt")
+            raise StatementError("Invalid use of add_batch")
         
         errno = taos_stmt_add_batch(self._stmt)
         self._check_stmt_error(errno)
@@ -1352,7 +1353,7 @@ cdef class TaosStmt:
         
         res = taos_stmt_use_result(self._stmt)
         if res is NULL:
-            raise StatementError(taos_stmt_errstr(self._stmt))
+            raise StatementError(taos_stmt_errstr(self._stmt).decode("utf-8"))
 
         return TaosResult(<size_t>res)
 
@@ -1380,9 +1381,7 @@ cdef class TaosMultiBinds:
     def __cinit__(self, size_t size):
         self._size = size
         self._binds = <TAOS_MULTI_BIND*>malloc(size * sizeof(TAOS_MULTI_BIND))
-        if self._binds is NULL:
-            raise MemoryError()
-
+        _check_malloc(<void*>self._binds)
         memset(self._binds, 0, size * sizeof(TAOS_MULTI_BIND))
 
     def __str__(self):
@@ -1390,17 +1389,6 @@ cdef class TaosMultiBinds:
 
     def __repr__(self):
         return "TaosMultiBinds(size=%d)" % (self._size, )
-
-    def describe(self):
-        if self._binds is NULL:
-            return
-
-        for i in range(self._size):
-            buf_len = self._binds[i].num * self._binds[i].buffer_length
-            is_null_len = self._binds[i].num * sizeof(char)
-            buffer = (<int8_t*>(self._binds[i].buffer))[:buf_len]
-            is_null = self._binds[i].is_null[:is_null_len]
-            print(i, buf_len, buffer, is_null_len, is_null)
 
     def __getitem__(self, item):
         if item >= self._size:
@@ -1446,7 +1434,9 @@ cdef class TaosMultiBind:
         self._inner.buffer_length = sizeof(bool)
         self._inner.num = len(values)
         _buffer = <int8_t*>malloc(self._inner.num * self._inner.buffer_length)
+        _check_malloc(<void*>_buffer)
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
+        _check_malloc(<void*>_is_null)
 
         for i in range(self._inner.num):
             v = values[i]
@@ -1465,7 +1455,9 @@ cdef class TaosMultiBind:
         self._inner.buffer_length = sizeof(int8_t)
         self._inner.num = len(values)
         _buffer = <int8_t*>malloc(self._inner.num * self._inner.buffer_length)
+        _check_malloc(<void*>_buffer)
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
+        _check_malloc(<void*>_is_null)
 
         for i in range(self._inner.num):
             v = values[i]
@@ -1484,7 +1476,9 @@ cdef class TaosMultiBind:
         self._inner.buffer_length = sizeof(int16_t)
         self._inner.num = len(values)
         _buffer = <int16_t*>malloc(self._inner.num * self._inner.buffer_length)
+        _check_malloc(<void*>_buffer)
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
+        _check_malloc(<void*>_is_null)
 
         for i in range(self._inner.num):
             v = values[i]
@@ -1503,7 +1497,9 @@ cdef class TaosMultiBind:
         self._inner.buffer_length = sizeof(int32_t)
         self._inner.num = len(values)
         _buffer = <int32_t*>malloc(self._inner.num * self._inner.buffer_length)
+        _check_malloc(<void*>_buffer)
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
+        _check_malloc(<void*>_is_null)
 
         for i in range(self._inner.num):
             v = values[i]
@@ -1522,7 +1518,9 @@ cdef class TaosMultiBind:
         self._inner.buffer_length = sizeof(int64_t)
         self._inner.num = len(values)
         _buffer = <int64_t*>malloc(self._inner.num * self._inner.buffer_length)
+        _check_malloc(<void*>_buffer)
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
+        _check_malloc(<void*>_is_null)
 
         for i in range(self._inner.num):
             v = values[i]
@@ -1541,7 +1539,9 @@ cdef class TaosMultiBind:
         self._inner.buffer_length = sizeof(float)
         self._inner.num = len(values)
         _buffer = <float*>malloc(self._inner.num * self._inner.buffer_length)
+        _check_malloc(<void*>_buffer)
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
+        _check_malloc(<void*>_is_null)
 
         for i in range(self._inner.num):
             v = values[i]
@@ -1561,7 +1561,9 @@ cdef class TaosMultiBind:
         self._inner.buffer_length = sizeof(double)
         self._inner.num = len(values)
         _buffer = <double*>malloc(self._inner.num * self._inner.buffer_length)
+        _check_malloc(<void*>_buffer)
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
+        _check_malloc(<void*>_is_null)
 
         for i in range(self._inner.num):
             v = values[i]
@@ -1581,7 +1583,9 @@ cdef class TaosMultiBind:
         self._inner.buffer_length = sizeof(uint8_t)
         self._inner.num = len(values)
         _buffer = <uint8_t*>malloc(self._inner.num * self._inner.buffer_length)
+        _check_malloc(<void*>_buffer)
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
+        _check_malloc(<void*>_is_null)
 
         for i in range(self._inner.num):
             v = values[i]
@@ -1600,7 +1604,9 @@ cdef class TaosMultiBind:
         self._inner.buffer_length = sizeof(uint16_t)
         self._inner.num = len(values)
         _buffer = <uint16_t*>malloc(self._inner.num * self._inner.buffer_length)
+        _check_malloc(<void*>_buffer)
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
+        _check_malloc(<void*>_is_null)
 
         for i in range(self._inner.num):
             v = values[i]
@@ -1619,7 +1625,9 @@ cdef class TaosMultiBind:
         self._inner.buffer_length = sizeof(uint32_t)
         self._inner.num = len(values)
         _buffer = <uint32_t*>malloc(self._inner.num * self._inner.buffer_length)
+        _check_malloc(<void*>_buffer)
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
+        _check_malloc(<void*>_is_null)
 
         for i in range(self._inner.num):
             v = values[i]
@@ -1638,7 +1646,9 @@ cdef class TaosMultiBind:
         self._inner.buffer_length = sizeof(uint64_t)
         self._inner.num = len(values)
         _buffer = <uint64_t*>malloc(self._inner.num * self._inner.buffer_length)
+        _check_malloc(<void*>_buffer)
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
+        _check_malloc(<void*>_is_null)
 
         for i in range(self._inner.num):
             v = values[i]
@@ -1657,7 +1667,9 @@ cdef class TaosMultiBind:
         self._inner.buffer_length = sizeof(int64_t)
         self._inner.num = len(values)
         _buffer = <int64_t*>malloc(self._inner.num * self._inner.buffer_length)
+        _check_malloc(<void*>_buffer)
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
+        _check_malloc(<void*>_is_null)
 
         dt_epoch = _priv_datetime_epoch if _priv_datetime_epoch else _datetime_epoch
 
@@ -1692,8 +1704,11 @@ cdef class TaosMultiBind:
         self._inner.buffer_length = max(len(b) for b in _bytes if b is not None)
         self._inner.num = len(values)
         _length = <int32_t*>malloc(self._inner.num * sizeof(int32_t))
+        _check_malloc(<void*>_length)
         _buffer = <void*>malloc(self._inner.num * self._inner.buffer_length)
+        _check_malloc(<void*>_buffer)
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
+        _check_malloc(<void*>_is_null)
 
         buf_list = []
         for i in range(self._inner.num):
@@ -1720,8 +1735,11 @@ cdef class TaosMultiBind:
         self._inner.buffer_length = max(len(b) for b in _bytes if b is not None)
         self._inner.num = len(values)
         _length = <int32_t*>malloc(self._inner.num * sizeof(int32_t))
+        _check_malloc(<void*>_length)
         _buffer = <void*>malloc(self._inner.num * self._inner.buffer_length)
+        _check_malloc(<void*>_buffer)
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
+        _check_malloc(<void*>_is_null)
 
         buf_list = []
         for i in range(self._inner.num):
@@ -1748,8 +1766,11 @@ cdef class TaosMultiBind:
         self._inner.buffer_length = max(len(b) for b in _bytes if b is not None)
         self._inner.num = len(values)
         _length = <int32_t*>malloc(self._inner.num * sizeof(int32_t))
+        _check_malloc(<void*>_length)
         _buffer = <void*>malloc(self._inner.num * self._inner.buffer_length)
+        _check_malloc(<void*>_buffer)
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
+        _check_malloc(<void*>_is_null)
 
         buf_list = []
         for i in range(self._inner.num):
