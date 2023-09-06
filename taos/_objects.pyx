@@ -4,7 +4,7 @@ from libc.stdlib cimport malloc, free
 from libc.string cimport memset, strcpy, memcpy
 import ctypes
 import asyncio
-from typing import Optional, List, Tuple, Dict, Iterator
+from typing import Optional, List, Tuple, Dict, Iterator, AsyncIterator
 from taos._cinterface cimport *
 from taos._parser cimport _parse_string, _parse_timestamp, _parse_binary_string, _parse_nchar_string
 from taos._cinterface import SIZED_TYPE, UNSIZED_TYPE, CONVERT_FUNC
@@ -682,7 +682,7 @@ cdef class TaosResult:
 
             yield [r for r in map(tuple, zip(*block))], num_of_rows
 
-    async def rows_iter_a(self) -> Iterator[Tuple]:
+    async def rows_iter_a(self) -> AsyncIterator[Tuple]:
         if self._res is NULL:
             raise OperationalError("Invalid use of rows_iter_a")
 
@@ -699,7 +699,7 @@ cdef class TaosResult:
             for row in rows:
                 yield row
 
-    async def blocks_iter_a(self) -> Iterator[Tuple[List, int]]:
+    async def blocks_iter_a(self) -> AsyncIterator[Tuple[List, int]]:
         if self._res is NULL:
             raise OperationalError("Invalid use of blocks_iter_a")
 
@@ -715,6 +715,9 @@ cdef class TaosResult:
                 break
             
             yield block, n
+
+    def stop_query(self):
+        return taos_stop_query(self._res)
 
     def __dealloc__(self):
         if self._res is not NULL:

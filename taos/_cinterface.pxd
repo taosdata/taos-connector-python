@@ -66,6 +66,7 @@ cdef extern from "taos.h":
     int taos_init()
     bool taos_is_null(TAOS_RES *res, int32_t row, int32_t col)
     TAOS_FIELD *taos_fetch_fields(TAOS_RES *res)
+    void taos_stop_query(TAOS_RES *res)
     int taos_field_count(TAOS_RES *res)
     int taos_fetch_block(TAOS_RES *res, TAOS_ROW *rows)
     int taos_result_precision(TAOS_RES *res)
