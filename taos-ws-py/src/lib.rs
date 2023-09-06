@@ -230,36 +230,38 @@ impl TaosResult {
                 .map_err(|err| FetchError::new_err(err.to_string()))?;
         }
         Ok(Python::with_gil(|py| -> Option<PyObject> {
-            let mut vec = Vec::new();
             if let Some(block) = slf._block.as_ref() {
+                let mut vec = Vec::new();
                 for col in 0..block.ncols() {
-                    let value = block.get_ref(slf._current, col).unwrap();
-                    let value = match value {
-                        BorrowedValue::Null(_) => Option::<()>::None.into_py(py),
-                        BorrowedValue::Bool(v) => v.into_py(py),
-                        BorrowedValue::TinyInt(v) => v.into_py(py),
-                        BorrowedValue::SmallInt(v) => v.into_py(py),
-                        BorrowedValue::Int(v) => v.into_py(py),
-                        BorrowedValue::BigInt(v) => v.into_py(py),
-                        BorrowedValue::UTinyInt(v) => v.into_py(py),
-                        BorrowedValue::USmallInt(v) => v.into_py(py),
-                        BorrowedValue::UInt(v) => v.into_py(py),
-                        BorrowedValue::UBigInt(v) => v.into_py(py),
-                        BorrowedValue::Float(v) => v.into_py(py),
-                        BorrowedValue::Double(v) => v.into_py(py),
-                        BorrowedValue::Timestamp(ts) => {
-                            ts.to_datetime_with_tz().to_string().into_py(py)
-                        }
-                        BorrowedValue::VarChar(s) => s.into_py(py),
-                        BorrowedValue::NChar(v) => v.as_ref().into_py(py),
-                        BorrowedValue::Json(j) => std::str::from_utf8(&j).unwrap().into_py(py),
-                        _ => Option::<()>::None.into_py(py),
-                    };
-                    vec.push(value);
+                    if let Some(value) = block.get_ref(slf._current, col) {
+                        let value = match value {
+                            BorrowedValue::Null(_) => Option::<()>::None.into_py(py),
+                            BorrowedValue::Bool(v) => v.into_py(py),
+                            BorrowedValue::TinyInt(v) => v.into_py(py),
+                            BorrowedValue::SmallInt(v) => v.into_py(py),
+                            BorrowedValue::Int(v) => v.into_py(py),
+                            BorrowedValue::BigInt(v) => v.into_py(py),
+                            BorrowedValue::UTinyInt(v) => v.into_py(py),
+                            BorrowedValue::USmallInt(v) => v.into_py(py),
+                            BorrowedValue::UInt(v) => v.into_py(py),
+                            BorrowedValue::UBigInt(v) => v.into_py(py),
+                            BorrowedValue::Float(v) => v.into_py(py),
+                            BorrowedValue::Double(v) => v.into_py(py),
+                            BorrowedValue::Timestamp(ts) => {
+                                ts.to_datetime_with_tz().to_string().into_py(py)
+                            }
+                            BorrowedValue::VarChar(s) => s.into_py(py),
+                            BorrowedValue::NChar(v) => v.as_ref().into_py(py),
+                            BorrowedValue::Json(j) => std::str::from_utf8(&j).unwrap().into_py(py),
+                            _ => Option::<()>::None.into_py(py),
+                        };
+                        vec.push(value);
+                    }
                 }
                 slf._current += 1;
+                return Some(PyTuple::new(py, vec).to_object(py));
             }
-            return Some(PyTuple::new(py, vec).to_object(py));
+            None
         }))
     }
 
