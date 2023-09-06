@@ -316,11 +316,7 @@ impl Cursor {
                         break;
                     }
                 }
-                if all.is_empty() {
-                    Ok(None)
-                } else {
-                    Ok(Some(all))
-                }
+                Ok(Some(all))
             })
         } else {
             self.row_in_block = 0;
