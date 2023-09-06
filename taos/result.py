@@ -8,10 +8,9 @@ from ctypes import c_void_p
 class TaosResult(object):
     """TDengine result interface"""
 
-    def __init__(self, result, close_after=False, conn=None):
-        # type: (c_void_p, bool, TaosConnection) -> TaosResult
+    def __init__(self, result, close_after=False, decode_binary=True):
+        # type: (c_void_p, bool, bool) -> None
         # to make the __del__ order right
-        self._conn = conn
         self._close_after = close_after
         if isinstance(result, c_void_p):
             self._result = result
@@ -25,6 +24,7 @@ class TaosResult(object):
         self._block = None
         self._block_length = None
         self._row_count = 0
+        self.decode_binary = decode_binary
 
     def __iter__(self):
         return self
@@ -94,7 +94,7 @@ class TaosResult(object):
         if self._result is None:
             raise OperationalError("Invalid use of fetch iterator")
 
-        blocks, length = taos_fetch_block(self._result)
+        blocks, length = taos_fetch_block(self._result, decode_binary=self.decode_binary)
         if length == 0:
             raise StopIteration
 
@@ -109,7 +109,7 @@ class TaosResult(object):
         buffer = [[] for i in range(len(self._fields))]
         self._row_count = 0
         while True:
-            block, num_of_fields = taos_fetch_block(self._result, self._fields)
+            block, num_of_fields = taos_fetch_block(self._result, self._fields, decode_binary=self.decode_binary)
             errno = taos_errno(self._result)
             if errno != 0:
                 raise ProgrammingError(taos_errstr(self._result), errno)
@@ -239,7 +239,8 @@ class TaosRow:
             if data is None:
                 blocks[i] = None
             else:
-                blocks[i] = CONVERT_FUNC[fields[i].type](data, [False], 1, field_lens[i], precision)[0]
+                f = convert_func(fields[i].type, self._result.decode_binary)
+                blocks[i] = f(data, [False], 1, field_lens[i], precision)[0]
         return tuple(blocks)
 
     def as_dict(self):

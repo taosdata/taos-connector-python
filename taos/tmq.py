@@ -58,7 +58,7 @@ class MessageBlock:
 
 class Message:
 
-    def __init__(self, msg: c_void_p = None, error=None):
+    def __init__(self, msg: c_void_p = None, error=None, decode_binary=True):
         self._error = error
         if not msg:
             return
@@ -66,6 +66,7 @@ class Message:
         err_no = taos_errno(self.msg)
         if err_no:
             self._error = TmqError(msg=taos_errstr(self.msg))
+        self.decode_binary = decode_binary
 
     def error(self):
         # type: () -> TmqError | None
@@ -123,12 +124,14 @@ class Message:
                     raise TmqError("Invalid data type returned from database")
 
                 block_data = ctypes.cast(block, ctypes.POINTER(ctypes.c_void_p))[i]
-                if fields[i]["type"] in (FieldType.C_VARCHAR, FieldType.C_NCHAR, FieldType.C_JSON, FieldType.C_VARBINARY):
+                f = convert_block_func_v3(fields[i]["type"], self.decode_binary)
+                if fields[i]["type"] in (
+                        FieldType.C_VARCHAR, FieldType.C_NCHAR, FieldType.C_JSON, FieldType.C_VARBINARY):
                     offsets = taos_get_column_data_offset(self.msg, i, num_rows)
-                    blocks[i] = CONVERT_FUNC_BLOCK_v3[fields[i]["type"]](block_data, [], num_rows, offsets, precision)
+                    blocks[i] = f(block_data, [], num_rows, offsets, precision)
                 else:
                     is_null = [taos_is_null(self.msg, j, i) for j in range(num_rows)]
-                    blocks[i] = CONVERT_FUNC_BLOCK[fields[i]["type"]](block_data, is_null, num_rows, [], precision)
+                    blocks[i] = f(block_data, is_null, num_rows, [], precision)
 
             message_blocks.append(
                 MessageBlock(block=blocks, fields=fields, row_count=num_rows, col_count=field_count,
@@ -189,10 +192,14 @@ class Consumer:
 
         self._tmq = None
         self._subscribed = False
+        self.decode_binary = True
         tmq_conf = tmq_conf_new()
         try:
             for key in configs:
                 if key not in self.default_config:
+                    if key == "decode_binary":
+                        self.decode_binary = configs[key]
+                        continue
                     raise TmqError('Unrecognized configs: %s' % key)
                 tmq_conf_set(tmq_conf, key=key, value=configs[key])
 
@@ -252,7 +259,7 @@ class Consumer:
 
         msg = tmq_consumer_poll(self._tmq, wait_time=mill_timeout)
         if msg:
-            return Message(msg=msg)
+            return Message(msg=msg, decode_binary=self.decode_binary)
         return None
 
     def assignment(self):
