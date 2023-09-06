@@ -1,6 +1,8 @@
 # cython: profile=True
 
 from libc.stdlib cimport malloc, free
+from libc.string cimport memset, strcpy, memcpy
+import ctypes
 import asyncio
 from typing import Optional, List, Tuple, Dict, Iterator
 from taos._cinterface cimport *
@@ -163,7 +165,7 @@ cdef class TaosConnection:
 
         return TaosResult(<size_t>res)
 
-    async def query_async(self, str sql, req_id: Optional[int] = None) -> TaosResult:
+    async def query_a(self, str sql, req_id: Optional[int] = None) -> TaosResult:
         loop = asyncio.get_event_loop()
         _sql = sql.encode("utf-8")
         fut = loop.create_future()
@@ -185,10 +187,9 @@ cdef class TaosConnection:
 
         if sql:
             _sql = sql.encode("utf-8")
-            code = taos_stmt_prepare(stmt, _sql, len(_sql))
-            if code != 0:
-                stmt_errstr = taos_stmt_errstr(stmt).decode("utf-8")
-                raise StatementError(stmt_errstr, code)
+            errno = taos_stmt_prepare(stmt, _sql, len(_sql))
+            if errno != 0:
+                raise StatementError(taos_stmt_errstr(stmt), errno)
 
         return TaosStmt(<size_t>stmt)
         
@@ -453,7 +454,7 @@ cdef class TaosConnection:
         """Void functionality"""
         pass
 
-    def cursor(self):
+    def cursor(self) -> TaosCursor:
         return TaosCursor(self)
 
     def clear_result_set(self):
@@ -467,9 +468,9 @@ cdef class TaosConnection:
         cdef int vg_id
         _db = db.encode("utf-8")
         _table = table.encode("utf-8")
-        code = taos_get_table_vgId(self._raw_conn, _db, _table, &vg_id)
-        if code != 0:
-            raise InternalError(taos_errstr(NULL))
+        errno = taos_get_table_vgId(self._raw_conn, _db, _table, &vg_id)
+        if errno != 0:
+            raise InternalError(taos_errstr(NULL), errno)
         return vg_id
 
 
@@ -512,6 +513,7 @@ cdef class TaosField:
 cdef class TaosResult:
     cdef TAOS_RES *_res
     cdef TAOS_FIELD *_fields
+    cdef list _taos_fields
     cdef int _field_count
     cdef int _precision
     cdef int _row_count
@@ -528,13 +530,16 @@ cdef class TaosResult:
         self._row_count = 0
 
     def __str__(self):
-        return "TaosResult{res: %s}" % (<size_t>self._res, )
+        return "TaosResult(field_count=%d, precision=%d, affected_rows=%d, row_count=%d)" % (self._field_count, self._precision, self._affected_rows, self._row_count)
 
     def __repr__(self):
-        return "TaosResult{res: %s}" % (<size_t>self._res, )
+        return "TaosResult(field_count=%d, precision=%d, affected_rows=%d, row_count=%d)" % (self._field_count, self._precision, self._affected_rows, self._row_count)
 
     def __iter__(self):
         return self.rows_iter()
+
+    def __aiter__(self):
+        return self.rows_iter_a()
 
     @property
     def fields(self):
@@ -654,11 +659,11 @@ cdef class TaosResult:
                 data = taos_row[i]
                 field = self._fields[i]
                 if field.type in UNSIZED_TYPE:
-                    row[i] = _parse_string(<size_t>data, 1, offsets)[0]
+                    row[i] = _parse_string(<size_t>data, 1, offsets)[0] if data is not NULL else None  # FIXME: is it ok to set offsets = [-2] here
                 elif field.type in SIZED_TYPE:
-                    row[i] = CONVERT_FUNC[field.type](<size_t>data, 1, is_null)[0]
+                    row[i] = CONVERT_FUNC[field.type](<size_t>data, 1, is_null)[0] if data is not NULL else None
                 elif field.type in (TSDB_DATA_TYPE_TIMESTAMP, ):
-                    row[i] = _parse_timestamp(<size_t>data, 1, is_null, self._precision, dt_epoch)[0]
+                    row[i] = _parse_timestamp(<size_t>data, 1, is_null, self._precision, dt_epoch)[0] if data is not NULL else None
                 else:
                     pass
 
@@ -703,7 +708,7 @@ cdef class TaosResult:
             fut = loop.create_future()
             param = (self, fut)
             taos_fetch_rows_a(self._res, async_block_future_wrapper, <void*>param)
-            # taos_fetch_raw_block_a(self._res, async_block_future_wrapper, <void*>param)
+            # taos_fetch_raw_block_a(self._res, async_block_future_wrapper, <void*>param)  # FIXME: have some problem when parsing nchar
 
             block, n = await fut
             if not block:
@@ -724,7 +729,7 @@ cdef class TaosCursor:
     cdef TaosConnection _connection
     cdef TaosResult _result
 
-    def __init__(self, connection: TaosConnection=None):
+    def __init__(self, connection: Optional[TaosConnection]=None):
         self._description = []
         self._connection = connection
         self._result = None
@@ -885,6 +890,9 @@ cdef class TopicPartition:
     @property
     def end(self):
         return self._end
+
+    def __str__(self):
+        return "TopicPartition(topic=%s, partition=%s, offset=%s)" % (self.topic, self.partition, self.offset)
 
 
 cdef class MessageBlock:
@@ -1292,45 +1300,30 @@ cdef class TaosStmt:
         errno = taos_stmt_prepare(self._stmt, _sql, len(_sql))
         self._check_stmt_error(errno)
 
-    def set_tbname_tags(self, str name, TaosMultiBind[:] tags):
+    def set_tbname_tags(self, str name, TaosMultiBinds tags):
         """Set table name with tags, tags is array of BindParams"""
         if self._stmt is NULL:
             raise StatementError("Invalid use of set_tbname_tags")
         
         _name = name.encode("utf-8")
-        length = len(tags)
-        _tags = <TAOS_MULTI_BIND*>malloc(length * sizeof(TAOS_MULTI_BIND))
-        for i in range(length):
-            _tags[i] = tags[i]._inner
-        errno = taos_stmt_set_tbname_tags(self._stmt, _name, NULL)
-        free(_tags)
+        errno = taos_stmt_set_tbname_tags(self._stmt, _name, tags._binds)
         self._check_stmt_error(errno)
 
-    def bind_param(self, TaosMultiBind[:] binds, bool add_batch=True):
+    def bind_param(self, TaosMultiBinds binds, bool add_batch=True):
         if self._stmt is NULL:
             raise StatementError("Invalid use of stmt")
 
-        length = len(binds)
-        _binds = <TAOS_MULTI_BIND*>malloc(length * sizeof(TAOS_MULTI_BIND))
-        for i in range(length):
-            _binds[i] = binds[i]._inner
-        errno = taos_stmt_bind_param(self._stmt, _binds)
-        free(_binds)
+        errno = taos_stmt_bind_param(self._stmt, binds._binds)
         self._check_stmt_error(errno)
 
         if add_batch:
             self.add_batch()
 
-    def bind_param_batch(self, TaosMultiBind[:] binds, bool add_batch=True):
+    def bind_param_batch(self, TaosMultiBinds binds, bool add_batch=True):
         if self._stmt is NULL:
             raise StatementError("Invalid use of stmt")
 
-        length = len(binds)
-        _binds = <TAOS_MULTI_BIND*>malloc(length * sizeof(TAOS_MULTI_BIND))
-        for i in range(length):
-            _binds[i] = binds[i]._inner
-        errno = taos_stmt_bind_param_batch(self._stmt, _binds)
-        free(_binds)
+        errno = taos_stmt_bind_param_batch(self._stmt, binds._binds)
         self._check_stmt_error(errno)
 
         if add_batch:
@@ -1377,8 +1370,73 @@ cdef class TaosStmt:
     def __dealloc__(self):
         self.close()
 
+cdef class TaosMultiBinds:
+    cdef size_t _size
+    cdef TAOS_MULTI_BIND *_binds
+
+    def __cinit__(self, size_t size):
+        self._size = size
+        self._binds = <TAOS_MULTI_BIND*>malloc(size * sizeof(TAOS_MULTI_BIND))
+        if self._binds is NULL:
+            raise MemoryError()
+
+        memset(self._binds, 0, size * sizeof(TAOS_MULTI_BIND))
+
+    def __str__(self):
+        return "TaosMultiBinds(size=%d)" % (self._size, )
+
+    def __repr__(self):
+        return "TaosMultiBinds(size=%d)" % (self._size, )
+
+    def describe(self):
+        if self._binds is NULL:
+            return
+
+        for i in range(self._size):
+            buf_len = self._binds[i].num * self._binds[i].buffer_length
+            is_null_len = self._binds[i].num * sizeof(char)
+            buffer = (<int8_t*>(self._binds[i].buffer))[:buf_len]
+            is_null = self._binds[i].is_null[:is_null_len]
+            print(i, buf_len, buffer, is_null_len, is_null)
+
+    def __getitem__(self, item):
+        if item >= self._size:
+            raise IndexError()
+
+        _pbind = <size_t>self._binds + (item * sizeof(TAOS_MULTI_BIND))
+        return TaosMultiBind(_pbind)
+    
+    def __dealloc__(self):
+        if self._binds is not NULL:
+            for i in range(self._size):
+                if self._binds[i].buffer is not NULL:
+                    free(self._binds[i].buffer)
+                    self._binds[i].buffer = NULL
+
+                if self._binds[i].is_null is not NULL:
+                    free(self._binds[i].is_null)
+                    self._binds[i].is_null = NULL
+
+                if self._binds[i].length is not NULL:
+                    free(self._binds[i].length)
+                    self._binds[i].length = NULL
+
+            free(self._binds)
+            self._binds = NULL
+
+        self._size = 0
+
 cdef class TaosMultiBind:
-    cdef TAOS_MULTI_BIND _inner
+    cdef TAOS_MULTI_BIND *_inner
+
+    def __cinit__(self, size_t pbind):
+        self._inner = <TAOS_MULTI_BIND*>pbind
+
+    def __str__(self):
+        return "TaosMultiBind(buffer_type=%s, buffer_length=%d, num=%d)" % (self._inner.buffer_type, self._inner.buffer_length, self._inner.num)
+
+    def __repr__(self):
+        return "TaosMultiBind(buffer_type=%s, buffer_length=%d, num=%d)" % (self._inner.buffer_type, self._inner.buffer_length, self._inner.num)
 
     def bool(self, values):
         self._inner.buffer_type = FieldType.C_BOOL
@@ -1485,7 +1543,8 @@ cdef class TaosMultiBind:
         for i in range(self._inner.num):
             v = values[i]
             if v is None:
-                _buffer[i] = <float>FieldType.C_FLOAT_NULL
+                # _buffer[i] = <float>FieldType.C_FLOAT_NULL
+                _buffer[i] = <float>float('nan')
                 _is_null[i] = 1
             else:
                 _buffer[i] = <float>v
@@ -1504,7 +1563,8 @@ cdef class TaosMultiBind:
         for i in range(self._inner.num):
             v = values[i]
             if v is None:
-                _buffer[i] = <double>FieldType.C_DOUBLE_NULL
+                # _buffer[i] = <double>FieldType.C_DOUBLE_NULL
+                _buffer[i] = <float>float('nan')
                 _is_null[i] = 1
             else:
                 _buffer[i] = <double>v
@@ -1624,92 +1684,85 @@ cdef class TaosMultiBind:
 
 
     def binary(self, values):
-        _bytes = [v.encode("utf-8") for v in values if v is not None]
+        _bytes = [v if v is None else v.encode("utf-8") for v in values]
         self._inner.buffer_type = FieldType.C_BINARY
         self._inner.buffer_length = max(len(b) for b in _bytes if b is not None)
         self._inner.num = len(values)
         _length = <int32_t*>malloc(self._inner.num * sizeof(int32_t))
-        _buffer = <char*>malloc(self._inner.num * self._inner.buffer_length)
+        _buffer = <void*>malloc(self._inner.num * self._inner.buffer_length)
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
 
-
+        buf_list = []
         for i in range(self._inner.num):
-            offset = i * self._inner.buffer_length
             v = _bytes[i]
             if v is None:
-                _buffer[offset] = b"\x00"
+                buf_list.append(ctypes.create_string_buffer(self._inner.buffer_length).raw)
                 _is_null[i] = 1
                 _length[i] = 0
             else:
-                _buffer[i] = v
+                buf_list.append(ctypes.create_string_buffer(v, self._inner.buffer_length).raw)
                 _is_null[i] = 0
                 _length[i] = len(v)
+
+        _buf = b"".join(buf_list)
+        memcpy(_buffer, <char*>_buf, self._inner.num * self._inner.buffer_length)
 
         self._inner.buffer = <void*>_buffer
         self._inner.is_null = <char*>_is_null
         self._inner.length = _length
 
     def nchar(self, values):
-        _bytes = [v.encode("utf-8") for v in values if v is not None]
+        _bytes = [v if v is None else v.encode("utf-8") for v in values]
         self._inner.buffer_type = FieldType.C_NCHAR
         self._inner.buffer_length = max(len(b) for b in _bytes if b is not None)
         self._inner.num = len(values)
         _length = <int32_t*>malloc(self._inner.num * sizeof(int32_t))
-        _buffer = <char*>malloc(self._inner.num * self._inner.buffer_length)
+        _buffer = <void*>malloc(self._inner.num * self._inner.buffer_length)
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
 
-
+        buf_list = []
         for i in range(self._inner.num):
-            offset = i * self._inner.buffer_length
             v = _bytes[i]
             if v is None:
-                _buffer[offset] = b"\x00"
+                buf_list.append(ctypes.create_string_buffer(self._inner.buffer_length).raw)
                 _is_null[i] = 1
                 _length[i] = 0
             else:
-                _buffer[i] = v
+                buf_list.append(ctypes.create_string_buffer(v, self._inner.buffer_length).raw)
                 _is_null[i] = 0
                 _length[i] = len(v)
+
+        _buf = b"".join(buf_list)
+        memcpy(_buffer, <char*>_buf, self._inner.num * self._inner.buffer_length)
 
         self._inner.buffer = <void*>_buffer
         self._inner.is_null = <char*>_is_null
         self._inner.length = _length
 
     def json(self, values):
-        _bytes = [v.encode("utf-8") for v in values if v is not None]
+        _bytes = [v if v is None else v.encode("utf-8") for v in values]
         self._inner.buffer_type = FieldType.C_JSON
         self._inner.buffer_length = max(len(b) for b in _bytes if b is not None)
         self._inner.num = len(values)
         _length = <int32_t*>malloc(self._inner.num * sizeof(int32_t))
-        _buffer = <char*>malloc(self._inner.num * self._inner.buffer_length)
+        _buffer = <void*>malloc(self._inner.num * self._inner.buffer_length)
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
 
-
+        buf_list = []
         for i in range(self._inner.num):
-            offset = i * self._inner.buffer_length
             v = _bytes[i]
             if v is None:
-                _buffer[offset] = b"\x00"
+                buf_list.append(ctypes.create_string_buffer(self._inner.buffer_length).raw)
                 _is_null[i] = 1
                 _length[i] = 0
             else:
-                _buffer[i] = v
+                buf_list.append(ctypes.create_string_buffer(v, self._inner.buffer_length).raw)
                 _is_null[i] = 0
                 _length[i] = len(v)
+
+        _buf = b"".join(buf_list)
+        memcpy(_buffer, <char*>_buf, self._inner.num * self._inner.buffer_length)
 
         self._inner.buffer = <void*>_buffer
         self._inner.is_null = <char*>_is_null
         self._inner.length = _length
-
-    def __dealloc__(self):
-        if self._inner.buffer is not NULL:
-            free(self._inner.buffer)
-            self._inner.buffer = NULL
-
-        if self._inner.is_null is not NULL:
-            free(self._inner.is_null)
-            self._inner.is_null = NULL
-
-        if self._inner.length is not NULL:
-            free(self._inner.length)
-            self._inner.length = NULL
