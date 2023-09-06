@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from utils import tear_down_database
-from taos import utils
+from taos import utils, IS_V3
 from taos.error import InterfaceError
 import taos
 
@@ -98,6 +98,52 @@ def test_query_with_req_id():
     finally:
         tear_down_database(conn, db_name)
         conn.close()
+
+
+def test_varbinary():
+    if not IS_V3:
+        return
+    conn = taos.connect()
+    conn.execute("drop database if exists test_varbinary_py")
+    conn.execute("create database if not exists test_varbinary_py")
+    conn.execute("use test_varbinary_py")
+    conn.execute(
+        "create stable if not exists stb1 (ts timestamp, v1 int, v2 varchar(50), v3 varbinary(50)) tags(t1 int)")
+    conn.execute("insert into tb1 using stb1 tags(1) values(now, 1, 'varchar\\x8f4e3e', '\\x8f4e3e') "
+                 "(now + 1s, 2, 'varchar value 2', 'binary value_1')")
+    conn.execute("insert into tb2 using stb1 tags(2) values(now, 1, 'varchar value 3', '\\x8f4e3e') "
+                 "(now + 1s, 2, 'varchar value 4', 'binary value_2')")
+    result = conn.query("select * from stb1")
+
+    fields = result.fields
+    for field in fields:
+        print("field: %s" % field)
+
+    for row in result.rows_iter():
+        print(row)
+
+    result.close()
+    conn.execute("drop database if exists test_varbinary_py")
+
+
+def test_varbinary_with_cursor():
+    if not IS_V3:
+        return
+    conn = taos.connect()
+    cursor = conn.cursor()
+    conn.execute("drop database if exists test_varbinary_py")
+    conn.execute("create database if not exists test_varbinary_py")
+    conn.execute("use test_varbinary_py")
+    conn.execute('create table t(ts timestamp, c1 int, c2 binary(10), c3 varbinary(32));')
+    conn.execute(
+        "insert into t values(now, 1, 'aaaa', '\\x8f4e3e')(now+1s, 2, 'bbbb','\\x8f4e3e')(now+2s, 3, 'cccc','\\x8f4e3e')")
+    # entire columns query
+    cursor.execute(f'''select * from t;''')
+    res = cursor.fetchall()
+    print(res)
+
+    conn.execute("drop database if exists test_varbinary_py")
+    cursor.close()
 
 
 if __name__ == "__main__":

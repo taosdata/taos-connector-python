@@ -218,6 +218,9 @@ class TaosCursor(object):
         if dataType.upper() == "JSON":
             if self._description[col][1] == FieldType.C_JSON:
                 return True
+        if dataType.upper() == "VARBINARY":
+            if self._description[col][1] == FieldType.C_VARBINARY:
+                return True
 
         return False
 

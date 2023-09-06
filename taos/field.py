@@ -168,6 +168,15 @@ def _crow_binary_to_python(data, is_null, num_of_rows, nbytes=None, precision=Fi
     ]
 
 
+def _crow_varbinary_to_python(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
+    """Function to convert C binary row to python row."""
+    assert nbytes is not None
+    return [
+        None if is_null[i] else ele.value
+        for i, ele in enumerate((ctypes.cast(data, ctypes.POINTER(ctypes.c_char * nbytes)))[: abs(num_of_rows)])
+    ]
+
+
 def _crow_nchar_to_python(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C nchar row to python row."""
     assert nbytes is not None
@@ -211,6 +220,22 @@ def _crow_binary_to_python_block(data, is_null, num_of_rows, nbytes=None, precis
     return res
 
 
+def _crow_varbinary_to_python_block(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
+    """Function to convert C binary row to python row."""
+    assert nbytes is not None
+    res = []
+    for i in range(abs(num_of_rows)):
+        if is_null[i]:
+            res.append(None)
+        else:
+            rbyte = ctypes.cast(data + nbytes * i, ctypes.POINTER(ctypes.c_uint16))[:1].pop()
+            chars = ctypes.cast(c_char_p(data + nbytes * i + 2), ctypes.POINTER(c_char * rbyte))
+            buffer = create_string_buffer(rbyte + 1)
+            buffer[:rbyte] = chars[0][:rbyte]
+            res.append(cast(buffer, c_char_p).value)
+    return res
+
+
 def _crow_nchar_to_python_block(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C nchar row to python row."""
     assert nbytes is not None
@@ -243,6 +268,7 @@ CONVERT_FUNC = {
     FieldType.C_INT_UNSIGNED: _crow_int_unsigned_to_python,
     FieldType.C_BIGINT_UNSIGNED: _crow_bigint_unsigned_to_python,
     FieldType.C_JSON: _crow_nchar_to_python,
+    FieldType.C_VARBINARY: _crow_varbinary_to_python,
 }
 
 CONVERT_FUNC_BLOCK = {
@@ -261,6 +287,7 @@ CONVERT_FUNC_BLOCK = {
     FieldType.C_INT_UNSIGNED: _crow_int_unsigned_to_python,
     FieldType.C_BIGINT_UNSIGNED: _crow_bigint_unsigned_to_python,
     FieldType.C_JSON: _crow_nchar_to_python_block,
+    FieldType.C_VARBINARY: _crow_varbinary_to_python_block,
 }
 
 

@@ -230,8 +230,8 @@ impl TaosResult {
                 .map_err(|err| FetchError::new_err(err.to_string()))?;
         }
         Ok(Python::with_gil(|py| -> Option<PyObject> {
+            let mut vec = Vec::new();
             if let Some(block) = slf._block.as_ref() {
-                let mut vec = Vec::new();
                 for col in 0..block.ncols() {
                     let value = block.get_ref(slf._current, col).unwrap();
                     let value = match value {
@@ -258,9 +258,8 @@ impl TaosResult {
                     vec.push(value);
                 }
                 slf._current += 1;
-                return Some(PyTuple::new(py, vec).to_object(py));
             }
-            None
+            return Some(PyTuple::new(py, vec).to_object(py));
         }))
     }
 
