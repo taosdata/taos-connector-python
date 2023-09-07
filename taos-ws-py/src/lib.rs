@@ -222,6 +222,8 @@ impl TaosResult {
                     ._inner
                     .fetch_raw_block()
                     .map_err(|err| FetchError::new_err(err.to_string()))?;
+
+                slf._current = 0;
             }
         } else {
             slf._block = slf
