@@ -6,9 +6,9 @@ from taos.result import TaosResult
 class TaosStmt(object):
     """TDengine STMT interface"""
 
-    def __init__(self, stmt, conn=None):
-        self._conn = conn
+    def __init__(self, stmt, decode_binary=True):
         self._stmt = stmt
+        self._decode_binary = decode_binary
 
     def set_tbname(self, name):
         """Set table name if needed.
@@ -59,7 +59,7 @@ class TaosStmt(object):
     def use_result(self):
         """NOTE: Don't use a stmt result more than once."""
         result = taos_stmt_use_result(self._stmt)
-        return TaosResult(result, False)
+        return TaosResult(result, close_after=False, decode_binary=self._decode_binary)
 
     @property
     def affected_rows(self):

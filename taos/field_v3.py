@@ -49,6 +49,13 @@ def _crow_varbinary_to_python_block_v3(data, is_null, num_of_rows, offsets, prec
     return res
 
 
+def convert_block_func_v3(field_type: FieldType, decode_binary=True):
+    """Get convert block func."""
+    if (field_type == FieldType.C_VARCHAR or field_type == FieldType.C_BINARY) and not decode_binary:
+        return _crow_varbinary_to_python_block_v3
+    return CONVERT_FUNC_BLOCK_v3[field_type]
+
+
 CONVERT_FUNC_BLOCK_v3 = {
     FieldType.C_VARCHAR: _crow_binary_to_python_block_v3,
     FieldType.C_BINARY: _crow_binary_to_python_block_v3,
