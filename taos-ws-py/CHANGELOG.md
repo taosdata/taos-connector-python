@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.2.2 - 2023-01-13
 
+## v0.2.9 - 2023-09-07
+
+### Bug Fixes:
+
+- fix fetch block via ws
+
 ## v0.2.8 - 2023-09-06
 
 ### Bug Fixes:
