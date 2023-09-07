@@ -4,13 +4,14 @@ from libc.stdlib cimport malloc, free
 from libc.string cimport memset, strcpy, memcpy
 import ctypes
 import asyncio
+import datetime as dt
+import pytz
+from collections import namedtuple
 from typing import Optional, List, Tuple, Dict, Iterator, AsyncIterator
 from taos._cinterface cimport *
 from taos._parser cimport _parse_string, _parse_timestamp, _parse_binary_string, _parse_nchar_string
 from taos._cinterface import SIZED_TYPE, UNSIZED_TYPE, CONVERT_FUNC
-import datetime as dt
-import pytz
-from collections import namedtuple
+from taos._constants import TaosOption, SmlPrecision, SmlProtocol, TmqResultType, PrecisionEnum
 from taos.error import ProgrammingError, OperationalError, ConnectionError, DatabaseError, StatementError, InternalError, TmqError, SchemalessError
 from taos.constants import FieldType
 
@@ -65,7 +66,7 @@ cdef void async_block_future_wrapper(void *param, TAOS_RES *res, int num_of_rows
     with gil:
         taos_result, fut = <tuple>param
         if num_of_rows > 0:
-            block, n = taos_result.fetch_block()
+            block, n = taos_result._fetch_block()
         else:
             block, n = [], 0
 
@@ -92,12 +93,12 @@ cdef class TaosConnection:
             _tz = kwargs["timezone"].encode("utf-8")
             self._tz = _tz
             set_tz(pytz.timezone(kwargs["timezone"]))
-            taos_options(TSDB_OPTION.TSDB_OPTION_TIMEZONE, self._tz)
+            taos_options(TaosOption.Timezone, self._tz)
 
         if "config" in kwargs:
             _config = kwargs["config"].encode("utf-8")
             self._config = _config
-            taos_options(TSDB_OPTION.TSDB_OPTION_CONFIGDIR, self._config)
+            taos_options(TaosOption.ConfigDir, self._config)
 
     def _init_conn(self, **kwargs):
         if "host" in kwargs:
@@ -136,9 +137,9 @@ cdef class TaosConnection:
 
     @property
     def server_info(self) -> Optional[str]:
-        # type: () -> str
         if self._raw_conn is NULL:
             return
+
         return taos_get_server_info(self._raw_conn).decode("utf-8")
 
     def select_db(self, str database):
@@ -177,7 +178,7 @@ cdef class TaosConnection:
         res = await fut
         return res
 
-    def statement(self, sql: Optional[str]=None) -> TaosStmt:
+    def statement(self, sql: Optional[str]=None) -> Optional[TaosStmt]:
         if self._raw_conn is NULL:
             return None
 
@@ -209,8 +210,8 @@ cdef class TaosConnection:
     def schemaless_insert(
             self,
             lines: List[str],
-            protocol: TSDB_SML_PROTOCOL_TYPE,
-            precision: TSDB_SML_TIMESTAMP_TYPE,
+            protocol: int,
+            precision: int,
             req_id: Optional[int] = None,
             ttl: Optional[int] = None,
     ) -> int:
@@ -326,13 +327,13 @@ cdef class TaosConnection:
             taos_free_result(res)
             raise SchemalessError(errstr, errno, affected_rows)
 
-        return TaosResult(<size_t>res)
+        return affected_rows
 
     def schemaless_insert_raw(
             self,
             lines: str,
-            protocol: TSDB_SML_PROTOCOL_TYPE,
-            precision: TSDB_SML_TIMESTAMP_TYPE,
+            protocol: int,
+            precision: int,
             req_id: Optional[int] = None,
             ttl: Optional[int] = None,
     ) -> int:
@@ -442,11 +443,11 @@ cdef class TaosConnection:
             taos_free_result(res)
             raise SchemalessError(errstr, errno, affected_rows)
         
-        return TaosResult(<size_t>res)
+        return affected_rows
 
     def commit(self):
-        """Commit any pending transaction to the database.
-
+        """
+        Commit any pending transaction to the database.
         Since TDengine do not support transactions, the implement is void functionality.
         """
         pass
@@ -513,6 +514,7 @@ cdef class TaosField:
 
 
 cdef class TaosResult:
+    """TDengine result interface"""
     cdef TAOS_RES *_res
     cdef TAOS_FIELD *_fields
     cdef list _taos_fields
@@ -544,23 +546,28 @@ cdef class TaosResult:
         return self.rows_iter_a()
 
     @property
-    def fields(self):
+    def fields(self) -> List[TaosField]:
+        """fields definitions of the current result"""
         return self._taos_fields
 
     @property
     def field_count(self):
+        """the fields count of the current result"""
         return self._field_count
 
     @property
     def precision(self):
+        """the precision of the current result"""
         return self._precision
 
     @property
     def affected_rows(self):
+        """the affected_rows of the current result"""
         return self._affected_rows
 
     @property
     def row_count(self):
+        """the row_count of the object"""
         return self._row_count
 
     def _check_result_error(self):
@@ -596,16 +603,39 @@ cdef class TaosResult:
 
         return blocks, abs(num_of_rows)
 
+    async def _fetch_block_a(self) -> Tuple[List, int]:
+        loop = asyncio.get_event_loop()
+        fut = loop.create_future()
+        param = (self, fut)
+        taos_fetch_rows_a(self._res, async_block_future_wrapper, <void*>param)
+        # taos_fetch_raw_block_a(self._res, async_block_future_wrapper, <void*>param)  # FIXME: have some problem when parsing nchar
+
+        block, n = await fut
+        return block, n
+
     def fetch_block(self) -> Tuple[List, int]:
         if self._res is NULL:
-            raise OperationalError("Invalid use of fetch iterator")
+            raise OperationalError("Invalid use of fetch block")
 
         block, num_of_rows = self._fetch_block()
         self._row_count += num_of_rows
 
         return [r for r in map(tuple, zip(*block))], num_of_rows
 
+    async def fetch_block_a(self) -> Tuple[List, int]:
+        if self._res is NULL:
+            raise OperationalError("Invalid use of fetch block")
+
+        block, num_of_rows = await self._fetch_block_a()
+        self._row_count += num_of_rows
+
+        return [r for r in map(tuple, zip(*block))], num_of_rows
+
     def fetch_all(self) -> List[Tuple]:
+        """
+        fetch all data from taos result into python list
+        using `taos_fetch_block`
+        """
         if self._res is NULL:
             raise OperationalError("Invalid use of fetchall")
 
@@ -622,12 +652,36 @@ cdef class TaosResult:
 
         return [r for b in blocks for r in map(tuple, zip(*b))]
 
+    async def fetch_all_a(self) -> List[Tuple]:
+        """
+        async fetch all data from taos result into python list
+        using `taos_fetch_block`
+        """
+        if self._res is NULL:
+            raise OperationalError("Invalid use of fetchall")
+
+        blocks = []
+        while True:
+            block, num_of_rows = await self._fetch_block_a()
+            self._check_result_error()
+
+            if num_of_rows == 0:
+                break
+
+            self._row_count += num_of_rows
+            blocks.append(block)
+
+        return [r for b in blocks for r in map(tuple, zip(*b))]
+
     def fetch_all_into_dict(self) -> List[Dict]:
+        """
+        fetch all data from taos result into python dict
+        using `taos_fetch_block`
+        """
         if self._res is NULL:
             raise OperationalError("Invalid use of fetchall")
 
         field_names = [field.name for field in self.fields]
-        dict_row_cls = namedtuple('DictRow', field_names)
         blocks = []
         while True:
             block, num_of_rows = self._fetch_block()
@@ -639,9 +693,34 @@ cdef class TaosResult:
             self._row_count += num_of_rows
             blocks.append(block)
 
-        return [dict_row_cls(*r)._asdict() for b in blocks for r in map(tuple, zip(*b))]
+        return [dict((f, v) for f, v in zip(field_names, r)) for b in blocks for r in map(tuple, zip(*b))]
+
+    async def fetch_all_into_dict_a(self) -> List[Dict]:
+        """
+        async fetch all data from taos result into python dict
+        using `taos_fetch_block`
+        """
+        if self._res is NULL:
+            raise OperationalError("Invalid use of fetchall")
+
+        field_names = [field.name for field in self.fields]
+        blocks = []
+        while True:
+            block, num_of_rows = await self._fetch_block_a()
+            self._check_result_error()
+
+            if num_of_rows == 0:
+                break
+
+            self._row_count += num_of_rows
+            blocks.append(block)
+
+        return [dict((f, v) for f, v in zip(field_names, r)) for b in blocks for r in map(tuple, zip(*b))]
 
     def rows_iter(self) -> Iterator[Tuple]:
+        """
+        Iterate row from taos result into python list
+        """
         if self._res is NULL:
             raise OperationalError("Invalid use of rows_iter")
 
@@ -670,9 +749,9 @@ cdef class TaosResult:
                     pass
 
             self._row_count += 1
-            yield row
+            yield tuple(row)  # TODO: list -> tuple, too much object is create here
 
-    def blocks_iter(self) -> Iterator[Tuple[List, int]]:
+    def blocks_iter(self) -> Iterator[Tuple[List[Tuple], int]]:
         if self._res is NULL:
             raise OperationalError("Invalid use of rows_iter")
 
@@ -701,35 +780,55 @@ cdef class TaosResult:
             for row in rows:
                 yield row
 
-    async def blocks_iter_a(self) -> AsyncIterator[Tuple[List, int]]:
+    async def blocks_iter_a(self) -> AsyncIterator[Tuple[List[Tuple], int]]:
         if self._res is NULL:
             raise OperationalError("Invalid use of blocks_iter_a")
 
-        loop = asyncio.get_event_loop()
         while True:
-            fut = loop.create_future()
-            param = (self, fut)
-            taos_fetch_rows_a(self._res, async_block_future_wrapper, <void*>param)
-            # taos_fetch_raw_block_a(self._res, async_block_future_wrapper, <void*>param)  # FIXME: have some problem when parsing nchar
+            block, num_of_rows = await self._fetch_block_a()
 
-            block, n = await fut
-            if not block:
+            if num_of_rows == 0:
                 break
             
-            yield block, n
+            yield [r for r in map(tuple, zip(*block))], num_of_rows
 
     def stop_query(self):
-        return taos_stop_query(self._res)
+        if self._res is not NULL:
+            taos_stop_query(self._res)
 
-    def __dealloc__(self):
+    def close(self):
         if self._res is not NULL:
             taos_free_result(self._res)
 
         self._res = NULL
+        self._field_count
         self._fields = NULL
+        self._taos_fields = []
+
+    def __dealloc__(self):
+        self.close()
 
 
 cdef class TaosCursor:
+    """Database cursor which is used to manage the context of a fetch operation.
+
+    Attributes:
+        .description: Read-only attribute consists of 7-item sequences:
+
+            > name (mandatory)
+            > type_code (mandatory)
+            > display_size
+            > internal_size
+            > precision
+            > scale
+            > null_ok
+
+            This attribute will be None for operations that do not return rows or
+            if the cursor has not had an operation invoked via the .execute*() method yet.
+
+        .rowcount:This read-only attribute specifies the number of rows that the last
+            .execute*() produced (for DQL statements like SELECT) or affected
+    """
     cdef list _description
     cdef TaosConnection _connection
     cdef TaosResult _result
@@ -748,26 +847,31 @@ cdef class TaosCursor:
         return next(self)
 
     @property
-    def description(self):
+    def description(self) -> List[Tuple]:
         return self._description
 
     @property
-    def rowcount(self):
+    def rowcount(self) -> int:
+        """
+        For INSERT statement, rowcount is assigned immediately after execute the statement.
+        For SELECT statement, rowcount will not get correct value until fetched all data.
+        """
         return self._result.row_count
 
     @property
-    def affected_rows(self):
+    def affected_rows(self) -> int:
         """Return the rowcount of insertion"""
         return self._result.affected_rows
 
     def callproc(self, procname, *args):
-        """Call a stored database procedure with the given name.
-
+        """
+        Call a stored database procedure with the given name.
         Void functionality since no stored procedures.
         """
         pass
 
     def close(self):
+        """Close the cursor."""
         if self._connection is None:
             return False
 
@@ -833,8 +937,15 @@ cdef class TaosCursor:
         
         return rows
 
+    def istype(self, col: int, data_type: str):
+        ft_name = "".join(["C ", data_type.upper()]).replace(" ", "_")
+        return self._description[col][1] == getattr(FieldType, ft_name)
+
     def fetchall(self) -> List[Tuple]:
         return [r for r in self]
+
+    def stop_query(self):
+        self._result.stop_query()
 
     def nextset(self):
         pass
@@ -862,38 +973,37 @@ cdef void async_commit_future_wrapper(tmq_t *tmq, int32_t code, void *param) nog
 
 
 cdef class TopicPartition:
-    cdef char *_topic
+    cdef str _topic
     cdef int32_t _partition
     cdef int64_t _offset
     cdef int64_t _begin
     cdef int64_t _end
 
     def __cinit__(self, str topic, int32_t partition, int64_t offset, int64_t begin=0, int64_t end=0):
-        _topic = topic.encode("utf-8")
-        self._topic = _topic
+        self._topic = topic
         self._partition = partition
         self._offset = offset
         self._begin = begin
         self._end = end
 
     @property
-    def topic(self):
-        return self._topic.decode("utf-8")
+    def topic(self) -> str:
+        return self._topic
 
     @property
-    def partition(self):
+    def partition(self) -> int:
         return self._partition
 
     @property
-    def offset(self):
+    def offset(self) -> int:
         return self._offset
 
     @property
-    def begin(self):
+    def begin(self) -> int:
         return self._begin
 
     @property
-    def end(self):
+    def end(self) -> int:
         return self._end
 
     def __str__(self):
@@ -907,7 +1017,10 @@ cdef class MessageBlock:
     cdef int _ncols
     cdef str _table
 
-    def __init__(self, block=None, fields=None, nrows=0, ncols=0, table=""):
+    def __init__(self, 
+                block: Optional[List[Optional[List]]]=None, 
+                fields: Optional[List[TaosField]]=None, 
+                nrows: int=0, ncols: int=0, table: str=""):
         self._block = block or []
         self._fields = fields or []
         self._nrows = nrows
@@ -915,18 +1028,33 @@ cdef class MessageBlock:
         self._table = table
 
     def fields(self) -> List[TaosField]:
+        """
+        Get fields in message block
+        """
         return self._fields
 
     def nrows(self) -> int:
+        """
+        get total count of rows of message block
+        """
         return self._nrows
 
     def ncols(self) -> int:
+        """
+        get total count of rows of message block
+        """
         return self._ncols
 
     def table(self) -> str:
+        """
+        get table name of message block
+        """
         return self._table
 
     def fetchall(self) -> List[Tuple]:
+        """
+        get all data in message block
+        """
         return [r for r in self]
 
     def __iter__(self) -> Iterator[Tuple]:
@@ -944,14 +1072,31 @@ cdef class Message:
         self._err_str = taos_errstr(self._res)
 
     def error(self) -> Optional[TmqError]:
+        """
+        The message object is also used to propagate errors and events, an application must check error() to determine
+        if the Message is a proper message (error() returns None) or an error or event (error() returns a TmqError
+         object)
+
+        :rtype: None or :py:class:`TmqError
+        """
         return TmqError(self._err_str.decode("utf-8"), self._err_no) if self._err_no else None
 
     def topic(self) -> Optional[str]:
+        """
+
+        :returns: topic name.
+        :rtype: str
+        """
         _topic = tmq_get_topic_name(self._res)
         topic = None if _topic is NULL else _topic.decode("utf-8")
         return topic
 
     def database(self) -> Optional[str]:
+        """
+
+        :returns: database name.
+        :rtype: str
+        """
         _db = tmq_get_db_name(self._res)
         db = None if _db is NULL else _db.decode("utf-8")
         return db
@@ -960,6 +1105,10 @@ cdef class Message:
         return tmq_get_vgroup_id(self._res)
 
     def offset(self) -> int:
+        """
+        :returns: message offset.
+        :rtype: int
+        """
         return tmq_get_vgroup_offset(self._res)
     
     def _fetch_message_block(self) -> MessageBlock:
@@ -998,8 +1147,13 @@ cdef class Message:
         return MessageBlock(block, fields, num_of_rows, field_count, table)
 
     def value(self) -> List[MessageBlock]:
+        """
+
+        :returns: message value (payload).
+        :rtype: list[MessageBlock]
+        """
         res_type = tmq_get_res_type(self._res)
-        if res_type in (tmq_res_t.TMQ_RES_TABLE_META, tmq_res_t.TMQ_RES_INVALID):
+        if res_type in (TmqResultType.TABLE_META, TmqResultType.INVALID):
             return None # TODO: deal with meta data
 
         message_blocks = []
@@ -1080,6 +1234,10 @@ cdef class TaosConsumer:
             raise TmqError(tmq_errstr, tmq_errno)
     
     def subscribe(self, topics: List[str]):
+        """
+        Set subscription to supplied list of topics.
+        :param list(str) topics: List of topics (strings) to subscribe to.
+        """
         tmq_list = tmq_list_new()
         if tmq_list is NULL:
             raise TmqError("new tmq list failed!")
@@ -1101,22 +1259,34 @@ cdef class TaosConsumer:
         self._subscribed = True
 
     def unsubscribe(self):
+        """
+        Remove current subscription.
+        """
         tmq_errno = tmq_unsubscribe(self._tmq)
         self._check_tmq_error(tmq_errno)
         
         self._subscribed = False
 
     def close(self):
-        if self._tmq_conf is not NULL:
-            tmq_conf_destroy(self._tmq_conf)
-            self._tmq_conf = NULL
-
+        """
+        Close down and terminate the Kafka Consumer.
+        """
         if self._tmq is not NULL:
-            tmq_unsubscribe(self._tmq)
-            tmq_consumer_close(self._tmq)
+            tmq_errno = tmq_consumer_close(self._tmq)
+            self._check_tmq_error(tmq_errno)
             self._tmq = NULL
 
     def poll(self, float timeout=1.0) -> Optional[Message]:
+        """
+        Consumes a single message and returns events.
+
+        The application must check the returned `Message` object's `Message.error()` method to distinguish between
+        proper messages (error() returns None).
+
+        :param float timeout: Maximum time to block waiting for message, event or callback (default: 1). (second)
+        :returns: A Message object or None on timeout
+        :rtype: `Message` or None
+        """
         if not self._subscribed:
             raise TmqError("unsubscribe topic")
 
@@ -1128,6 +1298,17 @@ cdef class TaosConsumer:
         return Message(<size_t>res)
 
     def commit(self, message: Message=None, offsets: List[TopicPartition]=None):
+        """
+        Commit a message.
+
+        The `message` and `offsets` parameters are mutually exclusive. If neither is set, the current partition
+        assignment's offsets are used instead. Use this method to commit offsets if you have 'enable.auto.commit' set
+        to False.
+
+        :param Message message: Commit the message's offset+1. Note: By convention, committed offsets reflect the next
+            message to be consumed, **not** the last message consumed.
+        :param list(TopicPartition) offsets: List of topic+partitions+offsets to commit.
+        """
         if message:
             self.message_commit(message)
             return 
@@ -1140,6 +1321,17 @@ cdef class TaosConsumer:
         self._check_tmq_error(tmq_errno)
 
     async def commit_a(self, message: Message=None, offsets: List[TopicPartition]=None):
+        """
+        Async commit a message.
+
+        The `message` and `offsets` parameters are mutually exclusive. If neither is set, the current partition
+        assignment's offsets are used instead. Use this method to commit offsets if you have 'enable.auto.commit' set
+        to False.
+
+        :param Message message: Commit the message's offset+1. Note: By convention, committed offsets reflect the next
+            message to be consumed, **not** the last message consumed.
+        :param list(TopicPartition) offsets: List of topic+partitions+offsets to commit.
+        """
         if message:
             await self.message_commit_a(message)
             return
@@ -1154,27 +1346,33 @@ cdef class TaosConsumer:
         self._check_tmq_error(tmq_errno)
 
     def message_commit(self, message: Message):
+        """ Commit with message """
         tmq_errno = tmq_commit_sync(self._tmq, message._res)
         self._check_tmq_error(tmq_errno)
 
     async def message_commit_a(self, message: Message):
+        """ Async commit with message """
         loop = asyncio.get_event_loop()
         fut = loop.create_future()
         tmq_commit_async(self._tmq, message._res, async_commit_future_wrapper, <void*>fut)
         tmq_errno = await fut
         self._check_tmq_error(tmq_errno)
 
-    def offsets_commit(self, topic_partitions: List[TopicPartition]):
-        for tp in topic_partitions:
-            tmq_errno = tmq_commit_offset_sync(self._tmq, tp._topic, tp._partition, tp._offset)
+    def offsets_commit(self, partitions: List[TopicPartition]):
+        """ Commit with topic partitions """
+        for tp in partitions:
+            _tp = tp._topic.encode("utf-8")
+            tmq_errno = tmq_commit_offset_sync(self._tmq, _tp, tp._partition, tp._offset)
             self._check_tmq_error(tmq_errno)
     
-    async def offsets_commit_a(self, topic_partitions: List[TopicPartition]):
+    async def offsets_commit_a(self, partitions: List[TopicPartition]):
+        """ async commit with topic partitions """
         loop = asyncio.get_event_loop()
         futs = []
-        for tp in topic_partitions:
+        for tp in partitions:
+            _tp = tp._topic.encode("utf-8")
             fut = loop.create_future()
-            tmq_commit_offset_async(self._tmq, tp._topic, tp._partition, tp._offset, async_commit_future_wrapper, <void*>fut)
+            tmq_commit_offset_async(self._tmq, _tp, tp._partition, tp._offset, async_commit_future_wrapper, <void*>fut)
             futs.append(fut)
         
         tmq_errnos = await asyncio.gather(futs, return_exceptions=True)
@@ -1182,6 +1380,9 @@ cdef class TaosConsumer:
             self._check_tmq_error(tmq_errno)
 
     def assignment(self) -> List[TopicPartition]:
+        """
+        Returns the current partition assignment as a list of TopicPartition tuples.
+        """
         cdef int32_t i
         cdef int32_t num_of_assignment
         cdef tmq_topic_assignment *p_assignment = NULL
@@ -1209,7 +1410,8 @@ cdef class TaosConsumer:
         """
         Set consume position for partition to offset.
         """
-        tmq_errno = tmq_offset_seek(self._tmq, partition._topic, partition._partition, partition._offset)
+        _tp = partition._topic.encode("utf-8")
+        tmq_errno = tmq_offset_seek(self._tmq, _tp, partition._partition, partition._offset)
         self._check_tmq_error(tmq_errno)
 
     def committed(self, partitions: List[TopicPartition]) -> List[TopicPartition]:
@@ -1224,7 +1426,8 @@ cdef class TaosConsumer:
             if not isinstance(partition, TopicPartition):
                 raise TmqError("Invalid partition type")
             
-            tmq_errno = offset = tmq_committed(self._tmq, partition._topic, partition._partition)
+            _tp = partition._topic.encode("utf-8")
+            tmq_errno = offset = tmq_committed(self._tmq, _tp, partition._partition)
             self._check_tmq_error(tmq_errno)
             
             partition._offset = offset
@@ -1243,7 +1446,8 @@ cdef class TaosConsumer:
             if not isinstance(partition, TopicPartition):
                 raise TmqError("Invalid partition type")
 
-            tmq_errno = offset = tmq_position(self._tmq, partition._topic, partition._partition)
+            _tp = partition._topic.encode("utf-8")
+            tmq_errno = offset = tmq_position(self._tmq, _tp, partition._partition)
             self._check_tmq_error(tmq_errno)
 
             partition._offset = offset
@@ -1251,18 +1455,27 @@ cdef class TaosConsumer:
         return partitions
 
     def list_topics(self) -> List[str]:
+        """
+        Request subscription topics from the tmq.
+
+        :rtype: topics list
+        """
         cdef int i
-        cdef tmq_list_t *topics
-        tmq_errno = tmq_subscription(self._tmq, &topics)
+        tmq_list = tmq_list_new()
+        if tmq_list is NULL:
+            raise TmqError("new tmq list failed!")
+
+        tmq_errno = tmq_subscription(self._tmq, &tmq_list)
         self._check_tmq_error(tmq_errno)
 
-        n = tmq_list_get_size(topics)
-        ca = tmq_list_to_c_array(topics)
+        ca = tmq_list_to_c_array(tmq_list)
+        n = tmq_list_get_size(tmq_list)
+
         tp_list = []
         for i in range(n):
-            tp_list.append(ca[i])
+            tp_list.append(ca[i].decode("utf-8"))
 
-        tmq_list_destroy(topics)
+        tmq_list_destroy(tmq_list)
 
         return tp_list
 
@@ -1273,6 +1486,9 @@ cdef class TaosConsumer:
                 yield message
 
     def __dealloc__(self):
+        if self._tmq_conf is not NULL:
+            tmq_conf_destroy(self._tmq_conf)
+            self._tmq_conf = NULL
         self.close()
 
 # ---------------------------------------- statement --------------------------------------------------------------- ^
@@ -1358,7 +1574,7 @@ cdef class TaosStmt:
         return TaosResult(<size_t>res)
 
     @property
-    def affected_rows(self):
+    def affected_rows(self) -> int:
         # type: () -> int
         return taos_stmt_affected_rows(self._stmt)
 
@@ -1662,7 +1878,7 @@ cdef class TaosMultiBind:
         self._inner.buffer = <void*>_buffer
         self._inner.is_null = <char*>_is_null
 
-    def timestamp(self, values, precision):
+    def timestamp(self, values, precision=PrecisionEnum.Milliseconds):
         self._inner.buffer_type = FieldType.C_TIMESTAMP
         self._inner.buffer_length = sizeof(int64_t)
         self._inner.num = len(values)
@@ -1710,19 +1926,19 @@ cdef class TaosMultiBind:
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
         _check_malloc(<void*>_is_null)
 
-        buf_list = []
+        _buf = bytearray(self._inner.num * self._inner.buffer_length)
         for i in range(self._inner.num):
+            offset = i * self._inner.buffer_length
             v = _bytes[i]
             if v is None:
-                buf_list.append(ctypes.create_string_buffer(self._inner.buffer_length).raw)
+                # _buf[offset:offset+self._inner.buffer_length] = b"\x00" * self._inner.buffer_length
                 _is_null[i] = 1
                 _length[i] = 0
             else:
-                buf_list.append(ctypes.create_string_buffer(v, self._inner.buffer_length).raw)
+                _buf[offset:offset+len(v)] = v
                 _is_null[i] = 0
                 _length[i] = len(v)
 
-        _buf = b"".join(buf_list)
         memcpy(_buffer, <char*>_buf, self._inner.num * self._inner.buffer_length)
 
         self._inner.buffer = <void*>_buffer
@@ -1741,19 +1957,19 @@ cdef class TaosMultiBind:
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
         _check_malloc(<void*>_is_null)
 
-        buf_list = []
+        _buf = bytearray(self._inner.num * self._inner.buffer_length)
         for i in range(self._inner.num):
+            offset = i * self._inner.buffer_length
             v = _bytes[i]
             if v is None:
-                buf_list.append(ctypes.create_string_buffer(self._inner.buffer_length).raw)
+                # _buf[offset:offset+self._inner.buffer_length] = b"\x00" * self._inner.buffer_length
                 _is_null[i] = 1
                 _length[i] = 0
             else:
-                buf_list.append(ctypes.create_string_buffer(v, self._inner.buffer_length).raw)
+                _buf[offset:offset+len(v)] = v
                 _is_null[i] = 0
                 _length[i] = len(v)
 
-        _buf = b"".join(buf_list)
         memcpy(_buffer, <char*>_buf, self._inner.num * self._inner.buffer_length)
 
         self._inner.buffer = <void*>_buffer
@@ -1772,19 +1988,19 @@ cdef class TaosMultiBind:
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
         _check_malloc(<void*>_is_null)
 
-        buf_list = []
+        _buf = bytearray(self._inner.num * self._inner.buffer_length)
         for i in range(self._inner.num):
+            offset = i * self._inner.buffer_length
             v = _bytes[i]
             if v is None:
-                buf_list.append(ctypes.create_string_buffer(self._inner.buffer_length).raw)
+                # _buf[offset:offset+self._inner.buffer_length] = b"\x00" * self._inner.buffer_length
                 _is_null[i] = 1
                 _length[i] = 0
             else:
-                buf_list.append(ctypes.create_string_buffer(v, self._inner.buffer_length).raw)
+                _buf[offset:offset+len(v)] = v
                 _is_null[i] = 0
                 _length[i] = len(v)
 
-        _buf = b"".join(buf_list)
         memcpy(_buffer, <char*>_buf, self._inner.num * self._inner.buffer_length)
 
         self._inner.buffer = <void*>_buffer

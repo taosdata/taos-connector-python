@@ -25,6 +25,9 @@ def build(setup_kwargs):
             Extension("taos._objects", ["taos/_objects.pyx"],
                       libraries=["taos"],
                       ),
+            Extension("taos._constants", ["taos/_constants.pyx"],
+                      libraries=["taos"],
+                      ),
         ]
     elif platform.system() == "Windows":
         extensions = [
@@ -35,6 +38,11 @@ def build(setup_kwargs):
                       ),
             Extension("taos._parser", ["taos/_parser.pyx"], language="c++"),
             Extension("taos._objects", ["taos/_objects.pyx"],
+                      libraries=["taos"],
+                      include_dirs=[r"C:\TDengine\include"],
+                      library_dirs=[r"C:\TDengine\driver"],
+                      ),
+            Extension("taos._constants", ["taos/_constants.pyx"],
                       libraries=["taos"],
                       include_dirs=[r"C:\TDengine\include"],
                       library_dirs=[r"C:\TDengine\driver"],
