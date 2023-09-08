@@ -71,6 +71,7 @@ cdef extern from "taos.h":
     int taos_fetch_block(TAOS_RES *res, TAOS_ROW *rows)
     int taos_result_precision(TAOS_RES *res)
     int *taos_get_column_data_offset(TAOS_RES *res, int columnIndex)
+    int taos_validate_sql(TAOS *taos, const char *sql)
     int taos_errno(TAOS_RES *res)
     char *taos_errstr(TAOS_RES *res)
     TAOS *taos_connect(const char *ip, const char *user, const char *password, const char *db, uint16_t port)

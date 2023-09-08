@@ -42,7 +42,7 @@ cdef void async_result_future_wrapper(void *param, TAOS_RES *res, int code) nogi
             e = ProgrammingError(errstr, code)
             fut.get_loop().call_soon_threadsafe(fut.set_exception, e)
         else:
-            taos_result = TaosResult(<size_t>res)
+            taos_result = TaosResult(<size_t>res, is_async=True)
             fut.get_loop().call_soon_threadsafe(fut.set_result, taos_result)
 
 
@@ -52,7 +52,8 @@ cdef void async_rows_future_wrapper(void *param, TAOS_RES *res, int num_of_rows)
         taos_result, fut = <tuple>param
         rows = []
         if num_of_rows > 0:
-            for row in taos_result.rows_iter():
+            while True:
+                row = taos_result._fetch_row()
                 rows.append(row)
                 i += 1
                 if i >= num_of_rows:
@@ -83,7 +84,7 @@ cdef class TaosConnection:
     cdef char *_config
     cdef TAOS *_raw_conn
 
-    def __cinit__(self, **kwargs):
+    def __cinit__(self, *args, **kwargs):
         self._init_options(**kwargs)
         self._init_conn(**kwargs)
         self._check_conn_error()
@@ -141,6 +142,11 @@ cdef class TaosConnection:
             return
 
         return taos_get_server_info(self._raw_conn).decode("utf-8")
+
+    def validate_sql(self, str sql) -> bool:
+        _sql = sql.encode("utf-8")
+        errno = taos_validate_sql(self._raw_conn, _sql)
+        return errno == 0
 
     def select_db(self, str database):
         _database = database.encode("utf-8")
@@ -522,8 +528,10 @@ cdef class TaosResult:
     cdef int _precision
     cdef int _row_count
     cdef int _affected_rows
+    cdef object _dt_epoch
+    cdef bool _is_async
 
-    def __cinit__(self, size_t res):
+    def __cinit__(self, size_t res, bool is_async=False):
         self._res = <TAOS_RES*>res
         self._check_result_error()
         self._field_count = taos_field_count(self._res)
@@ -531,7 +539,9 @@ cdef class TaosResult:
         self._taos_fields = [TaosField(f.name.decode("utf-8"), f.type, f.bytes) for f in self._fields[:self._field_count]]
         self._precision = taos_result_precision(self._res)
         self._affected_rows = taos_affected_rows(self._res)
-        self._row_count = 0
+        self._row_count = self._affected_rows if self._field_count == 0 else 0
+        self._dt_epoch = _priv_datetime_epoch if _priv_datetime_epoch else _datetime_epoch
+        self._is_async = is_async
 
     def __str__(self):
         return "TaosResult(field_count=%d, precision=%d, affected_rows=%d, row_count=%d)" % (self._field_count, self._precision, self._affected_rows, self._row_count)
@@ -583,7 +593,6 @@ cdef class TaosResult:
             return [], 0
 
         blocks = [None] * self._field_count
-        dt_epoch = _priv_datetime_epoch if _priv_datetime_epoch else _datetime_epoch
         cdef int i
         for i in range(self._field_count):
             data = pblock[i]
@@ -597,11 +606,38 @@ cdef class TaosResult:
                 blocks[i] = CONVERT_FUNC[field.type](<size_t>data, num_of_rows, is_null)
             elif field.type in (TSDB_DATA_TYPE_TIMESTAMP, ):
                 is_null = taos_get_column_data_is_null(self._res, i, num_of_rows)
-                blocks[i] = _parse_timestamp(<size_t>data, num_of_rows, is_null, self._precision, dt_epoch)
+                blocks[i] = _parse_timestamp(<size_t>data, num_of_rows, is_null, self._precision, self._dt_epoch)
             else:
                 pass
 
+        self._row_count += num_of_rows
         return blocks, abs(num_of_rows)
+
+    def _fetch_row(self) -> Optional[Tuple]:
+        cdef TAOS_ROW taos_row
+        cdef int i
+        cdef int[1] offsets = [-2]
+        is_null = [False]
+
+        taos_row = taos_fetch_row(self._res)
+        if taos_row is NULL:
+            return None
+
+        row = [None] * self._field_count
+        for i in range(self._field_count):
+            data = taos_row[i]
+            field = self._fields[i]
+            if field.type in UNSIZED_TYPE:
+                row[i] = _parse_string(<size_t>data, 1, offsets)[0] if data is not NULL else None  # FIXME: is it ok to set offsets = [-2] here
+            elif field.type in SIZED_TYPE:
+                row[i] = CONVERT_FUNC[field.type](<size_t>data, 1, is_null)[0] if data is not NULL else None
+            elif field.type in (TSDB_DATA_TYPE_TIMESTAMP, ):
+                row[i] = _parse_timestamp(<size_t>data, 1, is_null, self._precision, self._dt_epoch)[0] if data is not NULL else None
+            else:
+                pass
+
+        self._row_count += 1
+        return tuple(row) # TODO: list -> tuple, too much object is create here
 
     async def _fetch_block_a(self) -> Tuple[List, int]:
         loop = asyncio.get_event_loop()
@@ -613,21 +649,35 @@ cdef class TaosResult:
         block, n = await fut
         return block, n
 
+    async def _fetch_rows_a(self) -> List[Tuple]:
+        loop = asyncio.get_event_loop()
+        fut = loop.create_future()
+        param = (self, fut)
+        taos_fetch_rows_a(self._res, async_rows_future_wrapper, <void*>param)
+        rows = await fut
+        return rows
+
     def fetch_block(self) -> Tuple[List, int]:
         if self._res is NULL:
-            raise OperationalError("Invalid use of fetch block")
+            raise OperationalError("Invalid use of fetch_block")
+
+        if self._is_async:
+            raise OperationalError("Invalid use of fetch_block, async result can not use sync func")
 
         block, num_of_rows = self._fetch_block()
-        self._row_count += num_of_rows
+        self._check_result_error()
 
         return [r for r in map(tuple, zip(*block))], num_of_rows
 
     async def fetch_block_a(self) -> Tuple[List, int]:
         if self._res is NULL:
-            raise OperationalError("Invalid use of fetch block")
+            raise OperationalError("Invalid use of fetch_block_a")
+
+        if not self._is_async:
+            raise OperationalError("Invalid use of fetch_block_a, sync result can not use async func")
 
         block, num_of_rows = await self._fetch_block_a()
-        self._row_count += num_of_rows
+        self._check_result_error()
 
         return [r for r in map(tuple, zip(*block))], num_of_rows
 
@@ -639,16 +689,18 @@ cdef class TaosResult:
         if self._res is NULL:
             raise OperationalError("Invalid use of fetchall")
 
+        if self._is_async:
+            raise OperationalError("Invalid use of fetch_all, async result can not use sync func")
+
         blocks = []
         while True:
             block, num_of_rows = self._fetch_block()
-            self._check_result_error()
 
             if num_of_rows == 0:
                 break
 
-            self._row_count += num_of_rows
             blocks.append(block)
+        self._check_result_error()
 
         return [r for b in blocks for r in map(tuple, zip(*b))]
 
@@ -658,18 +710,20 @@ cdef class TaosResult:
         using `taos_fetch_block`
         """
         if self._res is NULL:
-            raise OperationalError("Invalid use of fetchall")
+            raise OperationalError("Invalid use of fetch_all_a")
+
+        if not self._is_async:
+            raise OperationalError("Invalid use of fetch_all_a, sync result can not use async func")
 
         blocks = []
         while True:
             block, num_of_rows = await self._fetch_block_a()
-            self._check_result_error()
 
             if num_of_rows == 0:
                 break
 
-            self._row_count += num_of_rows
             blocks.append(block)
+        self._check_result_error()
 
         return [r for b in blocks for r in map(tuple, zip(*b))]
 
@@ -679,20 +733,21 @@ cdef class TaosResult:
         using `taos_fetch_block`
         """
         if self._res is NULL:
-            raise OperationalError("Invalid use of fetchall")
+            raise OperationalError("Invalid use of fetch_all_into_dict")
+
+        if self._is_async:
+            raise OperationalError("Invalid use of fetch_all_into_dict, async result can not use sync func")
 
         field_names = [field.name for field in self.fields]
         blocks = []
         while True:
             block, num_of_rows = self._fetch_block()
-            self._check_result_error()
 
             if num_of_rows == 0:
                 break
 
-            self._row_count += num_of_rows
             blocks.append(block)
-
+        self._check_result_error()
         return [dict((f, v) for f, v in zip(field_names, r)) for b in blocks for r in map(tuple, zip(*b))]
 
     async def fetch_all_into_dict_a(self) -> List[Dict]:
@@ -701,19 +756,21 @@ cdef class TaosResult:
         using `taos_fetch_block`
         """
         if self._res is NULL:
-            raise OperationalError("Invalid use of fetchall")
+            raise OperationalError("Invalid use of fetch_all_into_dict_a")
+
+        if not self._is_async:
+            raise OperationalError("Invalid use of fetch_all_into_dict_a, sync result can not use async func")
 
         field_names = [field.name for field in self.fields]
         blocks = []
         while True:
             block, num_of_rows = await self._fetch_block_a()
-            self._check_result_error()
 
             if num_of_rows == 0:
                 break
 
-            self._row_count += num_of_rows
             blocks.append(block)
+        self._check_result_error()
 
         return [dict((f, v) for f, v in zip(field_names, r)) for b in blocks for r in map(tuple, zip(*b))]
 
@@ -724,36 +781,24 @@ cdef class TaosResult:
         if self._res is NULL:
             raise OperationalError("Invalid use of rows_iter")
 
-        cdef TAOS_ROW taos_row
-        cdef int i
-        cdef int[1] offsets = [-2]
-        dt_epoch = _priv_datetime_epoch if _priv_datetime_epoch else _datetime_epoch
-        is_null = [False]
+        if self._is_async:
+            raise OperationalError("Invalid use of rows_iter, async result can not use sync func")
 
         while True:
-            taos_row = taos_fetch_row(self._res)
-            if taos_row is NULL:
+            row = self._fetch_row()
+
+            if row is None:
                 break
 
-            row = [None] * self._field_count
-            for i in range(self._field_count):
-                data = taos_row[i]
-                field = self._fields[i]
-                if field.type in UNSIZED_TYPE:
-                    row[i] = _parse_string(<size_t>data, 1, offsets)[0] if data is not NULL else None  # FIXME: is it ok to set offsets = [-2] here
-                elif field.type in SIZED_TYPE:
-                    row[i] = CONVERT_FUNC[field.type](<size_t>data, 1, is_null)[0] if data is not NULL else None
-                elif field.type in (TSDB_DATA_TYPE_TIMESTAMP, ):
-                    row[i] = _parse_timestamp(<size_t>data, 1, is_null, self._precision, dt_epoch)[0] if data is not NULL else None
-                else:
-                    pass
-
-            self._row_count += 1
-            yield tuple(row)  # TODO: list -> tuple, too much object is create here
+            yield row
+        self._check_result_error()
 
     def blocks_iter(self) -> Iterator[Tuple[List[Tuple], int]]:
         if self._res is NULL:
             raise OperationalError("Invalid use of rows_iter")
+
+        if self._is_async:
+            raise OperationalError("Invalid use of rows_iter, async result can not use sync func")
 
         while True:
             block, num_of_rows = self._fetch_block()
@@ -762,27 +807,31 @@ cdef class TaosResult:
                 break
 
             yield [r for r in map(tuple, zip(*block))], num_of_rows
+        self._check_result_error()
 
     async def rows_iter_a(self) -> AsyncIterator[Tuple]:
         if self._res is NULL:
             raise OperationalError("Invalid use of rows_iter_a")
 
-        loop = asyncio.get_event_loop()
-        while True:
-            fut = loop.create_future()
-            param = (self, fut)
-            taos_fetch_rows_a(self._res, async_rows_future_wrapper, <void*>param)
+        if not self._is_async:
+            raise OperationalError("Invalid use of rows_iter_a, sync result can not use async func")
 
-            rows = await fut
+        while True:
+            rows = await self._fetch_rows_a()
+
             if not rows:
                 break
             
             for row in rows:
                 yield row
+        self._check_result_error()
 
     async def blocks_iter_a(self) -> AsyncIterator[Tuple[List[Tuple], int]]:
         if self._res is NULL:
             raise OperationalError("Invalid use of blocks_iter_a")
+
+        if not self._is_async:
+            raise OperationalError("Invalid use of blocks_iter_a, sync result can not use async func")
 
         while True:
             block, num_of_rows = await self._fetch_block_a()
@@ -791,6 +840,7 @@ cdef class TaosResult:
                 break
             
             yield [r for r in map(tuple, zip(*block))], num_of_rows
+        self._check_result_error()
 
     def stop_query(self):
         if self._res is not NULL:
