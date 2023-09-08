@@ -3,12 +3,12 @@ name: taos-ws-py
 on:
   push:
     branches:
-      - '3.0'
+      - main
     tags:
       - taos-ws-py-v*
   pull_request:
     branches:
-      - '3.0'
+      - main
 env:
   PYTHON_VERSION: "3.7" # to build abi3 wheels
 
