@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.7.11 - 2023-09-08
+
+### Bug Fixes:
+
+- fix fetch block via ws
+- fix varbinary for cursor
+- return empty list when no data
+- return empty list when no data in cursor
+- taos.error: Database not specified
+
+### Enhancements:
+
+- add config decode_binary to special whether decode varchar or binary
+
 ## v2.7.10 - 2023-07-04
 
 ### Bug Fixes:
