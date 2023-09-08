@@ -3,7 +3,6 @@ import ctypes
 
 from taos.constants import FieldType
 
-
 _RTYPE = ctypes.c_uint16
 _RTYPE_SIZE = ctypes.sizeof(_RTYPE)
 
@@ -48,6 +47,13 @@ def _crow_varbinary_to_python_block_v3(data, is_null, num_of_rows, offsets, prec
             chars = (ctypes.c_char * rbyte).from_address(data + offsets[i] + _RTYPE_SIZE).raw
             res.append(chars)
     return res
+
+
+def convert_block_func_v3(field_type: FieldType, decode_binary=True):
+    """Get convert block func."""
+    if (field_type == FieldType.C_VARCHAR or field_type == FieldType.C_BINARY) and not decode_binary:
+        return _crow_varbinary_to_python_block_v3
+    return CONVERT_FUNC_BLOCK_v3[field_type]
 
 
 CONVERT_FUNC_BLOCK_v3 = {

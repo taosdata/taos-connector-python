@@ -19,6 +19,7 @@ class TaosConnection(object):
         self._port = 0
         self._config = None
         self._tz = None
+        self.decode_binary = True
         self._init_config(**kwargs)
         self._chandle = CTaosInterface(self._config, self._tz)
         self._conn = self._chandle.connect(self._host, self._user, self._password, self._database, self._port)
@@ -52,6 +53,9 @@ class TaosConnection(object):
         if "timezone" in kwargs:
             self._tz = kwargs["timezone"]
 
+        if "decode_binary" in kwargs:
+            self.decode_binary = kwargs["decode_binary"]
+
     def close(self):
         """Close current connection."""
         if self._conn:
@@ -81,7 +85,7 @@ class TaosConnection(object):
             res = taos_query(self._conn, sql)
         else:
             res = taos_query_with_reqid(self._conn, sql, req_id)
-        return TaosResult(res, True, self)
+        return TaosResult(res, close_after=True, decode_binary=self.decode_binary)
 
     def query_a(self, sql: str, callback: async_query_callback_type, param: c_void_p, req_id: Optional[int] = None):
         """Asynchronously query a sql with callback function"""
@@ -112,7 +116,7 @@ class TaosConnection(object):
         if sql is not None:
             taos_stmt_prepare(stmt, sql)
 
-        return TaosStmt(stmt)
+        return TaosStmt(stmt, decode_binary=self.decode_binary)
 
     def load_table_info(self, tables):
         # type: (str) -> None
@@ -316,7 +320,7 @@ class TaosConnection(object):
     def cursor(self):
         # type: () -> TaosCursor
         """Return a new Cursor object using the connection."""
-        return TaosCursor(self)
+        return TaosCursor(self, decode_binary=self.decode_binary)
 
     def commit(self):
         """Commit any pending transaction to the database.

@@ -252,6 +252,20 @@ def _crow_nchar_to_python_block(data, is_null, num_of_rows, nbytes=None, precisi
     return res
 
 
+def convert_func(field_type: FieldType, decode_binary=True):
+    """Get convert func."""
+    if (field_type == FieldType.C_VARCHAR or field_type == FieldType.C_BINARY) and not decode_binary:
+        return _crow_varbinary_to_python
+    return CONVERT_FUNC[field_type]
+
+
+def convert_block_func(field_type: FieldType, decode_binary=True):
+    """Get convert block func."""
+    if (field_type == FieldType.C_VARCHAR or field_type == FieldType.C_BINARY) and not decode_binary:
+        return _crow_varbinary_to_python_block
+    return CONVERT_FUNC_BLOCK[field_type]
+
+
 CONVERT_FUNC = {
     FieldType.C_BOOL: _crow_bool_to_python,
     FieldType.C_TINYINT: _crow_tinyint_to_python,

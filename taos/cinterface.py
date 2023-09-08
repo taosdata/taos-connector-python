@@ -88,12 +88,14 @@ def taos_get_client_info():
 IS_V3 = False
 
 if taos_get_client_info().split(".")[0] < "3":
-    from taos.field import CONVERT_FUNC, CONVERT_FUNC_BLOCK, TaosFields, TaosField, set_tz
+    from taos.field import CONVERT_FUNC, CONVERT_FUNC_BLOCK, TaosFields, TaosField, set_tz, convert_func, \
+        convert_block_func
 else:
-    from taos.field import CONVERT_FUNC, CONVERT_FUNC_BLOCK, TaosFields, TaosField, set_tz
+    from taos.field import CONVERT_FUNC, CONVERT_FUNC_BLOCK, TaosFields, TaosField, set_tz, convert_func, \
+        convert_block_func
 
     # use _v3s TaosField overwrite _v2s here, dont change import order
-    from taos.field_v3 import CONVERT_FUNC_BLOCK_v3, TaosFields, TaosField
+    from taos.field_v3 import CONVERT_FUNC_BLOCK_v3, TaosFields, TaosField, convert_block_func_v3
     from taos.constants import FieldType
 
     IS_V3 = True
@@ -501,7 +503,7 @@ def taos_get_column_data_offset(result, field, rows):
     return offsets[:rows]
 
 
-def taos_fetch_block_v3(result, fields=None, field_count=None):
+def taos_fetch_block_v3(result, fields=None, field_count=None, decode_binary=True):
     if fields is None:
         fields = taos_fetch_fields(result)
     if field_count is None:
@@ -520,15 +522,17 @@ def taos_fetch_block_v3(result, fields=None, field_count=None):
         is_null = []
         if fields[i]["type"] in (FieldType.C_VARCHAR, FieldType.C_NCHAR, FieldType.C_JSON, FieldType.C_VARBINARY):
             offsets = taos_get_column_data_offset(result, i, num_of_rows)
-            blocks[i] = CONVERT_FUNC_BLOCK_v3[fields[i]["type"]](data, is_null, num_of_rows, offsets, precision)
+            f = convert_block_func_v3(fields[i]["type"], decode_binary=decode_binary)
+            blocks[i] = f(data, is_null, num_of_rows, offsets, precision)
         else:
             is_null = [taos_is_null(result, j, i) for j in range(num_of_rows)]
-            blocks[i] = CONVERT_FUNC_BLOCK[fields[i]["type"]](data, is_null, num_of_rows, offsets, precision)
+            f = convert_block_func(fields[i]["type"], decode_binary=decode_binary)
+            blocks[i] = f(data, is_null, num_of_rows, offsets, precision)
 
     return blocks, abs(num_of_rows)
 
 
-def taos_fetch_block_v2(result, fields=None, field_count=None):
+def taos_fetch_block_v2(result, fields=None, field_count=None, decode_binary=True):
     pblock = ctypes.c_void_p(0)
     num_of_rows = _libtaos.taos_fetch_block(result, ctypes.byref(pblock))
     if num_of_rows == 0:
@@ -545,7 +549,8 @@ def taos_fetch_block_v2(result, fields=None, field_count=None):
         if fields[i]["type"] not in CONVERT_FUNC:
             raise DatabaseError("Invalid data type returned from database")
         is_null = [taos_is_null(result, j, i) for j in range(num_of_rows)]
-        blocks[i] = CONVERT_FUNC_BLOCK[fields[i]["type"]](data, is_null, num_of_rows, fieldLen[i], precision)
+        f = convert_block_func(fields[i]["type"], decode_binary=decode_binary)
+        blocks[i] = f(data, is_null, num_of_rows, fieldLen[i], precision)
 
     return blocks, abs(num_of_rows)
 
@@ -567,9 +572,8 @@ def taos_fetch_row_raw(result):
     return None
 
 
-def taos_fetch_row(result, fields):
-    # type: (c_void_p, Array[TaosField]) -> tuple(c_void_p, int)
-    pblock = ctypes.c_void_p(0)
+def taos_fetch_row(result, fields, decode_binary=True):
+    # type: (c_void_p, Array[TaosField], bool) -> tuple(c_void_p, int)
     pblock = taos_fetch_row_raw(result)
     if pblock:
         num_of_rows = 1
@@ -584,7 +588,8 @@ def taos_fetch_row(result, fields):
             if data is None:
                 blocks[i] = [None]
             else:
-                blocks[i] = CONVERT_FUNC[fields[i].type](data, [False], num_of_rows, field_lens[i], precision)
+                f = convert_func(fields[i].type, decode_binary=decode_binary)
+                blocks[i] = f(data, [False], num_of_rows, field_lens[i], precision)
     else:
         return None, 0
     return blocks, abs(num_of_rows)
@@ -993,7 +998,7 @@ except Exception as err:
 
 
 def taos_stmt_use_result(stmt):
-    # type: (ctypes.c_void_p) -> None
+    # type: (ctypes.c_void_p) -> c_void_p
     """Get result of the statement.
     @stmt: TAOS_STMT*
     """

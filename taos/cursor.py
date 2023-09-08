@@ -27,7 +27,7 @@ class TaosCursor(object):
             .execute*() produced (for DQL statements like SELECT) or affected
     """
 
-    def __init__(self, connection=None):
+    def __init__(self, connection=None, decode_binary=True):
         self._description = []
         self._rowcount = -1
         self._connection = None
@@ -38,6 +38,7 @@ class TaosCursor(object):
         self._block_iter = 0
         self._affected_rows = 0
         self._logfile = ""
+        self.decode_binary = decode_binary
 
         if connection is not None:
             self._connection = connection
@@ -56,8 +57,7 @@ class TaosCursor(object):
             raise OperationalError("Invalid use of fetch iterator")
 
         if self._block_rows <= self._block_iter:
-            block, self._block_rows = taos_fetch_row(
-                self._result, self._fields)
+            block, self._block_rows = taos_fetch_row(self._result, self._fields, decode_binary=self.decode_binary)
             if self._block_rows == 0:
                 raise StopIteration
             self._block = list(map(tuple, zip(*block)))
@@ -232,7 +232,7 @@ class TaosCursor(object):
         buffer = [[] for i in range(len(self._fields))]
         self._rowcount = 0
         while True:
-            block, num_of_rows = taos_fetch_row(self._result, self._fields)
+            block, num_of_rows = taos_fetch_row(self._result, self._fields, decode_binary=self.decode_binary)
             errno = taos_errno(self._result)
             if errno != 0:
                 raise ProgrammingError(taos_errstr(self._result), errno)
@@ -251,7 +251,7 @@ class TaosCursor(object):
         buffer = [[] for i in range(len(fields))]
         self._rowcount = 0
         while True:
-            block, num_of_rows = taos_fetch_block(self._result, self._fields)
+            block, num_of_rows = taos_fetch_block(self._result, self._fields, decode_binary=self.decode_binary)
             errno = taos_errno(self._result)
             if errno != 0:
                 raise ProgrammingError(taos_errstr(self._result), errno)
