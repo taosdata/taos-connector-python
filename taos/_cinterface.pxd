@@ -173,5 +173,5 @@ cdef extern from "taos.h":
     const char *tmq_get_table_name(TAOS_RES *res)
     tmq_res_t   tmq_get_res_type(TAOS_RES *res)
 
-cdef list taos_get_column_data_is_null(TAOS_RES *res, int field, int rows)
+cdef bool *taos_get_column_data_is_null(TAOS_RES *res, int field, int rows)
 cdef taos_fetch_block_v3(TAOS_RES *res, TAOS_FIELD *fields, int field_count, object dt_epoch)

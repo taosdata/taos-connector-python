@@ -9,7 +9,7 @@ import pytz
 from collections import namedtuple
 from typing import Optional, List, Tuple, Dict, Iterator, AsyncIterator
 from taos._cinterface cimport *
-from taos._parser cimport _parse_string, _parse_timestamp, _parse_binary_string, _parse_nchar_string
+from taos._parser cimport _parse_string, _parse_timestamp, _parse_binary_string, _parse_nchar_string, _parse_raw_timestamp
 from taos._cinterface import SIZED_TYPE, UNSIZED_TYPE, CONVERT_FUNC
 from taos._constants import TaosOption, SmlPrecision, SmlProtocol, TmqResultType, PrecisionEnum
 from taos.error import ProgrammingError, OperationalError, ConnectionError, DatabaseError, StatementError, InternalError, TmqError, SchemalessError
@@ -600,13 +600,16 @@ cdef class TaosResult:
 
             if field.type in UNSIZED_TYPE:
                 offsets = taos_get_column_data_offset(self._res, i)
-                blocks[i] = _parse_string(<size_t>data, num_of_rows, offsets)
+                blocks[i] = _parse_string(<size_t>data, num_of_rows, <size_t>offsets)
             elif field.type in SIZED_TYPE:
                 is_null = taos_get_column_data_is_null(self._res, i, num_of_rows)
-                blocks[i] = CONVERT_FUNC[field.type](<size_t>data, num_of_rows, is_null)
+                blocks[i] = CONVERT_FUNC[field.type](<size_t>data, num_of_rows, <size_t>is_null)
+                free(is_null)
             elif field.type in (TSDB_DATA_TYPE_TIMESTAMP, ):
                 is_null = taos_get_column_data_is_null(self._res, i, num_of_rows)
-                blocks[i] = _parse_timestamp(<size_t>data, num_of_rows, is_null, self._precision, self._dt_epoch)
+                blocks[i] = _parse_timestamp(<size_t>data, num_of_rows, <size_t>is_null, self._precision, self._dt_epoch)
+                free(is_null)
+                # blocks[i] = _parse_raw_timestamp(<size_t>data, num_of_rows, is_null)
             else:
                 pass
 
@@ -617,7 +620,7 @@ cdef class TaosResult:
         cdef TAOS_ROW taos_row
         cdef int i
         cdef int[1] offsets = [-2]
-        is_null = [False]
+        cdef bool[1] is_null = [False]
 
         taos_row = taos_fetch_row(self._res)
         if taos_row is NULL:
@@ -628,11 +631,12 @@ cdef class TaosResult:
             data = taos_row[i]
             field = self._fields[i]
             if field.type in UNSIZED_TYPE:
-                row[i] = _parse_string(<size_t>data, 1, offsets)[0] if data is not NULL else None  # FIXME: is it ok to set offsets = [-2] here
+                row[i] = _parse_string(<size_t>data, 1, <size_t>offsets)[0] if data is not NULL else None  # FIXME: is it ok to set offsets = [-2] here
             elif field.type in SIZED_TYPE:
-                row[i] = CONVERT_FUNC[field.type](<size_t>data, 1, is_null)[0] if data is not NULL else None
+                row[i] = CONVERT_FUNC[field.type](<size_t>data, 1, <size_t>is_null)[0] if data is not NULL else None
             elif field.type in (TSDB_DATA_TYPE_TIMESTAMP, ):
-                row[i] = _parse_timestamp(<size_t>data, 1, is_null, self._precision, self._dt_epoch)[0] if data is not NULL else None
+                row[i] = _parse_timestamp(<size_t>data, 1, <size_t>is_null, self._precision, self._dt_epoch)[0] if data is not NULL else None
+                # row[i] = _parse_raw_timestamp(<size_t>data, 1, is_null)[0]
             else:
                 pass
 
@@ -1184,13 +1188,15 @@ cdef class Message:
 
             if field.type in UNSIZED_TYPE:
                 offsets = taos_get_column_data_offset(self._res, i)
-                block[i] = _parse_string(<size_t>data, num_of_rows, offsets)
+                block[i] = _parse_string(<size_t>data, num_of_rows, <size_t>offsets)
             elif field.type in SIZED_TYPE:
                 is_null = taos_get_column_data_is_null(self._res, i, num_of_rows)
-                block[i] = CONVERT_FUNC[field.type](<size_t>data, num_of_rows, is_null)
+                block[i] = CONVERT_FUNC[field.type](<size_t>data, num_of_rows, <size_t>is_null)
+                free(is_null)
             elif field.type in (TSDB_DATA_TYPE_TIMESTAMP, ):
                 is_null = taos_get_column_data_is_null(self._res, i, num_of_rows)
-                block[i] = _parse_timestamp(<size_t>data, num_of_rows, is_null, precision, dt_epoch)
+                block[i] = _parse_timestamp(<size_t>data, num_of_rows, <size_t>is_null, precision, dt_epoch)
+                free(is_null)
             else:
                 pass
 

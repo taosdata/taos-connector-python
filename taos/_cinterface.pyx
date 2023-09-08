@@ -1,5 +1,6 @@
 # cython: profile=True
 
+from libc.stdlib cimport malloc, free
 import cython
 import datetime as dt
 import pytz
@@ -8,11 +9,11 @@ from taos.error import ProgrammingError, OperationalError, ConnectionError, Data
 from taos._parser cimport (_parse_bool, _parse_int8_t, _parse_int16_t, _parse_int, _parse_int64_t, _parse_float, _parse_double, _parse_timestamp, 
                             _parse_uint8_t, _parse_uint16_t, _parse_uint, _parse_uint64_t, _parse_string)
 
-cdef list taos_get_column_data_is_null(TAOS_RES *res, int field, int rows):
-    cdef list is_null = []
+cdef bool *taos_get_column_data_is_null(TAOS_RES *res, int field, int rows):
+    is_null = <bool*>malloc(rows * sizeof(bool))
     cdef int r
     for r in range(rows):
-        is_null.append(taos_is_null(res, r, field))
+        is_null[r] = taos_is_null(res, r, field)
 
     return is_null
 
@@ -50,19 +51,19 @@ CONVERT_FUNC = {
     TSDB_DATA_TYPE_BIGINT: _parse_int64_t,
     TSDB_DATA_TYPE_FLOAT: _parse_float,
     TSDB_DATA_TYPE_DOUBLE: _parse_double,
-    TSDB_DATA_TYPE_VARCHAR: None,
+    TSDB_DATA_TYPE_VARCHAR: _parse_string,
     TSDB_DATA_TYPE_TIMESTAMP: _parse_timestamp,
-    TSDB_DATA_TYPE_NCHAR: None,
+    TSDB_DATA_TYPE_NCHAR: _parse_string,
     TSDB_DATA_TYPE_UTINYINT: _parse_uint8_t,
     TSDB_DATA_TYPE_USMALLINT: _parse_uint16_t,
     TSDB_DATA_TYPE_UINT: _parse_uint,
     TSDB_DATA_TYPE_UBIGINT: _parse_uint64_t,
-    TSDB_DATA_TYPE_JSON: None,
-    TSDB_DATA_TYPE_VARBINARY: None,
+    TSDB_DATA_TYPE_JSON: _parse_string,
+    TSDB_DATA_TYPE_VARBINARY: _parse_string,
     TSDB_DATA_TYPE_DECIMAL: None,
     TSDB_DATA_TYPE_BLOB: None,
     TSDB_DATA_TYPE_MEDIUMBLOB: None,
-    TSDB_DATA_TYPE_BINARY: None,
+    TSDB_DATA_TYPE_BINARY: _parse_string,
     TSDB_DATA_TYPE_GEOMETRY: None,
 }
 
@@ -83,13 +84,15 @@ cdef taos_fetch_block_v3(TAOS_RES *res, TAOS_FIELD *fields, int field_count, dt_
 
         if field.type in UNSIZED_TYPE:
             offsets = taos_get_column_data_offset(res, i)
-            blocks[i] = _parse_string(<size_t>data, num_of_rows, offsets)
+            blocks[i] = _parse_string(<size_t>data, num_of_rows, <size_t>offsets)
         elif field.type in SIZED_TYPE:
             is_null = taos_get_column_data_is_null(res, i, num_of_rows)
-            blocks[i] = CONVERT_FUNC[field.type](<size_t>data, num_of_rows, is_null)
+            blocks[i] = CONVERT_FUNC[field.type](<size_t>data, num_of_rows, <size_t>is_null)
+            free(is_null)
         elif field.type in (TSDB_DATA_TYPE_TIMESTAMP, ):
             is_null = taos_get_column_data_is_null(res, i, num_of_rows)
-            blocks[i] = _parse_timestamp(<size_t>data, num_of_rows, is_null, precision, dt_epoch)
+            blocks[i] = _parse_timestamp(<size_t>data, num_of_rows, <size_t>is_null, precision, dt_epoch)
+            free(is_null)
         else:
             pass
 
