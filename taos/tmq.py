@@ -124,12 +124,13 @@ class Message:
                     raise TmqError("Invalid data type returned from database")
 
                 block_data = ctypes.cast(block, ctypes.POINTER(ctypes.c_void_p))[i]
-                f = convert_block_func_v3(fields[i]["type"], self.decode_binary)
                 if fields[i]["type"] in (
                         FieldType.C_VARCHAR, FieldType.C_NCHAR, FieldType.C_JSON, FieldType.C_VARBINARY):
+                    f = convert_block_func_v3(fields[i]["type"], self.decode_binary)
                     offsets = taos_get_column_data_offset(self.msg, i, num_rows)
                     blocks[i] = f(block_data, [], num_rows, offsets, precision)
                 else:
+                    f = convert_block_func(fields[i]["type"], self.decode_binary)
                     is_null = [taos_is_null(self.msg, j, i) for j in range(num_rows)]
                     blocks[i] = f(block_data, is_null, num_rows, [], precision)
 
