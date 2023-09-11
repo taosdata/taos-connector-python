@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.7.12 - 2023-09-11
+
+### Bug Fixes:
+
+- fix decode binary in tmq
+
 ## v2.7.11 - 2023-09-08
 
 ### Bug Fixes:
