@@ -79,6 +79,7 @@ cdef extern from "taos.h":
     int taos_options(TSDB_OPTION option, const void *arg, ...)
     const char *taos_get_client_info()
     const char *taos_get_server_info(TAOS *taos)
+    int taos_get_current_db(TAOS *taos, char *database, int len, int *required)
     int taos_select_db(TAOS *taos, const char *db)
     TAOS_RES *taos_query(TAOS *taos, const char *sql)
     TAOS_RES *taos_query_with_reqid(TAOS *taos, const char *sql, int64_t reqId)
@@ -135,6 +136,7 @@ cdef extern from "taos.h":
     tmq_conf_t *tmq_conf_new()
     tmq_conf_res_t tmq_conf_set(tmq_conf_t *conf, const char *key, const char *value)
     void tmq_conf_destroy(tmq_conf_t *conf)
+    void tmq_conf_set_auto_commit_cb(tmq_conf_t *conf, tmq_commit_cb *cb, void *param)
 
     tmq_list_t *tmq_list_new()
     int32_t tmq_list_append(tmq_list_t *, const char *)

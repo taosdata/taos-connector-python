@@ -6,8 +6,9 @@ import ctypes
 import asyncio
 import datetime as dt
 import pytz
+import inspect
 from collections import namedtuple
-from typing import Optional, List, Tuple, Dict, Iterator, AsyncIterator
+from typing import Optional, List, Tuple, Dict, Iterator, AsyncIterator, Callable
 from taos._cinterface cimport *
 from taos._parser cimport _parse_string, _parse_timestamp, _parse_binary_string, _parse_nchar_string, _parse_raw_timestamp
 from taos._cinterface import SIZED_TYPE, UNSIZED_TYPE, CONVERT_FUNC
@@ -15,6 +16,7 @@ from taos._constants import TaosOption, SmlPrecision, SmlProtocol, TmqResultType
 from taos.error import ProgrammingError, OperationalError, ConnectionError, DatabaseError, StatementError, InternalError, TmqError, SchemalessError
 from taos.constants import FieldType
 
+DB_MAX_LEN = 64
 _priv_tz = None
 _utc_tz = pytz.timezone("UTC")
 try:
@@ -83,8 +85,11 @@ cdef class TaosConnection:
     cdef char *_tz
     cdef char *_config
     cdef TAOS *_raw_conn
+    cdef char *_current_db
 
     def __cinit__(self, *args, **kwargs):
+        self._current_db = <char*>malloc(DB_MAX_LEN * sizeof(char))
+        _check_malloc(self._current_db)
         self._init_options(**kwargs)
         self._init_conn(**kwargs)
         self._check_conn_error()
@@ -130,6 +135,9 @@ cdef class TaosConnection:
             raise ConnectionError(errstr, errno)
 
     def __dealloc__(self):
+        if self._current_db is not NULL:
+            free(self._current_db)
+        
         self.close()
 
     @property
@@ -142,6 +150,20 @@ cdef class TaosConnection:
             return
 
         return taos_get_server_info(self._raw_conn).decode("utf-8")
+
+    @property
+    def current_db(self) -> Optional[str]:
+        if self._raw_conn is NULL:
+            return
+
+        memset(self._current_db, 0, DB_MAX_LEN * sizeof(char))
+        cdef int required
+        errno = taos_get_current_db(self._raw_conn, self._current_db, DB_MAX_LEN * sizeof(char), &required)
+        if errno != 0:
+            errstr = taos_errstr(NULL).decode("utf-8")
+            raise ProgrammingError(errstr, errno)
+
+        return self._current_db.decode("utf-8")
 
     def validate_sql(self, str sql) -> bool:
         _sql = sql.encode("utf-8")
@@ -282,50 +304,52 @@ cdef class TaosConnection:
         if _lines is NULL:
             raise MemoryError()
 
-        for i in range(num_of_lines):
-            _line = lines[i].encode("utf-8")
-            _lines[i] = _line
+        try:
+            for i in range(num_of_lines):
+                _line = lines[i].encode("utf-8")
+                _lines[i] = _line
 
-        if ttl is None:
-            if req_id is None:
-                res = taos_schemaless_insert(
-                    self._raw_conn,
-                    _lines,
-                    num_of_lines,
-                    protocol,
-                    precision,
-                )
+            if ttl is None:
+                if req_id is None:
+                    res = taos_schemaless_insert(
+                        self._raw_conn,
+                        _lines,
+                        num_of_lines,
+                        protocol,
+                        precision,
+                    )
+                else:
+                    res = taos_schemaless_insert_with_reqid(
+                        self._raw_conn,
+                        _lines,
+                        num_of_lines,
+                        protocol,
+                        precision,
+                        req_id,
+                    )
             else:
-                res = taos_schemaless_insert_with_reqid(
-                    self._raw_conn,
-                    _lines,
-                    num_of_lines,
-                    protocol,
-                    precision,
-                    req_id,
-                )
-        else:
-            if req_id is None:
-                res = taos_schemaless_insert_ttl(
-                    self._raw_conn,
-                    _lines,
-                    num_of_lines,
-                    protocol,
-                    precision,
-                    ttl,
-                )
-            else:
-                res = taos_schemaless_insert_ttl_with_reqid(
-                    self._raw_conn,
-                    _lines,
-                    num_of_lines,
-                    protocol,
-                    precision,
-                    ttl,
-                    req_id,
-                )
+                if req_id is None:
+                    res = taos_schemaless_insert_ttl(
+                        self._raw_conn,
+                        _lines,
+                        num_of_lines,
+                        protocol,
+                        precision,
+                        ttl,
+                    )
+                else:
+                    res = taos_schemaless_insert_ttl_with_reqid(
+                        self._raw_conn,
+                        _lines,
+                        num_of_lines,
+                        protocol,
+                        precision,
+                        ttl,
+                        req_id,
+                    )
+        finally:
+            free(_lines)
         
-        free(_lines)
         errno = taos_errno(res)
         affected_rows = taos_affected_rows(res)
         if errno != 0:
@@ -1026,6 +1050,19 @@ cdef void async_commit_future_wrapper(tmq_t *tmq, int32_t code, void *param) nog
         fut.get_loop().call_soon_threadsafe(fut.set_result, code)
 
 
+cdef void tmq_auto_commit_wrapper(tmq_t *tmq, int32_t code, void *param) nogil:
+    with gil:
+        consumer = <object>param
+        if code == 0:
+            if consumer.callback is not None:
+                consumer.callback(consumer) # TODO: param is consumer itself only, seem pretty weird
+        else:
+            errstr = tmq_err2str(code).decode("utf-8")
+            tmq_err = TmqError(errstr, code)
+            if consumer.error_callback is not None:
+                consumer.error_callback(tmq_err)
+
+
 cdef class TopicPartition:
     cdef str _topic
     cdef int32_t _partition
@@ -1051,6 +1088,10 @@ cdef class TopicPartition:
     @property
     def offset(self) -> int:
         return self._offset
+
+    @offset.setter
+    def offset(self, int64_t value):
+        self._offset = value
 
     @property
     def begin(self) -> int:
@@ -1119,11 +1160,13 @@ cdef class Message:
     cdef TAOS_RES *_res
     cdef int _err_no
     cdef char *_err_str
+    cdef object _dt_epoch
 
     def __cinit__(self, size_t res):
         self._res = <TAOS_RES*>res
         self._err_no = taos_errno(self._res)
         self._err_str = taos_errstr(self._res)
+        self._dt_epoch = _priv_datetime_epoch if _priv_datetime_epoch else _datetime_epoch
 
     def error(self) -> Optional[TmqError]:
         """
@@ -1180,7 +1223,6 @@ cdef class Message:
         table = "" if _table is NULL else _table.decode("utf-8")
 
         block = [None] * field_count
-        dt_epoch = _priv_datetime_epoch if _priv_datetime_epoch else _datetime_epoch
         cdef int i
         for i in range(field_count):
             data = pblock[i]
@@ -1195,7 +1237,7 @@ cdef class Message:
                 free(is_null)
             elif field.type in (TSDB_DATA_TYPE_TIMESTAMP, ):
                 is_null = taos_get_column_data_is_null(self._res, i, num_of_rows)
-                block[i] = _parse_timestamp(<size_t>data, num_of_rows, <size_t>is_null, precision, dt_epoch)
+                block[i] = _parse_timestamp(<size_t>data, num_of_rows, <size_t>is_null, precision, self._dt_epoch)
                 free(is_null)
             else:
                 pass
@@ -1232,6 +1274,8 @@ cdef class Message:
 
 
 cdef class TaosConsumer:
+    cdef object __cb
+    cdef object __err_cb
     cdef dict _configs
     cdef tmq_conf_t *_tmq_conf
     cdef tmq_t *_tmq
@@ -1254,6 +1298,8 @@ cdef class TaosConsumer:
     }
 
     def __cinit__(self, dict configs):
+        self.__cb = None
+        self.__err_cb = None
         self._init_config(configs)
         self._init_consumer()
         self._subscribed = False
@@ -1279,6 +1325,10 @@ cdef class TaosConsumer:
     def _init_consumer(self):
         if self._tmq_conf is NULL:
             raise TmqError('tmq_conf is NULL')
+
+        if self._configs.get("enable.auto.commit", "false") == "true":
+            param = self
+            tmq_conf_set_auto_commit_cb(self._tmq_conf, tmq_auto_commit_wrapper, <void*>param)
         
         self._tmq = tmq_consumer_new(self._tmq_conf, NULL, 0)
         if self._tmq is NULL:
@@ -1288,6 +1338,24 @@ cdef class TaosConsumer:
         if tmq_errno != 0:
             tmq_errstr = tmq_err2str(tmq_errno).decode("utf-8")
             raise TmqError(tmq_errstr, tmq_errno)
+
+    @property
+    def callback(self):
+        return self.__cb
+
+    @callback.setter
+    def callback(self, cb):
+        assert callable(cb)
+        self.__cb = cb
+
+    @property
+    def error_callback(self):
+        return self.__err_cb
+
+    @error_callback.setter
+    def error_callback(self, err_cb):
+        assert callable(err_cb)
+        self.__err_cb = err_cb
     
     def subscribe(self, topics: List[str]):
         """
@@ -1298,19 +1366,20 @@ cdef class TaosConsumer:
         if tmq_list is NULL:
             raise TmqError("new tmq list failed!")
         
-        for tp in topics:
-            _tp = tp.encode("utf-8")
-            tmq_errno = tmq_list_append(tmq_list, _tp)
+        try:
+            for tp in topics:
+                _tp = tp.encode("utf-8")
+                tmq_errno = tmq_list_append(tmq_list, _tp)
+                if tmq_errno != 0:
+                    tmq_errstr = tmq_err2str(tmq_errno).decode("utf-8")
+                    raise TmqError(tmq_errstr, tmq_errno)
+
+            tmq_errno = tmq_subscribe(self._tmq, tmq_list)
             if tmq_errno != 0:
                 tmq_errstr = tmq_err2str(tmq_errno).decode("utf-8")
-                tmq_list_destroy(tmq_list)
                 raise TmqError(tmq_errstr, tmq_errno)
-
-        tmq_errno = tmq_subscribe(self._tmq, tmq_list)
-        if tmq_errno != 0:
-            tmq_errstr = tmq_err2str(tmq_errno).decode("utf-8")
+        finally:
             tmq_list_destroy(tmq_list)
-            raise TmqError(tmq_errstr, tmq_errno)
         
         self._subscribed = True
 
@@ -1352,6 +1421,16 @@ cdef class TaosConsumer:
             return None
         
         return Message(<size_t>res)
+
+    def set_auto_commit_cb(self, callback: Callable[[TaosConsumer]]=None, error_callback: Callable[[TmqError]]=None):
+        """
+        Set callback for auto commit.
+
+        :param callback: a Callable[[TaosConsumer]] object which was called when message is committed
+        :param error_callback: a Callable[[TmqError]] object which waw called when something wrong(code != 0)
+        """
+        self.callback = callback
+        self.error_callback = error_callback
 
     def commit(self, message: Message=None, offsets: List[TopicPartition]=None):
         """
@@ -1445,20 +1524,21 @@ cdef class TaosConsumer:
 
         topics = self.list_topics()
         topic_partitions = []
-        for topic in topics:
-            _topic = topic.encode("utf-8")
-            tmq_errno = tmq_get_topic_assignment(self._tmq, _topic, &p_assignment, &num_of_assignment)
-            if tmq_errno != 0:
-                tmq_errstr = tmq_err2str(tmq_errno).decode("utf-8")
+        try:
+            for topic in topics:
+                _topic = topic.encode("utf-8")
+                tmq_errno = tmq_get_topic_assignment(self._tmq, _topic, &p_assignment, &num_of_assignment)
+                if tmq_errno != 0:
+                    tmq_errstr = tmq_err2str(tmq_errno).decode("utf-8")
+                    raise TmqError(tmq_errstr, tmq_errno)
+
+                for i in range(num_of_assignment):
+                    assignment = p_assignment[i]
+                    tp = TopicPartition(topic, assignment.vgId, assignment.currentOffset, assignment.begin, assignment.end)
+                    topic_partitions.append(tp)
+        finally:
+            if p_assignment is not NULL:
                 tmq_free_assignment(p_assignment)
-                raise TmqError(tmq_errstr, tmq_errno)
-
-            for i in range(num_of_assignment):
-                assignment = p_assignment[i]
-                tp = TopicPartition(topic, assignment.vgId, assignment.currentOffset, assignment.begin, assignment.end)
-                topic_partitions.append(tp)
-
-            tmq_free_assignment(p_assignment)
 
         return topic_partitions
 
@@ -1486,7 +1566,7 @@ cdef class TaosConsumer:
             tmq_errno = offset = tmq_committed(self._tmq, _tp, partition._partition)
             self._check_tmq_error(tmq_errno)
             
-            partition._offset = offset
+            partition.offset = offset
 
         return partitions
 
@@ -1506,7 +1586,7 @@ cdef class TaosConsumer:
             tmq_errno = offset = tmq_position(self._tmq, _tp, partition._partition)
             self._check_tmq_error(tmq_errno)
 
-            partition._offset = offset
+            partition.offset = offset
 
         return partitions
 
@@ -1521,17 +1601,18 @@ cdef class TaosConsumer:
         if tmq_list is NULL:
             raise TmqError("new tmq list failed!")
 
-        tmq_errno = tmq_subscription(self._tmq, &tmq_list)
-        self._check_tmq_error(tmq_errno)
+        try:
+            tmq_errno = tmq_subscription(self._tmq, &tmq_list)
+            self._check_tmq_error(tmq_errno)
 
-        ca = tmq_list_to_c_array(tmq_list)
-        n = tmq_list_get_size(tmq_list)
+            ca = tmq_list_to_c_array(tmq_list)
+            n = tmq_list_get_size(tmq_list)
 
-        tp_list = []
-        for i in range(n):
-            tp_list.append(ca[i].decode("utf-8"))
-
-        tmq_list_destroy(tmq_list)
+            tp_list = []
+            for i in range(n):
+                tp_list.append(ca[i].decode("utf-8"))
+        finally:
+            tmq_list_destroy(tmq_list)
 
         return tp_list
 
