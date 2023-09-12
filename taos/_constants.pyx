@@ -60,6 +60,7 @@ class FieldType:
     C_INT_UNSIGNED = 13
     C_BIGINT_UNSIGNED = 14
     C_JSON = 15
+    C_VARBINARY = 16
     # NULL value definition
     # NOTE: These values should change according to C definition in tsdb.h
     C_BOOL_NULL = 0x02

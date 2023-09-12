@@ -22,6 +22,24 @@ cdef list _parse_nchar_string(size_t ptr, int num_of_rows, int field_length):
 
     return res
 
+cdef list _parse_bytes(size_t ptr, int num_of_rows, size_t offsets):
+    cdef list res = []
+    cdef int i
+    cdef size_t rbyte_ptr
+    cdef size_t c_char_ptr
+    cdef int *_offset = <int*>offsets
+    for i in range(abs(num_of_rows)):
+        if _offset[i] == -1:
+            res.append(None)
+        else:
+            rbyte_ptr = ptr + _offset[i]
+            rbyte = (<uint16_t*>rbyte_ptr)[0]
+            c_char_ptr = rbyte_ptr + sizeof(uint16_t)
+            py_bytes = (<char *>c_char_ptr)[:rbyte]
+            res.append(py_bytes)
+
+    return res
+
 cdef list _parse_string(size_t ptr, int num_of_rows, size_t offsets):
     cdef list res = []
     cdef int i
@@ -209,7 +227,7 @@ cdef list _parse_double(size_t ptr, int num_of_rows, size_t is_null):
 
     return res
 
-cdef list _parse_timestamp(size_t ptr, int num_of_rows, size_t is_null, int precision, object dt_epoch):
+cdef list _parse_datetime(size_t ptr, int num_of_rows, size_t is_null, int precision, object dt_epoch):
     cdef list res = []
     cdef int i
     cdef bool *_is_null = <bool*>is_null
@@ -227,8 +245,7 @@ cdef list _parse_timestamp(size_t ptr, int num_of_rows, size_t is_null, int prec
             res.append(_dt)
     return res
 
-
-cdef list _parse_raw_timestamp(size_t ptr, int num_of_rows, size_t is_null):
+cdef list _parse_timestamp(size_t ptr, int num_of_rows, size_t is_null):
     cdef list res = []
     cdef int i
     cdef bool *_is_null = <bool*>is_null
@@ -240,3 +257,11 @@ cdef list _parse_raw_timestamp(size_t ptr, int num_of_rows, size_t is_null):
             raw_value = v_ptr[i]
             res.append(raw_value)
     return res
+
+cdef list _convert_timestamp_to_datetime(list ts, int precision, object dt_epoch):
+    cdef double denom = 10**((precision + 1) * 3)
+    for i, t in enumerate(ts):
+        if t is not None:
+            ts[i] = dt_epoch + dt.timedelta(seconds=t / denom)
+
+    return ts
