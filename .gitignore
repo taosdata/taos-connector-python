@@ -161,3 +161,4 @@ docs
 .env
 taos/*.c
 taos/*.cpp
+poetry.lock

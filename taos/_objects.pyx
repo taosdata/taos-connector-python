@@ -36,6 +36,8 @@ cdef _check_malloc(void *ptr):
     if ptr is NULL:
         raise MemoryError()
 
+
+# ---------------------------------------------- TAOS -------------------------------------------------------------- v
 cdef void async_result_future_wrapper(void *param, TAOS_RES *res, int code) nogil:
     with gil:
         fut = <object>param
@@ -1042,8 +1044,10 @@ cdef class TaosCursor:
     def __del__(self):
         self.close()
 
+# ---------------------------------------------- TAOS -------------------------------------------------------------- v
 
-# ---------------------------------------- TMQ --------------------------------------------------------------- v
+
+# ---------------------------------------------- TMQ --------------------------------------------------------------- v
 cdef void async_commit_future_wrapper(tmq_t *tmq, int32_t code, void *param) nogil:
     with gil:
         fut = <object>param
@@ -1628,7 +1632,10 @@ cdef class TaosConsumer:
             self._tmq_conf = NULL
         self.close()
 
-# ---------------------------------------- statement --------------------------------------------------------------- ^
+# ---------------------------------------------- TMQ --------------------------------------------------------------- ^
+
+
+# ---------------------------------------- statement --------------------------------------------------------------- v
 
 cdef class TaosStmt:
     cdef TAOS_STMT *_stmt
@@ -1727,6 +1734,7 @@ cdef class TaosStmt:
     def __dealloc__(self):
         self.close()
 
+
 cdef class TaosMultiBinds:
     cdef size_t _size
     cdef TAOS_MULTI_BIND *_binds
@@ -1769,6 +1777,7 @@ cdef class TaosMultiBinds:
             self._binds = NULL
 
         self._size = 0
+
 
 cdef class TaosMultiBind:
     cdef TAOS_MULTI_BIND *_inner
@@ -2050,7 +2059,6 @@ cdef class TaosMultiBind:
         self._inner.buffer = <void*>_buffer
         self._inner.is_null = <char*>_is_null
 
-
     def binary(self, values):
         _bytes = [v if v is None else v.encode("utf-8") for v in values]
         self._inner.buffer_type = FieldType.C_BINARY
@@ -2143,3 +2151,5 @@ cdef class TaosMultiBind:
         self._inner.buffer = <void*>_buffer
         self._inner.is_null = <char*>_is_null
         self._inner.length = _length
+
+# ---------------------------------------- statement --------------------------------------------------------------- ^

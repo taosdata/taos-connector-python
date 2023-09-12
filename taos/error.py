@@ -109,3 +109,8 @@ class TmqError(DatabaseError):
     """Exception raise in TMQ API"""
 
     pass
+
+class PrecisionError(Exception):
+    """Python datetime does not support nanoseconds error"""
+
+    pass
