@@ -1,5 +1,6 @@
 from libc.stdint cimport int8_t, int16_t, int32_t, int64_t, uint8_t, uint16_t, uint32_t, uint64_t, uintptr_t
-from libcpp cimport bool
+
+ctypedef bint bool
 
 cdef list _parse_binary_string(size_t ptr, int num_of_rows, int field_length)
 
