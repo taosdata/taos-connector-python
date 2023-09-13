@@ -27,7 +27,8 @@ if __name__ == '__main__':
             "td.connect.pass": "taosdata",
             "msg.with.table.name": "true",
             "enable.auto.commit": "true",
-        }
+        },
+        timezone="Asia/Shanghai"
     )
     consumer.subscribe(["tmq_test_topic"])
     consumer.set_auto_commit_cb(print, print)

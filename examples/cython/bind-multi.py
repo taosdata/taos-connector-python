@@ -1,6 +1,8 @@
 from taos._objects import TaosConnection, TaosMultiBinds
+import datetime as dt
+import pytz
 
-conn = TaosConnection(host="localhost")
+conn = TaosConnection(host="localhost", timezone="Asia/Shanghai")
 dbname = "pytest_taos_stmt_multi"
 conn.execute("drop database if exists %s" % dbname)
 conn.execute("create database if not exists %s" % dbname)
@@ -32,7 +34,7 @@ params[11].float([3, None, 1])
 params[12].double([3, None, 1.2])
 params[13].binary(["abc", "dddafadfadfadfadfa", None])
 params[14].nchar(["涛思数据", None, "a long string with 中文字符"])
-params[15].timestamp([None, None, 1626861392591])
+params[15].timestamp([dt.datetime.now(tz=pytz.timezone("Asia/Shanghai")), dt.datetime.now(tz=pytz.timezone("UTC")), dt.datetime.now()])
 stmt.bind_param_batch(params)
 stmt.execute()
 

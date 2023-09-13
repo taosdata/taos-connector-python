@@ -7,7 +7,8 @@ import pytz
 from collections import namedtuple
 from taos.error import ProgrammingError, OperationalError, ConnectionError, DatabaseError, StatementError, InternalError
 from taos._parser cimport (_parse_bool, _parse_int8_t, _parse_int16_t, _parse_int, _parse_int64_t, _parse_float, _parse_double, _parse_timestamp, 
-                            _parse_uint8_t, _parse_uint16_t, _parse_uint, _parse_uint64_t, _parse_string, _parse_bytes, _parse_datetime)
+                            _parse_uint8_t, _parse_uint16_t, _parse_uint, _parse_uint64_t, _parse_string, _parse_bytes, _parse_datetime, _convert_timestamp_to_datetime)
+from taos._constants import PrecisionEnum
 
 cdef bool *taos_get_column_data_is_null(TAOS_RES *res, int field, int rows):
     is_null = <bool*>malloc(rows * sizeof(bool))
@@ -82,11 +83,7 @@ cdef taos_fetch_block_v3(TAOS_RES *res, TAOS_FIELD *fields, int field_count, dt_
         data = pblock[i]
         field = fields[i]
 
-        if field.type in (TSDB_DATA_TYPE_TIMESTAMP, ):
-            is_null = taos_get_column_data_is_null(res, i, num_of_rows)
-            blocks[i] = _parse_datetime(<size_t>data, num_of_rows, <size_t>is_null, precision, dt_epoch)
-            free(is_null)
-        elif field.type in SIZED_TYPE:
+        if field.type in SIZED_TYPE:
             is_null = taos_get_column_data_is_null(res, i, num_of_rows)
             blocks[i] = CONVERT_FUNC[field.type](<size_t>data, num_of_rows, <size_t>is_null)
             free(is_null)
@@ -95,6 +92,9 @@ cdef taos_fetch_block_v3(TAOS_RES *res, TAOS_FIELD *fields, int field_count, dt_
             blocks[i] = _parse_string(<size_t>data, num_of_rows, <size_t>offsets)
         else:
             pass
+
+        if field.type == TSDB_DATA_TYPE_TIMESTAMP and precision in (PrecisionEnum.Milliseconds, PrecisionEnum.Microseconds):
+            blocks[i] = _convert_timestamp_to_datetime(blocks[i], precision, dt_epoch)
 
     return blocks, abs(num_of_rows)
 

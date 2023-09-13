@@ -1,6 +1,6 @@
 from taos._objects import TaosConnection
 
-conn = TaosConnection(host="localhost")
+conn = TaosConnection(host="localhost", timezone="Asia/Shanghai")
 conn.execute("DROP DATABASE IF EXISTS test")
 conn.execute("CREATE DATABASE test")
 conn.select_db("test")

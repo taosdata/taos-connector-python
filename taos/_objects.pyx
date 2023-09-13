@@ -5,7 +5,7 @@ from libc.string cimport memset, strcpy, memcpy
 import asyncio
 import datetime as dt
 import pytz
-from typing import Optional, List, Tuple, Dict, Iterator, AsyncIterator, Callable
+from typing import Optional, List, Tuple, Dict, Iterator, AsyncIterator, Callable, Union
 from taos._cinterface cimport *
 from taos._cinterface import SIZED_TYPE, UNSIZED_TYPE, CONVERT_FUNC
 from taos._parser cimport _convert_timestamp_to_datetime
@@ -14,20 +14,9 @@ from taos.error import ProgrammingError, OperationalError, ConnectionError, Data
 from taos.constants import FieldType
 
 DB_MAX_LEN = 64
-_priv_tz = None
-_utc_tz = pytz.timezone("UTC")
-try:
-    _datetime_epoch = dt.datetime.fromtimestamp(0)
-except OSError:
-    _datetime_epoch = dt.datetime.fromtimestamp(86400) - dt.timedelta(seconds=86400)
-_utc_datetime_epoch = _utc_tz.localize(dt.datetime.utcfromtimestamp(0))
-_priv_datetime_epoch = None
+DEFAULT_TZ = None
+DEFAULT_DT_EPOCH = dt.datetime.fromtimestamp(0, tz=DEFAULT_TZ)
 
-
-def set_tz(tz):
-    global _priv_tz, _priv_datetime_epoch
-    _priv_tz = tz
-    _priv_datetime_epoch = _utc_datetime_epoch.astimezone(_priv_tz)
 
 cdef _check_malloc(void *ptr):
     if ptr is NULL:
@@ -43,7 +32,7 @@ cdef void async_result_future_wrapper(void *param, TAOS_RES *res, int code) nogi
             e = ProgrammingError(errstr, code)
             fut.get_loop().call_soon_threadsafe(fut.set_exception, e)
         else:
-            taos_result = TaosResult(<size_t>res, is_async=True)
+            taos_result = TaosResult(<size_t>res)
             fut.get_loop().call_soon_threadsafe(fut.set_result, taos_result)
 
 
@@ -81,13 +70,17 @@ cdef class TaosConnection:
     cdef char *_password
     cdef char *_database
     cdef uint16_t _port
-    cdef char *_tz
+    # cdef char *_raw_tz  # can not name as _timezone
     cdef char *_config
     cdef TAOS *_raw_conn
     cdef char *_current_db
+    cdef object _tz
+    cdef object _dt_epoch
 
     def __cinit__(self, *args, **kwargs):
         self._current_db = <char*>malloc(DB_MAX_LEN * sizeof(char))
+        self._tz = DEFAULT_TZ
+        self._dt_epoch = DEFAULT_DT_EPOCH
         _check_malloc(self._current_db)
         self._init_options(**kwargs)
         self._init_conn(**kwargs)
@@ -95,10 +88,9 @@ cdef class TaosConnection:
 
     def _init_options(self, **kwargs):
         if "timezone" in kwargs:
-            _tz = kwargs["timezone"].encode("utf-8")
-            self._tz = _tz
-            set_tz(pytz.timezone(kwargs["timezone"]))
-            taos_options(TaosOption.Timezone, self._tz)
+            _timezone = kwargs["timezone"].encode("utf-8")
+            taos_options(TaosOption.Timezone, <char*>_timezone)
+            self.tz = kwargs["timezone"]
 
         if "config" in kwargs:
             _config = kwargs["config"].encode("utf-8")
@@ -151,6 +143,20 @@ cdef class TaosConnection:
         return taos_get_server_info(self._raw_conn).decode("utf-8")
 
     @property
+    def tz(self) -> Optional[dt.tzinfo]:
+        return self._tz
+
+    @tz.setter
+    def tz(self, timezone: Optional[Union[str, dt.tzinfo]]):
+        if isinstance(timezone, str):
+            timezone = pytz.timezone(timezone)
+        
+        assert timezone is None or isinstance(timezone, dt.tzinfo)
+
+        self._tz = timezone
+        self._dt_epoch = dt.datetime.fromtimestamp(0, tz=self._tz)
+
+    @property
     def current_db(self) -> Optional[str]:
         if self._raw_conn is NULL:
             return
@@ -191,7 +197,9 @@ cdef class TaosConnection:
             taos_free_result(res)
             raise ProgrammingError(errstr, errno)
 
-        return TaosResult(<size_t>res)
+        taos_res = TaosResult(<size_t>res)
+        taos_res._set_dt_epoch(self._dt_epoch)
+        return taos_res
 
     async def query_a(self, str sql, req_id: Optional[int] = None) -> TaosResult:
         loop = asyncio.get_event_loop()
@@ -202,8 +210,10 @@ cdef class TaosConnection:
         else:
             taos_query_a_with_reqid(self._raw_conn, _sql, async_result_future_wrapper, <void*>fut, req_id)
 
-        res = await fut
-        return res
+        taos_res = await fut
+        taos_res._set_dt_epoch(self._dt_epoch)
+        taos_res._mark_async()
+        return taos_res
 
     def statement(self, sql: Optional[str]=None) -> Optional[TaosStmt]:
         if self._raw_conn is NULL:
@@ -554,7 +564,7 @@ cdef class TaosResult:
     cdef object _dt_epoch
     cdef bool _is_async
 
-    def __cinit__(self, size_t res, bool is_async=False):
+    def __cinit__(self, size_t res):
         self._res = <TAOS_RES*>res
         self._check_result_error()
         self._field_count = taos_field_count(self._res)
@@ -563,8 +573,8 @@ cdef class TaosResult:
         self._precision = taos_result_precision(self._res)
         self._affected_rows = taos_affected_rows(self._res)
         self._row_count = self._affected_rows if self._field_count == 0 else 0
-        self._dt_epoch = _priv_datetime_epoch if _priv_datetime_epoch else _datetime_epoch
-        self._is_async = is_async
+        self._dt_epoch = DEFAULT_DT_EPOCH
+        self._is_async = False
 
     def __str__(self):
         return "TaosResult(field_count=%d, precision=%d, affected_rows=%d, row_count=%d)" % (self._field_count, self._precision, self._affected_rows, self._row_count)
@@ -602,6 +612,12 @@ cdef class TaosResult:
     def row_count(self):
         """the row_count of the object"""
         return self._row_count
+
+    def _set_dt_epoch(self, dt_epoch):
+        self._dt_epoch = dt_epoch
+    
+    def _mark_async(self):
+        self._is_async = True
 
     def _check_result_error(self):
         errno = taos_errno(self._res)
@@ -1165,7 +1181,7 @@ cdef class Message:
         self._res = <TAOS_RES*>res
         self._err_no = taos_errno(self._res)
         self._err_str = taos_errstr(self._res)
-        self._dt_epoch = _priv_datetime_epoch if _priv_datetime_epoch else _datetime_epoch
+        self._dt_epoch = DEFAULT_DT_EPOCH
 
     def error(self) -> Optional[TmqError]:
         """
@@ -1206,6 +1222,9 @@ cdef class Message:
         :rtype: int
         """
         return tmq_get_vgroup_offset(self._res)
+
+    def _set_dt_epoch(self, dt_epoch):
+        self._dt_epoch = dt_epoch
     
     def _fetch_message_block(self) -> MessageBlock:
         cdef TAOS_ROW pblock
@@ -1278,6 +1297,8 @@ cdef class TaosConsumer:
     cdef tmq_conf_t *_tmq_conf
     cdef tmq_t *_tmq
     cdef bool _subscribed
+    cdef object _tz
+    cdef object _dt_epoch
     default_config = {
         'group.id',
         'client.id',
@@ -1295,12 +1316,16 @@ cdef class TaosConsumer:
         'td.connect.db',
     }
 
-    def __cinit__(self, dict configs):
+    def __cinit__(self, dict configs, **kwargs):
         self.__cb = None
         self.__err_cb = None
         self._init_config(configs)
         self._init_consumer()
         self._subscribed = False
+        self._tz = DEFAULT_TZ
+        self._dt_epoch = DEFAULT_DT_EPOCH
+        if "timezone" in kwargs:
+            self.tz = kwargs["timezone"]
 
     def _init_config(self, dict configs):
         if 'group.id' not in configs:
@@ -1336,6 +1361,20 @@ cdef class TaosConsumer:
         if tmq_errno != 0:
             tmq_errstr = tmq_err2str(tmq_errno).decode("utf-8")
             raise TmqError(tmq_errstr, tmq_errno)
+
+    @property
+    def tz(self) -> Optional[dt.tzinfo]:
+        return self._tz
+
+    @tz.setter
+    def tz(self, timezone: Optional[Union[str, dt.tzinfo]]):
+        if isinstance(timezone, str):
+            timezone = pytz.timezone(timezone)
+        
+        assert timezone is None or isinstance(timezone, dt.tzinfo)
+
+        self._tz = timezone
+        self._dt_epoch = dt.datetime.fromtimestamp(0, tz=self._tz)
 
     @property
     def callback(self):
@@ -1418,7 +1457,9 @@ cdef class TaosConsumer:
         if res is NULL:
             return None
         
-        return Message(<size_t>res)
+        msg = Message(<size_t>res)
+        msg._set_dt_epoch(self._dt_epoch)
+        return msg
 
     def set_auto_commit_cb(self, callback: Callable[[TaosConsumer]]=None, error_callback: Callable[[TmqError]]=None):
         """
@@ -2018,7 +2059,7 @@ cdef class TaosMultiBind:
         self._inner.buffer = <void*>_buffer
         self._inner.is_null = <char*>_is_null
 
-    def timestamp(self, values, precision=PrecisionEnum.Milliseconds):
+    def timestamp(self, values, precision=PrecisionEnum.Milliseconds):  # BUG: program just crash if one of the values is None in the first timestamp column
         self._inner.buffer_type = FieldType.C_TIMESTAMP
         self._inner.buffer_length = sizeof(int64_t)
         self._inner.num = len(values)
@@ -2027,29 +2068,25 @@ cdef class TaosMultiBind:
         _is_null = <char*>malloc(self._inner.num * sizeof(char))
         _check_malloc(<void*>_is_null)
 
-        dt_epoch = _priv_datetime_epoch if _priv_datetime_epoch else _datetime_epoch
-
-        if len(values) > 0:
-            if isinstance(values[0], dt.datetime):
-                values = [int(round((v - dt_epoch).total_seconds() * 10**(3*(precision+1)))) for v in values]
-            elif isinstance(values[0], str):
-                for i, v in enumerate(values):
-                    v = dt.datetime.fromisoformat(v)
-                    values[i] = int(round((v - dt_epoch).total_seconds() * 10**(3*(precision+1))))
-            elif isinstance(values[0], float):
-                values = [int(round(v * 10**(3*(precision+1)))) for v in values]
-            else:
-                pass
-
+        m = 10**(3*(precision+1))
         for i in range(self._inner.num):
             v = values[i]
             if v is None:
                 _buffer[i] = <int64_t>FieldType.C_BIGINT_NULL
                 _is_null[i] = 1
             else:
+                if isinstance(v, dt.datetime):
+                    v = int(round(v.timestamp() * m))
+                elif isinstance(v, str):
+                    v = int(round(dt.datetime.fromisoformat(v).timestamp() * m))
+                elif isinstance(v, float):
+                    v = int(round(v * m))
+                else:
+                    pass
+
                 _buffer[i] = <int64_t>v
                 _is_null[i] = 0
-        
+
         self._inner.buffer = <void*>_buffer
         self._inner.is_null = <char*>_is_null
 

@@ -10,7 +10,7 @@ def print_all(fut: asyncio.Future):
     # print("data:", result.fetch_all()) # NOT USE fetch_all directly right here
 
 def callback_print_row(conn, cb=None):
-    query_task = asyncio.create_task(conn.query_a("select * from power.meters"))
+    query_task = asyncio.create_task(conn.query_a("select * from test.meters"))
     if cb:
         query_task.add_done_callback(cb)
 
@@ -19,11 +19,11 @@ def callback_print_row(conn, cb=None):
 async def test_query(conn):
     conn.execute('create database if not exists power')
     conn.execute(
-        'CREATE STABLE if not exists power.meters (ts TIMESTAMP, current FLOAT, voltage INT, phase FLOAT) '
+        'CREATE STABLE if not exists test.meters (ts TIMESTAMP, current FLOAT, voltage INT, phase FLOAT) '
         'TAGS (location BINARY(64), groupId INT)')
 
     # async iter row
-    result = await conn.query_a("select * from power.meters")
+    result = await conn.query_a("select * from power.meters limit 1000")
     print("result:", result)
     async for row in result:
         print("row:", row)
