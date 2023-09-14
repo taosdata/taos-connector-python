@@ -89,7 +89,7 @@ cdef taos_fetch_block_v3(TAOS_RES *res, TAOS_FIELD *fields, int field_count, dt_
             free(is_null)
         elif field.type in UNSIZED_TYPE:
             offsets = taos_get_column_data_offset(res, i)
-            blocks[i] = _parse_string(<size_t>data, num_of_rows, <size_t>offsets)
+            blocks[i] = CONVERT_FUNC[field.type](<size_t>data, num_of_rows, <size_t>offsets)
         else:
             pass
 
