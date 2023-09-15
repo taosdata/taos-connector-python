@@ -24,44 +24,41 @@ cdef _check_malloc(void *ptr):
 
 
 # ---------------------------------------------- TAOS -------------------------------------------------------------- v
-cdef void async_result_future_wrapper(void *param, TAOS_RES *res, int code) nogil:
-    with gil:
-        fut = <object>param
-        if code != 0:
-            errstr = taos_errstr(res).decode("utf-8")
-            e = ProgrammingError(errstr, code)
-            fut.get_loop().call_soon_threadsafe(fut.set_exception, e)
-        else:
-            taos_result = TaosResult(<size_t>res)
-            fut.get_loop().call_soon_threadsafe(fut.set_result, taos_result)
+cdef void async_result_future_wrapper(void *param, TAOS_RES *res, int code) with gil:
+    fut = <object>param
+    if code != 0:
+        errstr = taos_errstr(res).decode("utf-8")
+        e = ProgrammingError(errstr, code)
+        fut.get_loop().call_soon_threadsafe(fut.set_exception, e)
+    else:
+        taos_result = TaosResult(<size_t>res)
+        fut.get_loop().call_soon_threadsafe(fut.set_result, taos_result)
 
 
-cdef void async_rows_future_wrapper(void *param, TAOS_RES *res, int num_of_rows) nogil:
+cdef void async_rows_future_wrapper(void *param, TAOS_RES *res, int num_of_rows) with gil:
     cdef int i = 0
-    with gil:
-        taos_result, fut = <tuple>param
-        rows = []
-        if num_of_rows > 0:
-            while True:
-                row = taos_result._fetch_row()
-                rows.append(row)
-                i += 1
-                if i >= num_of_rows:
-                    break
+    taos_result, fut = <tuple>param
+    rows = []
+    if num_of_rows > 0:
+        while True:
+            row = taos_result._fetch_row()
+            rows.append(row)
+            i += 1
+            if i >= num_of_rows:
+                break
 
-        fut.get_loop().call_soon_threadsafe(fut.set_result, rows)
+    fut.get_loop().call_soon_threadsafe(fut.set_result, rows)
 
 
-cdef void async_block_future_wrapper(void *param, TAOS_RES *res, int num_of_rows) nogil:
+cdef void async_block_future_wrapper(void *param, TAOS_RES *res, int num_of_rows) with gil:
     cdef int i = 0
-    with gil:
-        taos_result, fut = <tuple>param
-        if num_of_rows > 0:
-            block, n = taos_result._fetch_block()
-        else:
-            block, n = [], 0
+    taos_result, fut = <tuple>param
+    if num_of_rows > 0:
+        block, n = taos_result._fetch_block()
+    else:
+        block, n = [], 0
 
-        fut.get_loop().call_soon_threadsafe(fut.set_result, (block, n))
+    fut.get_loop().call_soon_threadsafe(fut.set_result, (block, n))
 
 
 cdef class TaosConnection:
@@ -631,7 +628,7 @@ cdef class TaosResult:
         if num_of_rows == 0:
             return [], 0
 
-        blocks = [None] * self._field_count
+        block = [None] * self._field_count
         cdef int i
         for i in range(self._field_count):
             data = pblock[i]
@@ -639,19 +636,19 @@ cdef class TaosResult:
 
             if field.type in SIZED_TYPE:
                 is_null = taos_get_column_data_is_null(self._res, i, num_of_rows)
-                blocks[i] = CONVERT_FUNC[field.type](<size_t>data, num_of_rows, <size_t>is_null)
+                block[i] = CONVERT_FUNC[field.type](<size_t>data, num_of_rows, <size_t>is_null)
                 free(is_null)            
             elif field.type in UNSIZED_TYPE:
                 offsets = taos_get_column_data_offset(self._res, i)
-                blocks[i] = CONVERT_FUNC[field.type](<size_t>data, num_of_rows, <size_t>offsets)
+                block[i] = CONVERT_FUNC[field.type](<size_t>data, num_of_rows, <size_t>offsets)
             else:
                 pass
 
             if field.type == TSDB_DATA_TYPE_TIMESTAMP and self._precision in (PrecisionEnum.Milliseconds, PrecisionEnum.Microseconds):
-                blocks[i] = _convert_timestamp_to_datetime(blocks[i], self._precision, self._dt_epoch)
+                block[i] = _convert_timestamp_to_datetime(block[i], self._precision, self._dt_epoch)
 
         self._row_count += num_of_rows
-        return blocks, abs(num_of_rows)
+        return block, abs(num_of_rows)
 
     def _fetch_row(self) -> Optional[Tuple]:
         cdef TAOS_ROW taos_row
@@ -687,8 +684,8 @@ cdef class TaosResult:
         taos_fetch_rows_a(self._res, async_block_future_wrapper, <void*>param)
         # taos_fetch_raw_block_a(self._res, async_block_future_wrapper, <void*>param)  # FIXME: have some problem when parsing nchar
 
-        block, n = await fut
-        return block, n
+        block, num_of_rows = await fut
+        return block, num_of_rows
 
     async def _fetch_rows_a(self) -> List[Tuple]:
         loop = asyncio.get_event_loop()
@@ -934,9 +931,6 @@ cdef class TaosCursor:
             for row in block:
                 yield row
 
-    def next(self):
-        return next(self)
-
     @property
     def description(self) -> List[Tuple]:
         return self._description
@@ -1009,7 +1003,7 @@ cdef class TaosCursor:
             affected_rows += self.execute(sql, req_id=req_id)
         return affected_rows
 
-    def fetchone(self) -> Optional[List]:
+    def fetchone(self) -> Optional[Tuple]:
         try:
             row = next(self)
         except StopIteration:
@@ -1059,23 +1053,21 @@ cdef class TaosCursor:
 
 
 # ---------------------------------------------- TMQ --------------------------------------------------------------- v
-cdef void async_commit_future_wrapper(tmq_t *tmq, int32_t code, void *param) nogil:
-    with gil:
-        fut = <object>param
-        fut.get_loop().call_soon_threadsafe(fut.set_result, code)
+cdef void async_commit_future_wrapper(tmq_t *tmq, int32_t code, void *param) with gil:
+    fut = <object>param
+    fut.get_loop().call_soon_threadsafe(fut.set_result, code)
 
 
-cdef void tmq_auto_commit_wrapper(tmq_t *tmq, int32_t code, void *param) nogil:
-    with gil:
-        consumer = <object>param
-        if code == 0:
-            if consumer.callback is not None:
-                consumer.callback(consumer) # TODO: param is consumer itself only, seem pretty weird
-        else:
-            errstr = tmq_err2str(code).decode("utf-8")
-            tmq_err = TmqError(errstr, code)
-            if consumer.error_callback is not None:
-                consumer.error_callback(tmq_err)
+cdef void tmq_auto_commit_wrapper(tmq_t *tmq, int32_t code, void *param) with gil:
+    consumer = <object>param
+    if code == 0:
+        if consumer.callback is not None:
+            consumer.callback(consumer) # TODO: param is consumer itself only, seem pretty weird
+    else:
+        errstr = tmq_err2str(code).decode("utf-8")
+        tmq_err = TmqError(errstr, code)
+        if consumer.error_callback is not None:
+            consumer.error_callback(tmq_err)
 
 
 cdef class TopicPartition:
@@ -1117,6 +1109,9 @@ cdef class TopicPartition:
         return self._end
 
     def __str__(self):
+        return "TopicPartition(topic=%s, partition=%s, offset=%s)" % (self.topic, self.partition, self.offset)
+
+    def __repr__(self):
         return "TopicPartition(topic=%s, partition=%s, offset=%s)" % (self.topic, self.partition, self.offset)
 
 
@@ -1170,6 +1165,11 @@ cdef class MessageBlock:
     def __iter__(self) -> Iterator[Tuple]:
         return zip(*self._block)
 
+    def __str__(self):
+        return "MessageBlock(table=%s, nrows=%s, ncols=%s)" % (self.table, self.nrows, self.ncols)
+
+    def __repr__(self):
+        return "MessageBlock(table=%s, nrows=%s, ncols=%s)" % (self.table, self.nrows, self.ncols)
 
 cdef class Message:
     cdef TAOS_RES *_res
@@ -1182,6 +1182,12 @@ cdef class Message:
         self._err_no = taos_errno(self._res)
         self._err_str = taos_errstr(self._res)
         self._dt_epoch = DEFAULT_DT_EPOCH
+
+    def __str__(self):
+        return "Message(topic=%s, database=%s, vgroup=%s, offset=%s)" % (self.topic(), self.database(), self.vgroup(), self.offset())
+
+    def __repr__(self):
+        return "Message(topic=%s, database=%s, vgroup=%s, offset=%s)" % (self.topic(), self.database(), self.vgroup(), self.offset())
 
     def error(self) -> Optional[TmqError]:
         """
@@ -1226,7 +1232,7 @@ cdef class Message:
     def _set_dt_epoch(self, dt_epoch):
         self._dt_epoch = dt_epoch
     
-    def _fetch_message_block(self) -> MessageBlock:
+    def _fetch_message_block(self) -> Optional[MessageBlock]:
         cdef TAOS_ROW pblock
         num_of_rows = taos_fetch_block(self._res, &pblock)
         if num_of_rows == 0:
@@ -1511,7 +1517,8 @@ cdef class TaosConsumer:
             return
 
         if offsets:
-            self.offsets_commit_a(offsets)
+            await self.offsets_commit_a(offsets)
+            return
 
         loop = asyncio.get_event_loop()
         fut = loop.create_future()
