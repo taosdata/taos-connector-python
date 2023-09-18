@@ -1712,14 +1712,14 @@ cdef class TaosStmt:
             raise StatementError("Invalid use of set_tbname_tags")
         
         _name = name.encode("utf-8")
-        errno = taos_stmt_set_tbname_tags(self._stmt, _name, tags._binds)
+        errno = taos_stmt_set_tbname_tags(self._stmt, _name, tags._raw_binds)
         self._check_stmt_error(errno)
 
     def bind_param(self, TaosMultiBinds binds, bool add_batch=True):
         if self._stmt is NULL:
             raise StatementError("Invalid use of bind_param")
 
-        errno = taos_stmt_bind_param(self._stmt, binds._binds)
+        errno = taos_stmt_bind_param(self._stmt, binds._raw_binds)
         self._check_stmt_error(errno)
 
         if add_batch:
@@ -1729,7 +1729,7 @@ cdef class TaosStmt:
         if self._stmt is NULL:
             raise StatementError("Invalid use of bind_param_batch")
 
-        errno = taos_stmt_bind_param_batch(self._stmt, binds._binds)
+        errno = taos_stmt_bind_param_batch(self._stmt, binds._raw_binds)
         self._check_stmt_error(errno)
 
         if add_batch:
@@ -1779,13 +1779,21 @@ cdef class TaosStmt:
 
 cdef class TaosMultiBinds:
     cdef size_t _size
-    cdef TAOS_MULTI_BIND *_binds
+    cdef TAOS_MULTI_BIND *_raw_binds
+    cdef list _binds
 
     def __cinit__(self, size_t size):
         self._size = size
-        self._binds = <TAOS_MULTI_BIND*>malloc(size * sizeof(TAOS_MULTI_BIND))
-        _check_malloc(<void*>self._binds)
-        memset(self._binds, 0, size * sizeof(TAOS_MULTI_BIND))
+        self._init_binds(size)
+
+    def _init_binds(self, size_t size):
+        self._raw_binds = <TAOS_MULTI_BIND*>malloc(size * sizeof(TAOS_MULTI_BIND))
+        _check_malloc(<void*>self._raw_binds)
+        memset(self._raw_binds, 0, size * sizeof(TAOS_MULTI_BIND))
+        self._binds = []
+        for i in range(size):
+            _pbind = <size_t>self._raw_binds + (i * sizeof(TAOS_MULTI_BIND))
+            self._binds.append(TaosMultiBind(_pbind))
 
     def __str__(self):
         return "TaosMultiBinds(size=%d)" % (self._size, )
@@ -1794,29 +1802,13 @@ cdef class TaosMultiBinds:
         return "TaosMultiBinds(size=%d)" % (self._size, )
 
     def __getitem__(self, item):
-        if item >= self._size:
-            raise IndexError()
-
-        _pbind = <size_t>self._binds + (item * sizeof(TAOS_MULTI_BIND))
-        return TaosMultiBind(_pbind)
+        return self._binds[item]
     
     def __dealloc__(self):
-        if self._binds is not NULL:
-            for i in range(self._size):
-                if self._binds[i].buffer is not NULL:
-                    free(self._binds[i].buffer)
-                    self._binds[i].buffer = NULL
-
-                if self._binds[i].is_null is not NULL:
-                    free(self._binds[i].is_null)
-                    self._binds[i].is_null = NULL
-
-                if self._binds[i].length is not NULL:
-                    free(self._binds[i].length)
-                    self._binds[i].length = NULL
-
-            free(self._binds)
-            self._binds = NULL
+        if self._raw_binds is not NULL:
+            self._binds = []
+            free(self._raw_binds)
+            self._raw_binds = NULL
 
         self._size = 0
 
@@ -1826,6 +1818,46 @@ cdef class TaosMultiBind:
 
     def __cinit__(self, size_t pbind):
         self._inner = <TAOS_MULTI_BIND*>pbind
+
+    def __dealloc__(self):
+        if self._inner.buffer is not NULL:
+            free(self._inner.buffer)
+            self._inner.buffer = NULL
+
+        if self._inner.is_null is not NULL:
+            free(self._inner.is_null)
+            self._inner.is_null = NULL
+
+        if self._inner.length is not NULL:
+            free(self._inner.length)
+            self._inner.length = NULL
+
+    cdef _init_buffer(self, size_t size):
+        if self._inner.buffer is not NULL:
+            free(self._inner.buffer)
+            self._inner.buffer = NULL
+
+        _buffer = malloc(size)
+        _check_malloc(_buffer)
+        self._inner.buffer = <void*>_buffer
+
+    cdef _init_is_null(self, size_t size):
+        if self._inner.is_null is not NULL:
+            free(self._inner.is_null)
+            self._inner.is_null = NULL
+
+        _is_null = malloc(size)
+        _check_malloc(_is_null)
+        self._inner.is_null = <char*>_is_null
+
+    cdef _init_length(self, size_t size):
+        if self._inner.length is not NULL:
+            free(self._inner.length)
+            self._inner.length = NULL
+
+        _length = malloc(size)
+        _check_malloc(_length)
+        self._inner.length = <int32_t*>_length
 
     def __str__(self):
         return "TaosMultiBind(buffer_type=%s, buffer_length=%d, num=%d)" % (self._inner.buffer_type, self._inner.buffer_length, self._inner.num)
@@ -1837,10 +1869,10 @@ cdef class TaosMultiBind:
         self._inner.buffer_type = FieldType.C_BOOL
         self._inner.buffer_length = sizeof(bool)
         self._inner.num = len(values)
-        _buffer = <int8_t*>malloc(self._inner.num * self._inner.buffer_length)
-        _check_malloc(<void*>_buffer)
-        _is_null = <char*>malloc(self._inner.num * sizeof(char))
-        _check_malloc(<void*>_is_null)
+        self._init_buffer(self._inner.num * sizeof(bool))
+        self._init_is_null(self._inner.num * sizeof(char))
+        _buffer = <int8_t*>self._inner.buffer
+        _is_null = self._inner.is_null
 
         for i in range(self._inner.num):
             v = values[i]
@@ -1850,18 +1882,15 @@ cdef class TaosMultiBind:
             else:
                 _buffer[i] = <int8_t>v
                 _is_null[i] = 0
-        
-        self._inner.buffer = <void*>_buffer
-        self._inner.is_null = <char*>_is_null
 
     def tinyint(self, values):
         self._inner.buffer_type = FieldType.C_TINYINT
         self._inner.buffer_length = sizeof(int8_t)
         self._inner.num = len(values)
-        _buffer = <int8_t*>malloc(self._inner.num * self._inner.buffer_length)
-        _check_malloc(<void*>_buffer)
-        _is_null = <char*>malloc(self._inner.num * sizeof(char))
-        _check_malloc(<void*>_is_null)
+        self._init_buffer(self._inner.num * sizeof(int8_t))
+        self._init_is_null(self._inner.num * sizeof(char))
+        _buffer = <int8_t*>self._inner.buffer
+        _is_null = self._inner.is_null
 
         for i in range(self._inner.num):
             v = values[i]
@@ -1871,18 +1900,15 @@ cdef class TaosMultiBind:
             else:
                 _buffer[i] = <int8_t>v
                 _is_null[i] = 0
-        
-        self._inner.buffer = <void*>_buffer
-        self._inner.is_null = <char*>_is_null
 
     def smallint(self, values):
         self._inner.buffer_type = FieldType.C_SMALLINT
         self._inner.buffer_length = sizeof(int16_t)
         self._inner.num = len(values)
-        _buffer = <int16_t*>malloc(self._inner.num * self._inner.buffer_length)
-        _check_malloc(<void*>_buffer)
-        _is_null = <char*>malloc(self._inner.num * sizeof(char))
-        _check_malloc(<void*>_is_null)
+        self._init_buffer(self._inner.num * sizeof(int16_t))
+        self._init_is_null(self._inner.num * sizeof(char))
+        _buffer = <int16_t*>self._inner.buffer
+        _is_null = self._inner.is_null
 
         for i in range(self._inner.num):
             v = values[i]
@@ -1892,18 +1918,15 @@ cdef class TaosMultiBind:
             else:
                 _buffer[i] = <int16_t>v
                 _is_null[i] = 0
-        
-        self._inner.buffer = <void*>_buffer
-        self._inner.is_null = <char*>_is_null
 
     def int(self, values):
         self._inner.buffer_type = FieldType.C_INT
         self._inner.buffer_length = sizeof(int32_t)
         self._inner.num = len(values)
-        _buffer = <int32_t*>malloc(self._inner.num * self._inner.buffer_length)
-        _check_malloc(<void*>_buffer)
-        _is_null = <char*>malloc(self._inner.num * sizeof(char))
-        _check_malloc(<void*>_is_null)
+        self._init_buffer(self._inner.num * sizeof(int32_t))
+        self._init_is_null(self._inner.num * sizeof(char))
+        _buffer = <int32_t*>self._inner.buffer
+        _is_null = self._inner.is_null
 
         for i in range(self._inner.num):
             v = values[i]
@@ -1913,18 +1936,15 @@ cdef class TaosMultiBind:
             else:
                 _buffer[i] = <int32_t>v
                 _is_null[i] = 0
-        
-        self._inner.buffer = <void*>_buffer
-        self._inner.is_null = <char*>_is_null
 
     def bigint(self, values):
         self._inner.buffer_type = FieldType.C_BIGINT
         self._inner.buffer_length = sizeof(int64_t)
         self._inner.num = len(values)
-        _buffer = <int64_t*>malloc(self._inner.num * self._inner.buffer_length)
-        _check_malloc(<void*>_buffer)
-        _is_null = <char*>malloc(self._inner.num * sizeof(char))
-        _check_malloc(<void*>_is_null)
+        self._init_buffer(self._inner.num * sizeof(int64_t))
+        self._init_is_null(self._inner.num * sizeof(char))
+        _buffer = <int64_t*>self._inner.buffer
+        _is_null = self._inner.is_null
 
         for i in range(self._inner.num):
             v = values[i]
@@ -1934,18 +1954,15 @@ cdef class TaosMultiBind:
             else:
                 _buffer[i] = <int64_t>v
                 _is_null[i] = 0
-        
-        self._inner.buffer = <void*>_buffer
-        self._inner.is_null = <char*>_is_null
 
     def float(self, values):
         self._inner.buffer_type = FieldType.C_FLOAT
         self._inner.buffer_length = sizeof(float)
         self._inner.num = len(values)
-        _buffer = <float*>malloc(self._inner.num * self._inner.buffer_length)
-        _check_malloc(<void*>_buffer)
-        _is_null = <char*>malloc(self._inner.num * sizeof(char))
-        _check_malloc(<void*>_is_null)
+        self._init_buffer(self._inner.num * sizeof(float))
+        self._init_is_null(self._inner.num * sizeof(char))
+        _buffer = <float*>self._inner.buffer
+        _is_null = self._inner.is_null
 
         for i in range(self._inner.num):
             v = values[i]
@@ -1956,18 +1973,15 @@ cdef class TaosMultiBind:
             else:
                 _buffer[i] = <float>v
                 _is_null[i] = 0
-        
-        self._inner.buffer = <void*>_buffer
-        self._inner.is_null = <char*>_is_null
 
     def double(self, values):
         self._inner.buffer_type = FieldType.C_DOUBLE
         self._inner.buffer_length = sizeof(double)
         self._inner.num = len(values)
-        _buffer = <double*>malloc(self._inner.num * self._inner.buffer_length)
-        _check_malloc(<void*>_buffer)
-        _is_null = <char*>malloc(self._inner.num * sizeof(char))
-        _check_malloc(<void*>_is_null)
+        self._init_buffer(self._inner.num * sizeof(double))
+        self._init_is_null(self._inner.num * sizeof(char))
+        _buffer = <double*>self._inner.buffer
+        _is_null = self._inner.is_null
 
         for i in range(self._inner.num):
             v = values[i]
@@ -1978,18 +1992,15 @@ cdef class TaosMultiBind:
             else:
                 _buffer[i] = <double>v
                 _is_null[i] = 0
-        
-        self._inner.buffer = <void*>_buffer
-        self._inner.is_null = <char*>_is_null
 
     def tinyint_unsigned(self, values):
         self._inner.buffer_type = FieldType.C_TINYINT_UNSIGNED
         self._inner.buffer_length = sizeof(uint8_t)
         self._inner.num = len(values)
-        _buffer = <uint8_t*>malloc(self._inner.num * self._inner.buffer_length)
-        _check_malloc(<void*>_buffer)
-        _is_null = <char*>malloc(self._inner.num * sizeof(char))
-        _check_malloc(<void*>_is_null)
+        self._init_buffer(self._inner.num * sizeof(uint8_t))
+        self._init_is_null(self._inner.num * sizeof(char))
+        _buffer = <uint8_t*>self._inner.buffer
+        _is_null = self._inner.is_null
 
         for i in range(self._inner.num):
             v = values[i]
@@ -1999,18 +2010,15 @@ cdef class TaosMultiBind:
             else:
                 _buffer[i] = <uint8_t>v
                 _is_null[i] = 0
-        
-        self._inner.buffer = <void*>_buffer
-        self._inner.is_null = <char*>_is_null
 
     def smallint_unsigned(self, values):
         self._inner.buffer_type = FieldType.C_SMALLINT_UNSIGNED
         self._inner.buffer_length = sizeof(uint16_t)
         self._inner.num = len(values)
-        _buffer = <uint16_t*>malloc(self._inner.num * self._inner.buffer_length)
-        _check_malloc(<void*>_buffer)
-        _is_null = <char*>malloc(self._inner.num * sizeof(char))
-        _check_malloc(<void*>_is_null)
+        self._init_buffer(self._inner.num * sizeof(uint16_t))
+        self._init_is_null(self._inner.num * sizeof(char))
+        _buffer = <uint16_t*>self._inner.buffer
+        _is_null = self._inner.is_null
 
         for i in range(self._inner.num):
             v = values[i]
@@ -2020,18 +2028,15 @@ cdef class TaosMultiBind:
             else:
                 _buffer[i] = <uint16_t>v
                 _is_null[i] = 0
-        
-        self._inner.buffer = <void*>_buffer
-        self._inner.is_null = <char*>_is_null
 
     def int_unsigned(self, values):
         self._inner.buffer_type = FieldType.C_INT_UNSIGNED
         self._inner.buffer_length = sizeof(uint32_t)
         self._inner.num = len(values)
-        _buffer = <uint32_t*>malloc(self._inner.num * self._inner.buffer_length)
-        _check_malloc(<void*>_buffer)
-        _is_null = <char*>malloc(self._inner.num * sizeof(char))
-        _check_malloc(<void*>_is_null)
+        self._init_buffer(self._inner.num * sizeof(uint32_t))
+        self._init_is_null(self._inner.num * sizeof(char))
+        _buffer = <uint32_t*>self._inner.buffer
+        _is_null = self._inner.is_null
 
         for i in range(self._inner.num):
             v = values[i]
@@ -2041,18 +2046,15 @@ cdef class TaosMultiBind:
             else:
                 _buffer[i] = <uint32_t>v
                 _is_null[i] = 0
-        
-        self._inner.buffer = <void*>_buffer
-        self._inner.is_null = <char*>_is_null
 
     def bigint_unsigned(self, values):
         self._inner.buffer_type = FieldType.C_BIGINT_UNSIGNED
         self._inner.buffer_length = sizeof(uint64_t)
         self._inner.num = len(values)
-        _buffer = <uint64_t*>malloc(self._inner.num * self._inner.buffer_length)
-        _check_malloc(<void*>_buffer)
-        _is_null = <char*>malloc(self._inner.num * sizeof(char))
-        _check_malloc(<void*>_is_null)
+        self._init_buffer(self._inner.num * sizeof(uint64_t))
+        self._init_is_null(self._inner.num * sizeof(char))
+        _buffer = <uint64_t*>self._inner.buffer
+        _is_null = self._inner.is_null
 
         for i in range(self._inner.num):
             v = values[i]
@@ -2062,18 +2064,15 @@ cdef class TaosMultiBind:
             else:
                 _buffer[i] = <uint64_t>v
                 _is_null[i] = 0
-        
-        self._inner.buffer = <void*>_buffer
-        self._inner.is_null = <char*>_is_null
 
     def timestamp(self, values, precision=PrecisionEnum.Milliseconds):  # BUG: program just crash if one of the values is None in the first timestamp column
         self._inner.buffer_type = FieldType.C_TIMESTAMP
         self._inner.buffer_length = sizeof(int64_t)
         self._inner.num = len(values)
-        _buffer = <int64_t*>malloc(self._inner.num * self._inner.buffer_length)
-        _check_malloc(<void*>_buffer)
-        _is_null = <char*>malloc(self._inner.num * sizeof(char))
-        _check_malloc(<void*>_is_null)
+        self._init_buffer(self._inner.num * sizeof(int64_t))
+        self._init_is_null(self._inner.num * sizeof(char))
+        _buffer = <int64_t*>self._inner.buffer
+        _is_null = self._inner.is_null
 
         m = 10**(3*(precision+1))
         for i in range(self._inner.num):
@@ -2094,20 +2093,17 @@ cdef class TaosMultiBind:
                 _buffer[i] = <int64_t>v
                 _is_null[i] = 0
 
-        self._inner.buffer = <void*>_buffer
-        self._inner.is_null = <char*>_is_null
-
     def binary(self, values):
         _bytes = [v if v is None else v.encode("utf-8") for v in values]
         self._inner.buffer_type = FieldType.C_BINARY
         self._inner.buffer_length = max(len(b) for b in _bytes if b is not None)
         self._inner.num = len(values)
-        _length = <int32_t*>malloc(self._inner.num * sizeof(int32_t))
-        _check_malloc(<void*>_length)
-        _buffer = <void*>malloc(self._inner.num * self._inner.buffer_length)
-        _check_malloc(<void*>_buffer)
-        _is_null = <char*>malloc(self._inner.num * sizeof(char))
-        _check_malloc(<void*>_is_null)
+        self._init_buffer(self._inner.num * self._inner.buffer_length)
+        self._init_is_null(self._inner.num * sizeof(char))
+        self._init_length(self._inner.num * sizeof(int32_t))
+        _buffer = self._inner.buffer
+        _is_null = self._inner.is_null
+        _length = self._inner.length
 
         _buf = bytearray(self._inner.num * self._inner.buffer_length)
         for i in range(self._inner.num):
@@ -2123,22 +2119,18 @@ cdef class TaosMultiBind:
                 _length[i] = len(v)
 
         memcpy(_buffer, <char*>_buf, self._inner.num * self._inner.buffer_length)
-
-        self._inner.buffer = <void*>_buffer
-        self._inner.is_null = <char*>_is_null
-        self._inner.length = _length
 
     def nchar(self, values):
         _bytes = [v if v is None else v.encode("utf-8") for v in values]
         self._inner.buffer_type = FieldType.C_NCHAR
         self._inner.buffer_length = max(len(b) for b in _bytes if b is not None)
         self._inner.num = len(values)
-        _length = <int32_t*>malloc(self._inner.num * sizeof(int32_t))
-        _check_malloc(<void*>_length)
-        _buffer = <void*>malloc(self._inner.num * self._inner.buffer_length)
-        _check_malloc(<void*>_buffer)
-        _is_null = <char*>malloc(self._inner.num * sizeof(char))
-        _check_malloc(<void*>_is_null)
+        self._init_buffer(self._inner.num * self._inner.buffer_length)
+        self._init_is_null(self._inner.num * sizeof(char))
+        self._init_length(self._inner.num * sizeof(int32_t))
+        _buffer = self._inner.buffer
+        _is_null = self._inner.is_null
+        _length = self._inner.length
 
         _buf = bytearray(self._inner.num * self._inner.buffer_length)
         for i in range(self._inner.num):
@@ -2154,22 +2146,18 @@ cdef class TaosMultiBind:
                 _length[i] = len(v)
 
         memcpy(_buffer, <char*>_buf, self._inner.num * self._inner.buffer_length)
-
-        self._inner.buffer = <void*>_buffer
-        self._inner.is_null = <char*>_is_null
-        self._inner.length = _length
 
     def json(self, values):
         _bytes = [v if v is None else v.encode("utf-8") for v in values]
         self._inner.buffer_type = FieldType.C_JSON
         self._inner.buffer_length = max(len(b) for b in _bytes if b is not None)
         self._inner.num = len(values)
-        _length = <int32_t*>malloc(self._inner.num * sizeof(int32_t))
-        _check_malloc(<void*>_length)
-        _buffer = <void*>malloc(self._inner.num * self._inner.buffer_length)
-        _check_malloc(<void*>_buffer)
-        _is_null = <char*>malloc(self._inner.num * sizeof(char))
-        _check_malloc(<void*>_is_null)
+        self._init_buffer(self._inner.num * self._inner.buffer_length)
+        self._init_is_null(self._inner.num * sizeof(char))
+        self._init_length(self._inner.num * sizeof(int32_t))
+        _buffer = self._inner.buffer
+        _is_null = self._inner.is_null
+        _length = self._inner.length
 
         _buf = bytearray(self._inner.num * self._inner.buffer_length)
         for i in range(self._inner.num):
@@ -2185,9 +2173,5 @@ cdef class TaosMultiBind:
                 _length[i] = len(v)
 
         memcpy(_buffer, <char*>_buf, self._inner.num * self._inner.buffer_length)
-
-        self._inner.buffer = <void*>_buffer
-        self._inner.is_null = <char*>_is_null
-        self._inner.length = _length
 
 # ---------------------------------------- statement --------------------------------------------------------------- ^
