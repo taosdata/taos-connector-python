@@ -120,6 +120,8 @@ impl Consumer {
                 ))?;
             }
 
+            builder.set("enable.auto.commit", "true");
+            builder.set("experimental.snapshot.enable", "false");
             const KEYS: &[&str] = &[
                 "client.id",
                 "auto.offset.reset",
