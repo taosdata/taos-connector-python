@@ -25,7 +25,7 @@ requests = ">=2.27.1"
 pytest-cov = "^4.0.0"
 
 [tool.poetry.dependencies.taos-ws-py]
-version = ">=0.2.0"
+version = ">=0.3.0"
 python = ">=3.7,<4.0"
 optional = true
 
