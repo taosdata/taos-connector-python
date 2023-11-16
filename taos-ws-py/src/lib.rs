@@ -730,9 +730,6 @@ fn binary_to_column(values: Vec<Option<String>>) -> PyColumnView {
 
 #[pymodule]
 fn taosws(py: Python<'_>, m: &PyModule) -> PyResult<()> {
-    if std::env::var("RUST_LOG").is_ok() {
-        let _ = pretty_env_logger::try_init();
-    }
     m.add_class::<Connection>()?;
     m.add_class::<Cursor>()?;
     m.add_class::<TaosField>()?;
