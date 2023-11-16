@@ -14,7 +14,8 @@ anyhow = "1"
 log = "0.4"
 serde_json = "1"
 shadow-rs = "0.20.0"
-taos = { version = "0.10.16", default-features = false, features = ["optin", "ws-rustls"] }
+taos = { version = "0.10.19", default-features = false, features = ["optin", "ws-rustls"] }
+pretty_env_logger = "0.5"
 chrono = "0.4"
 
 [build-dependencies]
