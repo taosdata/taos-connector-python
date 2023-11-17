@@ -17,6 +17,8 @@ shadow-rs = "0.20.0"
 taos = { version = "0.10.20", default-features = false, features = ["optin", "ws-rustls"] }
 chrono = "0.4"
 rustls = "=0.21.7"
+rustls-webpki = "=0.101.6"
+sct = "=0.7.0"
 ring = "=0.16.20"
 
 [build-dependencies]
