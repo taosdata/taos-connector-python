@@ -15,6 +15,7 @@ log = "0.4"
 serde_json = "1"
 shadow-rs = "0.20.0"
 taos = { version = "0.10.20", default-features = false, features = ["optin", "ws-rustls"] }
+pretty_env_logger = "0.5"
 chrono = "0.4"
 rustls = "=0.21.7"
 rustls-webpki = "=0.101.6"
