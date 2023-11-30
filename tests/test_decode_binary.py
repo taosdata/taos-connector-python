@@ -45,7 +45,7 @@ def test_decode_binary_in_tmq():
     conn.execute(
         "create topic if not exists test_decode_binary_topic as select * from test_decode_binary.test_decode_binary")
 
-    consumer = Consumer({"group.id": "1", "decode_binary": False})
+    consumer = Consumer({"group.id": "1", "decode_binary": False, "auto.offset.reset": "earliest"})
     consumer.subscribe(["test_decode_binary_topic"])
 
     try:
