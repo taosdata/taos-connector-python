@@ -145,7 +145,7 @@ def test_tmq_assignment():
     conn.execute(
         "insert into t3 using stb1 tags(true, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, '2', '2') values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
 
-    consumer = Consumer({"group.id": "1"})
+    consumer = Consumer({"group.id": "1", "auto.offset.reset": "earliest"})
     consumer.subscribe(["topic1"])
 
     try:
