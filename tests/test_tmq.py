@@ -194,7 +194,10 @@ def test_tmq_seek():
     conn.execute(
         "insert into tb1 values (now-1s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
 
-    consumer = Consumer({"group.id": "1"})
+    consumer = Consumer({
+        "group.id": "1",
+        "auto.offset.reset": "earliest"
+    })
     consumer.subscribe(["topic1"])
     try:
         assignment = consumer.assignment()
