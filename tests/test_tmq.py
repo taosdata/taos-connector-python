@@ -14,7 +14,8 @@ class insertThread(threading.Thread):
         print("Start insert data")
         conn = taos.connect()
         conn.select_db("tmq_test")
-        conn.execute("insert into tb1 values (now, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+        conn.execute(
+            "insert into tb1 values (now, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
         print("Finish insert data")
 
 
@@ -64,10 +65,12 @@ def pre_test_tmq(precision: str):
     conn.execute("drop database if exists tmq_test")
     if len(precision) > 0:
         conn.execute(
-            "create database if not exists tmq_test precision '{}' wal_retention_period 3600".format(precision)
+            "create database if not exists tmq_test precision '{}' wal_retention_period 3600".format(
+                precision)
         )
     else:
-        conn.execute("create database if not exists tmq_test wal_retention_period 3600")
+        conn.execute(
+            "create database if not exists tmq_test wal_retention_period 3600")
     conn.select_db("tmq_test")
     conn.execute(
         "create stable if not exists stb1 (ts timestamp, \
@@ -78,7 +81,8 @@ def pre_test_tmq(precision: str):
         t5 bigint unsigned, t6 tinyint, t7 smallint, t8 tinyint, t9 bigint, t10 float, \
         t11 double, t12 timestamp, t13 varchar(8), t14 nchar(8))"
     )
-    conn.execute("create table if not exists tb1 using stb1 tags (true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1')")
+    conn.execute(
+        "create table if not exists tb1 using stb1 tags (true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1')")
     print("========start create topic")
     conn.execute(
         "create topic if not exists topic1 as select ts,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14 from stb1"
@@ -145,7 +149,10 @@ def test_tmq_assignment():
     conn.execute(
         "insert into t3 using stb1 tags(true, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, '2', '2') values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
 
-    consumer = Consumer({"group.id": "1", "auto.offset.reset": "earliest"})
+    consumer = Consumer({
+        "group.id": "1",
+        "auto.offset.reset": "earliest"
+    })
     consumer.subscribe(["topic1"])
 
     try:
@@ -178,10 +185,14 @@ def test_tmq_seek():
     pre_test_tmq('')
     conn = taos.connect()
     conn.select_db("tmq_test")
-    conn.execute("insert into tb1 values (now-4s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
-    conn.execute("insert into tb1 values (now-3s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
-    conn.execute("insert into tb1 values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
-    conn.execute("insert into tb1 values (now-1s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
+    conn.execute(
+        "insert into tb1 values (now-4s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+    conn.execute(
+        "insert into tb1 values (now-3s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+    conn.execute(
+        "insert into tb1 values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
+    conn.execute(
+        "insert into tb1 values (now-1s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
 
     consumer = Consumer({"group.id": "1"})
     consumer.subscribe(["topic1"])
@@ -222,10 +233,14 @@ def test_tmq_committed_and_position():
 
     conn = taos.connect()
     conn.select_db("tmq_test")
-    conn.execute("insert into tb1 values (now-4s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
-    conn.execute("insert into tb1 values (now-3s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
-    conn.execute("insert into tb1 values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
-    conn.execute("insert into tb1 values (now-1s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
+    conn.execute(
+        "insert into tb1 values (now-4s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+    conn.execute(
+        "insert into tb1 values (now-3s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+    conn.execute(
+        "insert into tb1 values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
+    conn.execute(
+        "insert into tb1 values (now-1s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
 
     consumer = Consumer({"group.id": "1"})
     consumer.subscribe(["topic1"])
