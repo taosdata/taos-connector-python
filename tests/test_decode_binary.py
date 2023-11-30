@@ -10,8 +10,10 @@ def before():
     conn.execute("create database if not exists test_decode_binary")
     conn.execute("use test_decode_binary")
 
-    conn.execute("create table test_decode_binary (ts timestamp, c1 nchar(10), c2 int, c3 binary(50))")
-    conn.execute("insert into test_decode_binary values ('2020-01-01 00:00:00', 'hello', 1, 'world')")
+    conn.execute(
+        "create table test_decode_binary (ts timestamp, c1 nchar(10), c2 int, c3 binary(50))")
+    conn.execute(
+        "insert into test_decode_binary values ('2020-01-01 00:00:00', 'hello', 1, 'world')")
     conn.execute(
         "insert into test_decode_binary values ('2020-01-01 00:00:01', 'hello', 2,'\\x00\\x01\\x02\\x03\\x04\\x05\\x06\\x07\\x08\\x09')")
 
@@ -45,7 +47,11 @@ def test_decode_binary_in_tmq():
     conn.execute(
         "create topic if not exists test_decode_binary_topic as select * from test_decode_binary.test_decode_binary")
 
-    consumer = Consumer({"group.id": "1", "decode_binary": False, "auto.offset.reset": "earliest"})
+    consumer = Consumer({
+        "group.id": "1",
+        "decode_binary": False,
+        "auto.offset.reset": "earliest"
+    })
     consumer.subscribe(["test_decode_binary_topic"])
 
     try:
