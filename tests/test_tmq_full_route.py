@@ -115,9 +115,9 @@ def after_ter_tmq():
 
 
 def test_consumer_with_precision_full_route():
-    tmq_consumer_with_precision('ms')
-    tmq_consumer_with_precision('us')
-    tmq_consumer_with_precision('ns')
+    tmq_consumer_with_precision("ms")
+    tmq_consumer_with_precision("us")
+    tmq_consumer_with_precision("ns")
 
 
 def tmq_consumer_with_precision(precision: str):
@@ -125,12 +125,14 @@ def tmq_consumer_with_precision(precision: str):
         return
     pre_test_tmq(precision)
 
-    consumer = Consumer({
-        "group.id": "1",
-        "td.connect.user": "root",
-        "td.connect.pass": "taosdata",
-        "msg.with.table.name": "true"
-    })
+    consumer = Consumer(
+        {
+            "group.id": "1",
+            "td.connect.user": "root",
+            "td.connect.pass": "taosdata",
+            "msg.with.table.name": "true",
+        }
+    )
     consumer.subscribe(["topic1"])
 
     sThread = ConsumerThread(consumer)
