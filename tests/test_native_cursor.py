@@ -2,26 +2,26 @@ import taos
 from utils import tear_down_database
 
 env = {
-    'user': "root",
-    'password': "taosdata",
-    'host': "localhost",
-    'port': 6030,
+    "user": "root",
+    "password": "taosdata",
+    "host": "localhost",
+    "port": 6030,
 }
 
 
 def make_context(config):
-    db_protocol = config.get('db_protocol', 'taos')
-    db_user = config['user']
-    db_pass = config['password']
-    db_host = config['host']
-    db_port = config['port']
+    db_protocol = config.get("db_protocol", "taos")
+    db_user = config["user"]
+    db_pass = config["password"]
+    db_host = config["host"]
+    db_port = config["port"]
 
     db_url = f"{db_protocol}://{db_user}:{db_pass}@{db_host}:{db_port}"
-    print('dsn: ', db_url)
+    print("dsn: ", db_url)
 
     conn = taos.connect(**config)
 
-    db_name = config.get('database', 'c_cursor')
+    db_name = config.get("database", "c_cursor")
 
     return conn, db_name
 
