@@ -162,14 +162,14 @@ def test_tmq_assignment():
         consumer.poll(1)
         consumer.poll(1)
 
-        conn.execute(
-            "insert into t1 using stb1 tags(true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
-        conn.execute(
-            "insert into t2 using stb1 tags(false, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
-        conn.execute(
-            "insert into t3 using stb1 tags(true, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, '2', '2') values (now, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
+        table_num = 10
+        data_num = 10
+        for i in range(table_num):
+            for j in range(data_num):
+                conn.execute(
+                    f"insert into t{i} using stb1 tags(true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
 
-        consumer.poll(1)
+        consumer.poll(5)
 
         assignment = consumer.assignment()
         assert assignment[0].offset > 0
