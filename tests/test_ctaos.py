@@ -113,7 +113,7 @@ def test_simple_with_req_id(conn, caplog):
         taos_query_with_reqid(
             conn,
             "drop database if exists " + dbname,
-            req_id
+            req_id,
         )
         taos_close(conn)
     except InterfaceError as err:
