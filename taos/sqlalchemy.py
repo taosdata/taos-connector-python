@@ -78,6 +78,7 @@ class TaosWsDialect(default.DefaultDialect):
 
 class AlchemyTaosConnection:
     paramstyle = "pyformat"
+    from taos.error import Warning, Error, InterfaceError, DatabaseError, DataError, OperationalError, IntegrityError, InternalError, ProgrammingError, NotSupportedError
 
     def connect(self, **kwargs):
         host = kwargs.get("host", "localhost")
