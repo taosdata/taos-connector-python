@@ -26,3 +26,9 @@ Install poetry with specify python version
 pipx install --python python3.11 poetry --force
 ```
 
+## Install dependencies
+
+```
+poetry install 
+```
+
