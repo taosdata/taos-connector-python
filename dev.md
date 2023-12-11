@@ -32,3 +32,21 @@ pipx install --python python3.11 poetry --force
 poetry install 
 ```
 
+## Run tests
+
+```
+poetry run pytest tests
+```
+
+Run specific test
+
+```
+poetry run pytest tests/test_example.py
+```
+
+Rest api test
+
+```
+export TDENGINE_URL=localhost:6041 
+```
+
