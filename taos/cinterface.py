@@ -1910,7 +1910,7 @@ except Exception as err:
 
 
 def tmq_get_topic_assignment(tmq, topic_name):
-    # type: (c_void_p, str) -> List[()]
+    # type: (c_void_p, str) -> List[Tuple]
 
     _check_if_supported()
     num_of_assignment = c_int()
