@@ -45,7 +45,9 @@ pip3 install maturin
 ### mac
 
 ```bash
+
 maturin build --strip && pip3 install ./target/wheels/taos_ws_py-0.3.1-cp37-abi3-macosx_10_7_x86_64.whl --force-reinstall
+
 ```
 
 ### linux
