@@ -300,6 +300,11 @@ def taos_connect_auth(host=None, user="root", auth="", db=None, port=0):
 
     print("connection: ", connection)
 
+    err_no = taos_errno(connection)
+    err_str = taos_errstr(connection)
+    print("err_no: ", err_no)
+    print("err_str: ", err_str)
+
     if connection.value is None:
         null_ptr = c_void_p(None)
         errno = taos_errno(null_ptr)
