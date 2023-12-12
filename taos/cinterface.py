@@ -298,6 +298,8 @@ def taos_connect_auth(host=None, user="root", auth="", db=None, port=0):
 
     connection = cast(_libtaos.taos_connect_auth(_host, _user, _auth, _db, _port), c_void_p)
 
+    print("connection: ", connection)
+
     if connection.value is None:
         null_ptr = c_void_p(None)
         errno = taos_errno(null_ptr)
