@@ -50,9 +50,9 @@ def test_insert_data():
     #  {'status': 'succ', 'head': ['affected_rows'], 'column_meta': [['affected_rows', 4, 4]], 'rows': 1, 'data': [[2]]}
     assert resp["rows"] == 1
     if taos.IS_V3:
-        assert resp["column_meta"] == [['affected_rows', "INT", 4]]
+        assert resp["column_meta"] == [["affected_rows", "INT", 4]]
     else:
-        assert resp["column_meta"] == [['affected_rows', 4, 4]]
+        assert resp["column_meta"] == [["affected_rows", 4, 4]]
 
 
 @check_env
@@ -65,16 +65,17 @@ def test_insert_data_with_req_id():
     print("\n=====================create table resp================")
     print(resp)
     # {'status': 'succ', 'head': ['affected_rows'], 'column_meta': [['affected_rows', 4, 4]], 'rows': 1, 'data': [[0]]}
-    resp = c.sql("insert into tb2 values (now, -100, -200.3, now+1m) (now+10s, -101, -340.2423424, now+2m)",
-                 req_id=gen_req_id())
+    resp = c.sql(
+        "insert into tb2 values (now, -100, -200.3, now+1m) (now+10s, -101, -340.2423424, now+2m)", req_id=gen_req_id()
+    )
     print("==============insert resp==============")
     print(resp)
     #  {'status': 'succ', 'head': ['affected_rows'], 'column_meta': [['affected_rows', 4, 4]], 'rows': 1, 'data': [[2]]}
     assert resp["rows"] == 1
     if taos.IS_V3:
-        assert resp["column_meta"] == [['affected_rows', "INT", 4]]
+        assert resp["column_meta"] == [["affected_rows", "INT", 4]]
     else:
-        assert resp["column_meta"] == [['affected_rows', 4, 4]]
+        assert resp["column_meta"] == [["affected_rows", 4, 4]]
 
 
 @check_env
