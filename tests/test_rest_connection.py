@@ -14,8 +14,7 @@ load_dotenv()
 @check_env
 def test_fetch_all():
     url = os.environ["TDENGINE_URL"]
-    conn = taosrest.connect(url=url,
-                            password="taosdata")
+    conn = taosrest.connect(url=url, password="taosdata")
     cursor = conn.cursor()
 
     cursor.execute("show databases")
@@ -28,8 +27,7 @@ def test_fetch_all():
 @check_env
 def test_fetch_all_with_req_id():
     url = os.environ["TDENGINE_URL"]
-    conn = taosrest.connect(url=url,
-                            password="taosdata")
+    conn = taosrest.connect(url=url, password="taosdata")
     cursor = conn.cursor()
 
     cursor.execute("show databases", req_id=gen_req_id())
@@ -43,9 +41,7 @@ def test_fetch_all_with_req_id():
 def test_fetch_one():
     url = os.environ["TDENGINE_URL"]
 
-    conn = taosrest.connect(url=url,
-                            user="root",
-                            password="taosdata")
+    conn = taosrest.connect(url=url, user="root", password="taosdata")
     c = conn.cursor()
     c.execute("drop database if exists test")
     c.executemany("create database test")
@@ -67,9 +63,7 @@ def test_fetch_one():
 def test_fetch_one_with_req_id():
     url = os.environ["TDENGINE_URL"]
 
-    conn = taosrest.connect(url=url,
-                            user="root",
-                            password="taosdata")
+    conn = taosrest.connect(url=url, user="root", password="taosdata")
     c = conn.cursor()
     c.execute("drop database if exists test", req_id=gen_req_id())
     c.executemany("create database test", req_id=gen_req_id())
@@ -108,9 +102,7 @@ def test_row_count_with_req_id():
 @check_env
 def test_get_server_info():
     url = os.environ["TDENGINE_URL"]
-    conn = taosrest.connect(url=url,
-                            user="root",
-                            password="taosdata")
+    conn = taosrest.connect(url=url, user="root", password="taosdata")
 
     version: str = conn.server_info
     # 3.0.5.0 or 3.0.6.0.alpha
@@ -137,8 +129,9 @@ def test_execute_with_req_id():
     c.execute("drop database if exists test", req_id=gen_req_id())
     c.execute("create database test", req_id=gen_req_id())
     c.execute("create table test.tb (ts timestamp, c1 int, c2 double)", req_id=gen_req_id())
-    affected_rows = c.execute("insert into test.tb values (now, -100, -200.3) (now+10s, -101, -340.2423424)",
-                              req_id=gen_req_id())
+    affected_rows = c.execute(
+        "insert into test.tb values (now, -100, -200.3) (now+10s, -101, -340.2423424)", req_id=gen_req_id()
+    )
     assert affected_rows == 2
     affected_rows = c.execute("select * from test.tb", req_id=gen_req_id())
     assert affected_rows is None

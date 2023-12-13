@@ -135,14 +135,18 @@ def test_stmt_set_tbname_tag(conn):
         conn.execute("drop database if exists %s" % dbname)
         conn.execute("create database if not exists %s" % dbname)
         conn.select_db(dbname)
-        conn.execute("create table if not exists log(ts timestamp, bo bool, nil tinyint, ti tinyint, si smallint, ii int,\
+        conn.execute(
+            "create table if not exists log(ts timestamp, bo bool, nil tinyint, ti tinyint, si smallint, ii int,\
              bi bigint, tu tinyint unsigned, su smallint unsigned, iu int unsigned, bu bigint unsigned, \
              ff float, dd double, bb binary(100), nn nchar(100), tt timestamp) tags (t1 timestamp, t2 bool,\
              t3 tinyint, t4 tinyint, t5 smallint, t6 int, t7 bigint, t8 tinyint unsigned, t9 smallint unsigned, \
-             t10 int unsigned, t11 bigint unsigned, t12 float, t13 double, t14 binary(100), t15 nchar(100), t16 timestamp)")
+             t10 int unsigned, t11 bigint unsigned, t12 float, t13 double, t14 binary(100), t15 nchar(100), t16 timestamp)"
+        )
 
-        stmt = conn.statement("insert into ? using log tags (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) \
-            values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+        stmt = conn.statement(
+            "insert into ? using log tags (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) \
+            values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+        )
         tags = new_bind_params(16)
         tags[0].timestamp(1626861392589, PrecisionEnum.Milliseconds)
         tags[1].bool(True)
@@ -210,14 +214,18 @@ def test_stmt_null(conn):
         conn.execute("drop database if exists %s" % dbname)
         conn.execute("create database if not exists %s" % dbname)
         conn.select_db(dbname)
-        conn.execute("create table if not exists log(ts timestamp, bo bool, nil tinyint, ti tinyint, si smallint, ii int,\
+        conn.execute(
+            "create table if not exists log(ts timestamp, bo bool, nil tinyint, ti tinyint, si smallint, ii int,\
              bi bigint, tu tinyint unsigned, su smallint unsigned, iu int unsigned, bu bigint unsigned, \
              ff float, dd double, bb binary(100), nn nchar(100), tt timestamp) tags (t1 timestamp, t2 bool,\
              t3 tinyint, t4 tinyint, t5 smallint, t6 int, t7 bigint, t8 tinyint unsigned, t9 smallint unsigned, \
-             t10 int unsigned, t11 bigint unsigned, t12 float, t13 double, t14 binary(100), t15 nchar(100), t16 timestamp)")
+             t10 int unsigned, t11 bigint unsigned, t12 float, t13 double, t14 binary(100), t15 nchar(100), t16 timestamp)"
+        )
 
-        stmt = conn.statement("insert into ? using log tags (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) \
-            values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+        stmt = conn.statement(
+            "insert into ? using log tags (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) \
+            values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+        )
         tags = new_bind_params(16)
         tags[0].timestamp(1626861392589, PrecisionEnum.Milliseconds)
         tags[1].bool(True)
