@@ -65,6 +65,10 @@ python3 -m maturin build --strip && pip3 install ./target/wheels/taos_ws_py-0.3.
 ```bash
 
 pip3 install pytest
+# testcase depends on those packages
+pip3 install pandas sqlalchemy python-dotenv
+
+export TDENGINE_URL=localhost:6041
 
 pytest tests
 
@@ -75,6 +79,10 @@ pytest tests
 ```bash
 
 pip3 install pytest
+# testcase depends on those packages
+pip3 install pandas sqlalchemy python-dotenv
+
+export TDENGINE_URL=localhost:6041
 
 python3 -m pytest tests
 
