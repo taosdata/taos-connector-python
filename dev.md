@@ -38,10 +38,17 @@ poetry install
 poetry run pytest tests
 ```
 
-Run specific test
+Run specific test file
 
 ```
 poetry run pytest tests/test_example.py
+```
+
+Run specific test function
+
+```
+poetry run pytest tests/test_example.py::test_function_example
+```
 ```
 
 Rest api test
