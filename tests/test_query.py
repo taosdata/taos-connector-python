@@ -13,8 +13,8 @@ def test_query():
     conn.execute("create database if not exists test_query_py")
     conn.execute("use test_query_py")
     conn.execute("create table if not exists tb1 (ts timestamp, v int) tags(jt json)")
-    n = conn.execute("insert into tn1 using tb1 tags('{\"name\":\"value\"}') values(now, null) (now + 10s, 1)")
-    n = conn.execute("insert into tn1 using tb1 tags('{\"name\":\"value\"}') values(now, null) (now + 10s, 1)")
+    n = conn.execute('insert into tn1 using tb1 tags(\'{"name":"value"}\') values(now, null) (now + 10s, 1)')
+    n = conn.execute('insert into tn1 using tb1 tags(\'{"name":"value"}\') values(now, null) (now + 10s, 1)')
     print("inserted %d rows" % n)
     result = conn.query("select * from tb1")
     fields = result.fields
@@ -56,8 +56,8 @@ def test_query_with_req_id():
         conn.execute("create database if not exists test_query_py")
         conn.execute("use test_query_py")
         conn.execute("create table if not exists tb1 (ts timestamp, v int) tags(jt json)")
-        n = conn.execute("insert into tn1 using tb1 tags('{\"name\":\"value\"}') values(now, null) (now + 10s, 1)")
-        n = conn.execute("insert into tn1 using tb1 tags('{\"name\":\"value\"}') values(now, null) (now + 10s, 1)")
+        n = conn.execute('insert into tn1 using tb1 tags(\'{"name":"value"}\') values(now, null) (now + 10s, 1)')
+        n = conn.execute('insert into tn1 using tb1 tags(\'{"name":"value"}\') values(now, null) (now + 10s, 1)')
         print("inserted %d rows" % n)
         req_id = utils.gen_req_id()
         result = conn.query("select * from tb1", req_id)
@@ -108,11 +108,16 @@ def test_varbinary():
     conn.execute("create database if not exists test_varbinary_py")
     conn.execute("use test_varbinary_py")
     conn.execute(
-        "create stable if not exists stb1 (ts timestamp, v1 int, v2 varchar(50), v3 varbinary(50)) tags(t1 int)")
-    conn.execute("insert into tb1 using stb1 tags(1) values(now, 1, 'varchar\\x8f4e3e', '\\x8f4e3e') "
-                 "(now + 1s, 2, 'varchar value 2', 'binary value_1')")
-    conn.execute("insert into tb2 using stb1 tags(2) values(now, 1, 'varchar value 3', '\\x8f4e3e') "
-                 "(now + 1s, 2, 'varchar value 4', 'binary value_2')")
+        "create stable if not exists stb1 (ts timestamp, v1 int, v2 varchar(50), v3 varbinary(50)) tags(t1 int)"
+    )
+    conn.execute(
+        "insert into tb1 using stb1 tags(1) values(now, 1, 'varchar\\x8f4e3e', '\\x8f4e3e') "
+        "(now + 1s, 2, 'varchar value 2', 'binary value_1')"
+    )
+    conn.execute(
+        "insert into tb2 using stb1 tags(2) values(now, 1, 'varchar value 3', '\\x8f4e3e') "
+        "(now + 1s, 2, 'varchar value 4', 'binary value_2')"
+    )
     result = conn.query("select * from stb1")
 
     fields = result.fields
@@ -134,11 +139,12 @@ def test_varbinary_with_cursor():
     conn.execute("drop database if exists test_varbinary_py")
     conn.execute("create database if not exists test_varbinary_py")
     conn.execute("use test_varbinary_py")
-    conn.execute('create table t(ts timestamp, c1 int, c2 binary(10), c3 varbinary(32));')
+    conn.execute("create table t(ts timestamp, c1 int, c2 binary(10), c3 varbinary(32));")
     conn.execute(
-        "insert into t values(now, 1, 'aaaa', '\\x8f4e3e')(now+1s, 2, 'bbbb','\\x8f4e3e')(now+2s, 3, 'cccc','\\x8f4e3e')")
+        "insert into t values(now, 1, 'aaaa', '\\x8f4e3e')(now+1s, 2, 'bbbb','\\x8f4e3e')(now+2s, 3, 'cccc','\\x8f4e3e')"
+    )
     # entire columns query
-    cursor.execute(f'''select * from t;''')
+    cursor.execute(f"""select * from t;""")
     res = cursor.fetchall()
     print(res)
 
