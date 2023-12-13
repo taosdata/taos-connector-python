@@ -119,7 +119,7 @@ jobs:
           source $VENV
           export TDENGINE_URL=localhost:6041
           poetry run pip install psutil pandas
-          poetry run pytest -s tests/test_cinterface.py
+          poetry run pytest tests
 
       - name: Build Artifacts
         run: |
