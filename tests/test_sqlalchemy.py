@@ -15,13 +15,8 @@ def test_insert_test_data():
     c = conn.cursor()
     c.execute("drop database if exists test")
     c.execute("create database test")
-    c.execute("create table test.tb "
-              "(ts timestamp, c1 int, c2 double)"
-              )
-    c.execute("insert into test.tb values "
-              "(now, -100, -200.3) "
-              "(now+10s, -101, -340.2423424)"
-              )
+    c.execute("create table test.tb " "(ts timestamp, c1 int, c2 double)")
+    c.execute("insert into test.tb values " "(now, -100, -200.3) " "(now+10s, -101, -340.2423424)")
 
 
 def test_read_from_sqlalchemy_taos():
@@ -31,27 +26,27 @@ def test_read_from_sqlalchemy_taos():
     conn = engine.connect()
     inspection = inspect(engine)
 
-    print('inspection.get_schema_names()', inspection.get_schema_names())
+    print("inspection.get_schema_names()", inspection.get_schema_names())
 
-    print('inspection.has_table', inspection.has_table('test.tb'))
+    print("inspection.has_table", inspection.has_table("test.tb"))
 
     # has_schema
-    print('inspection.has_schema', inspection.dialect.has_schema(conn, 'test'))
+    print("inspection.has_schema", inspection.dialect.has_schema(conn, "test"))
 
     # get_columns
-    print('inspection.get_columns', inspection.get_columns('test.tb'))
+    print("inspection.get_columns", inspection.get_columns("test.tb"))
 
     # get_indexes
-    print('inspection.get_indexes', inspection.get_indexes('test.tb'))
+    print("inspection.get_indexes", inspection.get_indexes("test.tb"))
 
     res = conn.execute("select * from test.tb")
-    print('res', res.fetchall())
+    print("res", res.fetchall())
 
     # import_dbapi
-    print('inspection.dialect.import_dbapi', inspection.dialect.import_dbapi())
+    print("inspection.dialect.import_dbapi", inspection.dialect.import_dbapi())
 
     # _resolve_type
-    print('inspection.dialect._resolve_type', inspection.dialect._resolve_type('int'))
+    print("inspection.dialect._resolve_type", inspection.dialect._resolve_type("int"))
 
     conn.close()
 
@@ -67,27 +62,27 @@ def test_read_from_sqlalchemy_taosws():
     conn = engine.connect()
     inspection = inspect(engine)
 
-    print('inspection.get_schema_names()', inspection.get_schema_names())
+    print("inspection.get_schema_names()", inspection.get_schema_names())
 
-    print('inspection.has_table', inspection.has_table('test.tb'))
+    print("inspection.has_table", inspection.has_table("test.tb"))
 
     # has_schema
-    print('inspection.has_schema', inspection.dialect.has_schema(conn, 'test'))
+    print("inspection.has_schema", inspection.dialect.has_schema(conn, "test"))
 
     # get_columns
-    print('inspection.get_columns', inspection.get_columns('test.tb'))
+    print("inspection.get_columns", inspection.get_columns("test.tb"))
 
     # get_indexes
-    print('inspection.get_indexes', inspection.get_indexes('test.tb'))
+    print("inspection.get_indexes", inspection.get_indexes("test.tb"))
 
     res = conn.execute("select * from test.tb")
-    print('res', res.fetchall())
+    print("res", res.fetchall())
 
     # import_dbapi
-    print('inspection.dialect.import_dbapi', inspection.dialect.import_dbapi())
+    print("inspection.dialect.import_dbapi", inspection.dialect.import_dbapi())
 
     # _resolve_type
-    print('inspection.dialect._resolve_type', inspection.dialect._resolve_type('int'))
+    print("inspection.dialect._resolve_type", inspection.dialect._resolve_type("int"))
 
     conn.close()
 
@@ -99,7 +94,7 @@ def teardown_module(module):
     conn.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_insert_test_data()
     test_read_from_sqlalchemy_taos()
     test_read_from_sqlalchemy_taosws()

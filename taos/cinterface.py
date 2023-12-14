@@ -88,11 +88,25 @@ def taos_get_client_info():
 IS_V3 = False
 
 if taos_get_client_info().split(".")[0] < "3":
-    from taos.field import CONVERT_FUNC, CONVERT_FUNC_BLOCK, TaosFields, TaosField, set_tz, convert_func, \
-        convert_block_func
+    from taos.field import (
+        CONVERT_FUNC,
+        CONVERT_FUNC_BLOCK,
+        TaosFields,
+        TaosField,
+        set_tz,
+        convert_func,
+        convert_block_func,
+    )
 else:
-    from taos.field import CONVERT_FUNC, CONVERT_FUNC_BLOCK, TaosFields, TaosField, set_tz, convert_func, \
-        convert_block_func
+    from taos.field import (
+        CONVERT_FUNC,
+        CONVERT_FUNC_BLOCK,
+        TaosFields,
+        TaosField,
+        set_tz,
+        convert_func,
+        convert_block_func,
+    )
 
     # use _v3s TaosField overwrite _v2s here, dont change import order
     from taos.field_v3 import CONVERT_FUNC_BLOCK_v3, TaosFields, TaosField, convert_block_func_v3
@@ -1041,10 +1055,10 @@ except Exception as err:
 
 
 def taos_schemaless_insert(
-        connection: c_void_p,
-        lines: Union[List[str], Tuple[str]],
-        protocol: SmlProtocol,
-        precision: SmlPrecision,
+    connection: c_void_p,
+    lines: Union[List[str], Tuple[str]],
+    protocol: SmlProtocol,
+    precision: SmlPrecision,
 ):
     _check_if_supported()
     num_of_lines = len(lines)
@@ -1089,11 +1103,11 @@ except Exception as err:
 
 
 def taos_schemaless_insert_ttl(
-        connection: c_void_p,
-        lines: Union[List[str], Tuple[str]],
-        protocol: SmlProtocol,
-        precision: SmlPrecision,
-        ttl: int,
+    connection: c_void_p,
+    lines: Union[List[str], Tuple[str]],
+    protocol: SmlProtocol,
+    precision: SmlPrecision,
+    ttl: int,
 ):
     _check_if_supported()
     num_of_lines = len(lines)
@@ -1140,12 +1154,12 @@ except Exception as err:
 
 
 def taos_schemaless_insert_ttl_with_reqid(
-        connection: c_void_p,
-        lines: Union[List[str], Tuple[str]],
-        protocol: SmlProtocol,
-        precision: SmlPrecision,
-        ttl: int,
-        req_id: int,
+    connection: c_void_p,
+    lines: Union[List[str], Tuple[str]],
+    protocol: SmlProtocol,
+    precision: SmlPrecision,
+    ttl: int,
+    req_id: int,
 ):
     _check_if_supported()
     num_of_lines = len(lines)
@@ -1222,10 +1236,10 @@ except Exception as err:
 
 
 def taos_schemaless_insert_raw(
-        connection: c_void_p,
-        lines_raw: str,
-        protocol: SmlProtocol,
-        precision: SmlPrecision,
+    connection: c_void_p,
+    lines_raw: str,
+    protocol: SmlProtocol,
+    precision: SmlPrecision,
 ) -> int:
     _check_if_supported()
     length = len(lines_raw)
@@ -1269,11 +1283,11 @@ except Exception as err:
 
 
 def taos_schemaless_insert_raw_with_reqid(
-        connection: c_void_p,
-        lines_raw: str,
-        protocol: SmlProtocol,
-        precision: SmlPrecision,
-        req_id: int,
+    connection: c_void_p,
+    lines_raw: str,
+    protocol: SmlProtocol,
+    precision: SmlPrecision,
+    req_id: int,
 ) -> int:
     _check_if_supported()
     length = len(lines_raw)
@@ -1327,11 +1341,11 @@ except Exception as err:
 
 
 def taos_schemaless_insert_raw_ttl(
-        connection: c_void_p,
-        lines_raw: str,
-        protocol: SmlProtocol,
-        precision: SmlPrecision,
-        ttl: int,
+    connection: c_void_p,
+    lines_raw: str,
+    protocol: SmlProtocol,
+    precision: SmlPrecision,
+    ttl: int,
 ) -> int:
     _check_if_supported()
     length = len(lines_raw)
@@ -1386,12 +1400,12 @@ except Exception as err:
 
 
 def taos_schemaless_insert_raw_ttl_with_reqid(
-        connection: c_void_p,
-        lines_raw: str,
-        protocol: SmlProtocol,
-        precision: SmlPrecision,
-        ttl: int,
-        req_id: int,
+    connection: c_void_p,
+    lines_raw: str,
+    protocol: SmlProtocol,
+    precision: SmlPrecision,
+    ttl: int,
+    req_id: int,
 ) -> int:
     _check_if_supported()
     length = len(lines_raw)
@@ -1835,12 +1849,14 @@ class TmqTopicAssignment(Structure):
 
     def __str__(self):
         return "vg_id: %s, current_offset: %s, begin: %s, end: %s" % (
-            self.vg_id, self.current_offset, self.begin, self.end
+            self.vg_id,
+            self.current_offset,
+            self.begin,
+            self.end,
         )
 
 
 class TmqTopicAssignments(Structure):
-
     def __init__(self, assignments, count):
         self._assignments = []
         if isinstance(assignments, c_void_p):
@@ -1894,23 +1910,26 @@ except Exception as err:
 
 
 def tmq_get_topic_assignment(tmq, topic_name):
-    # type: (c_void_p, str) -> List[()]
+    # type: (c_void_p, str) -> List[Tuple]
 
     _check_if_supported()
     num_of_assignment = c_int()
     assignment = c_void_p()
     assignments = []
-    code = _libtaos.tmq_get_topic_assignment(tmq, c_char_p(topic_name.encode('utf-8')), byref(assignment),
-                                             ctypes.byref(num_of_assignment))
+    code = _libtaos.tmq_get_topic_assignment(
+        tmq, c_char_p(topic_name.encode("utf-8")), byref(assignment), ctypes.byref(num_of_assignment)
+    )
     if code != 0:
-        raise TmqError(msg=f"failed on tmq_get_topic_assignment(), errno={code:X}, errmsg={tmq_err2str(code)}",
-                       errno=code)
+        raise TmqError(
+            msg=f"failed on tmq_get_topic_assignment(), errno={code:X}, errmsg={tmq_err2str(code)}", errno=code
+        )
 
     tmq_assignments = TmqTopicAssignments(assignment, num_of_assignment.value)
 
     for tmq_assignment in tmq_assignments:
         assignments.append(
-            (tmq_assignment.vg_id, tmq_assignment.current_offset, tmq_assignment.begin, tmq_assignment.end))
+            (tmq_assignment.vg_id, tmq_assignment.current_offset, tmq_assignment.begin, tmq_assignment.end)
+        )
 
     _libtaos.tmq_free_assignment(assignment)
     return assignments
@@ -1924,7 +1943,7 @@ except Exception as err:
 
 
 def tmq_offset_seek(tmq, topic_name, vgroup_id, offset):
-    code = _libtaos.tmq_offset_seek(tmq, c_char_p(topic_name.encode('utf-8')), c_int32(vgroup_id), c_int64(offset))
+    code = _libtaos.tmq_offset_seek(tmq, c_char_p(topic_name.encode("utf-8")), c_int32(vgroup_id), c_int64(offset))
     if code != 0:
         raise TmqError(msg=f"failed on tmq_offset_seek(), errno={code:X}, errmsg={tmq_err2str(code)}", errno=code)
 
@@ -1938,7 +1957,7 @@ except Exception as err:
 
 def tmq_committed(tmq, topic, vgroup_id):
     # type: (c_void_p, str, int) -> int
-    res = _libtaos.tmq_committed(tmq, c_char_p(topic.encode('utf-8')), c_int32(vgroup_id))
+    res = _libtaos.tmq_committed(tmq, c_char_p(topic.encode("utf-8")), c_int32(vgroup_id))
     if res < 0:
         raise TmqError(msg=f"failed on tmq_committed(), errno={res:X}, errmsg={tmq_err2str(res)}", errno=res)
     return res
@@ -1953,7 +1972,7 @@ except Exception as err:
 
 def tmq_position(tmq, topic, vgroup_id):
     # type: (c_void_p, str, int) -> int
-    offset = _libtaos.tmq_position(tmq, c_char_p(topic.encode('utf-8')), c_int32(vgroup_id))
+    offset = _libtaos.tmq_position(tmq, c_char_p(topic.encode("utf-8")), c_int32(vgroup_id))
     if offset < 0:
         raise TmqError(msg=f"failed on tmq_position(), errno={offset:X}, errmsg={tmq_err2str(offset)}", errno=offset)
     return offset

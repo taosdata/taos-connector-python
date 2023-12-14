@@ -11,8 +11,10 @@ from random import random
 def conn():
     return taos.connect()
 
+
 def v3(conn):
     exit(0)
+
 
 def test_subscribe(conn):
     # type: (TaosConnection) -> None

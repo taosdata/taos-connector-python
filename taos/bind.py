@@ -389,7 +389,7 @@ class TaosMultiBind(ctypes.Structure):
                 create_string_buffer(b, buffer_length) if b is not None else create_string_buffer(buffer_length)
                 for b in _bytes
             ]
-            buffer_all = b''.join(v[:] for v in buffers)
+            buffer_all = b"".join(v[:] for v in buffers)
             self.buffer = cast(c_char_p(buffer_all), c_void_p)
         else:
             _bytes = [value.encode("utf-8") if value is not None else None for value in values]

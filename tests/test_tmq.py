@@ -14,8 +14,7 @@ class insertThread(threading.Thread):
         print("Start insert data")
         conn = taos.connect()
         conn.select_db("tmq_test")
-        conn.execute(
-            "insert into tb1 values (now, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+        conn.execute("insert into tb1 values (now, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
         print("Finish insert data")
 
 
@@ -65,12 +64,10 @@ def pre_test_tmq(precision: str):
     conn.execute("drop database if exists tmq_test")
     if len(precision) > 0:
         conn.execute(
-            "create database if not exists tmq_test precision '{}' wal_retention_period 3600".format(
-                precision)
+            "create database if not exists tmq_test precision '{}' wal_retention_period 3600".format(precision)
         )
     else:
-        conn.execute(
-            "create database if not exists tmq_test wal_retention_period 3600")
+        conn.execute("create database if not exists tmq_test wal_retention_period 3600")
     conn.select_db("tmq_test")
     conn.execute(
         "create stable if not exists stb1 (ts timestamp, \
@@ -81,8 +78,7 @@ def pre_test_tmq(precision: str):
         t5 bigint unsigned, t6 tinyint, t7 smallint, t8 tinyint, t9 bigint, t10 float, \
         t11 double, t12 timestamp, t13 varchar(8), t14 nchar(8))"
     )
-    conn.execute(
-        "create table if not exists tb1 using stb1 tags (true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1')")
+    conn.execute("create table if not exists tb1 using stb1 tags (true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1')")
     print("========start create topic")
     conn.execute(
         "create topic if not exists topic1 as select ts,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14 from stb1"
@@ -100,9 +96,9 @@ def after_ter_tmq():
 
 
 def test_consumer_with_precision():
-    tmq_consumer_with_precision('ms')
-    tmq_consumer_with_precision('us')
-    tmq_consumer_with_precision('ns')
+    tmq_consumer_with_precision("ms")
+    tmq_consumer_with_precision("us")
+    tmq_consumer_with_precision("ns")
 
 
 def tmq_consumer_with_precision(precision: str):
@@ -110,12 +106,9 @@ def tmq_consumer_with_precision(precision: str):
         return
     pre_test_tmq(precision)
 
-    consumer = Consumer({
-        "group.id": "1",
-        "td.connect.user": "root",
-        "td.connect.pass": "taosdata",
-        "msg.with.table.name": "true"
-    })
+    consumer = Consumer(
+        {"group.id": "1", "td.connect.user": "root", "td.connect.pass": "taosdata", "msg.with.table.name": "true"}
+    )
     consumer.subscribe(["topic1"])
     try:
         sThread = ConsumerThread(consumer)
@@ -139,20 +132,20 @@ def tmq_consumer_with_precision(precision: str):
 def test_tmq_assignment():
     if not IS_V3:
         return
-    pre_test_tmq('')
+    pre_test_tmq("")
     conn = taos.connect()
     conn.select_db("tmq_test")
     conn.execute(
-        "insert into t1 using stb1 tags(true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now-4s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+        "insert into t1 using stb1 tags(true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now-4s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')"
+    )
     conn.execute(
-        "insert into t2 using stb1 tags(false, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now-3s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+        "insert into t2 using stb1 tags(false, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now-3s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')"
+    )
     conn.execute(
-        "insert into t3 using stb1 tags(true, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, '2', '2') values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
+        "insert into t3 using stb1 tags(true, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, '2', '2') values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')"
+    )
 
-    consumer = Consumer({
-        "group.id": "1",
-        "auto.offset.reset": "earliest"
-    })
+    consumer = Consumer({"group.id": "1", "auto.offset.reset": "earliest"})
     consumer.subscribe(["topic1"])
 
     try:
@@ -162,14 +155,15 @@ def test_tmq_assignment():
         consumer.poll(1)
         consumer.poll(1)
 
-        conn.execute(
-            "insert into t1 using stb1 tags(true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
-        conn.execute(
-            "insert into t2 using stb1 tags(false, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
-        conn.execute(
-            "insert into t3 using stb1 tags(true, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, '2', '2') values (now, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
+        table_num = 10
+        data_num = 10
+        for i in range(table_num):
+            for j in range(data_num):
+                conn.execute(
+                    f"insert into t{i} using stb1 tags(true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')"
+                )
 
-        consumer.poll(1)
+        consumer.poll(5)
 
         assignment = consumer.assignment()
         assert assignment[0].offset > 0
@@ -182,22 +176,15 @@ def test_tmq_assignment():
 def test_tmq_seek():
     if not IS_V3:
         return
-    pre_test_tmq('')
+    pre_test_tmq("")
     conn = taos.connect()
     conn.select_db("tmq_test")
-    conn.execute(
-        "insert into tb1 values (now-4s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
-    conn.execute(
-        "insert into tb1 values (now-3s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
-    conn.execute(
-        "insert into tb1 values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
-    conn.execute(
-        "insert into tb1 values (now-1s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
+    conn.execute("insert into tb1 values (now-4s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+    conn.execute("insert into tb1 values (now-3s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+    conn.execute("insert into tb1 values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
+    conn.execute("insert into tb1 values (now-1s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
 
-    consumer = Consumer({
-        "group.id": "1",
-        "auto.offset.reset": "earliest"
-    })
+    consumer = Consumer({"group.id": "1", "auto.offset.reset": "earliest"})
     consumer.subscribe(["topic1"])
     try:
         assignment = consumer.assignment()
@@ -217,7 +204,7 @@ def test_tmq_seek():
 def test_tmq_list_topics():
     if not IS_V3:
         return
-    pre_test_tmq('')
+    pre_test_tmq("")
     consumer = Consumer({"group.id": "1"})
     consumer.subscribe(["topic1"])
     try:
@@ -232,18 +219,14 @@ def test_tmq_list_topics():
 def test_tmq_committed_and_position():
     if not IS_V3:
         return
-    pre_test_tmq('')
+    pre_test_tmq("")
 
     conn = taos.connect()
     conn.select_db("tmq_test")
-    conn.execute(
-        "insert into tb1 values (now-4s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
-    conn.execute(
-        "insert into tb1 values (now-3s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
-    conn.execute(
-        "insert into tb1 values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
-    conn.execute(
-        "insert into tb1 values (now-1s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
+    conn.execute("insert into tb1 values (now-4s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+    conn.execute("insert into tb1 values (now-3s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
+    conn.execute("insert into tb1 values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
+    conn.execute("insert into tb1 values (now-1s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2')")
 
     consumer = Consumer({"group.id": "1"})
     consumer.subscribe(["topic1"])

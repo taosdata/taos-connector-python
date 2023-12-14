@@ -2,26 +2,26 @@ import taos
 from utils import tear_down_database
 
 env = {
-    'user': "root",
-    'password': "taosdata",
-    'host': "localhost",
-    'port': 6030,
+    "user": "root",
+    "password": "taosdata",
+    "host": "localhost",
+    "port": 6030,
 }
 
 
 def make_context(config):
-    db_protocol = config.get('db_protocol', 'taos')
-    db_user = config['user']
-    db_pass = config['password']
-    db_host = config['host']
-    db_port = config['port']
+    db_protocol = config.get("db_protocol", "taos")
+    db_user = config["user"]
+    db_pass = config["password"]
+    db_host = config["host"]
+    db_port = config["port"]
 
     db_url = f"{db_protocol}://{db_user}:{db_pass}@{db_host}:{db_port}"
-    print('dsn: ', db_url)
+    print("dsn: ", db_url)
 
     conn = taos.connect(**config)
 
-    db_name = config.get('database', 'c_cursor')
+    db_name = config.get("database", "c_cursor")
 
     return conn, db_name
 
@@ -49,7 +49,7 @@ def test_cursor():
         {
             "name": "tb3",
             "t1": 3,
-        }
+        },
     ]
 
     res = cur.execute_many(
@@ -60,13 +60,13 @@ def test_cursor():
     assert res == 0
 
     data = [
-        ('2018-10-03 14:38:05.100', 219),
-        ('2018-10-03 14:38:15.300', 218),
-        ('2018-10-03 14:38:16.800', 221),
+        ("2018-10-03 14:38:05.100", 219),
+        ("2018-10-03 14:38:15.300", 218),
+        ("2018-10-03 14:38:16.800", 221),
     ]
 
     for table in create_table_data:
-        table_name = table['name']
+        table_name = table["name"]
 
         res = cur.execute_many(
             f"insert into {table_name} values",
@@ -75,8 +75,8 @@ def test_cursor():
         print(f"r: {res}")
         assert res == 3
 
-    res = cur.execute('select * from stb')
-    print(f'res: {res}')
+    res = cur.execute("select * from stb")
+    print(f"res: {res}")
     data = cur.fetchall()
     column_names = [meta[0] for meta in cur.description]
     print(column_names)

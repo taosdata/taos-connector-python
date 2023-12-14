@@ -97,7 +97,7 @@ ipython_config.py
 #Pipfile.lock
 
 # poetry
-#poetry.lock
+poetry.lock
 
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow
 __pypackages__/
@@ -158,4 +158,3 @@ setup.py
 docs
 *.swp
 *~
-.env
