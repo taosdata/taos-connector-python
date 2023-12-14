@@ -28,7 +28,7 @@ def test_wrong_password():
     try:
         urlopen(f"http://{url}/rest/login/root/taosdata")
     except Exception as e:
-        print(f'error: <{e}>')
+        print(f"error: <{e}>")
         assert "HTTP Error 401: Unauthorized" in str(e), "wrong password should return Unauthorized"
     return
 
@@ -38,9 +38,7 @@ def test_server_version():
     url = "http://localhost:6041/rest/sql"
     data = "select server_version()".encode("ascii")
 
-    headers = {
-        "Authorization": "Taosd " + default_token
-    }
+    headers = {"Authorization": "Taosd " + default_token}
     request = Request(url, data, headers)
     response = urlopen(request)
     resp = json.load(response)
@@ -54,13 +52,11 @@ def test_server_version():
 def test_wrong_sql():
     """
     {'code': 9730, 'desc': 'Table does not exist: notable'}
-     """
+    """
     url = "http://localhost:6041/rest/sql"
     data = "select * from nodb.notable".encode("utf8")
 
-    headers = {
-        "Authorization": "Taosd " + default_token
-    }
+    headers = {"Authorization": "Taosd " + default_token}
     request = Request(url, data, headers)
     response = urlopen(request)
     resp = json.load(response)

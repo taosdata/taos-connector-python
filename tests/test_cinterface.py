@@ -20,9 +20,9 @@ def teardown_module(module):
 
 
 cfg = dict(
-    host='localhost',
-    user='root',
-    password='taosdata',
+    host="localhost",
+    user="root",
+    password="taosdata",
 )
 
 
@@ -35,23 +35,23 @@ def test_taos_connect_auth():
     if not taos.IS_V3:
         return
     taos_connect_auth(
-        host='localhost',
-        user='root',
-        auth='dcc5bed04851fec854c035b2e40263b6',
+        host="localhost",
+        user="root",
+        auth="dcc5bed04851fec854c035b2e40263b6",
     )
 
 
 def test_taos_connect():
     taos_connect(
-        host='localhost',
-        user='root',
-        password='taosdata',
+        host="localhost",
+        user="root",
+        password="taosdata",
     )
 
 
 def test_taos_use_result():
     c = taos_connect(**cfg)
-    sql = 'show databases'
+    sql = "show databases"
     r = taos_query(c, sql)
     try:
         taos_use_result(r)
@@ -61,12 +61,12 @@ def test_taos_use_result():
 
 def test_taos_load_table_info():
     c = taos_connect(**cfg)
-    taos_load_table_info(c, 'information_schema.ins_dnodes')
+    taos_load_table_info(c, "information_schema.ins_dnodes")
 
 
 def test_taos_validate_sql():
     c = taos_connect(**cfg)
-    sql = 'show databases'
+    sql = "show databases"
     taos_validate_sql(c, sql)
 
 
