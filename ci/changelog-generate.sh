@@ -18,8 +18,8 @@ fi
 function part() {
   name=$1
   pattern=$2
-  changes=$(grep -P '\[\w+-\d+\]\s*<('$pattern')>:' ./releaseNotes.tmp | sed -E 's/ *<('$pattern')>//' |sed 's/[ci skip]\s*//' | awk -F: '{print "- " $1 ":" $2}'| sed -E 's/^\s+|\s$//' | sort|uniq)
-  changes2=$(grep -P '^('$pattern')(\(.*\))?:' ./releaseNotes.tmp | sed -E 's/^('$pattern')(\(.*\)):\s*/**\2**: /' | sed -E 's/^('$pattern'):\s*//'|sed -E 's/\[ci skip\]\s*//' | awk '{print "- " $0}' | sed -E 's/^\s+|\s$//' |sort|uniq)
+  changes=$(egrep -E '\[\w+-\d+\]\s*<('$pattern')>:' ./releaseNotes.tmp | sed -E 's/ *<('$pattern')>//' |sed 's/[ci skip]\s*//' | awk -F: '{print "- " $1 ":" $2}'| sed -E 's/^\s+|\s$//' | sort|uniq)
+  changes2=$(egrep -E '^('$pattern')(\(.*\))?:' ./releaseNotes.tmp | sed -E 's/^('$pattern')(\(.*\)):\s*/**\2**: /' | sed -E 's/^('$pattern'):\s*//'|sed -E 's/\[ci skip\]\s*//' | awk '{print "- " $0}' | sed -E 's/^\s+|\s$//' |sort|uniq)
 
   if [ "$changes" != "" ] || [ "$changes2" != "" ]; then
     echo "### $name:"
