@@ -1,4 +1,5 @@
 #!/bin/bash
+set -ex
 ci=$(realpath $(dirname $0))
 newv=$1
 if [ "$newv" = "" ]; then
@@ -6,7 +7,8 @@ if [ "$newv" = "" ]; then
   exit 1
 fi
 cd taos-ws-py
-sed -Ei '3s#^version\s*=.*$#version = "'$newv'"#' Cargo.toml
+sed -E '3s#^version\s*=.*$#version = "'$newv'"#' Cargo.toml > Cargo.toml2
+mv Cargo.toml2 Cargo.toml
 
 sed -n "1,9p" CHANGELOG.md > CHANGELOG.md2
 printf "## v$newv - $(date +%F)\n\n" >> CHANGELOG.md2
