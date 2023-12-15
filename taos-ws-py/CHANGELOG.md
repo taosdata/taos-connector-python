@@ -57,6 +57,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.3.2 - 2023-12-15
 
+### Features:
+
+- **(ws-py)**:  support RUST_LOG
+
+### Bug Fixes:
+
+-  add decorator
+-  changelog
+-  reformat lib
+-  test case
+
+### Enhancements:
+
+-  update taos version
+- **(ws-py)**:  update taos version
+
+### Documents:
+
+-  add set env cmd
+-  update build cmd
+-  update build version
+
+## v0.3.2 - 2023-12-15
+
 ## v0.3.1 - 2023-10-08
 
 ### Bug Fixes:

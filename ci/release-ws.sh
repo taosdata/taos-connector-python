@@ -7,7 +7,7 @@ if [ "$newv" = "" ]; then
   exit 1
 fi
 cd taos-ws-py
-sed -E '3s#^version\s*=.*$#version = "'$newv'"#' Cargo.toml >> Cargo.toml2
+sed -E '3s#version.*#version = "'$newv'"#' Cargo.toml >> Cargo.toml2
 mv Cargo.toml2 Cargo.toml
 
 sed -n "1,9p" CHANGELOG.md > CHANGELOG.md2
