@@ -1,14 +1,14 @@
 import pytest
-import taosws
+import taos
 from os import unlink
 
 config = [
     {
-        'db_protocol': 'taosws',
+        'db_protocol': 'taos',
         'db_user': "root",
         'db_pass': "taosdata",
-        'db_host': "td-1",
-        'db_port': 6041,
+        'db_host': "localhost",
+        'db_port': 6030,
         'db_name': "test",
     }
 ]
@@ -26,8 +26,9 @@ def ctx(request):
 
     db_name = request.param['db_name']
 
-    conn = taosws.connect(db_url)
+    conn = taos.connect(db_url)
     yield conn, db_name
+    conn.execute("DROP TOPIC IF EXISTS %s" % db_name)
     conn.execute("DROP DATABASE IF EXISTS %s" % db_name)
     conn.close()
 
@@ -41,6 +42,7 @@ def test_logfile(ctx):
     except FileNotFoundError:
         pass
     cursor.log("log.txt")
+    cursor.execute("DROP TOPIC IF EXISTS test")
     cursor.execute("DROP DATABASE IF EXISTS test")
     cursor.execute("CREATE DATABASE test")
     cursor.execute("USE test")
@@ -51,11 +53,13 @@ def test_logfile(ctx):
     # rowcount can only get correct value after fetching all data
     all_data = cursor.fetchall()
     assert cursor.rowcount == 1
+    cursor.execute("DROP DATABASE IF EXISTS test")
     cursor.close()
 
     logs = open("log.txt", encoding="utf-8")
     txt = logs.read().splitlines()
     assert txt == [
+        "DROP TOPIC IF EXISTS test;",
         "DROP DATABASE IF EXISTS test;",
         "CREATE DATABASE test;",
         "USE test;",

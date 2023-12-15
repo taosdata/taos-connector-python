@@ -29,6 +29,7 @@ def test_tmq_assignment():
         "td.connect.websocket.scheme": "ws",
         "experimental.snapshot.enable": "false",  # should disable snapshot
         "group.id": "0",
+        "auto.offset.reset": "earliest",
     })
     consumer.subscribe(["topic_1"])
     assignments = consumer.assignment()

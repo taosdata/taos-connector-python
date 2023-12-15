@@ -15,6 +15,7 @@ load_dotenv()
 def test_insert_test_data():
     conn = taos.connect()
     c = conn.cursor()
+    c.execute("drop topic if exists test")
     c.execute("drop database if exists test")
     c.execute("create database test")
     c.execute("create table test.tb (ts timestamp, c1 int, c2 double)")
@@ -40,6 +41,8 @@ def test_pandas_read_from_native_connection():
 
 @check_env
 def test_pandas_read_from_sqlalchemy_taosrest():
+    # set env SQLALCHEMY_URL if not set in .env
+    os.environ["SQLALCHEMY_URL"] = "taosrest://root:taosdata@localhost:6041"
     url = os.environ["SQLALCHEMY_URL"]  # "taosrest://root:taosdata@vm95:6061"
     engine = create_engine(url)
     conn = engine.connect()

@@ -29,34 +29,41 @@ telnet_data = [
 
 def test_schemaless():
     taos_conn = taos.connect()
-    taos_conn.execute("drop database if exists test")
-    taos_conn.execute("create database if not exists test")
+    taos_conn.execute("drop database if exists test_sml")
+    taos_conn.execute("create database if not exists test_sml")
 
-    conn = taosws.connect('taosws://root:taosdata@localhost:6041/test')
+    conn = taosws.connect("taosws://root:taosdata@localhost:6041/test_sml")
 
-    conn.schemaless_insert(lines=line_data,
-                           protocol=PySchemalessProtocol.Line,
-                           precision=PySchemalessPrecision.Millisecond,
-                           ttl=0,
-                           req_id=123)
-    conn.schemaless_insert(lines=json_data,
-                           protocol=PySchemalessProtocol.Json,
-                           precision=PySchemalessPrecision.Millisecond,
-                           ttl=0,
-                           req_id=123)
-    conn.schemaless_insert(lines=telnet_data,
-                           protocol=PySchemalessProtocol.Telnet,
-                           precision=PySchemalessPrecision.Millisecond,
-                           ttl=0,
-                           req_id=123)
+    conn.schemaless_insert(
+        lines=line_data,
+        protocol=PySchemalessProtocol.Line,
+        precision=PySchemalessPrecision.Millisecond,
+        ttl=0,
+        req_id=123,
+    )
+    conn.schemaless_insert(
+        lines=json_data,
+        protocol=PySchemalessProtocol.Json,
+        precision=PySchemalessPrecision.Millisecond,
+        ttl=0,
+        req_id=123,
+    )
+    conn.schemaless_insert(
+        lines=telnet_data,
+        protocol=PySchemalessProtocol.Telnet,
+        precision=PySchemalessPrecision.Millisecond,
+        ttl=0,
+        req_id=123,
+    )
     conn.close()
 
-    res = taos_conn.query("select count(*) from test.measurement")
+    res = taos_conn.query("select count(*) from test_sml.measurement")
     res = res.fetch_all()
     assert res[0][0] == 4
 
+    taos_conn.execute("drop database if exists test_sml")
     taos_conn.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_schemaless()
