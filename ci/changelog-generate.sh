@@ -1,4 +1,5 @@
 #!/bin/bash
+set -ex
 path=$1
 prefix=$2
 last=
