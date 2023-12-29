@@ -218,6 +218,18 @@ impl Consumer {
         Ok(())
     }
 
+    /// return committed
+    pub fn committed(&mut self, topic: &str, vg_id: i32) -> PyResult<i64> {
+        let offset = self.inner()?.committed(topic, vg_id).unwrap();
+        Ok(offset)
+    }
+
+    /// return position
+    pub fn position(&mut self, topic: &str, vg_id: i32) -> PyResult<i64> {
+        let offset = self.inner()?.position(topic, vg_id).unwrap();
+        Ok(offset)
+    }
+
     /// Unsubscribe and close the consumer.
     pub fn close(&mut self) {
         if let Some(consumer) = self.0.take() {
