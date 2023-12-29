@@ -71,11 +71,13 @@ def test_tmq():
     setup()
     conf = {
         "td.connect.websocket.scheme": "ws",
+        "auto.offset.reset": "earliest",
         "group.id": "0",
     }
     consumer = Consumer(conf)
 
     consumer.subscribe(["ws_tmq_meta"])
+    print("subscribed ws_tmq_meta")
 
     while 1:
         message = consumer.poll(timeout=1.0)
@@ -85,6 +87,12 @@ def test_tmq():
             database = message.database()
             print(f"vgroup: {id}, topic: {topic}, database: {database}")
 
+            committed = consumer.committed(topic, id)
+            print(f"committed: {committed}")
+
+            position = consumer.position(topic, id)
+            print(f"position: {position}")
+
             for block in message:
                 nrows = block.nrows()
                 ncols = block.ncols()
@@ -93,7 +101,7 @@ def test_tmq():
                 values = block.fetchall()
                 print(f"nrows: {nrows}, ncols: {ncols}, values: {values}")
                 
-            # consumer.commit(message)
+            consumer.commit(message)
         else:
             break
 
