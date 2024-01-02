@@ -154,7 +154,7 @@ impl Consumer {
             consumer.unsubscribe();
         }
     }
-    
+
     ///
     pub fn poll(&mut self, timeout: Option<f64>) -> PyResult<Option<Message>> {
         let timeout = if let Some(timeout) = timeout {
@@ -182,6 +182,12 @@ impl Consumer {
         self.inner()?
             .commit(message._offset.take().unwrap())
             .unwrap();
+        Ok(())
+    }
+
+    /// Commit a offset
+    pub fn commit_offset(&mut self, topic: &str, vg_id: i32, offset: i64) -> PyResult<()> {
+        self.inner()?.commit_offset(topic, vg_id, offset).unwrap();
         Ok(())
     }
 
