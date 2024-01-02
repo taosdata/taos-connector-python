@@ -230,6 +230,12 @@ impl Consumer {
         Ok(offset)
     }
 
+    /// return list of topics
+    pub fn list_topics(&mut self) -> PyResult<Vec<String>> {
+        let topics = self.inner()?.list_topics().unwrap();
+        Ok(topics)
+    }
+
     /// Unsubscribe and close the consumer.
     pub fn close(&mut self) {
         if let Some(consumer) = self.0.take() {
