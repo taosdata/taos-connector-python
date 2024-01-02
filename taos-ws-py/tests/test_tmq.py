@@ -105,6 +105,14 @@ def test_tmq():
         else:
             break
 
+    assignments = consumer.assignment()
+    print(f"assignments: {assignments}")
+    for assignment in assignments:
+        print(assignment.topic())
+        print(assignment.assignments())
+        for assign in assignment.assignments():
+            print(f"vg_id: {assign.vg_id()}, offset: {assign.offset()}, begin: {assign.begin()}, end: {assign.end()}")
+
     consumer.unsubscribe()
 
 
