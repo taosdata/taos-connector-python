@@ -155,6 +155,12 @@ impl Consumer {
         }
     }
 
+    /// return list of topics
+    pub fn list_topics(&mut self) -> PyResult<Vec<String>> {
+        let topics = self.inner()?.list_topics().unwrap();
+        Ok(topics)
+    }
+
     ///
     pub fn poll(&mut self, timeout: Option<f64>) -> PyResult<Option<Message>> {
         let timeout = if let Some(timeout) = timeout {
@@ -234,12 +240,6 @@ impl Consumer {
     pub fn position(&mut self, topic: &str, vg_id: i32) -> PyResult<i64> {
         let offset = self.inner()?.position(topic, vg_id).unwrap();
         Ok(offset)
-    }
-
-    /// return list of topics
-    pub fn list_topics(&mut self) -> PyResult<Vec<String>> {
-        let topics = self.inner()?.list_topics().unwrap();
-        Ok(topics)
     }
 
     /// Unsubscribe and close the consumer.
