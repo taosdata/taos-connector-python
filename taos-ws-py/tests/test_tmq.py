@@ -113,6 +113,17 @@ def test_tmq():
         for assign in assignment.assignments():
             print(f"vg_id: {assign.vg_id()}, offset: {assign.offset()}, begin: {assign.begin()}, end: {assign.end()}")
 
+            committed = consumer.committed(assignment.topic(), assign.vg_id())
+            position = consumer.position(assignment.topic(), assign.vg_id())
+            print(f"committed: {committed}, position: {position}")
+
+            consumer.seek(assignment.topic(), assign.vg_id(), assign.begin())
+
+            committed = consumer.committed(assignment.topic(), assign.vg_id())
+            position = consumer.position(assignment.topic(), assign.vg_id())
+            print(f"after seek committed: {committed}, position: {position}")
+
+
     consumer.unsubscribe()
 
 
