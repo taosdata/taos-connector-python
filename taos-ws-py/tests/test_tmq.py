@@ -123,6 +123,8 @@ def test_tmq():
             position = consumer.position(assignment.topic(), assign.vg_id())
             print(f"after seek committed: {committed}, position: {position}")
 
+    topics = consumer.list_topics()
+    print(f"list topics: {topics}")
 
     consumer.unsubscribe()
 
