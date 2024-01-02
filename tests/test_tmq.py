@@ -153,7 +153,8 @@ def test_tmq_assignment():
         assert assignment[0].offset == 0
 
         consumer.poll(1)
-        consumer.poll(1)
+        message = consumer.poll(1)
+        consumer.commit(message)
 
         table_num = 10
         data_num = 10
@@ -163,7 +164,8 @@ def test_tmq_assignment():
                     f"insert into t{i} using stb1 tags(true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')"
                 )
 
-        consumer.poll(5)
+        message = consumer.poll(5)
+        consumer.commit(message)
 
         assignment = consumer.assignment()
         assert assignment[0].offset > 0
