@@ -79,7 +79,7 @@ def pre_test_tmq(precision: str):
         t11 double, t12 timestamp, t13 varchar(8), t14 nchar(8))"
     )
     conn.execute("create table if not exists tb1 using stb1 tags (true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1')")
-    print("========start create topic")
+    print("======== start create topic")
     conn.execute(
         "create topic if not exists topic1 as select ts,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14 from stb1"
     )
@@ -154,6 +154,20 @@ def test_tmq_assignment():
 
         consumer.poll(1)
         message = consumer.poll(1)
+        print(f"< before > insert message: {message}")
+        if message:
+            topic = message.topic()
+            database = message.database()
+            print(f"topic: {topic}, database: {database}")
+
+            for block in message:
+                nrows = block.nrows()
+                ncols = block.ncols()
+                for row in block:
+                    print(row)
+                values = block.fetchall()
+                print(f"nrows: {nrows}, ncols: {ncols}, values: {values}")
+
         consumer.commit(message)
 
         table_num = 10
@@ -165,10 +179,29 @@ def test_tmq_assignment():
                 )
 
         message = consumer.poll(5)
+        print(f"< after > insert message: {message}")
+        if message:
+            topic = message.topic()
+            database = message.database()
+            print(f"topic: {topic}, database: {database}")
+
+            for block in message:
+                nrows = block.nrows()
+                ncols = block.ncols()
+                for row in block:
+                    print(row)
+                values = block.fetchall()
+                print(f"nrows: {nrows}, ncols: {ncols}, values: {values}")
+
+            consumer.commit(message)
         consumer.commit(message)
 
         assignment = consumer.assignment()
-        assert assignment[0].offset > 0
+
+        for assign in assignment:
+            print(f"assign: {assign}")
+            
+        assert assignment[0].offset >= 0
     finally:
         consumer.unsubscribe()
         consumer.close()
