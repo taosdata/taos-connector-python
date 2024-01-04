@@ -9,8 +9,7 @@ on:
       - main
 
 jobs:
-  test:
-    name: "Test on macOS"
+  build:
     runs-on: macos-12
     steps:
       - name: Checkout
@@ -118,6 +117,10 @@ jobs:
       #----------------------------------------------
       #              run test suite
       #----------------------------------------------
+  test:
+    runs-on: macos-12
+    needs: build
+    steps:
       - name: Test
         run: |
           export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
