@@ -57,6 +57,11 @@ jobs:
           make -j4 && make install
           cd ../../
 
+      - name: Copy taos.cfg
+        run: |
+          sudo mkdir -p /etc/taos
+          sudo cp ./.github/workflows/taos.cfg /etc/taos/taos.cfg
+
       - name: Start TDengine
         run: |
           export C_INCLUDE_PATH=$PWD/TDengine/build/build/include
