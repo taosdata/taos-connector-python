@@ -46,7 +46,7 @@ pip3 install maturin
 
 ```bash
 
-maturin build --strip && pip3 install ./target/wheels/taos_ws_py-0.3.1-cp37-abi3-macosx_10_7_x86_64.whl --force-reinstall
+maturin build --strip && pip3 install ./target/wheels/taos_ws_py-0.3.2-cp37-abi3-macosx_10_7_x86_64.whl --force-reinstall
 
 ```
 
@@ -54,7 +54,7 @@ maturin build --strip && pip3 install ./target/wheels/taos_ws_py-0.3.1-cp37-abi3
 
 ```bash
 
-python3 -m maturin build --strip && pip3 install ./target/wheels/taos_ws_py-0.3.1-cp37-abi3-manylinux_2_31_x86_64.whl --force-reinstall
+python3 -m maturin build --strip && pip3 install ./target/wheels/taos_ws_py-0.3.2-cp37-abi3-manylinux_2_31_x86_64.whl --force-reinstall
 
 ```
 

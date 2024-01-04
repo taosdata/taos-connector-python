@@ -154,7 +154,13 @@ impl Consumer {
             consumer.unsubscribe();
         }
     }
-    
+
+    /// return list of topics
+    pub fn list_topics(&mut self) -> PyResult<Vec<String>> {
+        let topics = self.inner()?.list_topics().unwrap();
+        Ok(topics)
+    }
+
     ///
     pub fn poll(&mut self, timeout: Option<f64>) -> PyResult<Option<Message>> {
         let timeout = if let Some(timeout) = timeout {
@@ -182,6 +188,12 @@ impl Consumer {
         self.inner()?
             .commit(message._offset.take().unwrap())
             .unwrap();
+        Ok(())
+    }
+
+    /// Commit a offset
+    pub fn commit_offset(&mut self, topic: &str, vg_id: i32, offset: i64) -> PyResult<()> {
+        self.inner()?.commit_offset(topic, vg_id, offset).unwrap();
         Ok(())
     }
 
@@ -216,6 +228,18 @@ impl Consumer {
     pub fn seek(&mut self, topic: &str, vg_id: i32, offset: i64) -> PyResult<()> {
         self.inner()?.offset_seek(topic, vg_id, offset).unwrap();
         Ok(())
+    }
+
+    /// return committed
+    pub fn committed(&mut self, topic: &str, vg_id: i32) -> PyResult<i64> {
+        let offset = self.inner()?.committed(topic, vg_id).unwrap();
+        Ok(offset)
+    }
+
+    /// return position
+    pub fn position(&mut self, topic: &str, vg_id: i32) -> PyResult<i64> {
+        let offset = self.inner()?.position(topic, vg_id).unwrap();
+        Ok(offset)
     }
 
     /// Unsubscribe and close the consumer.

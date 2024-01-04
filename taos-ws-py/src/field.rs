@@ -23,6 +23,7 @@ impl From<&Field> for TaosField {
 }
 
 impl TaosField {
+    #[allow(dead_code)]
     fn new(inner: &Field) -> Self {
         Self {
             _inner: inner.clone(),
