@@ -74,6 +74,10 @@ jobs:
           
           sleep 1
 
+  test:
+    runs-on: macos-12
+    needs: build
+    steps:
       - name: Cache Poetry
         id: cache-poetry
         uses: actions/cache@v2.1.5
@@ -117,10 +121,6 @@ jobs:
       #----------------------------------------------
       #              run test suite
       #----------------------------------------------
-  test:
-    runs-on: macos-12
-    needs: build
-    steps:
       - name: Test
         run: |
           export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
