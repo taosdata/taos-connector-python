@@ -24,7 +24,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Set up Go
         if: steps.changed-files-specific.outputs.any_changed == 'true'
@@ -37,8 +37,8 @@ jobs:
         id: determine-branch
         with:
           cond: ${{ github.base_ref == 'main' }}
-          if_true: 'ver-3.2.2.1'
-          if_false: '3.0'
+          if_true: "ver-3.2.2.1"
+          if_false: "3.0"
 
       - name: Checkout tdengine
         uses: actions/checkout@v2
@@ -65,19 +65,22 @@ jobs:
         run: |
           export C_INCLUDE_PATH=$PWD/TDengine/build/build/include
           export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
-          
+
           mkdir -p /tmp/taos/v3/log /tmp/taos/v3/data
           printf "dataDir /tmp/taos/v3/data\nlogDir /tmp/taos/v3/log\ndebugFlag 135\n" |sudo tee /etc/taos/taos.cfg
 
           TAOS_SUPPORT_VNODES=256 taosd &
           taosadapter &
-          
+
           sleep 1
 
   test:
     runs-on: macos-12
     needs: build
     steps:
+      - name: Checkout Connector
+        uses: actions/checkout@v3
+
       - name: Cache Poetry
         id: cache-poetry
         uses: actions/cache@v2.1.5
@@ -117,6 +120,16 @@ jobs:
       #----------------------------------------------
       - name: Install library
         run: poetry install --no-interaction
+
+      - name: Start TDengine
+        run: |
+          export C_INCLUDE_PATH=$PWD/TDengine/build/build/include
+          export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
+
+          taosd &
+          taosadapter &
+
+          sleep 1
 
       #----------------------------------------------
       #              run test suite
