@@ -34,25 +34,6 @@ def setup():
             254, 65534, 1, 1)",
         "create table tb3 using stb2 tags( NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)",
         "create table `table` (ts timestamp, v int)",
-        "alter table stb1 add column new1 bool",
-        "alter table stb1 add column new2 tinyint",
-        "alter table stb1 add column new10 nchar(16)",
-        "alter table stb1 modify column new10 nchar(32)",
-        "alter table stb1 drop column new10",
-        "alter table stb1 drop column new2",
-        "alter table stb1 drop column new1",
-        "alter table `stb2` add tag new1 bool",
-        "alter table `stb2` rename tag new1 new1_new",
-        "alter table `stb2` modify tag t10 nchar(32)",
-        "alter table `stb2` drop tag new1_new",
-        "alter table `table` add column new1 bool",
-        "alter table `table` add column new2 tinyint",
-        "alter table `table` add column new10 nchar(16)",
-        "alter table `table` modify column new10 nchar(32)",
-        "alter table `table` rename column new10 new10_new",
-        "alter table `table` drop column new10_new",
-        "alter table `table` drop column new2",
-        "alter table `table` drop column new1",
     ]
     for statement in statements:
         # print(statement)
@@ -80,10 +61,10 @@ def test_tmq():
             print(f"vgroup: {id}, topic: {topic}, database: {database}")
 
             committed = consumer.committed(topic, id)
-            print(f"committed: {committed}")
+            assert committed >= 0
 
             position = consumer.position(topic, id)
-            print(f"position: {position}")
+            assert position >= 0
 
             for block in message:
                 nrows = block.nrows()
