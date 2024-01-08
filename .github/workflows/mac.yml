@@ -110,24 +110,6 @@ jobs:
           EOF
           tar -zcvf server.tar.gz ./release
 
-      - name: Copy taos.cfg
-        run: |
-          sudo mkdir -p /etc/taos
-          sudo cp ./.github/workflows/taos.cfg /etc/taos/taos.cfg
-
-      - name: Start TDengine
-        run: |
-          export C_INCLUDE_PATH=$PWD/TDengine/build/build/include
-          export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
-
-          mkdir -p /tmp/taos/v3/log /tmp/taos/v3/data
-          printf "dataDir /tmp/taos/v3/data\nlogDir /tmp/taos/v3/log\ndebugFlag 135\n" |sudo tee /etc/taos/taos.cfg
-
-          TAOS_SUPPORT_VNODES=256 taosd &
-          taosadapter &
-
-          sleep 1
-
   test:
     runs-on: macos-12
     needs: build
