@@ -24,7 +24,7 @@ jobs:
       - name: Check if file changes would trigger a rebuild
         if: "!startsWith(github.ref, 'refs/tags/taos-ws-py')"
         id: rebuild
-        uses: tj-actions/changed-files@v35
+        uses: tj-actions/changed-files@v41
         with:
           files: |
             .github/workflows/taos-ws-py.yml
