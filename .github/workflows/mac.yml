@@ -206,6 +206,8 @@ jobs:
           export C_INCLUDE_PATH=$PWD/TDengine/build/build/include
           export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
 
+          mkdir -p /tmp/taos/v3/log /tmp/taos/v3/data
+
           taosd &
           taosadapter &
 
