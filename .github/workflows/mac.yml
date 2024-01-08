@@ -7,6 +7,12 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      tdengine_branch:
+        description: 'TDengine branch'
+        required: true
+        type: string
 
 jobs:
   build:
@@ -36,7 +42,7 @@ jobs:
         with:
           repository: "taosdata/TDengine"
           path: "TDengine"
-          ref: ${{ inputs.tbBranch }}
+          ref: ${{ inputs.tdengine_branch }}
 
       - name: get_commit_id
         id: get_commit_id
@@ -66,7 +72,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: server.tar.gz
-          key: ${{ runner.os }}-build-${{ inputs.tbBranch }}-${{ steps.get_commit_id.outputs.commit_id }}
+          key: ${{ runner.os }}-build-${{ inputs.tdengine_branch }}-${{ steps.get_commit_id.outputs.commit_id }}
 
       - name: prepare install
         if: >
@@ -143,9 +149,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: server.tar.gz
-          key: ${{ runner.os }}-build-${{ inputs.tbBranch }}-${{ needs.build.outputs.commit_id }}
+          key: ${{ runner.os }}-build-${{ inputs.tdengine_branch }}-${{ needs.build.outputs.commit_id }}
           restore-keys: |
-            ${{ runner.os }}-build-${{ inputs.tbBranch }}-
+            ${{ runner.os }}-build-${{ inputs.tdengine_branch }}-
 
       - name: prepare install
         run: brew install geos
