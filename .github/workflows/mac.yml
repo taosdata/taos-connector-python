@@ -18,24 +18,24 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: actions/checkout@v3
         with:
-          repository: 'taosdata/TDengine'
-          path: 'TDengine'
+          repository: "taosdata/TDengine"
+          path: "TDengine"
           ref: ${{ github.base_ref }}
 
       - name: checkout TDengine by push
         if: github.event_name == 'push'
         uses: actions/checkout@v3
         with:
-          repository: 'taosdata/TDengine'
-          path: 'TDengine'
+          repository: "taosdata/TDengine"
+          path: "TDengine"
           ref: ${{ github.ref_name }}
 
       - name: checkout TDengine manually
         if: github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v3
         with:
-          repository: 'taosdata/TDengine'
-          path: 'TDengine'
+          repository: "taosdata/TDengine"
+          path: "TDengine"
           ref: ${{ inputs.tbBranch }}
 
       - name: get_commit_id
@@ -96,7 +96,7 @@ jobs:
           mkdir -p ./release
           cp ./TDengine/debug/build/bin/taos ./release/
           cp ./TDengine/debug/build/bin/taosd ./release/
-          cp ./TDengine/include/client/taosadapter ./release/
+          cp ./TDengine/debug/build/bin/taosadapter ./release/
           cp ./TDengine/debug/build/lib/libtaos.3.9.9.9.dylib ./release/
           cp ./TDengine/include/client/taos.h ./release/
           cat >./release/install.sh<<EOF 
@@ -150,7 +150,7 @@ jobs:
       - name: prepare install
         run: brew install geos
 
-      - name: install
+      - name: install TDengine
         run: |
           tar -zxvf server.tar.gz
           cd release && sudo sh install.sh
@@ -166,7 +166,7 @@ jobs:
           key: macos-poetry
 
       #----------------------------------------------
-      #  -----  install & configure poetry  -----
+      # install & configure poetry  
       #----------------------------------------------
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -176,7 +176,7 @@ jobs:
           installer-parallel: true
 
       #----------------------------------------------
-      #       load cached venv if cache exists
+      # load cached venv if cache exists
       #----------------------------------------------
       - name: Load cached venv
         id: cached-poetry-dependencies
@@ -198,7 +198,6 @@ jobs:
       - name: Install library
         run: poetry install --no-interaction
 
-
       - name: Copy taos.cfg
         run: |
           sudo mkdir -p /etc/taos
@@ -217,7 +216,7 @@ jobs:
           sleep 1
 
       #----------------------------------------------
-      #              run test suite
+      # run test suite
       #----------------------------------------------
       - name: Test
         run: |
