@@ -96,13 +96,16 @@ jobs:
           mkdir -p ./release
           cp ./TDengine/debug/build/bin/taos ./release/
           cp ./TDengine/debug/build/bin/taosd ./release/
+          cp ./TDengine/include/client/taosadapter ./release/
           cp ./TDengine/debug/build/lib/libtaos.3.9.9.9.dylib ./release/
           cp ./TDengine/include/client/taos.h ./release/
           cat >./release/install.sh<<EOF 
           chmod +x ./taos
           chmod +x ./taosd
+          chmod +x ./taosadapter
           cp ./taos /usr/local/bin
           cp ./taosd /usr/local/bin
+          cp ./taosadapter /usr/local/bin
           cp ./libtaos.3.9.9.9.dylib /usr/local/lib
           ln -sf /usr/local/lib/libtaos.3.9.9.9.dylib /usr/local/lib/libtaos.1.dylib
           ln -sf /usr/local/lib/libtaos.1.dylib /usr/local/lib/libtaos.dylib
