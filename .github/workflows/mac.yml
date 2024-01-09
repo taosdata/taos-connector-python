@@ -15,7 +15,7 @@ on:
         type: string
 
 jobs:
-  build:
+  build-tdengine:
     runs-on: macos-12
     outputs:
       commit_id: ${{ steps.get_commit_id.outputs.commit_id }}
@@ -119,9 +119,9 @@ jobs:
           EOF
           tar -zcvf server.tar.gz ./release
 
-  test:
+  build-poetry:
     runs-on: macos-12
-    needs: build
+    needs: build-tdengine
     steps:
       - name: get cache server by pr
         if: github.event_name == 'pull_request'
@@ -129,7 +129,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: server.tar.gz
-          key: ${{ runner.os }}-build-${{ github.base_ref }}-${{ needs.build.outputs.commit_id }}
+          key: ${{ runner.os }}-build-${{ github.base_ref }}-${{ needs.build-tdengine.outputs.commit_id }}
           restore-keys: |
             ${{ runner.os }}-build-${{ github.base_ref }}-
 
@@ -139,7 +139,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: server.tar.gz
-          key: ${{ runner.os }}-build-${{ github.ref_name }}-${{ needs.build.outputs.commit_id }}
+          key: ${{ runner.os }}-build-${{ github.ref_name }}-${{ needs.build-tdengine.outputs.commit_id }}
           restore-keys: |
             ${{ runner.os }}-build-${{ github.ref_name }}-
 
@@ -149,7 +149,100 @@ jobs:
         uses: actions/cache@v3
         with:
           path: server.tar.gz
-          key: ${{ runner.os }}-build-${{ inputs.tdengine_branch }}-${{ needs.build.outputs.commit_id }}
+          key: ${{ runner.os }}-build-${{ inputs.tdengine_branch }}-${{ needs.build-tdengine.outputs.commit_id }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ inputs.tdengine_branch }}-
+
+      - name: prepare install
+        run: brew install geos
+
+      - name: install TDengine
+        run: |
+          tar -zxvf server.tar.gz
+          cd release && sudo sh install.sh
+
+      - name: Checkout Connector
+        uses: actions/checkout@v3
+
+      - name: Cache Poetry
+        id: cache-poetry
+        uses: actions/cache@v2.1.5
+        with:
+          path: ~/.poetry
+          key: macos-poetry
+
+      #----------------------------------------------
+      # install & configure poetry  
+      #----------------------------------------------
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+
+      #----------------------------------------------
+      # load cached venv if cache exists
+      #----------------------------------------------
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v2
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+
+      #----------------------------------------------
+      # install dependencies if cache does not exist
+      #----------------------------------------------
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-root
+
+      #----------------------------------------------
+      # install your root project, if required
+      #----------------------------------------------
+      - name: Install library
+        run: poetry install --no-interaction
+
+      #----------------------------------------------
+      # build connector
+      #----------------------------------------------
+
+      - name: Build Artifacts
+        run: |
+          poetry build
+
+  test:
+    runs-on: macos-12
+    needs: build-tdengine
+    steps:
+      - name: get cache server by pr
+        if: github.event_name == 'pull_request'
+        id: get-cache-server-pr
+        uses: actions/cache@v3
+        with:
+          path: server.tar.gz
+          key: ${{ runner.os }}-build-${{ github.base_ref }}-${{ needs.build-tdengine.outputs.commit_id }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ github.base_ref }}-
+
+      - name: get cache server by push
+        if: github.event_name == 'push'
+        id: get-cache-server-push
+        uses: actions/cache@v3
+        with:
+          path: server.tar.gz
+          key: ${{ runner.os }}-build-${{ github.ref_name }}-${{ needs.build-tdengine.outputs.commit_id }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ github.ref_name }}-
+
+      - name: get cache server manually
+        if: github.event_name == 'workflow_dispatch'
+        id: get-cache-server-manually
+        uses: actions/cache@v3
+        with:
+          path: server.tar.gz
+          key: ${{ runner.os }}-build-${{ inputs.tdengine_branch }}-${{ needs.build-tdengine.outputs.commit_id }}
           restore-keys: |
             ${{ runner.os }}-build-${{ inputs.tdengine_branch }}-
 
