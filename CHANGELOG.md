@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.7.13 - 2024-01-26
+
+### Bug Fixes:
+
+-  mem leak
+
+### Enhancements:
+
+-  add api committed, position
+-  add taos.cfg
+-  separate the build and test processe
+-  start tdengine in job
+-  update  cargo taos version
+-  update step
+- **(ws)**:  add tmq commit_offset
+- **(ws)**:  add tmq list_topic
+
+### Documents:
+
+-  update dev cmd
+
 ## v2.7.12 - 2023-09-11
 
 ### Bug Fixes:
