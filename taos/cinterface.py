@@ -1611,6 +1611,7 @@ def tmq_subscribe(tmq, list):
     _check_if_supported()
     res = _libtaos.tmq_subscribe(tmq, list)
     if res != 0:
+        del list
         raise TmqError(msg=f"failed on tmq_subscribe(), errno={res:X}, errmsg={tmq_err2str(res)}", errno=res)
 
 
