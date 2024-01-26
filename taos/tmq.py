@@ -233,6 +233,7 @@ class Consumer:
 
         topic_list = TmqListInner(topics)
         tmq_subscribe(self._tmq, topic_list.ptr)
+        del topic_list
         self._subscribed = True
 
     def unsubscribe(self):
