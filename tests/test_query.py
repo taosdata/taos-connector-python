@@ -108,15 +108,15 @@ def test_varbinary():
     conn.execute("create database if not exists test_varbinary_py")
     conn.execute("use test_varbinary_py")
     conn.execute(
-        "create stable if not exists stb1 (ts timestamp, v1 int, v2 varchar(50), v3 varbinary(50)) tags(t1 int)"
+        "create stable if not exists stb1 (ts timestamp, v1 int, v2 varchar(50), v3 varbinary(50), v4 geometry(512)) tags(t1 int)"
     )
     conn.execute(
-        "insert into tb1 using stb1 tags(1) values(now, 1, 'varchar\\x8f4e3e', '\\x8f4e3e') "
-        "(now + 1s, 2, 'varchar value 2', 'binary value_1')"
+        "insert into tb1 using stb1 tags(1) values(now, 1, 'varchar\\x8f4e3e', '\\x8f4e3e', 'POINT (4.0 8.0)') "
+        "(now + 1s, 2, 'varchar value 2', 'binary value_1', 'POINT (3.0 5.0)')"
     )
     conn.execute(
-        "insert into tb2 using stb1 tags(2) values(now, 1, 'varchar value 3', '\\x8f4e3e') "
-        "(now + 1s, 2, 'varchar value 4', 'binary value_2')"
+        "insert into tb2 using stb1 tags(2) values(now, 1, 'varchar value 3', '\\x8f4e3e', 'LINESTRING (1.000000 1.000000, 2.000000 2.000000, 5.000000 5.000000)') "
+        "(now + 1s, 2, 'varchar value 4', 'binary value_2', 'POLYGON ((3.000000 6.000000, 5.000000 6.000000, 5.000000 8.000000, 3.000000 8.000000, 3.000000 6.000000))')"
     )
     result = conn.query("select * from stb1")
 
