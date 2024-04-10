@@ -374,7 +374,7 @@ class TaosMultiBind(ctypes.Structure):
         self.num = len(values)
         self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
 
-    def _str_to_buffer(self, values, encode = True):
+    def _str_to_buffer(self, values, encode=True):
         self.num = len(values)
         is_null = [1 if v is None else 0 for v in values]
         self.is_null = cast((c_byte * self.num)(*is_null), c_char_p)
@@ -392,7 +392,7 @@ class TaosMultiBind(ctypes.Structure):
             buffer_all = b"".join(v[:] for v in buffers)
             self.buffer = cast(c_char_p(buffer_all), c_void_p)
         else:
-            _bytes = [[]]
+            _bytes = []
             if encode:
                 _bytes = [value.encode("utf-8") if value is not None else None for value in values]
             else:
@@ -539,7 +539,6 @@ class TaosMultiBind(ctypes.Structure):
             values = tuple([values])
         self.buffer_type = FieldType.C_GEOMETRY
         self._str_to_buffer(values, False)
-
 
 
 def new_bind_param():

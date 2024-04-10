@@ -24,12 +24,12 @@ def test_stmt_insert(conn):
         conn.execute(
             "create table if not exists log(ts timestamp, bo bool, nil tinyint, ti tinyint, si smallint, ii int,\
              bi bigint, tu tinyint unsigned, su smallint unsigned, iu int unsigned, bu bigint unsigned, \
-             ff float, dd double, bb binary(100), nn nchar(100), v3 varbinary(50), tt timestamp)",
+             ff float, dd double, bb binary(100), nn nchar(100), tt timestamp, v3 varbinary(50), v4 geometry(512))",
         )
-        # conn.load_table_info("log"), v4 geometry(512)
+        # conn.load_table_info("log"), v4 geometry(512) , v3 varbinary(50)
 
-        stmt = conn.statement("insert into log values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
-        params = new_bind_params(17)
+        stmt = conn.statement("insert into log values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+        params = new_bind_params(18)
         params[0].timestamp(1626861392589, PrecisionEnum.Milliseconds)
         params[1].bool(True)
         params[2].tinyint(None)
@@ -46,12 +46,13 @@ def test_stmt_insert(conn):
         params[13].binary("hello")
         params[14].nchar("stmt")
         params[15].timestamp(1626861392589, PrecisionEnum.Milliseconds)
+
         string_data = "Hello, world!"
         byte_array = bytearray(string_data, 'utf-8')
-        params[16].varbinary([byte_array])
-        # binary_list = [0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        #                0x00, 0x00, 0x00, 0x59, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x59, 0x40]
-        # params[17].geometry([binary_list])
+        params[16].varbinary(byte_array)
+        binary_list = bytearray([0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                       0x00, 0x00, 0x00, 0x59, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x59, 0x40])
+        params[17].geometry(binary_list)
 
         stmt.bind_param(params)
         stmt.execute()
