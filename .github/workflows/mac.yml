@@ -197,7 +197,7 @@ jobs:
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
-          pip wheel --no-cache-dir --use-pep517 "greenlet (==2.0.2)"
+          pip install --upgrade pip setuptools wheel
           poetry install --no-interaction --no-root
 
       #----------------------------------------------
