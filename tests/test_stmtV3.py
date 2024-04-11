@@ -255,16 +255,16 @@ def test_stmt_null():
         conn.execute(
             "create table if not exists log(ts timestamp, bo bool, nil tinyint, ti tinyint, si smallint, ii int,\
              bi bigint, tu tinyint unsigned, su smallint unsigned, iu int unsigned, bu bigint unsigned, \
-             ff float, dd double, bb binary(100), nn nchar(100), tt timestamp) tags (t1 timestamp, t2 bool,\
+             ff float, dd double, bb binary(100), nn nchar(100), tt timestamp, t17 varbinary(50), t18 geometry(512)) tags (t1 timestamp, t2 bool,\
              t3 tinyint, t4 tinyint, t5 smallint, t6 int, t7 bigint, t8 tinyint unsigned, t9 smallint unsigned, \
-             t10 int unsigned, t11 bigint unsigned, t12 float, t13 double, t14 binary(100), t15 nchar(100), t16 timestamp, t17 varbinary(50), t18 geometry(512))"
+             t10 int unsigned, t11 bigint unsigned, t12 float, t13 double, t14 binary(100), t15 nchar(100), t16 timestamp)"
         )
 
         stmt = conn.statement(
             "insert into ? using log tags (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) \
             values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
         )
-        tags = new_bind_params(18)
+        tags = new_bind_params(16)
         tags[0].timestamp(1626861392589, PrecisionEnum.Milliseconds)
         tags[1].bool(True)
         tags[2].tinyint(None)
@@ -282,7 +282,7 @@ def test_stmt_null():
         tags[14].nchar("stmt")
         tags[15].timestamp(1626861392589, PrecisionEnum.Milliseconds)
         stmt.set_tbname_tags("tb1", tags)
-        params = new_multi_binds(16)
+        params = new_multi_binds(18)
         params[0].timestamp([1626861392589, 1626861392590, 1626861392591])
         params[1].bool([None, None, None])
         params[2].tinyint([None, None, None])
