@@ -10,7 +10,7 @@ import pytest
 @pytest.fixture
 def conn():
     # type: () -> taos.TaosConnection
-    return connect(host='192.168.1.98')
+    return connect()
 
 def test_stmt_insert(conn):
     # type: (TaosConnection) -> None
@@ -93,14 +93,14 @@ def test_stmt_insert_multi(conn):
         conn.execute(
             "create table if not exists log(ts timestamp, bo bool, nil tinyint, ti tinyint, si smallint, ii int,\
              bi bigint, tu tinyint unsigned, su smallint unsigned, iu int unsigned, bu bigint unsigned, \
-             ff float, dd double, bb binary(100), nn nchar(100), tt timestamp)",
+             ff float, dd double, bb binary(100), nn nchar(100), tt timestamp, v3 varbinary(50), v4 geometry(512))",
         )
         # conn.load_table_info("log")
 
         start = datetime.now()
-        stmt = conn.statement("insert into log values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        stmt = conn.statement("insert into log values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 
-        params = new_multi_binds(16)
+        params = new_multi_binds(18)
         params[0].timestamp((1626861392589, 1626861392590, 1626861392591))
         params[1].bool((True, None, False))
         params[2].tinyint([-128, -128, None])  # -128 is tinyint null
@@ -117,6 +117,15 @@ def test_stmt_insert_multi(conn):
         params[13].binary(["abc", "dddafadfadfadfadfa", None])
         params[14].nchar(["涛思数据", None, "a long string with 中文字符"])
         params[15].timestamp([None, None, 1626861392591])
+
+        string_data = "Hello, world!"
+        byte_array = bytearray(string_data, 'utf-8')
+        params[16].varbinary([None, byte_array, None])
+
+        binary_list = bytearray([0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                       0x00, 0x00, 0x00, 0x59, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x59, 0x40])
+        params[17].geometry([None, binary_list, None])
+
         stmt.bind_param_batch(params)
         stmt.execute()
         end = datetime.now()
@@ -146,14 +155,14 @@ def test_stmt_set_tbname_tag(conn):
              bi bigint, tu tinyint unsigned, su smallint unsigned, iu int unsigned, bu bigint unsigned, \
              ff float, dd double, bb binary(100), nn nchar(100), tt timestamp) tags (t1 timestamp, t2 bool,\
              t3 tinyint, t4 tinyint, t5 smallint, t6 int, t7 bigint, t8 tinyint unsigned, t9 smallint unsigned, \
-             t10 int unsigned, t11 bigint unsigned, t12 float, t13 double, t14 binary(100), t15 nchar(100), t16 timestamp)"
+             t10 int unsigned, t11 bigint unsigned, t12 float, t13 double, t14 binary(100), t15 nchar(100), t16 timestamp, t17 varbinary(50), t18 geometry(512))"
         )
 
         stmt = conn.statement(
-            "insert into ? using log tags (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) \
+            "insert into ? using log tags (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) \
             values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
         )
-        tags = new_bind_params(16)
+        tags = new_bind_params(18)
         tags[0].timestamp(1626861392589, PrecisionEnum.Milliseconds)
         tags[1].bool(True)
         tags[2].tinyint(None)
@@ -170,6 +179,14 @@ def test_stmt_set_tbname_tag(conn):
         tags[13].binary("hello")
         tags[14].nchar("stmt")
         tags[15].timestamp(1626861392589, PrecisionEnum.Milliseconds)
+
+        string_data = "Hello, world!"
+        byte_array = bytearray(string_data, 'utf-8')
+        tags[16].varbinary(byte_array)
+        binary_list = bytearray([0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                       0x00, 0x00, 0x00, 0x59, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x59, 0x40])
+        tags[17].geometry(binary_list)
+
         stmt.set_tbname_tags("tb1", tags)
         params = new_bind_params(16)
         params[0].timestamp(1626861392589, PrecisionEnum.Milliseconds)
