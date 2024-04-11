@@ -6,12 +6,6 @@ from datetime import datetime
 import taos
 import pytest
 
-
-# @pytest.fixture
-# def conn():
-#     # type: () -> taos.TaosConnection
-#     return connect()
-
 def test_stmt_insert():
     # type: (TaosConnection) -> None
     if not IS_V3:
@@ -245,6 +239,7 @@ def test_stmt_set_tbname_tag():
 def test_stmt_null():
     if not IS_V3:
         return
+
     dbname = "pytest_taos_stmt_null"
 
     try:
@@ -322,7 +317,8 @@ def test_stmt_null():
 
 
 if __name__ == "__main__":
-    test_stmt_insert(connect())
-    test_stmt_insert_multi(connect())
-    test_stmt_set_tbname_tag(connect())
-    test_stmt_null(connect())
+    if IS_V3:
+        test_stmt_insert(connect())
+        test_stmt_insert_multi(connect())
+        test_stmt_set_tbname_tag(connect())
+        test_stmt_null(connect())
