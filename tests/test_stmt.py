@@ -10,7 +10,7 @@ import pytest
 @pytest.fixture
 def conn():
     # type: () -> taos.TaosConnection
-    return connect(host='192.168.1.98')
+    return connect()
 
 def test_stmt_insert(conn):
     # type: (TaosConnection) -> None
