@@ -197,7 +197,6 @@ jobs:
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
-          poetry update greenlet
           poetry install --no-interaction --no-root
 
       #----------------------------------------------
