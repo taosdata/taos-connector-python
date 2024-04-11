@@ -10,7 +10,7 @@ import pytest
 @pytest.fixture
 def conn():
     # type: () -> taos.TaosConnection
-    return connect()
+    return connect(host='192.168.1.98')
 
 def test_stmt_insert(conn):
     # type: (TaosConnection) -> None
@@ -70,6 +70,8 @@ def test_stmt_insert(conn):
         assert row[12] == 10.11
         assert row[13] == "hello"
         assert row[14] == "stmt"
+        assert byte_array == bytearray(row[16])
+        assert binary_list == bytearray(row[17])
 
         conn.execute("drop database if exists %s" % dbname)
         conn.close()
@@ -219,7 +221,8 @@ def test_stmt_set_tbname_tag(conn):
         assert row[12] == 10.11
         assert row[13] == "hello"
         assert row[14] == "stmt"
-
+        assert byte_array == bytearray(row[32])
+        assert binary_list == bytearray(row[33])
         conn.execute("drop database if exists %s" % dbname)
         conn.close()
         print("pass test_stmt_set_tbname_tag")
