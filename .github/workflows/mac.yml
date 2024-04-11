@@ -197,10 +197,7 @@ jobs:
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
-          pip install --upgrade pip
-          pip install --upgrade setuptools
-          pip install --upgrade greenlet
-          pip install --upgrade pip setuptools wheel
+          poetry update greenlet
           poetry install --no-interaction --no-root
 
       #----------------------------------------------
