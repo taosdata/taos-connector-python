@@ -283,6 +283,7 @@ CONVERT_FUNC = {
     FieldType.C_BIGINT_UNSIGNED: _crow_bigint_unsigned_to_python,
     FieldType.C_JSON: _crow_nchar_to_python,
     FieldType.C_VARBINARY: _crow_varbinary_to_python,
+    FieldType.C_GEOMETRY: _crow_varbinary_to_python,
 }
 
 CONVERT_FUNC_BLOCK = {
@@ -302,6 +303,7 @@ CONVERT_FUNC_BLOCK = {
     FieldType.C_BIGINT_UNSIGNED: _crow_bigint_unsigned_to_python,
     FieldType.C_JSON: _crow_nchar_to_python_block,
     FieldType.C_VARBINARY: _crow_varbinary_to_python_block,
+    FieldType.C_GEOMETRY: _crow_varbinary_to_python_block,
 }
 
 

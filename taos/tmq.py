@@ -125,7 +125,7 @@ class Message:
 
                 block_data = ctypes.cast(block, ctypes.POINTER(ctypes.c_void_p))[i]
                 if fields[i]["type"] in (
-                        FieldType.C_VARCHAR, FieldType.C_NCHAR, FieldType.C_JSON, FieldType.C_VARBINARY):
+                        FieldType.C_VARCHAR, FieldType.C_NCHAR, FieldType.C_JSON, FieldType.C_VARBINARY, FieldType.C_GEOMETRY):
                     f = convert_block_func_v3(fields[i]["type"], self.decode_binary)
                     offsets = taos_get_column_data_offset(self.msg, i, num_rows)
                     blocks[i] = f(block_data, [], num_rows, offsets, precision)

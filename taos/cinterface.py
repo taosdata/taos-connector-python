@@ -534,7 +534,7 @@ def taos_fetch_block_v3(result, fields=None, field_count=None, decode_binary=Tru
             raise DatabaseError("Invalid data type returned from database")
         offsets = []
         is_null = []
-        if fields[i]["type"] in (FieldType.C_VARCHAR, FieldType.C_NCHAR, FieldType.C_JSON, FieldType.C_VARBINARY):
+        if fields[i]["type"] in (FieldType.C_VARCHAR, FieldType.C_NCHAR, FieldType.C_JSON, FieldType.C_VARBINARY, FieldType.C_GEOMETRY):
             offsets = taos_get_column_data_offset(result, i, num_of_rows)
             f = convert_block_func_v3(fields[i]["type"], decode_binary=decode_binary)
             blocks[i] = f(data, is_null, num_of_rows, offsets, precision)
