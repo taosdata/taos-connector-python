@@ -114,23 +114,24 @@ class Message:
             block, num_rows = taos_fetch_block_raw(self.msg)
             if num_rows == 0:
                 break
+            block_version = taos_fetch_block_version(self.msg)
             field_count = taos_num_fields(self.msg)
             fields = taos_fetch_fields(self.msg)
             precision = taos_result_precision(self.msg)
 
             blocks = [None] * field_count
             for i in range(len(fields)):
-                if fields[i]["type"] not in CONVERT_FUNC_BLOCK_v3 and fields[i]["type"] not in CONVERT_FUNC_BLOCK:
+                field_type = fields[i]["type"]
+                if field_type not in CONVERT_FUNC_BLOCK_v3 and field_type not in CONVERT_FUNC_BLOCK:
                     raise TmqError("Invalid data type returned from database")
 
                 block_data = ctypes.cast(block, ctypes.POINTER(ctypes.c_void_p))[i]
-                if fields[i]["type"] in (
-                        FieldType.C_VARCHAR, FieldType.C_NCHAR, FieldType.C_JSON, FieldType.C_VARBINARY, FieldType.C_GEOMETRY):
-                    f = convert_block_func_v3(fields[i]["type"], self.decode_binary)
+                if is_var_data_type(field_type):
+                    f = convert_block_func_v3(field_type, self.decode_binary)
                     offsets = taos_get_column_data_offset(self.msg, i, num_rows)
-                    blocks[i] = f(block_data, [], num_rows, offsets, precision)
+                    blocks[i] = f(block_data, num_rows, offsets, block_version)
                 else:
-                    f = convert_block_func(fields[i]["type"], self.decode_binary)
+                    f = convert_block_func(field_type, self.decode_binary)
                     is_null = [taos_is_null(self.msg, j, i) for j in range(num_rows)]
                     blocks[i] = f(block_data, is_null, num_rows, [], precision)
 

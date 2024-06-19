@@ -109,7 +109,7 @@ else:
     )
 
     # use _v3s TaosField overwrite _v2s here, dont change import order
-    from taos.field_v3 import CONVERT_FUNC_BLOCK_v3, TaosFields, TaosField, convert_block_func_v3
+    from taos.field_v3 import (CONVERT_FUNC_BLOCK_v3, TaosFields, TaosField, convert_block_func_v3, is_var_data_type)
     from taos.constants import FieldType
 
     IS_V3 = True
@@ -517,11 +517,25 @@ def taos_get_column_data_offset(result, field, rows):
     return offsets[:rows]
 
 
+try:
+    _libtaos.taos_fetch_block_version.restype = ctypes.c_int
+    _libtaos.taos_fetch_block_version.argtypes = (ctypes.c_void_p,)
+except Exception as err:
+    _UNSUPPORTED["taos_fetch_block_version"] = err
+
+
+def taos_fetch_block_version(result):
+    if "taos_fetch_block_version" in _UNSUPPORTED:
+        return 1
+    return _libtaos.taos_fetch_block_version(result)
+
+
 def taos_fetch_block_v3(result, fields=None, field_count=None, decode_binary=True):
     if fields is None:
         fields = taos_fetch_fields(result)
     if field_count is None:
         field_count = taos_field_count(result)
+    block_version = taos_fetch_block_version(result)
     pblock = ctypes.c_void_p(0)
     num_of_rows = _libtaos.taos_fetch_block(result, ctypes.byref(pblock))
     if num_of_rows == 0:
@@ -529,18 +543,19 @@ def taos_fetch_block_v3(result, fields=None, field_count=None, decode_binary=Tru
     precision = taos_result_precision(result)
     blocks = [None] * field_count
     for i in range(len(fields)):
+        field_type = fields[i]["type"]
         data = ctypes.cast(pblock, ctypes.POINTER(ctypes.c_void_p))[i]
-        if fields[i]["type"] not in CONVERT_FUNC_BLOCK_v3 and fields[i]["type"] not in CONVERT_FUNC_BLOCK:
+        if field_type not in CONVERT_FUNC_BLOCK_v3 and field_type not in CONVERT_FUNC_BLOCK:
             raise DatabaseError("Invalid data type returned from database")
         offsets = []
-        is_null = []
-        if fields[i]["type"] in (FieldType.C_VARCHAR, FieldType.C_NCHAR, FieldType.C_JSON, FieldType.C_VARBINARY, FieldType.C_GEOMETRY):
+
+        if is_var_data_type(field_type):
             offsets = taos_get_column_data_offset(result, i, num_of_rows)
-            f = convert_block_func_v3(fields[i]["type"], decode_binary=decode_binary)
-            blocks[i] = f(data, is_null, num_of_rows, offsets, precision)
+            f = convert_block_func_v3(field_type, decode_binary)
+            blocks[i] = f(data, num_of_rows, offsets, block_version)
         else:
             is_null = [taos_is_null(result, j, i) for j in range(num_of_rows)]
-            f = convert_block_func(fields[i]["type"], decode_binary=decode_binary)
+            f = convert_block_func(field_type, decode_binary=decode_binary)
             blocks[i] = f(data, is_null, num_of_rows, offsets, precision)
 
     return blocks, abs(num_of_rows)
@@ -2013,18 +2028,12 @@ class CTaosInterface(object):
         return taos_connect(host, user, password, db, port)
 
 
-if __name__ == "__main__":
-    cinter = CTaosInterface()
-    conn = cinter.connect()
-    result = cinter.query(conn, "show databases")
-
-    print("Query Affected rows: {}".format(cinter.affected_rows(result)))
-
-    fields = taos_fetch_fields_raw(result)
-
-    data, num_of_rows = taos_fetch_block(result, fields)
-
-    print(data)
-
-    cinter.free_result(result)
-    cinter.close(conn)
+# if __name__ == "__main__":
+    # conn = taos_connect(None, "root", "taosdata", None, 0)
+    # result = taos_query(conn, "show databases")
+    #
+    # data, num_of_rows = taos_fetch_block(result)
+    #
+    # print(data)
+    # taos_free_result(result)
+    # taos_close(conn)

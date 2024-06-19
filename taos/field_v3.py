@@ -6,64 +6,59 @@ from taos.constants import FieldType
 _RTYPE = ctypes.c_uint16
 _RTYPE_SIZE = ctypes.sizeof(_RTYPE)
 
+_RTYPE_32 = ctypes.c_uint32
+_RTYPE_SIZE_32 = ctypes.sizeof(_RTYPE_32)
 
-def _crow_binary_to_python_block_v3(data, is_null, num_of_rows, offsets, precision=FieldType.C_TIMESTAMP_UNKNOWN):
-    """Function to convert C binary row to python row."""
+
+def _crow_var_data_to_python_block_v3(data, num_of_rows, offsets, decode_binary, block_version=1):
     assert offsets is not None
+    rtype = _RTYPE
+    rtype_size = _RTYPE_SIZE
+    if block_version >= 2:
+        rtype = _RTYPE_32
+        rtype_size = _RTYPE_SIZE_32
     res = []
     for i in range(abs(num_of_rows)):
         if offsets[i] == -1:
             res.append(None)
         else:
-            rbyte = _RTYPE.from_address(data + offsets[i]).value
-            chars = (ctypes.c_char * rbyte).from_address(data + offsets[i] + _RTYPE_SIZE).raw.decode("utf-8")
+            rbyte = rtype.from_address(data + offsets[i]).value
+            chars = (ctypes.c_char * rbyte).from_address(data + offsets[i] + rtype_size).raw
+            if decode_binary:
+                chars = chars.decode("utf-8")
             res.append(chars)
     return res
 
 
-def _crow_nchar_to_python_block_v3(data, is_null, num_of_rows, offsets, precision=FieldType.C_TIMESTAMP_UNKNOWN):
-    """Function to convert C nchar row to python row."""
-    assert offsets is not None
-    res = []
-    for i in range(abs(num_of_rows)):
-        if offsets[i] == -1:
-            res.append(None)
-        else:
-            rbyte = _RTYPE.from_address(data + offsets[i]).value
-            chars = (ctypes.c_char * rbyte).from_address(data + offsets[i] + _RTYPE_SIZE).raw.decode("utf-8")
-            res.append(chars)
-    return res
+def _crow_var_data_to_python_block_v3_decode(data, num_of_rows, offsets, block_version=1):
+    return _crow_var_data_to_python_block_v3(data, num_of_rows, offsets, True, block_version)
 
 
-def _crow_varbinary_to_python_block_v3(data, is_null, num_of_rows, offsets, precision=FieldType.C_TIMESTAMP_UNKNOWN):
-    """Function to convert C varbinary row to python row."""
-    assert offsets is not None
-    res = []
-    for i in range(abs(num_of_rows)):
-        if offsets[i] == -1:
-            res.append(None)
-        else:
-            rbyte = _RTYPE.from_address(data + offsets[i]).value
-            chars = (ctypes.c_char * rbyte).from_address(data + offsets[i] + _RTYPE_SIZE).raw
-            res.append(chars)
-    return res
+def _crow_var_data_to_python_block_v3_no_decode(data, num_of_rows, offsets, block_version=1):
+    return _crow_var_data_to_python_block_v3(data, num_of_rows, offsets, False, block_version)
 
 
 def convert_block_func_v3(field_type: FieldType, decode_binary=True):
     """Get convert block func."""
     if (field_type == FieldType.C_VARCHAR or field_type == FieldType.C_BINARY) and not decode_binary:
-        return _crow_varbinary_to_python_block_v3
+        return _crow_var_data_to_python_block_v3_no_decode
     return CONVERT_FUNC_BLOCK_v3[field_type]
 
 
 CONVERT_FUNC_BLOCK_v3 = {
-    FieldType.C_VARCHAR: _crow_binary_to_python_block_v3,
-    FieldType.C_BINARY: _crow_binary_to_python_block_v3,
-    FieldType.C_NCHAR: _crow_nchar_to_python_block_v3,
-    FieldType.C_JSON: _crow_nchar_to_python_block_v3,
-    FieldType.C_VARBINARY: _crow_varbinary_to_python_block_v3,
-    FieldType.C_GEOMETRY: _crow_varbinary_to_python_block_v3,
+    FieldType.C_VARCHAR: _crow_var_data_to_python_block_v3_decode,
+    FieldType.C_BINARY: _crow_var_data_to_python_block_v3_decode,
+    FieldType.C_NCHAR: _crow_var_data_to_python_block_v3_decode,
+    FieldType.C_JSON: _crow_var_data_to_python_block_v3_decode,
+    FieldType.C_VARBINARY: _crow_var_data_to_python_block_v3_no_decode,
+    FieldType.C_GEOMETRY: _crow_var_data_to_python_block_v3_no_decode,
 }
+
+
+def is_var_data_type(field_type: FieldType):
+    """Check if field type is var data type."""
+    return field_type in [FieldType.C_VARCHAR, FieldType.C_BINARY, FieldType.C_JSON, FieldType.C_NCHAR,
+                          FieldType.C_VARBINARY, FieldType.C_GEOMETRY]
 
 
 # Corresponding TAOS_FIELD structure in C
