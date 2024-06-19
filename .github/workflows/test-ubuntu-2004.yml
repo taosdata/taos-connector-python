@@ -116,7 +116,7 @@ jobs:
           #source $VENV
           export TDENGINE_URL=localhost:6041
           curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
-          poetry run pip install psutil pandas pytest-cov
+          poetry run pip install psutil pandas pytest-cov "numpy<2.0.0"
           poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
 
 
@@ -125,7 +125,7 @@ jobs:
           cd examples || ls -l
           pip3 install .. > /dev/null || echo "failed to install taospy from source code"
           pip3 install taos-ws-py > /dev/null || echo "failed to install taos-ws-py"
-          pip3 install pandas sqlalchemy > /dev/null || echo "failed to install pandas"
+          pip3 install pandas "numpy<2.0.0" sqlalchemy > /dev/null || echo "failed to install pandas"
           taosBenchmark -d power -t 10 -n 10 -y
           for i in `find . -name "*.py"   \
             |grep -Ev "cloud|trades|v2|websocket_with_req_id|tmq_consumer|rest_cursor|rest_client.py|import-json|connect_rest_examples|schemaless_insert"`;           \
