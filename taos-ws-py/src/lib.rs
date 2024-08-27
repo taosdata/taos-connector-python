@@ -8,7 +8,7 @@ use taos::taos_query;
 use taos::taos_query::common::{SchemalessPrecision, SchemalessProtocol, SmlDataBuilder};
 use taos::Value::{
     BigInt, Bool, Double, Float, Int, Json, NChar, Null, SmallInt, Timestamp, TinyInt, UBigInt,
-    UInt, USmallInt, UTinyInt, VarBinary, VarChar,
+    UInt, USmallInt, UTinyInt, VarBinary, VarChar, Geometry
 };
 
 use consumer::{Consumer, Message};
@@ -259,6 +259,8 @@ impl TaosResult {
                             BorrowedValue::VarChar(s) => s.into_py(py),
                             BorrowedValue::NChar(v) => v.as_ref().into_py(py),
                             BorrowedValue::Json(j) => std::str::from_utf8(&j).unwrap().into_py(py),
+                            BorrowedValue::VarBinary(v) => v.as_ref().info_py(py),
+                            BorrowedValue::Geometry(v) => v.as_ref().info_py(py),
                             _ => Option::<()>::None.into_py(py),
                         };
                         vec.push(value);
@@ -501,6 +503,10 @@ enum PyColumnType {
     NChar,
     Json,
     VarBinary,
+    Decimal,
+    Blob,
+    MediumBlob,
+    Geometry,
 }
 
 #[pyclass]
@@ -695,6 +701,18 @@ fn var_binary_to_tag(value: Option<Vec<u8>>) -> PyTagView {
         },
         None => PyTagView {
             _inner: Null(Ty::VarBinary),
+        },
+    }
+}
+
+#[pyfunction]
+fn geometry_to_tag(value: Option<Vec<u8>>) -> PyTagView {
+    match value {
+        Some(value) => PyTagView {
+            _inner: Geometry(value),
+        },
+        None => PyTagView {
+            _inner: Null(Ty::Geometry),
         },
     }
 }
