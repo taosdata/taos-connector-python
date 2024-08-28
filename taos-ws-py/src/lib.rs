@@ -869,6 +869,30 @@ fn binary_to_column(values: Vec<Option<String>>) -> PyColumnView {
     }
 }
 
+#[pyfunction]
+fn varbinary_to_column(values: Vec<Option<&[u8]>>) -> PyColumnView {
+    PyColumnView {
+        _inner: ColumnView::from_bytes::<
+            &[u8],
+            Option<&[u8]>,
+            std::vec::IntoIter<Option<&[u8]>>,
+            Vec<Option<&[u8]>>,
+        >(values),
+    }
+}
+
+#[pyfunction]
+fn geometry_to_column(values: Vec<Option<&[u8]>>) -> PyColumnView {
+    PyColumnView {
+        _inner: ColumnView::from_geobytes::<
+            &[u8],
+            Option<&[u8]>,
+            std::vec::IntoIter<Option<&[u8]>>,
+            Vec<Option<&[u8]>>,
+        >(values),
+    }
+}
+
 #[pymodule]
 fn taosws(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     if std::env::var("RUST_LOG").is_ok() {
@@ -905,6 +929,7 @@ fn taosws(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(u_big_int_to_tag, m)?)?;
     m.add_function(wrap_pyfunction!(json_to_tag, m)?)?;
     m.add_function(wrap_pyfunction!(var_binary_to_tag, m)?)?;
+    m.add_function(wrap_pyfunction!(var_geometry_to_tag, m)?)?;
 
     m.add_function(wrap_pyfunction!(millis_timestamps_to_column, m)?)?;
     m.add_function(wrap_pyfunction!(micros_timestamps_to_column, m)?)?;
@@ -924,6 +949,8 @@ fn taosws(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(nchar_to_column, m)?)?;
     m.add_function(wrap_pyfunction!(json_to_column, m)?)?;
     m.add_function(wrap_pyfunction!(binary_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(varbinary_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(geometry_to_column, m)?)?;
 
     m.add("apilevel", API_LEVEL)?;
     m.add("threadsafety", THREAD_SAFETY)?;

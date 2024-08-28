@@ -14,6 +14,7 @@ anyhow = "1"
 log = "0.4"
 serde_json = "1"
 shadow-rs = "0.20.0"
+git = "git@github.com:taosdata/taos-connector-rust.git"
 taos = { version = "0.12.3", default-features = false, features = ["optin", "ws-rustls"] }
 pretty_env_logger = "0.5"
 chrono = "0.4"
