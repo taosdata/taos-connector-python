@@ -694,10 +694,10 @@ fn json_to_tag(value: Option<String>) -> PyTagView {
 }
 
 #[pyfunction]
-fn var_binary_to_tag(value: Option<Bytes>) -> PyTagView {
+fn var_binary_to_tag(value: Option<Vec<u8>>) -> PyTagView {
     match value {
         Some(value) => PyTagView {
-            _inner: VarBinary(value),
+            _inner: VarBinary(value.into()),
         },
         None => PyTagView {
             _inner: Null(Ty::VarBinary),
@@ -706,10 +706,10 @@ fn var_binary_to_tag(value: Option<Bytes>) -> PyTagView {
 }
 
 #[pyfunction]
-fn geometry_to_tag(value: Option<Bytes>) -> PyTagView {
+fn geometry_to_tag(value: Option<Vec<u8>>) -> PyTagView {
     match value {
         Some(value) => PyTagView {
-            _inner: Geometry(value),
+            _inner: Geometry(value.into()),
         },
         None => PyTagView {
             _inner: Null(Ty::Geometry),
