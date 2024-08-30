@@ -62,6 +62,9 @@ jobs:
           target: x86_64
           working-directory: taos-ws-py
           args: --release --strip
+      - name: Install Homebrew  
+        run: |  
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"  
       - name: Install gettext  
         run: |
           brew install gettext 
