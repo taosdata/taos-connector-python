@@ -10,7 +10,7 @@ on:
     branches:
       - main
 env:
-  PYTHON_VERSION: "3.7" # to build abi3 wheels
+  PYTHON_VERSION: "3.10" # to build abi3 wheels
 
 jobs:
   rebuild:
