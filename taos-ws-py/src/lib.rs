@@ -870,25 +870,25 @@ fn binary_to_column(values: Vec<Option<String>>) -> PyColumnView {
 }
 
 #[pyfunction]
-fn varbinary_to_column(values: Vec<Option<&[u8]>>) -> PyColumnView {
+fn varbinary_to_column(values: Vec<Option<Vec<u8>>>) -> PyColumnView {
     PyColumnView {
         _inner: ColumnView::from_bytes::<
-            &[u8],
-            Option<&[u8]>,
-            std::vec::IntoIter<Option<&[u8]>>,
-            Vec<Option<&[u8]>>,
+            Vec<u8>,
+            Option<Vec<u8>>,
+            std::vec::IntoIter<Option<Vec<u8>>>,
+            Vec<Option<Vec<u8>>>,
         >(values),
     }
 }
 
 #[pyfunction]
-fn geometry_to_column(values: Vec<Option<&[u8]>>) -> PyColumnView {
+fn geometry_to_column(values: Vec<Option<Vec<u8>>>) -> PyColumnView {
     PyColumnView {
         _inner: ColumnView::from_geobytes::<
-            &[u8],
-            Option<&[u8]>,
-            std::vec::IntoIter<Option<&[u8]>>,
-            Vec<Option<&[u8]>>,
+            Vec<u8>,
+            Option<Vec<u8>>,
+            std::vec::IntoIter<Option<Vec<u8>>>,
+            Vec<Option<Vec<u8>>>,
         >(values),
     }
 }
