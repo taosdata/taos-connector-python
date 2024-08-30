@@ -65,6 +65,9 @@ jobs:
       - name: Install gettext  
         run: |
           brew install gettext 
+      - name: Set DYLD_LIBRARY_PATH  
+        run: |
+          echo "export DYLD_LIBRARY_PATH=/usr/local/opt/gettext/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
       - name: Install built wheel - x86_64
         run: |
           pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
