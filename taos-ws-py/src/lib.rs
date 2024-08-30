@@ -694,7 +694,7 @@ fn json_to_tag(value: Option<String>) -> PyTagView {
 }
 
 #[pyfunction]
-fn var_binary_to_tag(value: Option<Vec<u8>>) -> PyTagView {
+fn varbinary_to_tag(value: Option<Vec<u8>>) -> PyTagView {
     match value {
         Some(value) => PyTagView {
             _inner: VarBinary(value.into()),
@@ -928,7 +928,7 @@ fn taosws(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(u_int_to_tag, m)?)?;
     m.add_function(wrap_pyfunction!(u_big_int_to_tag, m)?)?;
     m.add_function(wrap_pyfunction!(json_to_tag, m)?)?;
-    m.add_function(wrap_pyfunction!(var_binary_to_tag, m)?)?;
+    m.add_function(wrap_pyfunction!(varbinary_to_tag, m)?)?;
     m.add_function(wrap_pyfunction!(geometry_to_tag, m)?)?;
 
     m.add_function(wrap_pyfunction!(millis_timestamps_to_column, m)?)?;

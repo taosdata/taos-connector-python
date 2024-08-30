@@ -9,7 +9,7 @@ config = [
         'db_pass': "taosdata",
         'db_host': "localhost",
         'db_port': 6041,
-        'db_name': "t_ws",
+        'db_name': "t_ws1",
     }
 ]
 
@@ -39,6 +39,7 @@ def test_execute(ctx):
     cur = ws.cursor()
     res = cur.execute('show dnodes', 1)
     print(f'res: {res}')
+    db = 'test11'
     cur.execute("drop database if exists {}", db)
     cur.execute("create database {}", db)
     cur.execute("use {name}", name=db)
@@ -75,8 +76,22 @@ def test_execute(ctx):
         "insert into {} values('{}', {}, '{}', '{}')",
         data,
     )
+    geo = bytes([0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x40])
+    varbinary = b"0x7661726332"
+
     cur.execute('select * from stb')
-    row = cur.fetchone()
-    print(f'row: {row}')
-    assert row is not None
+    while True:
+        row = cur.fetchone()
+        if row:
+            # hex_string = ''.join(f'{byte:02x}' for byte in bytearray(row[4]))
+            # print(hex_string)
+            print(f'row: {row}')
+            assert row[2] == geo
+            assert row[3] == varbinary
+        else:
+            break
+
+
+    
+    # assert row is not None
 
