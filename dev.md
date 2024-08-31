@@ -51,7 +51,7 @@ poetry run pytest tests/test_example.py::test_function_example
 ```
 ```
 
-Rest api test
+Rest api test env
 
 ```
 export TDENGINE_URL=localhost:6041 
