@@ -20,14 +20,14 @@ def test_simple(conn, caplog):
 
         res = taos_query(
             conn,
-            "create table if not exists log(ts timestamp, level tinyint, content binary(100), ipaddr binary(134))",
+            "create table if not exists req_id_tb(ts timestamp, level tinyint, content binary(100), ipaddr binary(134))",
         )
         taos_free_result(res)
 
-        res = taos_query(conn, "insert into log values(now, 1, 'hello', 'test')")
+        res = taos_query(conn, "insert into req_id_tb values(now, 1, 'hello', 'test')")
         taos_free_result(res)
 
-        res = taos_query(conn, "select level,content,ipaddr from log limit 1")
+        res = taos_query(conn, "select level,content,ipaddr from req_id_tb limit 1")
 
         fields = taos_fetch_fields_raw(res)
         field_count = taos_field_count(res)
@@ -70,7 +70,7 @@ def test_simple_with_req_id(conn, caplog):
         req_id = gen_req_id()
         res = taos_query_with_reqid(
             conn,
-            "create table if not exists log(ts timestamp, level tinyint, content binary(100), ipaddr binary(134))",
+            "create table if not exists req_id_tb(ts timestamp, level tinyint, content binary(100), ipaddr binary(134))",
             req_id,
         )
         taos_free_result(res)
@@ -78,7 +78,7 @@ def test_simple_with_req_id(conn, caplog):
         req_id = gen_req_id()
         res = taos_query_with_reqid(
             conn,
-            "insert into log values(now, 1, 'hello', 'test')",
+            "insert into req_id_tb values(now, 1, 'hello', 'test')",
             req_id,
         )
         taos_free_result(res)
@@ -86,7 +86,7 @@ def test_simple_with_req_id(conn, caplog):
         req_id = gen_req_id()
         res = taos_query_with_reqid(
             conn,
-            "select level,content,ipaddr from log limit 1",
+            "select level,content,ipaddr from req_id_tb limit 1",
             req_id,
         )
 
@@ -135,7 +135,7 @@ def test_stmt(conn, caplog):
 
         res = taos_query(
             conn,
-            "create table if not exists log(ts timestamp, nil tinyint, ti tinyint, si smallint, ii int,\
+            "create table if not exists req_id_tb(ts timestamp, nil tinyint, ti tinyint, si smallint, ii int,\
              bi bigint, tu tinyint unsigned, su smallint unsigned, iu int unsigned, bu bigint unsigned, \
              ff float, dd double, bb binary(100), nn nchar(100))",
         )
@@ -143,7 +143,7 @@ def test_stmt(conn, caplog):
 
         stmt = taos_stmt_init(conn)
 
-        taos_stmt_prepare(stmt, "insert into log values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+        taos_stmt_prepare(stmt, "insert into req_id_tb values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 
         params = new_bind_params(14)
         params[0].timestamp(1626861392589, PrecisionEnum.Milliseconds)
@@ -164,7 +164,7 @@ def test_stmt(conn, caplog):
         taos_stmt_add_batch(stmt)
         taos_stmt_execute(stmt)
 
-        res = taos_query(conn, "select * from log limit 1")
+        res = taos_query(conn, "select * from req_id_tb limit 1")
 
         fields = taos_fetch_fields(res)
         filed_count = taos_field_count(res)
@@ -206,7 +206,7 @@ def test_stmt_with_req_id(conn, caplog):
         req_id = gen_req_id()
         res = taos_query_with_reqid(
             conn,
-            "create table if not exists log(ts timestamp, nil tinyint, ti tinyint, si smallint, ii int,\
+            "create table if not exists req_id_tb(ts timestamp, nil tinyint, ti tinyint, si smallint, ii int,\
              bi bigint, tu tinyint unsigned, su smallint unsigned, iu int unsigned, bu bigint unsigned, \
              ff float, dd double, bb binary(100), nn nchar(100))",
             req_id,
@@ -216,7 +216,7 @@ def test_stmt_with_req_id(conn, caplog):
         req_id = gen_req_id()
         stmt = taos_stmt_init_with_reqid(conn, req_id)
 
-        taos_stmt_prepare(stmt, "insert into log values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+        taos_stmt_prepare(stmt, "insert into req_id_tb values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 
         params = new_bind_params(14)
         params[0].timestamp(1626861392589, PrecisionEnum.Milliseconds)
@@ -240,7 +240,7 @@ def test_stmt_with_req_id(conn, caplog):
         req_id = gen_req_id()
         res = taos_query_with_reqid(
             conn,
-            "select * from log limit 1",
+            "select * from req_id_tb limit 1",
             req_id,
         )
 
