@@ -162,7 +162,7 @@ jobs:
     if: needs.rebuild.outputs.status == 'true'
     strategy:
       matrix:
-        target: [aarch64, armv7]
+        target: [aarch64]
     steps:
       - uses: actions/checkout@v3
 
