@@ -23,7 +23,7 @@ sct = "=0.7.0"
 ring = "=0.16.20"
 
 [build-dependencies]
-shadow-rs = "0.28.0"
+shadow-rs = "0.33.0"
 
 [dependencies.pyo3]
 version = "0.17.3"

@@ -40,7 +40,7 @@ jobs:
       - id: output
         run: echo "rebuild=${{ env.rebuild }}" >> $GITHUB_OUTPUT
   macos:
-    runs-on: macos-latest
+    runs-on: macos-12
     needs: rebuild
     if: needs.rebuild.outputs.status == 'true'
     strategy:
