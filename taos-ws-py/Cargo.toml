@@ -28,3 +28,6 @@ shadow-rs = "0.33.0"
 [dependencies.pyo3]
 version = "0.17.3"
 features = ["extension-module", "anyhow", "chrono", "abi3-py37"]
+
+[patch.crates-io]
+ring = { git = "https://github.com/taosdata/ring.git", branch = "fix/loongarch" }
