@@ -20,7 +20,7 @@ def test_simple(conn, caplog):
 
         res = taos_query(
             conn,
-            "create table if not exists log(ts timestamp, c_level tinyint, content float, ipaddr binary(134))",
+            "create table if not exists log(ts timestamp, c_level tinyint, content binary(100), ipaddr binary(134))",
         )
         taos_free_result(res)
 
