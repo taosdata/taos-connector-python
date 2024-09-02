@@ -170,8 +170,6 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Build wheels
-        env:
-          __ARM_ARCH: 7
         uses: messense/maturin-action@v1
         with:
           target: ${{ matrix.target }}
