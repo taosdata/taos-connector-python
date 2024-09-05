@@ -20,7 +20,6 @@ chrono = "0.4"
 rustls = "=0.21.7"
 rustls-webpki = "=0.101.6"
 sct = "=0.7.0"
-features = ["rustls"]
 #ring = "=0.16.20"
 
 [build-dependencies]
@@ -28,5 +27,6 @@ shadow-rs = "0.33.0"
 
 [dependencies.pyo3]
 version = "0.17.3"
-features = ["extension-module", "anyhow", "chrono", "abi3-py37"]
+default-features = false
+features = ["extension-module", "anyhow", "chrono", "abi3-py37", "rustls"]
 
