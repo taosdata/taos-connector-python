@@ -540,6 +540,40 @@ class TaosMultiBind(ctypes.Structure):
         self.buffer_type = FieldType.C_GEOMETRY
         self._str_to_buffer(values, False)
 
+############################################ stmt2 begin ############################################
+
+_taos_async_fn_t = ctypes.CFUNCTYPE(None, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int)
+
+class TaosStmt2Option(ctypes.Structure):
+    _fields_ = [
+        ("reqid", ctypes.c_int64),
+        ("singleStbInsert", ctypes.c_bool),
+        ("singleTableBindOnce", ctypes.c_bool),
+        ("asyncExecFn", _taos_async_fn_t),
+        ("userdata", ctypes.c_void_p)
+    ]
+
+
+class TaosStmt2Bind(ctypes.Structure):
+    _fields_ = [
+        ("buffer_type", ctypes.c_int),
+        ("buffer", ctypes.c_void_p),
+        ("length", ctypes.POINTER(ctypes.c_int32)),
+        ("is_null", ctypes.c_char_p),
+        ("num", ctypes.c_int)
+    ]
+
+
+class TaosStmt2BindV(ctypes.Structure):
+    _fields_ = [
+        ("count", ctypes.c_int),
+        ("tbnames", ctypes.POINTER(ctypes.c_char_p)),
+        ("tags", ctypes.POINTER(ctypes.POINTER(TaosStmt2Bind))),
+        ("bind_cols", ctypes.POINTER(ctypes.POINTER(TaosStmt2Bind)))
+    ]
+
+############################################ stmt2 end ############################################
+
 
 def new_bind_param():
     # type: () -> TaosBind

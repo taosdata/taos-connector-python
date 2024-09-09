@@ -2,7 +2,7 @@
 from taos.cinterface import *
 from taos.cursor import TaosCursor
 from taos.subscription import TaosSubscription
-from taos.statement import TaosStmt
+from taos.statement import TaosStmt, TaosStmt2
 from taos.result import TaosResult
 from typing import Optional, List
 
@@ -117,6 +117,16 @@ class TaosConnection(object):
             taos_stmt_prepare(stmt, sql)
 
         return TaosStmt(stmt, decode_binary=self.decode_binary)
+
+    def statement2(self, sql=None, option=None):
+        # type: (str | None, TaosStmt2Option | None) -> TaosStmt2|None
+        if self._conn is None:
+            return None
+        stmt = taos_stmt2_init(self._conn, option)
+        if sql is not None:
+            taos_stmt2_prepare(stmt, sql)
+
+        return TaosStmt2(stmt, decode_binary=self.decode_binary)
 
     def load_table_info(self, tables):
         # type: (str) -> None
