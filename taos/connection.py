@@ -1,10 +1,11 @@
 # encoding:UTF-8
+from typing import Optional, List
+
 from taos.cinterface import *
+from taos.result import TaosResult
 from taos.cursor import TaosCursor
 from taos.subscription import TaosSubscription
-from taos.statement import TaosStmt, TaosStmt2
-from taos.result import TaosResult
-from typing import Optional, List
+from taos.statement import TaosStmt, TaosStmt2, TaosStmt2Option
 
 
 class TaosConnection(object):

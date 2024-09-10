@@ -77,6 +77,19 @@ class TaosStmt(object):
         self.close()
 
 
+
+_taos_async_fn_t = ctypes.CFUNCTYPE(None, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int)
+
+class TaosStmt2Option(ctypes.Structure):
+    _fields_ = [
+        ("reqid", ctypes.c_int64),
+        ("singleStbInsert", ctypes.c_bool),
+        ("singleTableBindOnce", ctypes.c_bool),
+        ("asyncExecFn", _taos_async_fn_t),
+        ("userdata", ctypes.c_void_p)
+    ]
+
+
 class TaosStmt2(object):
     """TDengine STMT2 interface"""
 
@@ -84,67 +97,81 @@ class TaosStmt2(object):
         self._stmt = stmt
         self._decode_binary = decode_binary
 
-    def set_tbname(self, name):
-        """Set table name if needed.
-
-        Note that the set_tbname* method should only used in insert statement
-        """
-        if self._stmt is None:
-            raise StatementError("Invalid use of set_tbname")
-        taos_stmt_set_tbname(self._stmt, name)
+    # def set_tbname(self, name):
+    #     """Set table name if needed.
+    #
+    #     Note that the set_tbname* method should only used in insert statement
+    #     """
+    #     if self._stmt is None:
+    #         raise StatementError("Invalid use of set_tbname")
+    #     taos_stmt_set_tbname(self._stmt, name)
 
     def prepare(self, sql):
         # type: (str) -> None
-        taos_stmt_prepare(self._stmt, sql)
+        taos_stmt2_prepare(self._stmt, sql)
 
-    def set_tbname_tags(self, name, tags):
-        # type: (str, Array[TaosBind]) -> None
-        """Set table name with tags, tags is array of BindParams"""
-        if self._stmt is None:
-            raise StatementError("Invalid use of set_tbname")
-        taos_stmt_set_tbname_tags(self._stmt, name, tags)
+    # def set_tbname_tags(self, name, tags):
+    #     # type: (str, Array[TaosBind]) -> None
+    #     """Set table name with tags, tags is array of BindParams"""
+    #     if self._stmt is None:
+    #         raise StatementError("Invalid use of set_tbname")
+    #     taos_stmt_set_tbname_tags(self._stmt, name, tags)
 
-    def bind_param(self, params, add_batch=True):
-        # type: (Array[TaosBind], bool) -> None
+    # def bind_param_old(self, params, add_batch=True):
+    #     # type: (Array[TaosBind], bool) -> None
+    #     if self._stmt is None:
+    #         raise StatementError("Invalid use of stmt")
+    #     taos_stmt_bind_param(self._stmt, params)
+    #     if add_batch:
+    #         taos_stmt_add_batch(self._stmt)
+
+    # def bind_param_batch(self, binds, add_batch=True):
+    #     # type: (Array[TaosMultiBind], bool) -> None
+    #     if self._stmt is None:
+    #         raise StatementError("Invalid use of stmt")
+    #     taos_stmt_bind_param_batch(self._stmt, binds)
+    #     if add_batch:
+    #         taos_stmt_add_batch(self._stmt)
+
+    # def add_batch(self):
+    #     if self._stmt is None:
+    #         raise StatementError("Invalid use of stmt")
+    #     taos_stmt_add_batch(self._stmt)
+
+    def bind_param(self, bindv, col_idx):
+        # type: (Array[TaosStmt2BindV], ctypes.c_int32) -> None
         if self._stmt is None:
             raise StatementError("Invalid use of stmt")
-        taos_stmt_bind_param(self._stmt, params)
-        if add_batch:
-            taos_stmt_add_batch(self._stmt)
+        taos_stmt2_bind_param(self._stmt, bindv, col_idx)
 
-    def bind_param_batch(self, binds, add_batch=True):
-        # type: (Array[TaosMultiBind], bool) -> None
-        if self._stmt is None:
-            raise StatementError("Invalid use of stmt")
-        taos_stmt_bind_param_batch(self._stmt, binds)
-        if add_batch:
-            taos_stmt_add_batch(self._stmt)
 
-    def add_batch(self):
-        if self._stmt is None:
-            raise StatementError("Invalid use of stmt")
-        taos_stmt_add_batch(self._stmt)
 
-    def execute(self):
+
+
+
+
+    def execute(self) -> int:
         if self._stmt is None:
             raise StatementError("Invalid use of execute")
-        taos_stmt_execute(self._stmt)
+        #
+        self._affected_rows = taos_stmt2_exec(self._stmt)
+        return self._affected_rows
 
-    def use_result(self):
+    def result(self):
         """NOTE: Don't use a stmt result more than once."""
-        result = taos_stmt_use_result(self._stmt)
+        result = taos_stmt2_result(self._stmt)
         return TaosResult(result, close_after=False, decode_binary=self._decode_binary)
 
     @property
     def affected_rows(self):
         # type: () -> int
-        return taos_stmt_affected_rows(self._stmt)
+        return self._affected_rows
 
     def close(self):
         """Close stmt."""
         if self._stmt is None:
             return
-        taos_stmt_close(self._stmt)
+        taos_stmt2_close(self._stmt)
         self._stmt = None
 
     def __del__(self):
