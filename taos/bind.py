@@ -678,6 +678,21 @@ class TaosStmt2Bind(ctypes.Structure):
         self.num = len(values)
         self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
 
+    def timestamp(self, values, precision=PrecisionEnum.Milliseconds):
+        if type(values) is not tuple and type(values) is not list:
+            values = tuple([values])
+        try:
+            buffer = cast(values, c_void_p)
+        except:
+            buffer_type = c_int64 * len(values)
+            buffer = buffer_type(*[_datetime_to_timestamp(value, precision) for value in values])
+
+        self.buffer_type = FieldType.C_TIMESTAMP
+        self.buffer = cast(buffer, c_void_p)
+        # self.buffer_length = sizeof(c_int64)
+        self.num = len(values)
+        self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
+
     def _str_to_buffer(self, values, encode=True):
         self.num = len(values)
         is_null = [1 if v is None else 0 for v in values]
@@ -693,18 +708,9 @@ class TaosStmt2Bind(ctypes.Structure):
         else:
             _bytes = [bytes(value) if value is not None else None for value in values]
 
-        buffer_length = max(len(b) for b in _bytes if b is not None)
+        # buffer_length = max(len(b) for b in _bytes if b is not None)
         self.buffer = cast(
-            c_char_p(
-                b"".join(
-                    [
-                        create_string_buffer(b, len(b))     # FIXME
-                        if b is not None
-                        else create_string_buffer(1)
-                        for b in _bytes
-                    ]
-                )
-            ),
+            c_char_p(b"".join([b for b in _bytes if b is not None ])),          # FIXME
             c_void_p,
         )
         self.length = (c_int32 * len(values))(*[len(b) if b is not None else 0 for b in _bytes])
@@ -715,21 +721,6 @@ class TaosStmt2Bind(ctypes.Structure):
             values = tuple([values])
         self.buffer_type = FieldType.C_BINARY
         self._str_to_buffer(values)
-
-    def timestamp(self, values, precision=PrecisionEnum.Milliseconds):
-        if type(values) is not tuple and type(values) is not list:
-            values = tuple([values])
-        try:
-            buffer = cast(values, c_void_p)
-        except:
-            buffer_type = c_int64 * len(values)
-            buffer = buffer_type(*[_datetime_to_timestamp(value, precision) for value in values])
-
-        self.buffer_type = FieldType.C_TIMESTAMP
-        self.buffer = cast(buffer, c_void_p)
-        self.buffer_length = sizeof(c_int64)
-        self.num = len(values)
-        self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
 
     def nchar(self, values):
         # type: (list[str]) -> None
@@ -749,7 +740,7 @@ class TaosStmt2Bind(ctypes.Structure):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
         self.buffer_type = FieldType.C_TINYINT_UNSIGNED
-        self.buffer_length = sizeof(c_uint8)
+        # self.buffer_length = sizeof(c_uint8)
 
         try:
             buffer = cast(values, c_void_p)
@@ -767,7 +758,7 @@ class TaosStmt2Bind(ctypes.Structure):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
         self.buffer_type = FieldType.C_SMALLINT_UNSIGNED
-        self.buffer_length = sizeof(c_uint16)
+        # self.buffer_length = sizeof(c_uint16)
 
         try:
             buffer = cast(values, c_void_p)
@@ -785,7 +776,7 @@ class TaosStmt2Bind(ctypes.Structure):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
         self.buffer_type = FieldType.C_INT_UNSIGNED
-        self.buffer_length = sizeof(c_uint32)
+        # self.buffer_length = sizeof(c_uint32)
 
         try:
             buffer = cast(values, c_void_p)
@@ -803,7 +794,7 @@ class TaosStmt2Bind(ctypes.Structure):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
         self.buffer_type = FieldType.C_BIGINT_UNSIGNED
-        self.buffer_length = sizeof(c_uint64)
+        # self.buffer_length = sizeof(c_uint64)
 
         try:
             buffer = cast(values, c_void_p)
@@ -836,9 +827,7 @@ class TaosStmt2Bind(ctypes.Structure):
         self._str_to_buffer(values, False)
 
 
-
-
-class TaosStmt2BindVImpl(ctypes.Structure):
+class TaosStmt2BindV(ctypes.Structure):
     _fields_ = [
         ("count", ctypes.c_int),
         ("tbnames", ctypes.POINTER(ctypes.c_char_p)),
@@ -846,9 +835,7 @@ class TaosStmt2BindVImpl(ctypes.Structure):
         ("bind_cols", ctypes.POINTER(ctypes.POINTER(TaosStmt2Bind)))
     ]
 
-
-class TaosStmt2BindV:
-    def __init__(
+    def init(
             self,
             count: int,
             tbnames: List[str],
@@ -856,13 +843,28 @@ class TaosStmt2BindV:
             bind_cols: Optional[List[List[TaosStmt2Bind]]]
     ):
         self.count = count
-        self.tbnames = tbnames
-        self.tags = tags
-        self.bind_cols = bind_cols
 
-    def __repr__(self):
-        return f"TaosStmt2BindV(count={self.count}, tbnames=[{self.tbnames}])"
+        # TODO: 
 
+
+
+
+# class TaosStmt2BindV:
+#     def __init__(
+#             self,
+#             count: int,
+#             tbnames: List[str],
+#             tags: Optional[List[List[TaosStmt2Bind]]],
+#             bind_cols: Optional[List[List[TaosStmt2Bind]]]
+#     ):
+#         self.count = count
+#         self.tbnames = tbnames
+#         self.tags = tags
+#         self.bind_cols = bind_cols
+#
+#     def __repr__(self):
+#         return f"TaosStmt2BindV(count={self.count}, tbnames=[{self.tbnames}])"
+#
 
 
 ############################################ stmt2 end ############################################
