@@ -93,7 +93,7 @@ def test_tmq():
                 values = block.fetchall()
                 print(f"nrows: {nrows}, ncols: {ncols}, values: {values}")
                 
-            # consumer.commit(message)
+            consumer.commit(message)
         else:
             break
 

@@ -10,7 +10,7 @@ on:
     branches:
       - main
 env:
-  PYTHON_VERSION: "3.7" # to build abi3 wheels
+  PYTHON_VERSION: "3.10" # to build abi3 wheels
 
 jobs:
   rebuild:
@@ -40,7 +40,7 @@ jobs:
       - id: output
         run: echo "rebuild=${{ env.rebuild }}" >> $GITHUB_OUTPUT
   macos:
-    runs-on: macos-latest
+    runs-on: macos-12
     needs: rebuild
     if: needs.rebuild.outputs.status == 'true'
     strategy:
@@ -49,7 +49,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
           architecture: x64
@@ -62,10 +62,18 @@ jobs:
           target: x86_64
           working-directory: taos-ws-py
           args: --release --strip
+      - name: Install Homebrew  
+        run: |  
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"  
+      - name: Install gettext  
+        run: |
+          brew install gettext 
+      - name: Set DYLD_LIBRARY_PATH  
+        run: |
+          echo "export DYLD_LIBRARY_PATH=/usr/local/opt/gettext/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
       - name: Install built wheel - x86_64
         run: |
           pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
-
       - name: Build wheels - universal2
         uses: PyO3/maturin-action@v1
         with:
@@ -90,7 +98,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
           architecture: ${{ matrix.target }}
@@ -124,7 +132,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
           architecture: x64
@@ -158,7 +166,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Build wheels
@@ -196,7 +204,7 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: taos-ws-py
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Publish to PyPI
