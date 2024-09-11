@@ -83,11 +83,6 @@ class TaosStmt2(object):
         result = taos_stmt2_result(self._stmt)
         return TaosResult(result, close_after=False, decode_binary=self._decode_binary)
 
-    @property
-    def affected_rows(self):
-        # type: () -> int
-        return self._affected_rows
-
     def close(self):
         """Close stmt."""
         if self._stmt is None:
@@ -102,6 +97,20 @@ class TaosStmt2(object):
         fields = []
         # todo get from engine
         return fields
+    
+    def free_fields(self, fields):
+        # todo get from engine
+        pass
+
+    def error(self):
+        lasterr = "no init engine"
+        # todo get from engine
+        return lasterr
 
     def __del__(self):
         self.close()
+
+    @property
+    def affected_rows(self):
+        # type: () -> int
+        return self._affected_rows
