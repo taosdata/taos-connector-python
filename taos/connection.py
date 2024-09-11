@@ -5,7 +5,8 @@ from taos.cinterface import *
 from taos.result import TaosResult
 from taos.cursor import TaosCursor
 from taos.subscription import TaosSubscription
-from taos.statement import TaosStmt, TaosStmt2, TaosStmt2Option
+from taos.statement import TaosStmt
+from taos.statement2 import TaosStmt2, TaosStmt2Option
 
 
 class TaosConnection(object):
