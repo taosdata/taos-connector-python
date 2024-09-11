@@ -844,7 +844,7 @@ class TaosStmt2BindV(ctypes.Structure):
     ):
         self.count = count
 
-        # TODO: 
+        # TODO:
 
 
 
@@ -896,11 +896,17 @@ def new_multi_binds(size):
     return (TaosMultiBind * size)()
 
 
+def new_stmt2_binds(size: int) -> Array[TaosStmt2Bind]:
+    # type: (int) -> Array[TaosStmt2Bind]
+    return (TaosStmt2Bind * size)()
+
+
 def new_bindv(
         count: int,
         tbnames: List[str],
         tags: Optional[List[List[TaosStmt2Bind]]],
         bind_cols: Optional[List[List[TaosStmt2Bind]]]
 ):
-    # type: (int) -> Array[TaosMultiBind]
-    return (TaosMultiBind * size)()
+    # type: (int) -> Array[TaosStmt2Bind]
+    # return (TaosMultiBind * size)()
+    pass
