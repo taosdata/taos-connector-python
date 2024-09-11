@@ -13,201 +13,6 @@ from taos.precision import PrecisionEnum, PrecisionError
 _datetime_epoch = datetime.utcfromtimestamp(0)
 
 
-def _is_not_none(obj):
-    return obj is not None
-
-
-class TaosBind(ctypes.Structure):
-    _fields_ = [
-        ("buffer_type", c_int),
-        ("buffer", c_void_p),
-        ("buffer_length", c_size_t),
-        ("length", POINTER(c_size_t)),
-        ("is_null", POINTER(c_int)),
-        ("is_unsigned", c_int),
-        ("error", POINTER(c_int)),
-        ("u", c_int64),
-        ("allocated", c_int),
-    ]
-
-    def bool(self, value):
-        self.buffer_type = FieldType.C_BOOL
-        if value is None:
-            self.is_null = pointer(c_int(1))
-        else:
-            self.buffer = cast(pointer(c_bool(value)), c_void_p)
-            self.buffer_length = sizeof(c_bool)
-
-    def tinyint(self, value):
-        self.buffer_type = FieldType.C_TINYINT
-        if value is None:
-            self.is_null = pointer(c_int(1))
-        else:
-            self.buffer = cast(pointer(c_int8(value)), c_void_p)
-            self.buffer_length = sizeof(c_int8)
-
-    def smallint(self, value):
-        self.buffer_type = FieldType.C_SMALLINT
-        if value is None:
-            self.is_null = pointer(c_int(1))
-        else:
-            self.buffer = cast(pointer(c_int16(value)), c_void_p)
-            self.buffer_length = sizeof(c_int16)
-
-    def int(self, value):
-        self.buffer_type = FieldType.C_INT
-        if value is None:
-            self.is_null = pointer(c_int(1))
-        else:
-            self.buffer = cast(pointer(c_int32(value)), c_void_p)
-            self.buffer_length = sizeof(c_int32)
-
-    def bigint(self, value):
-        self.buffer_type = FieldType.C_BIGINT
-        if value is None:
-            self.is_null = pointer(c_int(1))
-        else:
-            self.buffer = cast(pointer(c_int64(value)), c_void_p)
-            self.buffer_length = sizeof(c_int64)
-
-    def float(self, value):
-        self.buffer_type = FieldType.C_FLOAT
-        if value is None:
-            self.is_null = pointer(c_int(1))
-        else:
-            self.buffer = cast(pointer(c_float(value)), c_void_p)
-            self.buffer_length = sizeof(c_float)
-
-    def double(self, value):
-        self.buffer_type = FieldType.C_DOUBLE
-        if value is None:
-            self.is_null = pointer(c_int(1))
-        else:
-            self.buffer = cast(pointer(c_double(value)), c_void_p)
-            self.buffer_length = sizeof(c_double)
-
-    def binary(self, value):
-        buffer = None
-        length = 0
-        self.buffer_type = FieldType.C_BINARY
-        if value is None:
-            self.is_null = pointer(c_int(1))
-        else:
-            if isinstance(value, str):
-                bytes = value.encode("utf-8")
-                buffer = create_string_buffer(bytes)
-                length = len(bytes)
-            else:
-                buffer = value
-                length = len(value)
-            self.buffer = cast(buffer, c_void_p)
-            self.buffer_length = length
-            self.length = pointer(c_size_t(self.buffer_length))
-
-    def timestamp(self, value, precision=PrecisionEnum.Milliseconds):
-        self.buffer_type = FieldType.C_TIMESTAMP
-        if value is None:
-            self.is_null = pointer(c_int(1))
-        else:
-            if type(value) is datetime:
-                if precision == PrecisionEnum.Milliseconds:
-                    ts = int(round((value - _datetime_epoch).total_seconds() * 1000))
-                elif precision == PrecisionEnum.Microseconds:
-                    ts = int(round((value - _datetime_epoch).total_seconds() * 10000000))
-                else:
-                    raise PrecisionError("datetime do not support nanosecond precision")
-            elif type(value) is float:
-                if precision == PrecisionEnum.Milliseconds:
-                    ts = int(round(value * 1000))
-                elif precision == PrecisionEnum.Microseconds:
-                    ts = int(round(value * 10000000))
-                else:
-                    raise PrecisionError("time float do not support nanosecond precision")
-            elif isinstance(value, int) and not isinstance(value, bool):
-                ts = value
-            elif isinstance(value, str):
-                value = datetime.fromisoformat(value)
-                if precision == PrecisionEnum.Milliseconds:
-                    ts = int(round(value * 1000))
-                elif precision == PrecisionEnum.Microseconds:
-                    ts = int(round(value * 10000000))
-                else:
-                    raise PrecisionError("datetime do not support nanosecond precision")
-            self.buffer = cast(pointer(c_int64(ts)), c_void_p)
-            self.buffer_length = sizeof(c_int64)
-
-    def nchar(self, value):
-        buffer = None
-        length = 0
-        self.buffer_type = FieldType.C_NCHAR
-        if value is None:
-            self.is_null = pointer(c_int(1))
-        else:
-            if isinstance(value, str):
-                bytes = value.encode("utf-8")
-                buffer = create_string_buffer(bytes)
-                length = len(bytes)
-            else:
-                buffer = value
-                length = len(value)
-            self.buffer = cast(buffer, c_void_p)
-            self.buffer_length = length
-            self.length = pointer(c_size_t(self.buffer_length))
-
-    def json(self, value):
-        buffer = None
-        length = 0
-        self.buffer_type = FieldType.C_JSON
-        if value is None:
-            self.is_null = pointer(c_int(1))
-        else:
-            if isinstance(value, str):
-                bytes = value.encode("utf-8")
-                buffer = create_string_buffer(bytes)
-                length = len(bytes)
-            else:
-                buffer = value
-                length = len(value)
-            self.buffer = cast(buffer, c_void_p)
-            self.buffer_length = length
-            self.length = pointer(c_size_t(self.buffer_length))
-
-    def tinyint_unsigned(self, value):
-        self.buffer_type = FieldType.C_TINYINT_UNSIGNED
-        if value is None:
-            self.is_null = pointer(c_int(1))
-        else:
-            self.buffer = cast(pointer(c_uint8(value)), c_void_p)
-            self.buffer_length = sizeof(c_uint8)
-
-    def smallint_unsigned(self, value):
-        self.buffer_type = FieldType.C_SMALLINT_UNSIGNED
-        if value is None:
-            self.is_null = pointer(c_int(1))
-        else:
-            self.buffer = cast(pointer(c_uint16(value)), c_void_p)
-            self.buffer_length = sizeof(c_uint16)
-
-    def int_unsigned(self, value):
-        self.buffer_type = FieldType.C_INT_UNSIGNED
-        if value is None:
-            self.is_null = pointer(c_int(1))
-        else:
-            self.buffer = cast(pointer(c_uint32(value)), c_void_p)
-            self.buffer_length = sizeof(c_uint32)
-
-    def bigint_unsigned(self, value):
-        self.buffer_type = FieldType.C_BIGINT_UNSIGNED
-        if value is None:
-            self.is_null = pointer(c_int(1))
-        else:
-            self.buffer = cast(pointer(c_uint64(value)), c_void_p)
-            self.buffer_length = sizeof(c_uint64)
-
-    def varchar(self, value):
-        self.binary(value)
-
-
 def _datetime_to_timestamp(value, precision):
     # type: (datetime | float | int | str | c_int64, PrecisionEnum) -> c_int64
     if value is None:
@@ -241,14 +46,13 @@ def _datetime_to_timestamp(value, precision):
     return FieldType.C_BIGINT_NULL
 
 
-class TaosMultiBind(ctypes.Structure):
+class TaosStmt2Bind(ctypes.Structure):
     _fields_ = [
-        ("buffer_type", c_int),
-        ("buffer", c_void_p),
-        ("buffer_length", c_size_t),
-        ("length", POINTER(c_int32)),
-        ("is_null", c_char_p),
-        ("num", c_int),
+        ("buffer_type", ctypes.c_int),
+        ("buffer", ctypes.c_void_p),
+        ("length", ctypes.POINTER(ctypes.c_int32)),
+        ("is_null", ctypes.c_char_p),
+        ("num", ctypes.c_int)
     ]
 
     def bool(self, values):
@@ -266,14 +70,14 @@ class TaosMultiBind(ctypes.Structure):
         self.buffer = cast(buffer, c_void_p)
         self.num = len(values)
         self.buffer_type = FieldType.C_BOOL
-        self.buffer_length = sizeof(c_bool)
+        # self.buffer_length = sizeof(c_bool)
         self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
 
     def tinyint(self, values):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
         self.buffer_type = FieldType.C_TINYINT
-        self.buffer_length = sizeof(c_int8)
+        # self.buffer_length = sizeof(c_int8)
         try:
             buffer = cast(values, c_void_p)
         except:
@@ -290,7 +94,7 @@ class TaosMultiBind(ctypes.Structure):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
         self.buffer_type = FieldType.C_SMALLINT
-        self.buffer_length = sizeof(c_int16)
+        # self.buffer_length = sizeof(c_int16)
 
         try:
             buffer = cast(values, c_void_p)
@@ -308,7 +112,7 @@ class TaosMultiBind(ctypes.Structure):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
         self.buffer_type = FieldType.C_INT
-        self.buffer_length = sizeof(c_int32)
+        # self.buffer_length = sizeof(c_int32)
 
         try:
             buffer = cast(values, c_void_p)
@@ -326,7 +130,7 @@ class TaosMultiBind(ctypes.Structure):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
         self.buffer_type = FieldType.C_BIGINT
-        self.buffer_length = sizeof(c_int64)
+        # self.buffer_length = sizeof(c_int64)
 
         try:
             buffer = cast(values, c_void_p)
@@ -376,53 +180,6 @@ class TaosMultiBind(ctypes.Structure):
         self.num = len(values)
         self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
 
-    def _str_to_buffer(self, values, encode=True):
-        self.num = len(values)
-        is_null = [1 if v is None else 0 for v in values]
-        self.is_null = cast((c_byte * self.num)(*is_null), c_char_p)
-
-        if sum(is_null) == self.num:
-            self.length = (c_int32 * len(values))(0 * self.num)
-            return
-        if sys.version_info < (3, 0):
-            _bytes = [bytes(value) if value is not None else None for value in values]
-            buffer_length = max(len(b) + 1 for b in _bytes if b is not None)
-            buffers = [
-                create_string_buffer(b, buffer_length) if b is not None else create_string_buffer(buffer_length)
-                for b in _bytes
-            ]
-            buffer_all = b"".join(v[:] for v in buffers)
-            self.buffer = cast(c_char_p(buffer_all), c_void_p)
-        else:
-            _bytes = []
-            if encode:
-                _bytes = [value.encode("utf-8") if value is not None else None for value in values]
-            else:
-                _bytes = [bytes(value) if value is not None else None for value in values]
-
-            buffer_length = max(len(b) for b in _bytes if b is not None)
-            self.buffer = cast(
-                c_char_p(
-                    b"".join(
-                        [
-                            create_string_buffer(b, buffer_length)
-                            if b is not None
-                            else create_string_buffer(buffer_length)
-                            for b in _bytes
-                        ]
-                    )
-                ),
-                c_void_p,
-            )
-        self.length = (c_int32 * len(values))(*[len(b) if b is not None else 0 for b in _bytes])
-        self.buffer_length = buffer_length
-
-    def binary(self, values):
-        if type(values) is not tuple and type(values) is not list:
-            values = tuple([values])
-        self.buffer_type = FieldType.C_BINARY
-        self._str_to_buffer(values)
-
     def timestamp(self, values, precision=PrecisionEnum.Milliseconds):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
@@ -434,9 +191,38 @@ class TaosMultiBind(ctypes.Structure):
 
         self.buffer_type = FieldType.C_TIMESTAMP
         self.buffer = cast(buffer, c_void_p)
-        self.buffer_length = sizeof(c_int64)
+        # self.buffer_length = sizeof(c_int64)
         self.num = len(values)
         self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
+
+    def _str_to_buffer(self, values, encode=True):
+        self.num = len(values)
+        is_null = [1 if v is None else 0 for v in values]
+        self.is_null = cast((c_byte * self.num)(*is_null), c_char_p)
+
+        if sum(is_null) == self.num:
+            self.length = (c_int32 * len(values))(0 * self.num)
+            return
+
+        _bytes = []
+        if encode:
+            _bytes = [value.encode("utf-8") if value is not None else None for value in values]
+        else:
+            _bytes = [bytes(value) if value is not None else None for value in values]
+
+        # buffer_length = max(len(b) for b in _bytes if b is not None)
+        self.buffer = cast(
+            c_char_p(b"".join([b for b in _bytes if b is not None ])),          # FIXME
+            c_void_p,
+        )
+        self.length = (c_int32 * len(values))(*[len(b) if b is not None else 0 for b in _bytes])
+        # self.buffer_length = buffer_length
+
+    def binary(self, values):
+        if type(values) is not tuple and type(values) is not list:
+            values = tuple([values])
+        self.buffer_type = FieldType.C_BINARY
+        self._str_to_buffer(values)
 
     def nchar(self, values):
         # type: (list[str]) -> None
@@ -456,7 +242,7 @@ class TaosMultiBind(ctypes.Structure):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
         self.buffer_type = FieldType.C_TINYINT_UNSIGNED
-        self.buffer_length = sizeof(c_uint8)
+        # self.buffer_length = sizeof(c_uint8)
 
         try:
             buffer = cast(values, c_void_p)
@@ -474,7 +260,7 @@ class TaosMultiBind(ctypes.Structure):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
         self.buffer_type = FieldType.C_SMALLINT_UNSIGNED
-        self.buffer_length = sizeof(c_uint16)
+        # self.buffer_length = sizeof(c_uint16)
 
         try:
             buffer = cast(values, c_void_p)
@@ -492,7 +278,7 @@ class TaosMultiBind(ctypes.Structure):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
         self.buffer_type = FieldType.C_INT_UNSIGNED
-        self.buffer_length = sizeof(c_uint32)
+        # self.buffer_length = sizeof(c_uint32)
 
         try:
             buffer = cast(values, c_void_p)
@@ -510,7 +296,7 @@ class TaosMultiBind(ctypes.Structure):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
         self.buffer_type = FieldType.C_BIGINT_UNSIGNED
-        self.buffer_length = sizeof(c_uint64)
+        # self.buffer_length = sizeof(c_uint64)
 
         try:
             buffer = cast(values, c_void_p)
@@ -543,27 +329,54 @@ class TaosMultiBind(ctypes.Structure):
         self._str_to_buffer(values, False)
 
 
-def new_bind_param():
-    # type: () -> TaosBind
-    if IS_V3:
-        return TaosMultiBind()
-    else:
-        return TaosBind()
+class TaosStmt2BindV(ctypes.Structure):
+    _fields_ = [
+        ("count", ctypes.c_int),
+        ("tbnames", ctypes.POINTER(ctypes.c_char_p)),
+        ("tags", ctypes.POINTER(ctypes.POINTER(TaosStmt2Bind))),
+        ("bind_cols", ctypes.POINTER(ctypes.POINTER(TaosStmt2Bind)))
+    ]
+
+    def init(
+            self,
+            count: int,
+            tbnames: List[str],
+            tags: Optional[List[List[TaosStmt2Bind]]],
+            bind_cols: Optional[List[List[TaosStmt2Bind]]]
+    ):
+        self.count = count
+        if tbnames is not None:
+            self.tbnames = (ctypes.c_char_p * count)(*tbnames)
+        else:
+            self.tbnames = None
+
+        if tags is not None:
+            self.tags = (ctypes.POINTER(TaosStmt2Bind) * len(tags))()
+            for i, tag_list in enumerate(tags):
+                self.tags[i] = (ctypes.POINTER(TaosStmt2Bind) * len(tag_list))(*tag_list)
+        else:
+            self.tags = None
+
+        if bind_cols is not None:
+            self.bind_cols = (ctypes.POINTER(TaosStmt2Bind) * count)()
+            for i, col_list in enumerate(bind_cols):
+                self.bind_cols[i] = (ctypes.POINTER(TaosStmt2Bind) * len(col_list))(*col_list)
+        else:
+            self.bind_cols = None
+        #
 
 
-def new_bind_params(size):
-    # type: (int) -> Array[TaosBind]
-    if IS_V3:
-        return (TaosMultiBind * size)()
-    else:
-        return (TaosBind * size)()
+def new_stmt2_binds(size: int) -> Array[TaosStmt2Bind]:
+    # type: (int) -> Array[TaosStmt2Bind]
+    return (TaosStmt2Bind * size)()
 
 
-def new_multi_bind():
-    # type: () -> TaosMultiBind
-    return TaosMultiBind()
-
-
-def new_multi_binds(size):
-    # type: (int) -> Array[TaosMultiBind]
-    return (TaosMultiBind * size)()
+def new_bindv(
+        count: int,
+        tbnames: Optional[List[str]],
+        tags: Optional[List[List[TaosStmt2Bind]]],
+        bind_cols: Optional[List[List[TaosStmt2Bind]]]
+) -> TaosStmt2BindV:
+    bindv = TaosStmt2BindV()
+    bindv.init(count, tbnames, tags, bind_cols)
+    return bindv
