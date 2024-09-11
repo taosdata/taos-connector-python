@@ -843,29 +843,25 @@ class TaosStmt2BindV(ctypes.Structure):
             bind_cols: Optional[List[List[TaosStmt2Bind]]]
     ):
         self.count = count
+        if tbnames is not None:
+            self.tbnames = (ctypes.c_char_p * count)(*tbnames)
+        else:
+            self.tbnames = None
 
-        # TODO:
+        if tags is not None:
+            self.tags = (ctypes.POINTER(TaosStmt2Bind) * len(tags))()
+            for i, tag_list in enumerate(tags):
+                self.tags[i] = (ctypes.POINTER(TaosStmt2Bind) * len(tag_list))(*tag_list)
+        else:
+            self.tags = None
 
-
-
-
-# class TaosStmt2BindV:
-#     def __init__(
-#             self,
-#             count: int,
-#             tbnames: List[str],
-#             tags: Optional[List[List[TaosStmt2Bind]]],
-#             bind_cols: Optional[List[List[TaosStmt2Bind]]]
-#     ):
-#         self.count = count
-#         self.tbnames = tbnames
-#         self.tags = tags
-#         self.bind_cols = bind_cols
-#
-#     def __repr__(self):
-#         return f"TaosStmt2BindV(count={self.count}, tbnames=[{self.tbnames}])"
-#
-
+        if bind_cols is not None:
+            self.bind_cols = (ctypes.POINTER(TaosStmt2Bind) * count)()
+            for i, col_list in enumerate(bind_cols):
+                self.bind_cols[i] = (ctypes.POINTER(TaosStmt2Bind) * len(col_list))(*col_list)
+        else:
+            self.bind_cols = None
+        #
 
 ############################################ stmt2 end ############################################
 
@@ -906,7 +902,7 @@ def new_bindv(
         tbnames: List[str],
         tags: Optional[List[List[TaosStmt2Bind]]],
         bind_cols: Optional[List[List[TaosStmt2Bind]]]
-):
-    # type: (int) -> Array[TaosStmt2Bind]
-    # return (TaosMultiBind * size)()
-    pass
+) -> TaosStmt2BindV:
+    bindv = TaosStmt2BindV()
+    bindv.init(count, tbnames, tags, bind_cols)
+    return bindv
