@@ -19,8 +19,8 @@ class TaosStmt2Option(ctypes.Structure):
 class TaosStmt2(object):
     """TDengine STMT2 interface"""
 
-    def __init__(self, stmt, decode_binary=True):
-        self._stmt = stmt
+    def __init__(self, stmt2, decode_binary=True):
+        self._stmt2 = stmt2
         self._decode_binary = decode_binary
 
     # def set_tbname(self, name):
@@ -28,67 +28,56 @@ class TaosStmt2(object):
     #
     #     Note that the set_tbname* method should only used in insert statement
     #     """
-    #     if self._stmt is None:
+    #     if self._stmt2 is None:
     #         raise StatementError("Invalid use of set_tbname")
-    #     taos_stmt_set_tbname(self._stmt, name)
+    #     taos_stmt_set_tbname(self._stmt2, name)
 
     def prepare(self, sql):
         # type: (str) -> None
-        taos_stmt2_prepare(self._stmt, sql)
+        taos_stmt2_prepare(self._stmt2, sql)
 
-    # def set_tbname_tags(self, name, tags):
-    #     # type: (str, Array[TaosBind]) -> None
-    #     """Set table name with tags, tags is array of BindParams"""
-    #     if self._stmt is None:
-    #         raise StatementError("Invalid use of set_tbname")
-    #     taos_stmt_set_tbname_tags(self._stmt, name, tags)
+   
+    def checkConsistent(self, tbnames, tags, datas):
+        return True
+    
+    def createBindV(self, tbnames, tags, datas):
+        pass
 
-    # def bind_param_old(self, params, add_batch=True):
-    #     # type: (Array[TaosBind], bool) -> None
-    #     if self._stmt is None:
-    #         raise StatementError("Invalid use of stmt")
-    #     taos_stmt_bind_param(self._stmt, params)
-    #     if add_batch:
-    #         taos_stmt_add_batch(self._stmt)
-
-    # def bind_param_batch(self, binds, add_batch=True):
-    #     # type: (Array[TaosMultiBind], bool) -> None
-    #     if self._stmt is None:
-    #         raise StatementError("Invalid use of stmt")
-    #     taos_stmt_bind_param_batch(self._stmt, binds)
-    #     if add_batch:
-    #         taos_stmt_add_batch(self._stmt)
-
-    # def add_batch(self):
-    #     if self._stmt is None:
-    #         raise StatementError("Invalid use of stmt")
-    #     taos_stmt_add_batch(self._stmt)
-
-    def bind_param(self, bindv, col_idx):
-        # type: (Array[TaosStmt2BindV], ctypes.c_int32) -> None
-        if self._stmt is None:
-            raise StatementError("Invalid use of stmt")
-        taos_stmt2_bind_param(self._stmt, bindv, col_idx)
+    def bind_param(self, tbnames, tags, datas):
+        if self._stmt2 is None:
+            raise StatementError("stmt2 object is null.")
+        
+        # check consistent
+        if self.checkConsistent(tbnames, tags, datas) == False:
+            raise StatementError("check consistent failed.")
+        
+        # bindV
+        bindv = self.createBindV(tbnames, tags, datas)
+        if bindv == None:
+            raise StatementError("create stmt2 bindV failed.")
+        
+        # call engine
+        taos_stmt2_bind_param(self._stmt2, bindv, -1)
 
 
     def execute(self) -> int:
-        if self._stmt is None:
+        if self._stmt2 is None:
             raise StatementError("Invalid use of execute")
         #
-        self._affected_rows = taos_stmt2_exec(self._stmt)
+        self._affected_rows = taos_stmt2_exec(self._stmt2)
         return self._affected_rows
 
     def result(self):
         """NOTE: Don't use a stmt result more than once."""
-        result = taos_stmt2_result(self._stmt)
+        result = taos_stmt2_result(self._stmt2)
         return TaosResult(result, close_after=False, decode_binary=self._decode_binary)
 
     def close(self):
         """Close stmt."""
-        if self._stmt is None:
+        if self._stmt2 is None:
             return
-        taos_stmt2_close(self._stmt)
-        self._stmt = None
+        taos_stmt2_close(self._stmt2)
+        self._stmt2 = None
 
     def is_insert(self):
         return True

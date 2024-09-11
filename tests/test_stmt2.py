@@ -1,11 +1,8 @@
 # encoding:UTF-8
-from taos import *
-
 from ctypes import *
 from datetime import datetime
-import taos
 import pytest
-
+import taos
 
 @pytest.fixture
 def conn():
@@ -15,7 +12,7 @@ def conn():
 def checkResultCorrects(conn, tbnames, tags, datas):
     pass
 
-def test_stmt_insert(conn):
+def test_stmt2_insert(conn):
     # type: (TaosConnection) -> None
     dbname  = "stmt2"
     stbname = "meters"
@@ -46,33 +43,31 @@ def test_stmt_insert(conn):
             # class 1
             [
                 # student
-                [1601481600000, "Mary",  0, 98],
-                [1601481600001, "Tom",   1, 80],
-                [1601481600002, "Jack",  1, 60],
-                [1601481600003, "Jane",  0, 100],
-                [1601481600004, "alex",  1, 99]
+                [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004],
+                ["Mary",       "Tom",        "Jack",       "Jane",       "alex"       ],
+                [0,            1,            1,            0,            1            ],
+                [98,           80,           60,           100,          99           ]
             ]
             # class 2
             [
                 # student
-                [1601481600000, "Mary2",  0, 298],
-                [1601481600001, "Tom2",   1, 280],
-                [1601481600002, "Jack2",  1, 260],
-                [1601481600003, "Jane2",  0, 2100],
-                [1601481600004, "alex2",  1, 299]
+                [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004],
+                ["Mary2",      "Tom2",       "Jack2",       "Jane2",     "alex2"       ],
+                [0,            1,            1,             0,           1             ],
+                [298,          280,          260,           2100,        299           ]
             ]
             # class 3
             [
                 # student
-                [1601481600000, "Mary3",  0, 398],
-                [1601481600001, "Tom3",   1, 380],
-                [1601481600002, "Jack3",  1, 360],
-                [1601481600003, "Jane3",  0, 3100],
-                [1601481600004, "alex3",  1, 399]
+                [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004],
+                ["Mary3",      "Tom3",       "Jack3",       "Jane3",     "alex3"       ],
+                [0,            1,            1,             0,           1             ],
+                [298,          380,          360,           3100,        399           ]
+
             ]
         ]
 
-        stmt2 = conn.statement2(f"insert into {stbname} values(?,?,?,?)")
+        stmt2 = conn.statement2(f"insert into ? using {stbname} tags(?,?) values(?,?,?,?)")
         stmt2.bind_param(tbanmes, tags, datas)
         stmt2.execute()
 
@@ -81,23 +76,21 @@ def test_stmt_insert(conn):
 
 
         conn.execute("drop database if exists %s" % dbname)
-        conn.close()
-        print("pass test_stmt_insert")
+        print("pass test_stmt2_insert")
 
     except Exception as err:
         conn.execute("drop database if exists %s" % dbname)
-        conn.close()
         raise err
 
 
 
 if __name__ == "__main__":
-    print("stmt3 test case\n")
+    print("stmt2 test case\n")
     # connect db
     conn = taos.connect()
 
     # test stmt2
-    test_stmt_insert(conn)
+    test_stmt2_insert(conn)
 
     # close
     conn.close()
