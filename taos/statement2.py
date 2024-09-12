@@ -43,19 +43,22 @@ class TaosStmt2(object):
         return True
     
 
-    def fillBind(self, bind, type, val):
-        if type == FieldType.C_BOOL:
-            bind.
+    def obtainSchema(self, count):
+        if self._stmt2 is None:
+            raise StatementError("stmt2 object is null.")
+        
+        for i in range(count):
+            
+
+
 
     def getFieldType(self, index, isTag):
         pass
 
-    #
-    # create taosStmt2Bind struct from list
-    #
-    def createTagBind(self, tagsTbs):
-        
-        # malloc
+   
+
+    # create stmt2Bind list from tags
+    def createTagsBind(self, tagsTbs):
         binds = []
         # tables tags
         for tagsTb in tagsTbs:
@@ -67,6 +70,23 @@ class TaosStmt2(object):
                 bindsTb[i].set_value(type, [tagsTb[i]])
             binds.append(bindsTb)
 
+        return binds    
+
+    # create stmt2Bind list from columns
+    def createColsBind(self, colsTbs):
+        binds = []
+        # tables columns data
+        for colsTb in colsTbs:
+            # table
+            n = len(colsTb)
+            bindsTb = new_stmt2_binds(n)
+            for i in range(n):
+                type = self.getFieldType(i, isTag=False)
+                bindsTb[i].set_value(type, colsTb[i])
+            binds.append(bindsTb)
+
+        return binds    
+
     
     #
     # create bindv from list
@@ -74,11 +94,16 @@ class TaosStmt2(object):
     def createBindV(self, tbnames, tags, datas):
         # count
         count = len(tbnames)
+
+        # obtain schema
+        
+         
+
         # tags
-        bindTags = self.createBind(tags, True)
+        bindTags = self.createTagsBind(tags)
 
         # datas
-        bindDatas = self.createBind(datas, False)
+        bindDatas = self.createColsBind(datas)
 
         # create
         return new_bindv(count, tbnames, bindTags, bindDatas)
