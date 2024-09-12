@@ -55,6 +55,49 @@ class TaosStmt2Bind(ctypes.Structure):
         ("num", ctypes.c_int)
     ]
 
+
+    #
+    # set bind value with field type
+    #
+    def set_value(self, buffer_type, values):
+        if buffer_type == FieldType.C_BOOL:
+            self.bool(values)
+        elif buffer_type == FieldType.C_TINYINT:
+            self.tinyint(values)
+        elif buffer_type == FieldType.C_SMALLINT:
+            self.smallint(values)
+        elif buffer_type == FieldType.C_INT:
+            self.int(values)
+        elif buffer_type == FieldType.C_BIGINT:
+            self.bigint(values)
+        elif buffer_type == FieldType.C_FLOAT:
+            self.float(values)
+        elif buffer_type == FieldType.C_DOUBLE:
+            self.double(values)
+        elif buffer_type == FieldType.C_VARCHAR:
+            self.varchar(values)
+        elif buffer_type == FieldType.C_BINARY:
+            self.binary(values)
+        elif buffer_type == FieldType.C_TIMESTAMP:
+            self.timestamp(values)
+        elif buffer_type == FieldType.C_NCHAR:
+            self.nchar(values)
+        elif buffer_type == FieldType.C_TINYINT_UNSIGNED:
+            self.tinyint_unsigned(values)
+        elif buffer_type == FieldType.C_SMALLINT_UNSIGNED:
+            self.smallint_unsigned(values)
+        elif buffer_type == FieldType.C_INT_UNSIGNED:
+            self.int_unsigned(values)
+        elif buffer_type == FieldType.C_BIGINT_UNSIGNED:
+            self.bigint_unsigned(values)
+        elif buffer_type == FieldType.C_JSON:
+            self.json(values)
+        elif buffer_type == FieldType.C_VARBINARY:
+            self.varbinary(values)
+        elif buffer_type == FieldType.C_GEOMETRY:
+            self.geometry(values)
+
+
     def bool(self, values):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
