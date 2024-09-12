@@ -74,6 +74,9 @@ class TaosStmt2(object):
     def __init__(self, stmt2, decode_binary=True):
         self._stmt2 = stmt2
         self._decode_binary = decode_binary
+        self.fields     = None
+        self.tag_fields = None
+        self.types      = None
         
 
     # def set_tbname(self, name):
@@ -98,15 +101,20 @@ class TaosStmt2(object):
         if self._stmt2 is None:
             raise StatementError("stmt2 object is null.")
         
-        for i in range(count):
-            
-
+        self.fields     = self.get_fields(TAOS_FIELD_COL)
+        self.tag_fields = self.get_fields(TAOS_FIELD_TAG)
 
 
     def getFieldType(self, index, isTag):
-        pass
-
-   
+        if isTag:
+            return self.tag_fields[index]
+        
+        # col
+        if self.types is not None:
+            # user set column types
+            return self.types[index]
+        else:
+            return self.fields[index]
 
     # create stmt2Bind list from tags
     def createTagsBind(self, tagsTbs):
@@ -213,6 +221,9 @@ class TaosStmt2(object):
         lasterr = "no init engine"
         # todo get from engine
         return lasterr
+    
+    def set_columns_type(self, types):
+        self.types = types
 
     def __del__(self):
         self.close()
