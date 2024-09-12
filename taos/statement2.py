@@ -1,6 +1,7 @@
 from taos.cinterface import *
 from taos.error import StatementError
 from taos.result import TaosResult
+import bind2
 
 
 
@@ -22,6 +23,7 @@ class TaosStmt2(object):
     def __init__(self, stmt2, decode_binary=True):
         self._stmt2 = stmt2
         self._decode_binary = decode_binary
+        
 
     # def set_tbname(self, name):
     #     """Set table name if needed.
@@ -40,8 +42,48 @@ class TaosStmt2(object):
     def checkConsistent(self, tbnames, tags, datas):
         return True
     
-    def createBindV(self, tbnames, tags, datas):
+
+    def fillBind(self, bind, type, val):
+        if type == FieldType.C_BOOL:
+            bind.
+
+    def getFieldType(self, index, isTag):
         pass
+
+    #
+    # create taosStmt2Bind struct from list
+    #
+    def createTagBind(self, tagsTbs):
+        
+        # malloc
+        binds = []
+        # tables tags
+        for tagsTb in tagsTbs:
+            # table
+            n = len(tagsTb)
+            bindsTb = new_stmt2_binds(n)
+            for i in range(n):
+                type = self.getFieldType(i, True)
+                bindsTb[i].set_value(type, [tagsTb[i]])
+            binds.append(bindsTb)
+
+    
+    #
+    # create bindv from list
+    #
+    def createBindV(self, tbnames, tags, datas):
+        # count
+        count = len(tbnames)
+        # tags
+        bindTags = self.createBind(tags, True)
+
+        # datas
+        bindDatas = self.createBind(datas, False)
+
+        # create
+        return new_bindv(count, tbnames, bindTags, bindDatas)
+
+
 
     def bind_param(self, tbnames, tags, datas):
         if self._stmt2 is None:
