@@ -470,6 +470,7 @@ def taos_use_result(result):
     """Use result after calling self.query, it's just for 1.6."""
     fields = []
     pfields = taos_fetch_fields_raw(result)
+    pfields = cast(pfields, POINTER(TaosField))
     for i in range(taos_field_count(result)):
         fields.append(
             {
@@ -1087,7 +1088,7 @@ except Exception as err:
 
 
 def taos_stmt2_init(taos, option):
-    # type: (ctypes.c_void_p, ctypes.c_void_p) -> ctypes.c_void_p
+    # type: (ctypes.c_void_p, TaosStmt2OptionImpl|None) -> ctypes.c_void_p
     """
     Initialize a statement with options.
     @param taos: TAOS*, pointer to TAOS connection
@@ -1095,7 +1096,7 @@ def taos_stmt2_init(taos, option):
     @return: c_void_p, pointer to initialized statement
     """
     _check_if_supported()
-    option_ptr = ctypes.byref(option) if option is not None else None
+    option_ptr = ctypes.byref(option) if option is not None else c_void_p(None)
     return c_void_p(_libtaos.taos_stmt2_init(taos, option_ptr))
 
 
