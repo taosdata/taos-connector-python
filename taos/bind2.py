@@ -97,7 +97,6 @@ class TaosStmt2Bind(ctypes.Structure):
         elif buffer_type == FieldType.C_GEOMETRY:
             self.geometry(values)
 
-
     def bool(self, values):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
@@ -247,17 +246,15 @@ class TaosStmt2Bind(ctypes.Structure):
             self.length = (c_int32 * len(values))(0 * self.num)
             return
 
-        _bytes = []
+        _bytes_list = []
         if encode:
-            _bytes = [value.encode("utf-8") if value is not None else None for value in values]
+            _bytes_list = [value.encode("utf-8") if value is not None else None for value in values]
         else:
-            _bytes = [bytes(value) if value is not None else None for value in values]
+            _bytes_list = [bytes(value) if value is not None else None for value in values]
 
-        # buffer_length = max(len(b) for b in _bytes if b is not None)
-        self.buffer = cast(
-            c_char_p(b"".join([b for b in _bytes if b is not None ])),          # FIXME
-            c_void_p,
-        )
+        # buffer_length = max(len(b) for b in _bytes_list if b is not None)
+        _bytes = b"".join([b for b in _bytes_list if b is not None])
+        self.buffer = cast(create_string_buffer(_bytes), c_void_p)
         self.length = (c_int32 * len(values))(*[len(b) if b is not None else 0 for b in _bytes])
         # self.buffer_length = buffer_length
 
@@ -389,7 +386,9 @@ class TaosStmt2BindV(ctypes.Structure):
     ):
         self.count = count
         if tbnames is not None:
-            self.tbnames = (ctypes.c_char_p * count)(*tbnames)
+            self.tbnames = (ctypes.c_char_p * count)()
+            for i, tbname in enumerate(tbnames):
+                self.tbnames[i] = self.str_to_buffer(tbname)
         else:
             self.tbnames = None
 
@@ -408,6 +407,21 @@ class TaosStmt2BindV(ctypes.Structure):
             self.bind_cols = None
         #
 
+    def str_to_buffer(self, value: str, encode=True):
+        buffer = None
+        if value is not None:
+            _bytes = None
+            if encode:
+                _bytes = value.encode("utf-8")
+            else:
+                _bytes = bytes(value)
+
+            buffer = cast(create_string_buffer(_bytes), c_void_p)
+        else:
+            buffer = c_void_p(None)
+
+        return buffer
+
 
 def new_stmt2_binds(size: int) -> Array[TaosStmt2Bind]:
     # type: (int) -> Array[TaosStmt2Bind]
@@ -417,8 +431,8 @@ def new_stmt2_binds(size: int) -> Array[TaosStmt2Bind]:
 def new_bindv(
         count: int,
         tbnames: Optional[List[str]],
-        tags: Optional[List[List[TaosStmt2Bind]]],
-        bind_cols: Optional[List[List[TaosStmt2Bind]]]
+        tags: Optional[List[Array[TaosStmt2Bind]]],
+        bind_cols: Optional[List[Array[TaosStmt2Bind]]]
 ) -> TaosStmt2BindV:
     bindv = TaosStmt2BindV()
     bindv.init(count, tbnames, tags, bind_cols)
