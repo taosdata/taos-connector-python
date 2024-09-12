@@ -124,6 +124,8 @@ class TaosConnection(object):
         # type: (str | None, TaosStmt2Option | None) -> TaosStmt2|None
         if self._conn is None:
             return None
+        if option is not None:
+            option = option.get_impl()
         stmt = taos_stmt2_init(self._conn, option)
         if sql is not None:
             taos_stmt2_prepare(stmt, sql)

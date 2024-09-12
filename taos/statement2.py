@@ -7,7 +7,7 @@ import bind2
 
 _taos_async_fn_t = ctypes.CFUNCTYPE(None, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int)
 
-class TaosStmt2Option(ctypes.Structure):
+class TaosStmt2OptionImpl(ctypes.Structure):
     _fields_ = [
         ("reqid", ctypes.c_int64),
         ("singleStbInsert", ctypes.c_bool),
@@ -15,6 +15,57 @@ class TaosStmt2Option(ctypes.Structure):
         ("asyncExecFn", _taos_async_fn_t),
         ("userdata", ctypes.c_void_p)
     ]
+
+
+class TaosStmt2Option:
+    def __init__(self, reqid: int, single_stb_insert: bool=False, single_table_bind_once: bool=False):
+        self._impl = TaosStmt2OptionImpl()
+        self.reqid = reqid
+        self.single_stb_insert = single_stb_insert
+        self.single_table_bind_once = single_table_bind_once
+
+    @property
+    def reqid(self) -> int:
+        return self._impl.reqid
+
+    @reqid.setter
+    def reqid(self, value: int):
+        self._impl.reqid = ctypes.c_int64(value)
+
+    @property
+    def single_stb_insert(self) -> bool:
+        return self._impl.singleStbInsert
+
+    @single_stb_insert.setter
+    def single_stb_insert(self, value: bool):
+        self._impl.singleStbInsert = ctypes.c_bool(value)
+
+    @property
+    def single_table_bind_once(self) -> bool:
+        return self._impl.singleTableBindOnce
+
+    @single_table_bind_once.setter
+    def single_table_bind_once(self, value: bool):
+        self._impl.singleTableBindOnce = ctypes.c_bool(value)
+
+    @property
+    def async_exec_fn(self) -> _taos_async_fn_t:
+        return self._impl.asyncExecFn
+
+    @async_exec_fn.setter
+    def async_exec_fn(self, value: _taos_async_fn_t):
+        self._impl.asyncExecFn = value
+
+    @property
+    def userdata(self) -> ctypes.c_void_p:
+        return self._impl.userdata
+
+    @userdata.setter
+    def userdata(self, value: ctypes.c_void_p):
+        self._impl.userdata = value
+
+    def get_impl(self):
+        return self._impl
 
 
 class TaosStmt2(object):

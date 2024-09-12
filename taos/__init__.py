@@ -5,10 +5,12 @@ from taos.connection import TaosConnection
 # recognize that "error" is a valid module of the "taos" package.
 from taos.error import *
 from taos.bind import *
+from taos.bind2 import *
 from taos.field import *
 from taos.cursor import *
 from taos.result import *
 from taos.statement import *
+from taos.statement2 import *
 from taos.subscription import *
 from taos.schemaless import *
 
@@ -42,6 +44,8 @@ __all__ = [
     "TaosRows",
     "TaosRow",
     "TaosStmt",
+    "TaosStmt2",
+    "TaosStmt2Option",
     "PrecisionEnum",
     "SmlPrecision",
     "SmlProtocol",

@@ -240,7 +240,7 @@ class TaosStmt2Bind(ctypes.Structure):
 
     def _str_to_buffer(self, values, encode=True):
         self.num = len(values)
-        is_null = [1 if v is None else 0 for v in values]
+        is_null = [1 if value is None else 0 for value in values]
         self.is_null = cast((c_byte * self.num)(*is_null), c_char_p)
 
         if sum(is_null) == self.num:
@@ -384,8 +384,8 @@ class TaosStmt2BindV(ctypes.Structure):
             self,
             count: int,
             tbnames: List[str],
-            tags: Optional[List[List[TaosStmt2Bind]]],
-            bind_cols: Optional[List[List[TaosStmt2Bind]]]
+            tags: Optional[List[Array[TaosStmt2Bind]]],
+            bind_cols: Optional[List[Array[TaosStmt2Bind]]]
     ):
         self.count = count
         if tbnames is not None:
