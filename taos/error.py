@@ -2,6 +2,10 @@
 """Python exceptions
 """
 
+class ErrMsg :
+    STMT2_NULL           = "stmt2 object is null"
+    STMT2_COUNT_NOTMATCH = "count is not match"
+
 
 class Error(Exception):
     def __init__(self, msg=None, errno=0xffff):

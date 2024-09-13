@@ -158,13 +158,15 @@ class TaosStmt2(object):
         self.types      = None
 
     def prepare(self, sql):
-        # type: (str) -> None
+        if self._stmt2 is None:
+            raise StatementError(ErrMsg.STMT2_NULL)
+        
         taos_stmt2_prepare(self._stmt2, sql)
 
 
     def bind_param(self, tbnames, tags, datas):
         if self._stmt2 is None:
-            raise StatementError("stmt2 object is null.")
+            raise StatementError(ErrMsg.STMT2_NULL)
         
         # obtain schema
         obtainSchema(self)
