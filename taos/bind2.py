@@ -239,6 +239,48 @@ class TaosStmt2Bind(ctypes.Structure):
 
     def _str_to_buffer(self, values, encode=True):
         self.num = len(values)
+        is_null = [1 if v is None else 0 for v in values]
+        self.is_null = cast((c_byte * self.num)(*is_null), c_char_p)
+
+        if sum(is_null) == self.num:
+            self.length = (c_int32 * len(values))(0 * self.num)
+            return
+        if sys.version_info < (3, 0):
+            _bytes = [bytes(value) if value is not None else None for value in values]
+            buffer_length = max(len(b) + 1 for b in _bytes if b is not None)
+            buffers = [
+                create_string_buffer(b, buffer_length) if b is not None else create_string_buffer(buffer_length)
+                for b in _bytes
+            ]
+            buffer_all = b"".join(v[:] for v in buffers)
+            self.buffer = cast(c_char_p(buffer_all), c_void_p)
+        else:
+            _bytes = []
+            if encode:
+                _bytes = [value.encode("utf-8") if value is not None else None for value in values]
+            else:
+                _bytes = [bytes(value) if value is not None else None for value in values]
+
+            buffer_length = max(len(b) for b in _bytes if b is not None)
+            print(f"_bytes={_bytes} buffer_length={buffer_length}\n")
+            self.buffer = cast(
+                c_char_p(
+                    b"".join(
+                        [
+                            create_string_buffer(b, buffer_length)
+                            if b is not None
+                            else create_string_buffer(buffer_length)
+                            for b in _bytes
+                        ]
+                    )
+                ),
+                c_void_p,
+            )
+        self.length = (c_int32 * len(values))(*[len(b) if b is not None else 0 for b in _bytes])
+        self.buffer_length = buffer_length
+
+        '''
+        self.num = len(values)
         is_null = [1 if value is None else 0 for value in values]
         self.is_null = cast((c_byte * self.num)(*is_null), c_char_p)
 
@@ -253,10 +295,14 @@ class TaosStmt2Bind(ctypes.Structure):
             _bytes_list = [bytes(value) if value is not None else None for value in values]
 
         # buffer_length = max(len(b) for b in _bytes_list if b is not None)
+        print(f"_bytes_list={_bytes_list}")
         _bytes = b"".join([b for b in _bytes_list if b is not None])
+        print(f"_bytes={_bytes}")
         self.buffer = cast(create_string_buffer(_bytes), c_void_p)
+        print(self.buffer)
         self.length = (c_int32 * len(values))(*[len(b) if b is not None else 0 for b in _bytes])
         # self.buffer_length = buffer_length
+        '''
 
     def binary(self, values):
         if type(values) is not tuple and type(values) is not list:
@@ -373,16 +419,16 @@ class TaosStmt2BindV(ctypes.Structure):
     _fields_ = [
         ("count", ctypes.c_int),
         ("tbnames", ctypes.POINTER(ctypes.c_char_p)),
-        ("tags", ctypes.POINTER(ctypes.POINTER(TaosStmt2Bind))),
-        ("bind_cols", ctypes.POINTER(ctypes.POINTER(TaosStmt2Bind)))
+        ("tagsTbs", ctypes.POINTER(ctypes.POINTER(TaosStmt2Bind))),
+        ("colsTbs", ctypes.POINTER(ctypes.POINTER(TaosStmt2Bind)))
     ]
 
     def init(
             self,
             count: int,
-            tbnames: List[str],
-            tags: Optional[List[Array[TaosStmt2Bind]]],
-            bind_cols: Optional[List[Array[TaosStmt2Bind]]]
+            tbnames,
+            tagsTbs,
+            colsTbs
     ):
         self.count = count
         if tbnames is not None:
@@ -392,20 +438,21 @@ class TaosStmt2BindV(ctypes.Structure):
         else:
             self.tbnames = None
 
-        if tags is not None:
-            self.tags = (ctypes.POINTER(TaosStmt2Bind) * len(tags))()
-            for i, tag_list in enumerate(tags):
-                self.tags[i] = (ctypes.POINTER(TaosStmt2Bind) * len(tag_list))(*tag_list)
+        if tagsTbs is not None:
+            self.tagsTbs = (ctypes.POINTER(TaosStmt2Bind) * len(tagsTbs))()
+            for i, tagsTb in enumerate(tagsTbs):
+                self.tagsTbs[i] = tagsTb
         else:
-            self.tags = None
+            self.tagsTbs = None
 
+        '''
         if bind_cols is not None:
             self.bind_cols = (ctypes.POINTER(TaosStmt2Bind) * count)()
             for i, col_list in enumerate(bind_cols):
                 self.bind_cols[i] = (ctypes.POINTER(TaosStmt2Bind) * len(col_list))(*col_list)
         else:
             self.bind_cols = None
-        #
+        '''
 
     def str_to_buffer(self, value: str, encode=True):
         buffer = None
@@ -416,24 +463,23 @@ class TaosStmt2BindV(ctypes.Structure):
             else:
                 _bytes = bytes(value)
 
-            buffer = cast(create_string_buffer(_bytes), c_void_p)
+            buffer = cast(create_string_buffer(_bytes), c_char_p)
         else:
             buffer = c_void_p(None)
 
         return buffer
 
 
-def new_stmt2_binds(size: int) -> Array[TaosStmt2Bind]:
+def new_stmt2_binds(size: int):
     # type: (int) -> Array[TaosStmt2Bind]
     return (TaosStmt2Bind * size)()
 
 
 def new_bindv(
         count: int,
-        tbnames: Optional[List[str]],
-        tags: Optional[List[Array[TaosStmt2Bind]]],
-        bind_cols: Optional[List[Array[TaosStmt2Bind]]]
-) -> TaosStmt2BindV:
-    bindv = TaosStmt2BindV()
-    bindv.init(count, tbnames, tags, bind_cols)
+        tbnames, 
+        tags,
+        bind_cols):
+    bindv = (TaosStmt2BindV * 1)()
+    bindv[0].init(count, tbnames, tags, bind_cols)
     return bindv

@@ -4,6 +4,8 @@ from datetime import datetime
 import pytest
 import taos
 
+from taos.constants import FieldType
+
 @pytest.fixture
 def conn():
     # type: () -> taos.TaosConnection
@@ -31,7 +33,6 @@ def test_stmt2_insert(conn):
         # 1601481600000
 
 
-
         # prepare data
         tbanmes = ["d1","d2","d3"]
         tags    = [
@@ -47,7 +48,7 @@ def test_stmt2_insert(conn):
                 ["Mary",       "Tom",        "Jack",       "Jane",       "alex"       ],
                 [0,            1,            1,            0,            1            ],
                 [98,           80,           60,           100,          99           ]
-            ]
+            ],
             # class 2
             [
                 # student
@@ -55,7 +56,7 @@ def test_stmt2_insert(conn):
                 ["Mary2",      "Tom2",       "Jack2",       "Jane2",     "alex2"       ],
                 [0,            1,            1,             0,           1             ],
                 [298,          280,          260,           2100,        299           ]
-            ]
+            ],
             # class 3
             [
                 # student
@@ -67,7 +68,43 @@ def test_stmt2_insert(conn):
             ]
         ]
 
+
+        '''
+        [
+            # tbname
+            "table1",
+            # tags 
+            ["grade1", "1"],
+            # column 1
+            [
+                # student
+                [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004],
+                ["Mary",       "Tom",        "Jack",       "Jane",       "alex"       ],
+                [0,            1,            1,            0,            1            ],
+                [98,           80,           60,           100,          99           ]
+            ]
+        ],
+        [
+            # tbname
+            "table2"
+            # tags 
+            ["grade1", "2"],            
+            # column 2
+            [
+                # student
+                [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004],
+                ["Mary",       "Tom",        "Jack",       "Jane",       "alex"       ],
+                [0,            1,            1,            0,            1            ],
+                [98,           80,           60,           100,          99           ]
+            ]
+        ]
+        '''
+    
         stmt2 = conn.statement2(f"insert into ? using {stbname} tags(?,?) values(?,?,?,?)")
+        
+        # columns type for stable
+        types = [FieldType.C_TIMESTAMP, FieldType.C_BINARY, FieldType.C_BOOL, FieldType.C_INT]
+        stmt2.set_columns_type(types)
         stmt2.bind_param(tbanmes, tags, datas)
         stmt2.execute()
 
@@ -88,10 +125,14 @@ if __name__ == "__main__":
     print("stmt2 test case\n")
     # connect db
     conn = taos.connect()
+    print("db connect is successful!\n")
 
     # test stmt2
+    print("stmt2 bind and insert.\n")
     test_stmt2_insert(conn)
 
     # close
     conn.close()
+    print("db disconnect!\n")
+
 

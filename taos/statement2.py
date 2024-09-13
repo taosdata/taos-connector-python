@@ -1,7 +1,8 @@
 from taos.cinterface import *
 from taos.error import StatementError
 from taos.result import TaosResult
-import bind2
+from taos import bind2
+from typing import Optional
 
 
 
@@ -75,49 +76,57 @@ def checkConsistent(tbnames, tags, datas):
     # todo
     return True
 
-def obtainSchema(stmt2):
-    if stmt2._stmt2 is None:
+def obtainSchema(statement2):
+    if statement2._stmt2 is None:
         raise StatementError("stmt2 object is null.")
     
-    stmt2.fields     = stmt2.get_fields(TAOS_FIELD_COL)
-    stmt2.tag_fields = stmt2.get_fields(TAOS_FIELD_TAG)
+    # test
+    statement2.tag_fields = [FieldType.C_BINARY, FieldType.C_INT]
+    statement2.fields     = [FieldType.C_TIMESTAMP, FieldType.C_BINARY, FieldType.C_BOOL, FieldType.C_INT]
 
-def getFieldType(stmt2, index, isTag):
+    #stmt2.fields     = stmt2.get_fields(TAOS_FIELD_COL)
+    #stmt2.tag_fields = stmt2.get_fields(TAOS_FIELD_TAG)
+
+def getFieldType(statement2, index, isTag):
     if isTag:
-        return stmt2.tag_fields[index]
+        return statement2.tag_fields[index]
     
     # col
-    if stmt2.types is not None:
+    if statement2.types is not None:
         # user set column types
-        return stmt2.types[index]
+        return statement2.types[index]
     else:
-        return stmt2.fields[index]
+        return statement2.fields[index]
 
 # create stmt2Bind list from tags
-def createTagsBind(stmt2, tagsTbs):
+def createTagsBind(statement2, tagsTbs):
     binds = []
     # tables tags
     for tagsTb in tagsTbs:
         # table
+        print(f"tagsTb={tagsTb}")
+
         n = len(tagsTb)
-        bindsTb = new_stmt2_binds(n)
+        bindsTb = bind2.new_stmt2_binds(n)
         for i in range(n):
-            type = stmt2.getFieldType(i, True)
-            bindsTb[i].set_value(type, [tagsTb[i]])
+            type = getFieldType(statement2, i, True)
+            values = [tagsTb[i]]
+            print(f"tagasTb i={i} {values}")
+            bindsTb[i].set_value(type, values)
         binds.append(bindsTb)
 
     return binds    
 
 # create stmt2Bind list from columns
-def createColsBind(stmt2, colsTbs):
+def createColsBind(statement2, colsTbs):
     binds = []
     # tables columns data
     for colsTb in colsTbs:
         # table
         n = len(colsTb)
-        bindsTb = new_stmt2_binds(n)
+        bindsTb = bind2.new_stmt2_binds(n)
         for i in range(n):
-            type = stmt2.getFieldType(i, isTag=False)
+            type = getFieldType(statement2, i, isTag=False)
             bindsTb[i].set_value(type, colsTb[i])
         binds.append(bindsTb)
 
@@ -127,18 +136,18 @@ def createColsBind(stmt2, colsTbs):
 #
 # create bindv from list
 #
-def createBindV(stmt2, tbnames, tags, datas):
+def createBindV(statement2, tbnames, tags, datas):
     # count
     count = len(tbnames)
 
     # tags
-    bindTags = createTagsBind(stmt2, tags)
+    bindTags = createTagsBind(statement2, tags)
 
     # datas
-    bindDatas = createColsBind(stmt2, datas)
+    bindDatas = createColsBind(statement2, datas)
 
     # create
-    return new_bindv(count, tbnames, bindTags, bindDatas)
+    return bind2.new_bindv(count, tbnames, bindTags, bindDatas)
 
 
 
@@ -176,7 +185,7 @@ class TaosStmt2(object):
             raise StatementError("check consistent failed.")
         
         # bindV
-        bindv = createBindV(tbnames, tags, datas)
+        bindv = createBindV(self, tbnames, tags, datas)
         if bindv == None:
             raise StatementError("create stmt2 bindV failed.")
         

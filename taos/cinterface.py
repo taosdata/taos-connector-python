@@ -1141,6 +1141,7 @@ def taos_stmt2_bind_param(stmt, bindv, col_idx):
     @col_idx: c_int32 column index
     """
     _check_if_supported()
+    print(f" type={type(bindv)} bindv={bindv}")
     res = _libtaos.taos_stmt2_bind_param(stmt, bindv, col_idx)
     if res != 0:
         error_msg = taos_stmt2_error(stmt)
