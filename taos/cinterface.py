@@ -1190,7 +1190,7 @@ def taos_stmt2_close(stmt):
     @stmt: c_void_p TAOS_STMT2*
     """
     _check_if_supported()
-    res = _libtaos.taos_stmt_close(stmt)
+    res = _libtaos.taos_stmt2_close(stmt)
     if res != 0:
         error_msg = taos_stmt2_error(stmt)
         raise StatementError(msg=error_msg, errno=res)

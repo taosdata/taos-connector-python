@@ -190,7 +190,7 @@ class TaosStmt2(object):
             raise StatementError("create stmt2 bindV failed.")
         
         # call engine
-        taos_stmt2_bind_param(self._stmt2, bindv, -1)
+        taos_stmt2_bind_param(self._stmt2, bindv.get_address(), -1)
 
 
     def execute(self) -> int:
