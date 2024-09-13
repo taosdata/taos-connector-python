@@ -112,8 +112,8 @@ def test_stmt2_insert(conn):
         checkResultCorrects(conn, tbanmes, tags, datas)
 
 
-        conn.execute("drop database if exists %s" % dbname)
-        print("pass test_stmt2_insert")
+        #conn.execute("drop database if exists %s" % dbname)
+        print("test_stmt2_insert test successful.")
 
     except Exception as err:
         conn.execute("drop database if exists %s" % dbname)
