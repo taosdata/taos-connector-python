@@ -384,9 +384,9 @@ class TaosStmt2BindV(ctypes.Structure):
     def init(
             self,
             count: int,
-            tbnames: List[str],
-            tags: Optional[List[Array[TaosStmt2Bind]]],
-            bind_cols: Optional[List[Array[TaosStmt2Bind]]]
+            tbnames,    # List[str],
+            tags,       # Optional[List[Array[TaosStmt2Bind]]],
+            bind_cols   # Optional[List[Array[TaosStmt2Bind]]]
     ):
         self.count = count
         if tbnames is not None:
