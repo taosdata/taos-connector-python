@@ -1252,12 +1252,13 @@ def taos_stmt2_get_fields(stmt, field_type):
     """
     _check_if_supported()
     _check_if_supported("taos_stmt2_free_fields")
+    _field_type = TAOS_FIELD_T(field_type)
     count = ctypes.c_int(0)
     # fields_ptr = ctypes.c_void_p(0)
     # TODO: FIXME
     fields_ptr = ctypes.POINTER(TaosFieldEx)()
 
-    res = _libtaos.taos_stmt2_get_fields(stmt, field_type, ctypes.byref(count), ctypes.byref(fields_ptr))
+    res = _libtaos.taos_stmt2_get_fields(stmt, _field_type, ctypes.byref(count), ctypes.byref(fields_ptr))
     if res != 0:
         error_msg = taos_stmt2_error(stmt)
         raise StatementError(msg=error_msg, errno=res)
@@ -1265,16 +1266,18 @@ def taos_stmt2_get_fields(stmt, field_type):
 
     # TODO: FIXME
     fields = []
-    for i in range(count.value):
-        field_c = fields_ptr[i]
-        field_py = TaosFieldExCls(
-            name = field_c.name,
-            field_type = field_c.type,
-            precision = field_c.precision,
-            scale = field_c.scale,
-            bytes_ = field_c.bytes
-        )
-        fields.append(field_py)
+    if field_type in [TAOS_FIELD_TAG, TAOS_FIELD_COL]:
+        for i in range(count.value):
+            field_c: TaosFieldEx = fields_ptr[i]
+            field_py = TaosFieldExCls(
+                name = field_c.name,
+                field_type = field_c.type,
+                precision = field_c.precision,
+                scale = field_c.scale,
+                bytes_ = field_c.bytes
+            )
+            fields.append(field_py)
+        #
     #
 
     _libtaos.taos_stmt2_free_fields(stmt, fields_ptr)

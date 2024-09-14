@@ -284,6 +284,143 @@ def test_taos_stmt2_insert():
     print("pass test_taos_stmt2_insert")
 
 
+def test_taos_stmt2_get_fields():
+    from taos.bind2 import TaosStmt2Bind, new_stmt2_binds, new_bindv
+
+    conn = taos_connect(**cfg)
+    option = None
+    stmt2 = taos_stmt2_init(conn, option)
+
+    dbname = "stmt2"
+    stbname = "meters"
+    execute_sql(conn, "drop database if exists %s" % dbname)
+    execute_sql(conn, "create database if not exists %s" % dbname)
+    taos_select_db(conn, dbname)
+
+    sql = f"create table if not exists {stbname}(ts timestamp, name binary(32), sex bool, score int) tags(grade binary(24), class int)"
+    execute_sql(conn, sql)
+
+    sql = f"insert into ? using {stbname} tags(?,?) values(?,?,?,?)"
+    taos_stmt2_prepare(stmt2, sql)
+
+    # TODO: get fields
+    TAOS_FIELD_COL      = 1
+    TAOS_FIELD_TAG      = 2
+    TAOS_FIELD_QUERY    = 3
+    TAOS_FIELD_TBNAME   = 4
+
+
+    # # TODO: get tbname when not bind
+    # try:
+    #     fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_TBNAME)
+    #     print(fields)
+    #     assert 1==2
+    # except StatementError as e:
+    #     pass
+    #
+    # # TODO: get tag when not bind
+    # try:
+    #     fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_TAG)
+    #     print(fields)
+    #     assert 1==2
+    # except StatementError as e:
+    #     pass
+    #
+    # # TODO: get col when not bind
+    # try:
+    #     fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_COL)
+    #     print(fields)
+    #     assert 1==2
+    # except StatementError as e:
+    #     pass
+
+
+    # prepare data
+    tbanmes = ["d1", "d2", "d3"]
+    tags = [
+        ["grade1", 1],
+        ["grade1", 2],
+        ["grade1", 3]
+    ]
+    datas = [
+        # class 1
+        [
+            # student
+            [1601481600000, 1601481600001, 1601481600002, 1601481600003, 1601481600004],
+            ["Mary", "Tom", "Jack", "Jane", "alex"],
+            [0, 1, 1, 0, 1],
+            [98, 80, 60, 100, 99]
+        ],
+            # class 2
+        [
+            # student
+            [1601481600000, 1601481600001, 1601481600002, 1601481600003, 1601481600004],
+            ["Mary2", "Tom2", "Jack2", "Jane2", "alex2"],
+            [0, 1, 1, 0, 1],
+            [298, 280, 260, 2100, 299]
+        ],
+            # class 3
+        [
+            # student
+            [1601481600000, 1601481600001, 1601481600002, 1601481600003, 1601481600004],
+            ["Mary3", "Tom3", "Jack3", "Jane3", "alex3"],
+            [0, 1, 1, 0, 1],
+            [398, 380, 360, 3100, 399]
+
+        ]
+    ]
+
+    cnt_tbls = 3
+    cnt_tags = 2
+    cnt_cols = 4
+    cnt_rows = 5
+    # new_stmt2_binds(cnt_cols)
+
+    # tags
+    stmt2_tags = []
+    for tag_list in tags:
+        n = len(tag_list)
+        assert n == cnt_tags
+        binds: Array[TaosStmt2Bind] = new_stmt2_binds(n)
+        binds[0].binary(tag_list[0])
+        binds[1].int(tag_list[1])
+        stmt2_tags.append(binds)
+    #
+
+    # cols
+    stmt2_cols = []
+    for data_list in datas:
+        n = len(data_list)
+        assert n == cnt_cols
+        binds: Array[TaosStmt2Bind] = new_stmt2_binds(n)
+        binds[0].timestamp(data_list[0])
+        binds[1].binary(data_list[1])
+        binds[2].bool(data_list[2])
+        binds[3].int(data_list[3])
+        stmt2_cols.append(binds)
+    #
+
+    bindv = new_bindv(cnt_tbls, tbanmes, stmt2_tags, stmt2_cols)
+
+    taos_stmt2_bind_param(stmt2, bindv.get_address(), -1)
+
+    # TODO: get tbname when bind
+    fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_TBNAME)
+    assert len(fields) == 0
+
+    # TODO: get tag when bind
+    fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_TAG)
+    assert len(fields) == cnt_tags
+
+    # TODO: get col when bind
+    fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_COL)
+    assert len(fields) == cnt_cols
+
+    taos_stmt2_close(stmt2)
+    taos_close(conn)
+
+    print("pass test_taos_stmt2_get_fields")
+
 
 # def test_taos_stmt2_error():
 #     conn = taos_connect(**cfg)
