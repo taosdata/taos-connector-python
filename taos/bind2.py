@@ -430,8 +430,7 @@ class TaosStmt2BindV(ctypes.Structure):
         return c_void_p(ctypes.addressof(self))
 
 
-def new_stmt2_binds(size: int) -> Array[TaosStmt2Bind]:
-    # type: (int) -> Array[TaosStmt2Bind]
+def new_stmt2_binds(size: int) : # -> Array[TaosStmt2Bind]:
     return (TaosStmt2Bind * size)()
 
 

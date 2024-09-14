@@ -166,8 +166,6 @@ class TaosFields(object):
 
 
 TAOS_FIELD_T = ctypes.c_int
-(TAOS_FIELD_COL, TAOS_FIELD_TAG, TAOS_FIELD_QUERY, TAOS_FIELD_TBNAME) = map(TAOS_FIELD_T, range(1, 5))
-
 class TaosFieldEx(ctypes.Structure):
     _fields_ = [
         ("_name", ctypes.c_char * 65),

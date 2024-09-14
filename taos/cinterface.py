@@ -1236,7 +1236,12 @@ try:
 except Exception as err:
     _UNSUPPORTED["taos_stmt2_get_fields"] = err
 
-
+# define field_type 
+TAOS_FIELD_COL    = 1 
+TAOS_FIELD_TAG    = 2
+TAOS_FIELD_QUERY  = 3
+TAOS_FIELD_TBNAME = 4
+# get fields 
 def taos_stmt2_get_fields(stmt, field_type):
     # type: (ctypes.c_void_p, TAOS_FIELD_T) -> List[TaosFieldEx]
     """
