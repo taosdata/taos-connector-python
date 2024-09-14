@@ -2,8 +2,9 @@ from taos.cinterface import *
 from taos.error import StatementError
 from taos.result import TaosResult
 from taos import bind2
+from taos import log
 from typing import Optional
-import taos.log
+
 
 
 
@@ -168,13 +169,22 @@ def createColsBind(statement2, colsTbs):
 #
 def createBindV(statement2, tbnames, tags, datas):
     # count
-    count = len(tbnames)
+    count = 0
+    if tbnames != None:
+        count = len(tbnames)
 
     # tags
-    bindTags = createTagsBind(statement2, tags)
+    if tags == None:
+        bindTags = None
+    else:
+        bindTags = createTagsBind(statement2, tags)
 
     # datas
-    bindDatas = createColsBind(statement2, datas)
+    if datas == None:
+        bindDatas = None
+    else:
+        bindDatas = createColsBind(statement2, datas)
+        count = len(datas)
 
     # create
     return bind2.new_bindv(count, tbnames, bindTags, bindDatas)

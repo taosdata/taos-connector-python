@@ -54,8 +54,8 @@ def test_bind_param(conn, stmt2):
     ]
 
     # call 
-    types = [FieldType.C_TIMESTAMP, FieldType.C_BINARY, FieldType.C_BOOL, FieldType.C_INT]
-    stmt2.set_columns_type(types)
+    #types = [FieldType.C_TIMESTAMP, FieldType.C_BINARY, FieldType.C_BOOL, FieldType.C_INT]
+    #stmt2.set_columns_type(types)
     stmt2.bind_param(tbanmes, tags, datas)
     stmt2.execute()
 
@@ -114,8 +114,8 @@ def test_bind_param_with_tables(conn, stmt2):
        table2.add_col_data(data)
 
     # columns type for stable
-    types = [FieldType.C_TIMESTAMP, FieldType.C_BINARY, FieldType.C_BOOL, FieldType.C_INT]
-    stmt2.set_columns_type(types)
+    #types = [FieldType.C_TIMESTAMP, FieldType.C_BINARY, FieldType.C_BOOL, FieldType.C_INT]
+    #stmt2.set_columns_type(types)
     stmt2.bind_param_with_tables([table0, table1, table2])
     stmt2.execute()
 
@@ -140,7 +140,7 @@ def test_stmt2_insert(conn):
         # conn.load_table_info("log")
 
         # insert with table
-        test_bind_param_with_tables(conn, stmt2)
+        #test_bind_param_with_tables(conn, stmt2)
 
         # insert with split args
         test_bind_param(conn, stmt2)

@@ -1268,7 +1268,7 @@ def taos_stmt2_get_fields(stmt, field_type):
     for i in range(count.value):
         field_c = fields_ptr[i]
         field_py = TaosFieldExCls(
-            name = field_c.name.raw[:field_c.name.raw.index(b'\x00')].decode('utf-8'),
+            name = field_c.name,
             field_type = field_c.type,
             precision = field_c.precision,
             scale = field_c.scale,

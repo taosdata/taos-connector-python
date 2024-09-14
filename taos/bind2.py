@@ -401,14 +401,14 @@ class TaosStmt2BindV(ctypes.Structure):
             for i, tag_list in enumerate(tags):
                 self.tags[i] = tag_list
         else:
-            self.tags = c_void_p(None)
+            self.tags = None
 
         if bind_cols is not None:
             self.bind_cols = (ctypes.POINTER(TaosStmt2Bind) * count)()
             for i, col_list in enumerate(bind_cols):
                 self.bind_cols[i] = col_list
         else:
-            self.bind_cols = c_void_p(None)
+            self.bind_cols = None
         #
 
     def str_to_buffer(self, value: str, encode=True):
