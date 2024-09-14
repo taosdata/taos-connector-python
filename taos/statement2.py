@@ -3,6 +3,8 @@ from taos.error import StatementError
 from taos.result import TaosResult
 from taos import bind2
 from typing import Optional
+import taos.log
+
 
 
 
@@ -95,11 +97,16 @@ def obtainSchema(statement2):
         raise StatementError("stmt2 object is null.")
     
     # test
-    statement2.tag_fields = [FieldType.C_BINARY, FieldType.C_INT]
-    statement2.fields     = [FieldType.C_TIMESTAMP, FieldType.C_BINARY, FieldType.C_BOOL, FieldType.C_INT]
+    #statement2.tag_fields = [FieldType.C_BINARY, FieldType.C_INT]
+    #statement2.fields     = [FieldType.C_TIMESTAMP, FieldType.C_BINARY, FieldType.C_BOOL, FieldType.C_INT]
 
-    #stmt2.fields     = stmt2.get_fields(TAOS_FIELD_COL)
-    #stmt2.tag_fields = stmt2.get_fields(TAOS_FIELD_TAG)
+    statement2.fields     = statement2.get_fields(TAOS_FIELD_COL)
+    statement2.tag_fields = statement2.get_fields(TAOS_FIELD_TAG)
+    log.debug(f"obtain schema tag fields= {statement2.tag_fields}")
+    log.debug(f"obtain schema fields= {statement2.fields}")
+
+    return len(statement2.fields) > 0
+
 
 def getFieldType(statement2, index, isTag):
     if isTag:
@@ -191,8 +198,13 @@ class TaosStmt2(object):
         if self._stmt2 is None:
             raise StatementError(ErrMsg.STMT2_NULL)
         
-        # obtain schema
-        obtainSchema(self)
+        # obtain again after set tbname
+        bindv = createBindV(self, tbnames, None, None)
+        if bindv == None:
+            raise StatementError("create stmt2 bindV failed.")
+        taos_stmt2_bind_param(self._stmt2, bindv.get_address(), -1)
+        if obtainSchema(self) is False:
+            raise StatementError(f"obtain schema failed. tbnames={tbnames}")
         
         # check consistent
         if checkConsistent(tbnames, tags, datas) == False:
