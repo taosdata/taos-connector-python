@@ -437,9 +437,9 @@ def new_stmt2_binds(size: int) -> Array[TaosStmt2Bind]:
 
 def new_bindv(
         count: int,
-        tbnames: Optional[List[str]],
-        tags: Optional[List[Array[TaosStmt2Bind]]],
-        bind_cols: Optional[List[Array[TaosStmt2Bind]]]
+        tbnames,    # Optional[List[str]]
+        tags,       # Optional[List[Array[TaosStmt2Bind]]],
+        bind_cols   # Optional[List[Array[TaosStmt2Bind]]]
 ) -> TaosStmt2BindV:
     bindv = TaosStmt2BindV()
     bindv.init(count, tbnames, tags, bind_cols)
