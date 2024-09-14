@@ -32,12 +32,19 @@ class TaosStmt2OptionImpl(ctypes.Structure):
     ]
 
 
+def taos_stmt2_async_exec(userdata, result_set, error_code):
+    print(f"Executing asynchronously with userdata: {userdata}, result_set: {result_set}, error_code: {error_code}")
+
+
 class TaosStmt2Option:
-    def __init__(self, reqid: int, single_stb_insert: bool=False, single_table_bind_once: bool=False):
+    def __init__(self, reqid: int, single_stb_insert: bool=False, single_table_bind_once: bool=False, **kwargs):
         self._impl = TaosStmt2OptionImpl()
         self.reqid = reqid
         self.single_stb_insert = single_stb_insert
         self.single_table_bind_once = single_table_bind_once
+        self.is_async = kwargs.get('is_async', False)
+        self.async_exec_fn = taos_stmt2_async_exec if self.is_async else _taos_async_fn_t()
+        self.userdata = ctypes.c_void_p(None)
 
     @property
     def reqid(self) -> int:
@@ -69,6 +76,8 @@ class TaosStmt2Option:
 
     @async_exec_fn.setter
     def async_exec_fn(self, value: _taos_async_fn_t):
+        if value is not None and not isinstance(value, _taos_async_fn_t):
+            raise TypeError("async_exec_fn must be an instance of _taos_async_fn_t or None")
         self._impl.asyncExecFn = value
 
     @property
