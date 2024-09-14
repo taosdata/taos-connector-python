@@ -8,6 +8,20 @@ from typing import Optional
 
 _taos_async_fn_t = ctypes.CFUNCTYPE(None, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int)
 
+#
+# bind data with table
+#
+class BindTable(object):
+    def __init__(self, name, tags):
+        self.name  = name
+        self.tags  = tags
+        self.datas = []
+
+    # add column data
+    def add_col_data(self, data):
+        self.datas.append(data)
+
+
 class TaosStmt2OptionImpl(ctypes.Structure):
     _fields_ = [
         ("reqid", ctypes.c_int64),
@@ -191,6 +205,21 @@ class TaosStmt2(object):
         
         # call engine
         taos_stmt2_bind_param(self._stmt2, bindv.get_address(), -1)
+
+    # with table bind
+    def bind_param_with_tables(self, tables):
+
+        tbnames = []
+        tagsTbs = []
+        datasTbs = []
+
+        for table in tables:
+            tbnames.append(table.name)
+            tagsTbs.append(table.tags)
+            datasTbs.append(table.datas)
+
+        # call bind
+        self.bind_param(tbnames, tagsTbs, datasTbs)
 
 
     def execute(self) -> int:
