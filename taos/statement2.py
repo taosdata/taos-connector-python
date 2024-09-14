@@ -107,8 +107,9 @@ def obtainSchema(statement2):
         raise StatementError("stmt2 object is null.")
     
     # test
-    #statement2.tag_fields = [FieldType.C_BINARY, FieldType.C_INT]
-    #statement2.fields     = [FieldType.C_TIMESTAMP, FieldType.C_BINARY, FieldType.C_BOOL, FieldType.C_INT]
+    statement2.tag_fields = [FieldType.C_BINARY, FieldType.C_INT]
+    statement2.fields     = [FieldType.C_TIMESTAMP, FieldType.C_BINARY, FieldType.C_BOOL, FieldType.C_INT]
+    return len(statement2.fields) > 0
 
     statement2.fields     = statement2.get_fields(TAOS_FIELD_COL)
     statement2.tag_fields = statement2.get_fields(TAOS_FIELD_TAG)
@@ -135,14 +136,12 @@ def createTagsBind(statement2, tagsTbs):
     # tables tags
     for tagsTb in tagsTbs:
         # table
-        print(f"tagsTb={tagsTb}")
-
+        log.debug(f"tagsTb={tagsTb}")
         n = len(tagsTb)
         bindsTb = bind2.new_stmt2_binds(n)
         for i in range(n):
             type = getFieldType(statement2, i, True)
             values = [tagsTb[i]]
-            print(f"tagasTb i={i} {values}")
             bindsTb[i].set_value(type, values)
         binds.append(bindsTb)
 
@@ -217,6 +216,10 @@ class TaosStmt2(object):
         if self._stmt2 is None:
             raise StatementError(ErrMsg.STMT2_NULL)
         
+        # test
+        obtainSchema(self)
+        
+        '''
         # obtain again after set tbname
         bindv = createBindV(self, tbnames, None, None)
         if bindv == None:
@@ -228,7 +231,7 @@ class TaosStmt2(object):
         # check consistent
         if checkConsistent(tbnames, tags, datas) == False:
             raise StatementError("check consistent failed.")
-        
+        '''
         # bindV
         bindv = createBindV(self, tbnames, tags, datas)
         if bindv == None:
