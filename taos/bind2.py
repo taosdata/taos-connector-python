@@ -394,7 +394,7 @@ class TaosStmt2BindV(ctypes.Structure):
             for i, tbname in enumerate(tbnames):
                 self.tbnames[i] = cast(self.str_to_buffer(tbname), c_char_p)
         else:
-            self.tbnames = c_void_p(None)
+            self.tbnames = None
 
         if tags is not None:
             self.tags = (ctypes.POINTER(TaosStmt2Bind) * len(tags))()
@@ -422,7 +422,7 @@ class TaosStmt2BindV(ctypes.Structure):
 
             buffer = cast(create_string_buffer(_bytes), c_void_p)
         else:
-            buffer = c_void_p(None)
+            buffer = None
 
         return buffer
 

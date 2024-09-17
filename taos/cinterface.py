@@ -1219,7 +1219,7 @@ def taos_stmt2_is_insert(stmt):
         error_msg = taos_stmt2_error(stmt)
         raise StatementError(msg=error_msg, errno=res)
     #
-    return is_insert.value == 0
+    return is_insert.value !=0
 
 
 # int taos_stmt2_get_fields(TAOS_STMT2 *stmt, TAOS_FIELD_T field_type, int *count, TAOS_FIELD_E **fields);
