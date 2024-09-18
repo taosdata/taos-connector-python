@@ -168,7 +168,7 @@ def execute_sql(conn, sql):
 
 
 def test_taos_stmt2_init_without_option():
-    if taos.IS_V3:
+    if not taos.IS_V3:
         return
 
     conn = taos_connect(**cfg)
@@ -181,7 +181,7 @@ def test_taos_stmt2_init_without_option():
 
 
 def test_taos_stmt2_init_with_option():
-    if taos.IS_V3:
+    if not taos.IS_V3:
         return
 
     conn = taos_connect(**cfg)
@@ -194,7 +194,7 @@ def test_taos_stmt2_init_with_option():
 
 
 def test_taos_stmt2_insert():
-    if taos.IS_V3:
+    if not taos.IS_V3:
         return
 
     from taos.bind2 import TaosStmt2Bind, new_stmt2_binds, new_bindv
@@ -293,7 +293,7 @@ def test_taos_stmt2_insert():
 
 
 def test_taos_stmt2_get_fields():
-    if taos.IS_V3:
+    if not taos.IS_V3:
         return
 
     from taos.bind2 import TaosStmt2Bind, new_stmt2_binds, new_bindv
@@ -433,9 +433,9 @@ def test_taos_stmt2_get_fields():
 
 
 def test_taos_stmt2_query():
-    if taos.IS_V3:
+    if not taos.IS_V3:
         return
-    
+
     from taos.bind2 import TaosStmt2Bind, new_stmt2_binds, new_bindv
 
     conn = taos_connect(**cfg)
