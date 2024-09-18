@@ -13,10 +13,25 @@ from taos.precision import PrecisionEnum, PrecisionError
 _datetime_epoch = datetime.utcfromtimestamp(0)
 
 
-def _datetime_to_timestamp(value, precision):
-    # type: (datetime | float | int | str | c_int64, PrecisionEnum) -> c_int64
-    if value is None:
+IS_NULL_TYPE_FALSE  = 0
+IS_NULL_TYPE_TRUE   = 1
+IS_NULL_TYPE_IGNORE = 2
+
+
+def get_is_null_type(value) -> int:
+    if isinstance(value, IgnoreUpdateType):
+        return IS_NULL_TYPE_IGNORE
+    elif value is None:
+        return IS_NULL_TYPE_TRUE
+    else:
+        return IS_NULL_TYPE_FALSE
+
+
+def _datetime_to_timestamp(value, precision, is_null_type=0):
+    # type: (datetime | float | int | str | c_int64, PrecisionEnum, bool) -> c_int64
+    if is_null_type > 0:
         return FieldType.C_BIGINT_NULL
+
     if type(value) is datetime:
         if precision == PrecisionEnum.Milliseconds:
             return int(round((value - _datetime_epoch).total_seconds() * 1000))
@@ -46,6 +61,14 @@ def _datetime_to_timestamp(value, precision):
     return FieldType.C_BIGINT_NULL
 
 
+class IgnoreUpdateType:
+    def __init__(self, value=None):
+        self.value = value
+
+    def __repr__(self):
+        return f"IgnoreUpdateType({self.value})"
+
+
 class TaosStmt2Bind(ctypes.Structure):
     _fields_ = [
         ("buffer_type", ctypes.c_int),
@@ -59,190 +82,118 @@ class TaosStmt2Bind(ctypes.Structure):
     #
     # set bind value with field type
     #
-    def set_value(self, buffer_type, values):
+    def set_value(self, buffer_type, values, is_ignore_update=False):
         if buffer_type == FieldType.C_BOOL:
-            self.bool(values)
+            self.bool(values, is_ignore_update)
         elif buffer_type == FieldType.C_TINYINT:
-            self.tinyint(values)
+            self.tinyint(values, is_ignore_update)
         elif buffer_type == FieldType.C_SMALLINT:
-            self.smallint(values)
+            self.smallint(values, is_ignore_update)
         elif buffer_type == FieldType.C_INT:
-            self.int(values)
+            self.int(values, is_ignore_update)
         elif buffer_type == FieldType.C_BIGINT:
-            self.bigint(values)
+            self.bigint(values, is_ignore_update)
         elif buffer_type == FieldType.C_FLOAT:
-            self.float(values)
+            self.float(values, is_ignore_update)
         elif buffer_type == FieldType.C_DOUBLE:
-            self.double(values)
+            self.double(values, is_ignore_update)
         elif buffer_type == FieldType.C_VARCHAR:
-            self.varchar(values)
+            self.varchar(values, is_ignore_update)
         elif buffer_type == FieldType.C_BINARY:
-            self.binary(values)
+            self.binary(values, is_ignore_update)
         elif buffer_type == FieldType.C_TIMESTAMP:
-            self.timestamp(values)
+            self.timestamp(values, is_ignore_update)
         elif buffer_type == FieldType.C_NCHAR:
-            self.nchar(values)
+            self.nchar(values, is_ignore_update)
         elif buffer_type == FieldType.C_TINYINT_UNSIGNED:
-            self.tinyint_unsigned(values)
+            self.tinyint_unsigned(values, is_ignore_update)
         elif buffer_type == FieldType.C_SMALLINT_UNSIGNED:
-            self.smallint_unsigned(values)
+            self.smallint_unsigned(values, is_ignore_update)
         elif buffer_type == FieldType.C_INT_UNSIGNED:
-            self.int_unsigned(values)
+            self.int_unsigned(values, is_ignore_update)
         elif buffer_type == FieldType.C_BIGINT_UNSIGNED:
-            self.bigint_unsigned(values)
+            self.bigint_unsigned(values, is_ignore_update)
         elif buffer_type == FieldType.C_JSON:
-            self.json(values)
+            self.json(values, is_ignore_update)
         elif buffer_type == FieldType.C_VARBINARY:
-            self.varbinary(values)
+            self.varbinary(values, is_ignore_update)
         elif buffer_type == FieldType.C_GEOMETRY:
-            self.geometry(values)
+            self.geometry(values, is_ignore_update)
 
-    def bool(self, values):
+    def numeric_common(self, values, ctypes_type, buffer_null_type, buffer_value_type, is_ignore_update=False):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
+        #
+        is_null = [get_is_null_type(value) for value in values]
+        if is_ignore_update == True:
+            values = [buffer_null_type if is_null[idx] > 0 else value for idx, value in enumerate(values)]
+        #
         try:
             buffer = cast(values, c_void_p)
         except:
-            buffer_type = c_int8 * len(values)
+            buffer_type = ctypes_type * len(values)
             try:
                 buffer = buffer_type(*values)
             except:
-                buffer = buffer_type(*[v if v is not None else FieldType.C_BOOL_NULL for v in values])
+                buffer = buffer_type(*[buffer_null_type if is_null[idx] > 0 else value for idx, value in enumerate(values)])
 
         self.buffer = cast(buffer, c_void_p)
+        self.buffer_type = buffer_value_type
         self.num = len(values)
-        self.buffer_type = FieldType.C_BOOL
-        # self.buffer_length = sizeof(c_bool)
-        self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
+        self.is_null = cast((c_char * len(values))(*is_null), c_char_p)
 
-    def tinyint(self, values):
+    def bool(self, values, is_ignore_update=False):
+        self.numeric_common(values, c_int8, FieldType.C_BOOL_NULL, FieldType.C_BOOL)
+
+    def tinyint(self, values, is_ignore_update=False):
+        self.numeric_common(values, c_int8, FieldType.C_TINYINT_NULL, FieldType.C_TINYINT)
+
+    def smallint(self, values, is_ignore_update=False):
+        self.numeric_common(values, c_int16, FieldType.C_SMALLINT_NULL, FieldType.C_SMALLINT)
+
+    def int(self, values, is_ignore_update=False):
+        self.numeric_common(values, c_int32, FieldType.C_INT_NULL, FieldType.C_INT)
+
+    def bigint(self, values, is_ignore_update=False):
+        self.numeric_common(values, c_int64, FieldType.C_BIGINT_NULL, FieldType.C_BIGINT)
+
+    def float(self, values, is_ignore_update=False):
+        self.numeric_common(values, c_float, FieldType.C_FLOAT_NULL, FieldType.C_FLOAT)
+
+    def double(self, values, is_ignore_update=False):
+        self.numeric_common(values, c_double, FieldType.C_DOUBLE_NULL, FieldType.C_DOUBLE)
+
+    def timestamp(self, values, precision=PrecisionEnum.Milliseconds, is_ignore_update=False):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
-        self.buffer_type = FieldType.C_TINYINT
-        # self.buffer_length = sizeof(c_int8)
-        try:
-            buffer = cast(values, c_void_p)
-        except:
-            buffer_type = c_int8 * len(values)
-            try:
-                buffer = buffer_type(*values)
-            except:
-                buffer = buffer_type(*[v if v is not None else FieldType.C_TINYINT_NULL for v in values])
-        self.buffer = cast(buffer, c_void_p)
-        self.num = len(values)
-        self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
-
-    def smallint(self, values):
-        if type(values) is not tuple and type(values) is not list:
-            values = tuple([values])
-        self.buffer_type = FieldType.C_SMALLINT
-        # self.buffer_length = sizeof(c_int16)
-
-        try:
-            buffer = cast(values, c_void_p)
-        except:
-            buffer_type = c_int16 * len(values)
-            try:
-                buffer = buffer_type(*values)
-            except:
-                buffer = buffer_type(*[v if v is not None else FieldType.C_SMALLINT_NULL for v in values])
-        self.buffer = cast(buffer, c_void_p)
-        self.num = len(values)
-        self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
-
-    def int(self, values):
-        if type(values) is not tuple and type(values) is not list:
-            values = tuple([values])
-        self.buffer_type = FieldType.C_INT
-        # self.buffer_length = sizeof(c_int32)
-
-        try:
-            buffer = cast(values, c_void_p)
-        except:
-            buffer_type = c_int32 * len(values)
-            try:
-                buffer = buffer_type(*values)
-            except:
-                buffer = buffer_type(*[v if v is not None else FieldType.C_INT_NULL for v in values])
-        self.buffer = cast(buffer, c_void_p)
-        self.num = len(values)
-        self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
-
-    def bigint(self, values):
-        if type(values) is not tuple and type(values) is not list:
-            values = tuple([values])
-        self.buffer_type = FieldType.C_BIGINT
-        # self.buffer_length = sizeof(c_int64)
-
+        #
+        is_null = [get_is_null_type(value) for value in values]
+        if is_ignore_update == True:
+            values = [FieldType.C_BIGINT_NULL if is_null[idx] > 0 else value for idx, value in enumerate(values)]
+        #
         try:
             buffer = cast(values, c_void_p)
         except:
             buffer_type = c_int64 * len(values)
-            try:
-                buffer = buffer_type(*values)
-            except:
-                buffer = buffer_type(*[v if v is not None else FieldType.C_BIGINT_NULL for v in values])
+            buffer = buffer_type(*[_datetime_to_timestamp(value, precision, is_null[idx]) for idx, value in enumerate(values)])
+
         self.buffer = cast(buffer, c_void_p)
-        self.num = len(values)
-        self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
-
-    def float(self, values):
-        if type(values) is not tuple and type(values) is not list:
-            values = tuple([values])
-        self.buffer_type = FieldType.C_FLOAT
-        self.buffer_length = sizeof(c_float)
-
-        try:
-            buffer = cast(values, c_void_p)
-        except:
-            buffer_type = c_float * len(values)
-            try:
-                buffer = buffer_type(*values)
-            except:
-                buffer = buffer_type(*[v if v is not None else FieldType.C_FLOAT_NULL for v in values])
-        self.buffer = cast(buffer, c_void_p)
-        self.num = len(values)
-        self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
-
-    def double(self, values):
-        if type(values) is not tuple and type(values) is not list:
-            values = tuple([values])
-        self.buffer_type = FieldType.C_DOUBLE
-        self.buffer_length = sizeof(c_double)
-
-        try:
-            buffer = cast(values, c_void_p)
-        except:
-            buffer_type = c_double * len(values)
-            try:
-                buffer = buffer_type(*values)
-            except:
-                buffer = buffer_type(*[v if v is not None else FieldType.C_DOUBLE_NULL for v in values])
-        self.buffer = cast(buffer, c_void_p)
-        self.num = len(values)
-        self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
-
-    def timestamp(self, values, precision=PrecisionEnum.Milliseconds):
-        if type(values) is not tuple and type(values) is not list:
-            values = tuple([values])
-        try:
-            buffer = cast(values, c_void_p)
-        except:
-            buffer_type = c_int64 * len(values)
-            buffer = buffer_type(*[_datetime_to_timestamp(value, precision) for value in values])
-
         self.buffer_type = FieldType.C_TIMESTAMP
-        self.buffer = cast(buffer, c_void_p)
-        # self.buffer_length = sizeof(c_int64)
         self.num = len(values)
-        self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
+        self.is_null = cast((c_char * len(values))(*is_null), c_char_p)
 
-    def _str_to_buffer(self, values, encode=True):
+    def _str_to_buffer(self, values, encode=True, is_ignore_update=False):
+        if type(values) is not tuple and type(values) is not list:
+            values = tuple([values])
+        #
+        is_null = [get_is_null_type(value) for value in values]
+        if is_ignore_update == True:
+            values = [None if is_null[idx] > 0 else value for idx, value in enumerate(values)]
+        #
         self.num = len(values)
-        is_null = [1 if value is None else 0 for value in values]
         self.is_null = cast((c_byte * self.num)(*is_null), c_char_p)
 
-        if sum(is_null) == self.num:
+        if sum([1 if v > 0 else 0 for v in is_null]) == self.num:
             self.length = (c_int32 * len(values))(0 * self.num)
             return
 
@@ -256,121 +207,47 @@ class TaosStmt2Bind(ctypes.Structure):
                 _bytes_list = [bytes(value) if value is not None else None for value in values]
             #
 
-        # buffer_length = max(len(b) for b in _bytes_list if b is not None)
         _bytes = b"".join([b for b in _bytes_list if b is not None])
         self.buffer = cast(create_string_buffer(_bytes), c_void_p)
         self.length = (c_int32 * len(values))(*[len(b) if b is not None else 0 for b in _bytes_list])
-        # self.buffer_length = buffer_length
 
-    def binary(self, values):
-        if type(values) is not tuple and type(values) is not list:
-            values = tuple([values])
+    def binary(self, values, is_ignore_update=False):
         self.buffer_type = FieldType.C_BINARY
-        self._str_to_buffer(values)
+        self._str_to_buffer(values, is_ignore_update=is_ignore_update)
 
-    def nchar(self, values):
+    def nchar(self, values, is_ignore_update=False):
         # type: (list[str]) -> None
-        if type(values) is not tuple and type(values) is not list:
-            values = tuple([values])
         self.buffer_type = FieldType.C_NCHAR
-        self._str_to_buffer(values)
+        self._str_to_buffer(values, is_ignore_update=is_ignore_update)
 
-    def json(self, values):
+    def json(self, values, is_ignore_update=False):
         # type: (list[str]) -> None
-        if type(values) is not tuple and type(values) is not list:
-            values = tuple([values])
         self.buffer_type = FieldType.C_JSON
-        self._str_to_buffer(values)
+        self._str_to_buffer(values, is_ignore_update=is_ignore_update)
 
-    def tinyint_unsigned(self, values):
-        if type(values) is not tuple and type(values) is not list:
-            values = tuple([values])
-        self.buffer_type = FieldType.C_TINYINT_UNSIGNED
-        # self.buffer_length = sizeof(c_uint8)
+    def tinyint_unsigned(self, values, is_ignore_update=False):
+        self.numeric_common(values, c_uint8, FieldType.C_TINYINT_UNSIGNED_NULL, FieldType.C_TINYINT_UNSIGNED)
 
-        try:
-            buffer = cast(values, c_void_p)
-        except:
-            buffer_type = c_uint8 * len(values)
-            try:
-                buffer = buffer_type(*values)
-            except:
-                buffer = buffer_type(*[v if v is not None else FieldType.C_TINYINT_UNSIGNED_NULL for v in values])
-        self.buffer = cast(buffer, c_void_p)
-        self.num = len(values)
-        self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
+    def smallint_unsigned(self, values, is_ignore_update=False):
+        self.numeric_common(values, c_uint16, FieldType.C_SMALLINT_UNSIGNED_NULL, FieldType.C_SMALLINT_UNSIGNED)
 
-    def smallint_unsigned(self, values):
-        if type(values) is not tuple and type(values) is not list:
-            values = tuple([values])
-        self.buffer_type = FieldType.C_SMALLINT_UNSIGNED
-        # self.buffer_length = sizeof(c_uint16)
+    def int_unsigned(self, values, is_ignore_update=False):
+        self.numeric_common(values, c_uint32, FieldType.C_INT_UNSIGNED_NULL, FieldType.C_INT_UNSIGNED)
 
-        try:
-            buffer = cast(values, c_void_p)
-        except:
-            buffer_type = c_uint16 * len(values)
-            try:
-                buffer = buffer_type(*values)
-            except:
-                buffer = buffer_type(*[v if v is not None else FieldType.C_SMALLINT_UNSIGNED_NULL for v in values])
-        self.buffer = cast(buffer, c_void_p)
-        self.num = len(values)
-        self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
+    def bigint_unsigned(self, values, is_ignore_update=False):
+        self.numeric_common(values, c_uint64, FieldType.C_BIGINT_UNSIGNED_NULL, FieldType.C_BIGINT_UNSIGNED)
 
-    def int_unsigned(self, values):
-        if type(values) is not tuple and type(values) is not list:
-            values = tuple([values])
-        self.buffer_type = FieldType.C_INT_UNSIGNED
-        # self.buffer_length = sizeof(c_uint32)
-
-        try:
-            buffer = cast(values, c_void_p)
-        except:
-            buffer_type = c_uint32 * len(values)
-            try:
-                buffer = buffer_type(*values)
-            except:
-                buffer = buffer_type(*[v if v is not None else FieldType.C_INT_UNSIGNED_NULL for v in values])
-        self.buffer = cast(buffer, c_void_p)
-        self.num = len(values)
-        self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
-
-    def bigint_unsigned(self, values):
-        if type(values) is not tuple and type(values) is not list:
-            values = tuple([values])
-        self.buffer_type = FieldType.C_BIGINT_UNSIGNED
-        # self.buffer_length = sizeof(c_uint64)
-
-        try:
-            buffer = cast(values, c_void_p)
-        except:
-            buffer_type = c_uint64 * len(values)
-            try:
-                buffer = buffer_type(*values)
-            except:
-                buffer = buffer_type(*[v if v is not None else FieldType.C_BIGINT_UNSIGNED_NULL for v in values])
-        self.buffer = cast(buffer, c_void_p)
-        self.num = len(values)
-        self.is_null = cast((c_char * len(values))(*[1 if value is None else 0 for value in values]), c_char_p)
-
-    def varchar(self, values):
-        if type(values) is not tuple and type(values) is not list:
-            values = tuple([values])
+    def varchar(self, values, is_ignore_update=False):
         self.buffer_type = FieldType.C_VARCHAR
-        self._str_to_buffer(values)
+        self._str_to_buffer(values, is_ignore_update=is_ignore_update)
 
-    def varbinary(self, values):
-        if type(values) is not tuple and type(values) is not list:
-            values = tuple([values])
+    def varbinary(self, values, is_ignore_update=False):
         self.buffer_type = FieldType.C_VARBINARY
-        self._str_to_buffer(values, False)
+        self._str_to_buffer(values, encode=False, is_ignore_update=is_ignore_update)
 
-    def geometry(self, values):
-        if type(values) is not tuple and type(values) is not list:
-            values = tuple([values])
+    def geometry(self, values, is_ignore_update=False):
         self.buffer_type = FieldType.C_GEOMETRY
-        self._str_to_buffer(values, False)
+        self._str_to_buffer(values, encode=False, is_ignore_update=is_ignore_update)
 
 
 class TaosStmt2BindV(ctypes.Structure):
@@ -428,6 +305,7 @@ class TaosStmt2BindV(ctypes.Structure):
 
     def get_address(self) -> ctypes.pointer:
         return c_void_p(ctypes.addressof(self))
+
 
 
 def new_stmt2_binds(size: int) : # -> Array[TaosStmt2Bind]:
