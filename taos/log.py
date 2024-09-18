@@ -6,7 +6,7 @@ import sys
 # info
 show_info  = True
 show_warn  = True
-show_debug = True
+show_debug = False
 
 # set show
 def setting(info, warn, debug):

@@ -107,28 +107,23 @@ def obtainSchema(statement2):
         raise StatementError("stmt2 object is null.")
     
     # test
-    statement2.tag_fields = [FieldType.C_BINARY, FieldType.C_INT]
-    statement2.fields     = [FieldType.C_TIMESTAMP, FieldType.C_BINARY, FieldType.C_BOOL, FieldType.C_INT]
-    return len(statement2.fields) > 0
+    #statement2.tag_fields = [FieldType.C_BINARY, FieldType.C_INT]
+    #statement2.fields     = [FieldType.C_TIMESTAMP, FieldType.C_BINARY, FieldType.C_BOOL, FieldType.C_INT]
+    #return len(statement2.fields) > 0
 
-    #statement2.fields     = statement2.get_fields(TAOS_FIELD_COL)
-    #statement2.tag_fields = statement2.get_fields(TAOS_FIELD_TAG)
-    #log.debug(f"obtain schema tag fields = {statement2.tag_fields}")
-    #log.debug(f"obtain schema fields     = {statement2.fields}")
+    statement2.fields     = statement2.get_fields(TAOS_FIELD_COL)
+    statement2.tag_fields = statement2.get_fields(TAOS_FIELD_TAG)
+    log.debug(f"obtain schema tag fields = {statement2.tag_fields}")
+    log.debug(f"obtain schema fields     = {statement2.fields}")
 
     return len(statement2.fields) > 0
 
 
 def getFieldType(statement2, index, isTag):
     if isTag:
-        return statement2.tag_fields[index]
-    
-    # col
-    if statement2.types is not None:
-        # user set column types
-        return statement2.types[index]
+        return statement2.tag_fields[index].type
     else:
-        return statement2.fields[index]
+        return statement2.fields[index].type
 
 # create stmt2Bind list from tags
 def createTagsBind(statement2, tagsTbs):
@@ -136,12 +131,12 @@ def createTagsBind(statement2, tagsTbs):
     # tables tags
     for tagsTb in tagsTbs:
         # table
-        log.debug(f"tagsTb={tagsTb}")
         n = len(tagsTb)
         bindsTb = bind2.new_stmt2_binds(n)
         for i in range(n):
             type = getFieldType(statement2, i, True)
             values = [tagsTb[i]]
+            log.debug(f" i = {i} type={type} values = {values}  tagsTb = {tagsTb}\n")
             bindsTb[i].set_value(type, values)
         binds.append(bindsTb)
 
@@ -215,28 +210,25 @@ class TaosStmt2(object):
     def bind_param(self, tbnames, tags, datas):
         if self._stmt2 is None:
             raise StatementError(ErrMsg.STMT2_NULL)
+                        
+        # obtain schema if insert
+        if self.is_insert():
+            bindv = createBindV(self, tbnames, None, None)
+            if bindv == None:
+                raise StatementError("create stmt2 bindV failed.")
+            taos_stmt2_bind_param(self._stmt2, bindv.get_address(), -1)
+            if obtainSchema(self) is False:
+                raise StatementError(f"obtain schema failed. tbnames={tbnames}")
+            
+            # check consistent
+            if checkConsistent(tbnames, tags, datas) == False:
+                raise StatementError("check consistent failed.")
         
-        # test
-        obtainSchema(self)
-        
-        '''
-        # obtain again after set tbname
-        bindv = createBindV(self, tbnames, None, None)
-        if bindv == None:
-            raise StatementError("create stmt2 bindV failed.")
-        taos_stmt2_bind_param(self._stmt2, bindv.get_address(), -1)
-        if obtainSchema(self) is False:
-            raise StatementError(f"obtain schema failed. tbnames={tbnames}")
-        
-        # check consistent
-        if checkConsistent(tbnames, tags, datas) == False:
-            raise StatementError("check consistent failed.")
-        #'''
         # bindV
         bindv = createBindV(self, tbnames, tags, datas)
         if bindv == None:
             raise StatementError("create stmt2 bindV failed.")
-        
+                
         # call engine
         taos_stmt2_bind_param(self._stmt2, bindv.get_address(), -1)
 
@@ -298,7 +290,10 @@ class TaosStmt2(object):
     
     # not engine interface
     def set_columns_type(self, types):
-        self.types = types
+        self.fields = []
+        for type in types:
+            item = TaosFieldExCls(None, type, None, None, None)
+            self.fields.append(item)
 
     def __del__(self):
         self.close()
