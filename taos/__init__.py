@@ -30,6 +30,7 @@ paramstyle = "pyformat"
 __all__ = [
     "__version__",
     "IS_V3",
+    "IGNORE",
     # functions
     "connect",
     "new_bind_param",

@@ -18,8 +18,18 @@ IS_NULL_TYPE_TRUE   = 1
 IS_NULL_TYPE_IGNORE = 2
 
 
+class IgnoreUpdateType:
+    def __init__(self, value=None):
+        self.value = value
+
+    def __repr__(self):
+        return f"IgnoreUpdateType({self.value})"
+
+
+IGNORE = IgnoreUpdateType()
+
 def get_is_null_type(value) -> int:
-    if isinstance(value, IgnoreUpdateType):
+    if value == IGNORE:
         return IS_NULL_TYPE_IGNORE
     elif value is None:
         return IS_NULL_TYPE_TRUE
@@ -59,14 +69,6 @@ def _datetime_to_timestamp(value, precision, is_null_type=0):
     elif isinstance(value, c_int64):
         return value
     return FieldType.C_BIGINT_NULL
-
-
-class IgnoreUpdateType:
-    def __init__(self, value=None):
-        self.value = value
-
-    def __repr__(self):
-        return f"IgnoreUpdateType({self.value})"
 
 
 class TaosStmt2Bind(ctypes.Structure):
