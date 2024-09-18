@@ -12,6 +12,14 @@ def conn():
     # type: () -> taos.TaosConnection
     return taos.connect()
 
+def prepare(conn, dbname, stbname):
+    #conn.execute("drop database if exists %s" % dbname)
+    conn.execute("create database if not exists %s" % dbname)
+    conn.select_db(dbname)
+    sql = f"create table if not exists {dbname}.{stbname}(ts timestamp, name binary(32), sex bool, score int) tags(grade binary(24), class int)"
+    conn.execute(sql)
+
+
 def checkResultCorrects(conn, tbnames, tags, datas):
     pass
 
@@ -126,23 +134,32 @@ def insert_bind_param_with_tables(conn, stmt2):
 #
 # insert
 #
-def test_stmt2_insert(conn, dbname, stbname):
+def test_stmt2_insert(conn):
+    dbname  = "stmt2"
+    stbname = "meters"
+
     try:
+        prepare(conn, dbname, stbname)
         # prepare
-        stmt2 = conn.statement2(f"insert into ? using {stbname} tags(?,?) values(?,?,?,?)")
+        stmt2 = conn.statement2(f"insert into ? using {dbname}.{stbname} tags(?,?) values(?,?,?,?)")
+        print("insert prepare sql ............................ ok\n")
 
         # insert with table
         #insert_bind_param_with_tables(conn, stmt2)
 
         # insert with split args
         insert_bind_param(conn, stmt2)
+        print("insert bind & execute ......................... ok\n")        
 
         #conn.execute("drop database if exists %s" % dbname)
         stmt2.close()
+        conn.close()
         print("test_stmt2_insert test successful.")
-
+        print("test_stmt2_insert ............................. [passed]\n") 
     except Exception as err:
         #conn.execute("drop database if exists %s" % dbname)
+        print("insert ........................................ failed\n")
+        conn.close()
         raise err
 
 
@@ -173,8 +190,6 @@ def query_bind_param(conn, stmt2):
 
 # compare
 def compare_result(conn, sql2, res2):
-    
-
     lres1 = []
     lres2 = []
    
@@ -207,14 +222,32 @@ def compare_result(conn, sql2, res2):
                 raise(f" two results data different. i={i} j={j} data1={res1[i][j]} data2={res2[i][j]}\n")
 
 # query
-def test_stmt2_query(conn, dbname, stbname):
-    sql1 = "select * from d2 where name in (?) or score > ? ;"
-    sql2 = "select * from d2 where name in ('Tom2') or score > 1000;"
+def test_stmt2_query(conn):
+    dbname  = "stmt2"
+    stbname = "meters"
+    sql1 = f"select * from {dbname}.d2 where name in (?) or score > ? ;"
+    sql2 = f"select * from {dbname}.d2 where name in ('Tom2') or score > 1000;"
 
     try:
         # prepare
+        prepare(conn, dbname, stbname)
+
+        # prepare
+        stmt2 = conn.statement2(f"insert into ? using {dbname}.{stbname} tags(?,?) values(?,?,?,?)")
+        #insert_bind_param_with_tables(conn, stmt2)
+        #print("insert prepare sql ............................ ok\n")
+        insert_bind_param(conn, stmt2)
+        print("insert bind & execute ......................... ok\n")        
+
+        
+        # statement2
         stmt2 = conn.statement2(sql1)
         print("query prepare sql ............................. ok\n")
+
+
+        # insert with table
+        #insert_bind_param_with_tables(conn, stmt2)
+
 
         # bind
         query_bind_param(conn, stmt2)
@@ -232,40 +265,22 @@ def test_stmt2_query(conn, dbname, stbname):
 
         #conn.execute("drop database if exists %s" % dbname)
         stmt2.close()
-        print("test_stmt2_query test successful.")
+        conn.close()
+        print("test_stmt2_query .............................. [passed]\n") 
 
     except Exception as err:
-        print("query ........................................ failed\n")
+        print("query ......................................... failed\n")
+        conn.close()
         raise err
 
 
 if __name__ == "__main__":
-    print("stmt2 test case\n")
-    # connect db
-    conn = taos.connect()
-    print("db connect is successful!\n")
-
-    # test stmt2
-    print("stmt2 bind and insert.\n")
-
-    dbname  = "stmt2"
-    stbname = "meters"
-    conn.execute("drop database if exists %s" % dbname)
-    conn.execute("create database if not exists %s" % dbname)
-    conn.select_db(dbname)
-    sql = f"create table if not exists {stbname}(ts timestamp, name binary(32), sex bool, score int) tags(grade binary(24), class int)"
-    conn.execute(sql)
-    
+    print("start stmt2 test case...\n")
 
     # insert 
-    test_stmt2_insert(conn, dbname, stbname)
+    test_stmt2_insert(taos.connect())
 
     # query
-    test_stmt2_query(conn, dbname, stbname)
+    test_stmt2_query(taos.connect())
 
-
-    # close
-    conn.close()
-    print("db disconnect!\n")
-
-
+    print("end stmt2 test case.\n")
