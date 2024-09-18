@@ -111,10 +111,10 @@ def obtainSchema(statement2):
     statement2.fields     = [FieldType.C_TIMESTAMP, FieldType.C_BINARY, FieldType.C_BOOL, FieldType.C_INT]
     return len(statement2.fields) > 0
 
-    statement2.fields     = statement2.get_fields(TAOS_FIELD_COL)
-    statement2.tag_fields = statement2.get_fields(TAOS_FIELD_TAG)
-    log.debug(f"obtain schema tag fields= {statement2.tag_fields}")
-    log.debug(f"obtain schema fields= {statement2.fields}")
+    #statement2.fields     = statement2.get_fields(TAOS_FIELD_COL)
+    #statement2.tag_fields = statement2.get_fields(TAOS_FIELD_TAG)
+    #log.debug(f"obtain schema tag fields = {statement2.tag_fields}")
+    #log.debug(f"obtain schema fields     = {statement2.fields}")
 
     return len(statement2.fields) > 0
 
@@ -231,7 +231,7 @@ class TaosStmt2(object):
         # check consistent
         if checkConsistent(tbnames, tags, datas) == False:
             raise StatementError("check consistent failed.")
-        '''
+        #'''
         # bindV
         bindv = createBindV(self, tbnames, tags, datas)
         if bindv == None:
@@ -272,7 +272,7 @@ class TaosStmt2(object):
 
     def close(self):
         if self._stmt2 is None:
-            raise StatementError("stmt2 object is null.")
+            return 
         
         taos_stmt2_close(self._stmt2)
         self._stmt2 = None
