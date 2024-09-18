@@ -437,6 +437,7 @@ def test_taos_stmt2_query():
         return
 
     from taos.bind2 import TaosStmt2Bind, new_stmt2_binds, new_bindv
+    from taos.result import TaosResult
 
     conn = taos_connect(**cfg)
     option = None
@@ -457,19 +458,19 @@ def test_taos_stmt2_query():
     execute_sql(conn, f"insert into d1 using {stbname} tags('grade1', 1) values('2020-10-01 00:00:00.003', 'Jane', false, 100)")
     execute_sql(conn, f"insert into d1 using {stbname} tags('grade1', 1) values('2020-10-01 00:00:00.004', 'alex', true, 99)")
 
-    execute_sql(conn, f"insert into d1 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.000', 'Mary2', false, 298)")
-    execute_sql(conn, f"insert into d1 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.001', 'Tom2', true, 280)")
-    execute_sql(conn, f"insert into d1 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.002', 'Jack2', true, 260)")
-    execute_sql(conn, f"insert into d1 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.003', 'Jane2', false, 2100)")
-    execute_sql(conn, f"insert into d1 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.004', 'alex2', true, 299)")
+    execute_sql(conn, f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.000', 'Mary2', false, 298)")
+    execute_sql(conn, f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.001', 'Tom2', true, 280)")
+    execute_sql(conn, f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.002', 'Jack2', true, 260)")
+    execute_sql(conn, f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.003', 'Jane2', false, 2100)")
+    execute_sql(conn, f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.004', 'alex2', true, 299)")
 
-    execute_sql(conn, f"insert into d1 using {stbname} tags('grade1', 3) values('2020-10-01 00:00:00.000', 'Mary3', false, 398)")
-    execute_sql(conn, f"insert into d1 using {stbname} tags('grade1', 3) values('2020-10-01 00:00:00.001', 'Tom3', true, 380)")
-    execute_sql(conn, f"insert into d1 using {stbname} tags('grade1', 3) values('2020-10-01 00:00:00.002', 'Jack3', true, 360)")
-    execute_sql(conn, f"insert into d1 using {stbname} tags('grade1', 3) values('2020-10-01 00:00:00.003', 'Jane3', false, 3100)")
-    execute_sql(conn, f"insert into d1 using {stbname} tags('grade1', 3) values('2020-10-01 00:00:00.004', 'alex3', true, 399)")
+    execute_sql(conn, f"insert into d3 using {stbname} tags('grade1', 3) values('2020-10-01 00:00:00.000', 'Mary3', false, 398)")
+    execute_sql(conn, f"insert into d3 using {stbname} tags('grade1', 3) values('2020-10-01 00:00:00.001', 'Tom3', true, 380)")
+    execute_sql(conn, f"insert into d3 using {stbname} tags('grade1', 3) values('2020-10-01 00:00:00.002', 'Jack3', true, 360)")
+    execute_sql(conn, f"insert into d3 using {stbname} tags('grade1', 3) values('2020-10-01 00:00:00.003', 'Jane3', false, 3100)")
+    execute_sql(conn, f"insert into d3 using {stbname} tags('grade1', 3) values('2020-10-01 00:00:00.004', 'alex3', true, 399)")
 
-    sql = f"select * from {stbname} where name = ?"
+    sql = f"select * from {stbname} where name = ? and score = ?"
 
     taos_stmt2_prepare(stmt2, sql)
 
@@ -480,24 +481,14 @@ def test_taos_stmt2_query():
         # class 1
         [
             # student
-            ["Mary"]
-        ],
-            # class 2
-        [
-            # student
-            ["Jack2"]
-        ],
-            # class 3
-        [
-            # student
-            ["Jane3"]
+            ["Mary"],
+            [98]
         ]
     ]
 
     cnt_tbls = 1
     cnt_tags = 0
-    cnt_cols = 1
-    cnt_rows = 5
+    cnt_cols = 2
 
     # tags
     stmt2_tags = None
@@ -509,6 +500,7 @@ def test_taos_stmt2_query():
         assert n == cnt_cols
         binds: Array[TaosStmt2Bind] = new_stmt2_binds(n)
         binds[0].binary(data_list[0])
+        binds[1].int(data_list[1])
         stmt2_cols.append(binds)
     #
 
@@ -522,39 +514,19 @@ def test_taos_stmt2_query():
     assert taos_stmt2_is_insert(stmt2) == False
 
     # TODO: fetch query result
-    # fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_QUERY)
-    # print(fields)
-
     res = taos_stmt2_result(stmt2)
+    rows = TaosResult(res, close_after=False, decode_binary=True)
 
-    field_count = taos_num_fields(res)
-    fields = taos_fetch_fields(res)
-
-
-    fields = taos_fetch_fields(res)
-    for field in fields:
-        print(field)
+    row_list = list()
+    for row in rows:
+        row_list.append(row)
     #
+    assert len(row_list) == 1
+    row = row_list[0]
+    assert row[1] == datas[0][0][0]
+    assert row[3] == datas[0][1][0]
 
-    while True:
-        row = taos_fetch_row_raw(res)
-        if not row:
-            break
-        #
-        print("fetch row")
-        print(row)
-        rowstr = taos_print_row(row, fields, field_count)
-
-    # row = taos_fetch_row_raw(res)
-    # rowstr = taos_print_row(row, fields, field_count)
-    # print(rowstr)
-    # assert rowstr == "1 hello test"
-    #
-    # row, num = taos_fetch_row(res, fields)
-    # print(row)
-    # taos_free_result(res)
-
-
+    rows.close()
     taos_stmt2_close(stmt2)
     taos_close(conn)
 
