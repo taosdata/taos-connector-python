@@ -13,8 +13,8 @@ def conn():
     return taos.connect()
 
 def prepare(conn, dbname, stbname):
-    #conn.execute("drop database if exists %s" % dbname)
-    conn.execute("create database if not exists %s" % dbname)
+    conn.execute("drop database if exists %s" % dbname)
+    conn.execute("create database if not exists %s precision 'ms' " % dbname)
     conn.select_db(dbname)
     sql = f"create table if not exists {dbname}.{stbname}(ts timestamp, name binary(32), sex bool, score int) tags(grade binary(24), class int)"
     conn.execute(sql)
@@ -28,7 +28,7 @@ def insert_bind_param(conn, stmt2):
     # 
     #  table info , write 5 lines to 3 child tables d0, d1, d2 with super table
     #
-    tbanmes = ["d1","d2","d3",'d4']
+    tbanmes = ["d1","d2","d3"]
     
     tags    = [
         ["grade1", 1],
@@ -88,10 +88,10 @@ def insert_bind_param_with_tables(conn, stmt2):
             # table 1
             [
                 # student
-                [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004],
-                ["Mary",       "Tom",        "Jack",       "Jane",       "alex"       ],
-                [0,            1,            1,            0,            1            ],
-                [98,           80,           60,           100,          99           ]
+                [1601481600000,"2024-09-19 10:00:00","2024-09-19 10:00:01.123",datetime(2024,8,1,12,10,8,456),1601481600004],
+                ["Mary",       "Tom",                "Jack",                   "Jane",                    "alex"       ],
+                [0,            1,                    1,                        0,                         1            ],
+                [98,           80,                   60,                       100,                       99           ]
             ],
             # table 2
             [
@@ -291,6 +291,6 @@ if __name__ == "__main__":
     test_stmt2_insert(taos.connect())
 
     # query
-    test_stmt2_query(taos.connect())
+    #test_stmt2_query(taos.connect())
 
     print("end stmt2 test case.\n")

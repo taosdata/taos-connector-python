@@ -3,9 +3,8 @@ from taos.error import StatementError
 from taos.result import TaosResult
 from taos import bind2
 from taos import log
+from taos.precision import PrecisionEnum, PrecisionError
 from typing import Optional
-
-
 
 
 
@@ -119,11 +118,11 @@ def obtainSchema(statement2):
     return len(statement2.fields) > 0
 
 
-def getFieldType(statement2, index, isTag):
+def getField(statement2, index, isTag):
     if isTag:
-        return statement2.tag_fields[index].type
+        return statement2.tag_fields[index]
     else:
-        return statement2.fields[index].type
+        return statement2.fields[index]
 
 # create stmt2Bind list from tags
 def createTagsBind(statement2, tagsTbs):
@@ -134,10 +133,10 @@ def createTagsBind(statement2, tagsTbs):
         n = len(tagsTb)
         bindsTb = bind2.new_stmt2_binds(n)
         for i in range(n):
-            type = getFieldType(statement2, i, True)
+            field = getField(statement2, i, True)
             values = [tagsTb[i]]
-            log.debug(f" i = {i} type={type} values = {values}  tagsTb = {tagsTb}\n")
-            bindsTb[i].set_value(type, values)
+            log.debug(f" i = {i} type={field.type} precision={field.precision}  values = {values}  tagsTb = {tagsTb}\n")
+            bindsTb[i].set_value(field.type, field.precision, values)
         binds.append(bindsTb)
 
     return binds    
@@ -151,8 +150,8 @@ def createColsBind(statement2, colsTbs):
         n = len(colsTb)
         bindsTb = bind2.new_stmt2_binds(n)
         for i in range(n):
-            type = getFieldType(statement2, i, isTag=False)
-            bindsTb[i].set_value(type, colsTb[i])
+            field = getField(statement2, i, isTag=False)
+            bindsTb[i].set_value(field.type, field.precision, colsTb[i])
         binds.append(bindsTb)
 
     return binds    
@@ -299,7 +298,7 @@ class TaosStmt2(object):
     def set_columns_type(self, types):
         self.fields = []
         for type in types:
-            item = TaosFieldExCls(None, type, None, None, None)
+            item = TaosFieldExCls(None, type, PrecisionEnum.Milliseconds, None, None)
             self.fields.append(item)
 
     def __del__(self):
