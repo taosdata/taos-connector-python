@@ -149,10 +149,12 @@ def test_stmt2_insert(conn):
 
         # insert with table
         insert_bind_param_with_tables(conn, stmt2)
+        print("insert bind with tables ....................... ok\n")        
 
         # insert with split args
         insert_bind_param(conn, stmt2)
-        print("insert bind & execute ......................... ok\n")        
+        print("insert bind ................................... ok\n")
+        print("insert execute ................................ ok\n")        
 
         #conn.execute("drop database if exists %s" % dbname)
         stmt2.close()
