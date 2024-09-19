@@ -3,9 +3,8 @@ from taos.error import StatementError
 from taos.result import TaosResult
 from taos import bind2
 from taos import log
+from taos.precision import PrecisionEnum, PrecisionError
 from typing import Optional
-
-
 
 
 
@@ -119,11 +118,11 @@ def obtainSchema(statement2):
     return len(statement2.fields) > 0
 
 
-def getFieldType(statement2, index, isTag):
+def getField(statement2, index, isTag):
     if isTag:
-        return statement2.tag_fields[index].type
+        return statement2.tag_fields[index]
     else:
-        return statement2.fields[index].type
+        return statement2.fields[index]
 
 # create stmt2Bind list from tags
 def createTagsBind(statement2, tagsTbs):
@@ -134,10 +133,10 @@ def createTagsBind(statement2, tagsTbs):
         n = len(tagsTb)
         bindsTb = bind2.new_stmt2_binds(n)
         for i in range(n):
-            type = getFieldType(statement2, i, True)
+            field = getField(statement2, i, True)
             values = [tagsTb[i]]
-            log.debug(f" i = {i} type={type} values = {values}  tagsTb = {tagsTb}\n")
-            bindsTb[i].set_value(type, values)
+            log.debug(f" i = {i} type={field.type} precision={field.precision}  values = {values}  tagsTb = {tagsTb}\n")
+            bindsTb[i].set_value(field.type, values, field.precision)
         binds.append(bindsTb)
 
     return binds    
@@ -151,8 +150,8 @@ def createColsBind(statement2, colsTbs):
         n = len(colsTb)
         bindsTb = bind2.new_stmt2_binds(n)
         for i in range(n):
-            type = getFieldType(statement2, i, isTag=False)
-            bindsTb[i].set_value(type, colsTb[i])
+            field = getField(statement2, i, isTag=False)
+            bindsTb[i].set_value(field.type, colsTb[i], field.precision)
         binds.append(bindsTb)
 
     return binds    
@@ -162,8 +161,12 @@ def createColsBind(statement2, colsTbs):
 # create bindv from list
 #
 def createBindV(statement2, tbnames, tags, datas):
+
+    if tbnames == None and tags == None and datas == None:
+        raise StatementError("all bind params is None.")
+
     # count
-    count = 0
+    count  = -1
     if tbnames != None:
         count = len(tbnames)
 
@@ -172,13 +175,24 @@ def createBindV(statement2, tbnames, tags, datas):
         bindTags = None
     else:
         bindTags = createTagsBind(statement2, tags)
+        if count == -1:
+            count = len(tags)
+        else:
+            if count != len(tags):
+                err = f"tags count is inconsistent. require count={count} real={len(tags)}"
+                raise StatementError(err)
 
     # datas
     if datas == None:
         bindDatas = None
     else:
         bindDatas = createColsBind(statement2, datas)
-        count = len(datas)
+        if count == -1:
+            count = len(datas)
+        else:
+            if count != len(datas):
+                err = f"datas count is inconsistent. require count={count} real={len(datas)}"
+                raise StatementError(err)
 
     # create
     return bind2.new_bindv(count, tbnames, bindTags, bindDatas)
@@ -295,11 +309,14 @@ class TaosStmt2(object):
         
         return taos_stmt2_error(self._stmt2)
     
-    # not engine interface
+    #
+    # if query must set columns type (not engine interface),
+    #  type is define class FieldType in constants.py
+    #
     def set_columns_type(self, types):
         self.fields = []
         for type in types:
-            item = TaosFieldExCls(None, type, None, None, None)
+            item = TaosFieldExCls(None, type, PrecisionEnum.Milliseconds, None, None)
             self.fields.append(item)
 
     def __del__(self):

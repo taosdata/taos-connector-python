@@ -3,10 +3,10 @@ name: Test on Ubuntu-22.04
 on:
   push:
     branches:
-      - '3.0'
+      - 'main'
   pull_request:
     branches:
-      - '3.0'
+      - 'main'
 
 jobs:
   test:
@@ -120,7 +120,7 @@ jobs:
         with:
           repository: "taosdata/TDengine"
           path: "TDengine_v3"
-          ref: ${{ steps.determine-branch.outputs.value }}
+          ref:  '3.0'
 
       - name: Build TDengine 3.0
         run: |

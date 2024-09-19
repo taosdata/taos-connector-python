@@ -4,8 +4,8 @@ from datetime import datetime
 import pytest
 import taos
 from taos.statement2 import *
-
 from taos.constants import FieldType
+from taos import log
 
 @pytest.fixture
 def conn():
@@ -13,8 +13,8 @@ def conn():
     return taos.connect()
 
 def prepare(conn, dbname, stbname):
-    #conn.execute("drop database if exists %s" % dbname)
-    conn.execute("create database if not exists %s" % dbname)
+    conn.execute("drop database if exists %s" % dbname)
+    conn.execute("create database if not exists %s precision 'ms' " % dbname)
     conn.select_db(dbname)
     sql = f"create table if not exists {dbname}.{stbname}(ts timestamp, name binary(32), sex bool, score int) tags(grade binary(24), class int)"
     conn.execute(sql)
@@ -32,33 +32,33 @@ def insert_bind_param(conn, stmt2):
     
     tags    = [
         ["grade1", 1],
-        ["grade1", 2],
-        ["grade1", 3]
+        ["grade1", None],
+        [None    , 3] 
     ]
     datas   = [
         # class 1
         [
             # student
-            [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004],
-            ["Mary",       "Tom",        "Jack",       "Jane",       "alex"       ],
-            [0,            1,            1,            0,            1            ],
-            [98,           80,           60,           100,          99           ]
+            [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004,1601481600005],
+            ["Mary",       "Tom",        "Jack",       "Jane",       "alex"       ,None         ],
+            [0,            1,            1,            0,            1            ,None         ],
+            [98,           80,           60,           100,          99           ,None         ]
         ],
         # class 2
         [
             # student
-            [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004],
-            ["Mary2",      "Tom2",       "Jack2",       "Jane2",     "alex2"       ],
-            [0,            1,            1,             0,           1             ],
-            [298,          280,          260,           2100,        299           ]
+            [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004,1601481600005],
+            ["Mary2",      "Tom2",       "Jack2",       "Jane2",     "alex2"      ,None         ],
+            [0,            1,            1,             0,           1            ,0            ],
+            [298,          280,          260,           2100,        299          ,None         ]
         ],
         # class 3
         [
             # student
-            [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004],
-            ["Mary3",      "Tom3",       "Jack3",       "Jane3",     "alex3"       ],
-            [0,            1,            1,             0,           1             ],
-            [398,          380,          360,           3100,        399           ]
+            [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004,1601481600004],
+            ["Mary3",      "Tom3",       "Jack3",       "Jane3",     "alex3"       ,"Mark"      ],
+            [0,            1,            1,             0,           1             ,None        ],
+            [398,          380,          360,           3100,        399           ,None        ]
         ]
     ]
 
@@ -88,10 +88,10 @@ def insert_bind_param_with_tables(conn, stmt2):
             # table 1
             [
                 # student
-                [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004],
-                ["Mary",       "Tom",        "Jack",       "Jane",       "alex"       ],
-                [0,            1,            1,            0,            1            ],
-                [98,           80,           60,           100,          99           ]
+                [1601481600000,"2024-09-19 10:00:00","2024-09-19 10:00:01.123",datetime(2024,8,1,12,10,8,456),1601481600004],
+                ["Mary",       "Tom",                "Jack",                   "Jane",                        "alex"       ],
+                [0,            1,                    1,                        0,                             1            ],
+                [98,           80,                   60,                       100,                           99           ]
             ],
             # table 2
             [
@@ -148,16 +148,17 @@ def test_stmt2_insert(conn):
         print("insert prepare sql ............................ ok\n")
 
         # insert with table
-        #insert_bind_param_with_tables(conn, stmt2)
+        insert_bind_param_with_tables(conn, stmt2)
+        print("insert bind with tables ....................... ok\n")        
 
         # insert with split args
         insert_bind_param(conn, stmt2)
-        print("insert bind & execute ......................... ok\n")        
+        print("insert bind ................................... ok\n")
+        print("insert execute ................................ ok\n")        
 
         #conn.execute("drop database if exists %s" % dbname)
         stmt2.close()
         conn.close()
-        print("test_stmt2_insert test successful.")
         print("test_stmt2_insert ............................. [passed]\n") 
     except Exception as err:
         #conn.execute("drop database if exists %s" % dbname)
@@ -198,12 +199,12 @@ def compare_result(conn, sql2, res2):
    
     # shor res2
     for row in res2:
-        print(f" res2 rows = {row} \n")
+        log.debug(f" res2 rows = {row} \n")
         lres2.append(row)
 
     res1 = conn.query(sql2)
     for row in res1:
-        print(f" res1 rows = {row} \n")
+        log.debug(f" res1 rows = {row} \n")
         lres1.append(row)
 
     row1 = len(lres1)
@@ -241,8 +242,7 @@ def test_stmt2_query(conn):
 
         # prepare
         stmt2 = conn.statement2(f"insert into ? using {dbname}.{stbname} tags(?,?) values(?,?,?,?)")
-        #insert_bind_param_with_tables(conn, stmt2)
-        #print("insert prepare sql ............................ ok\n")
+        insert_bind_param_with_tables(conn, stmt2)
         insert_bind_param(conn, stmt2)
         print("insert bind & execute ......................... ok\n")        
 
@@ -283,7 +283,7 @@ def test_stmt2_query(conn):
 
 if __name__ == "__main__":
     print("start stmt2 test case...\n")
-    taos.log.setting(True, True, True)
+    taos.log.setting(True, True, True, True, True, False)
 
     # insert 
     test_stmt2_insert(taos.connect())
