@@ -185,6 +185,9 @@ class Consumer:
         'td.connect.pass',
         'td.connect.port',
         'td.connect.db',
+        'session.timeout.ms',
+        'heartbeat.interval.ms',
+        'max.poll.interval.ms',
     }
 
     def __init__(self, configs):
