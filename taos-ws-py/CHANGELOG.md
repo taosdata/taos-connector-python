@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.2.2 - 2023-01-13
 
+## v0.3.3 - 2024-09-19
+
+### Enhancements:
+
+- add api committed, position
+- update  cargo taos version
+- **(ws)**: add tmq commit_offset
+- **(ws)**: add tmq list_topics
+
+### Documents:
+
+- update dev cmd
+
 ## v0.3.2 - 2023-12-15
 
 ### Features:
