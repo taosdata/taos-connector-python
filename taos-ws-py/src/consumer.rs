@@ -130,7 +130,6 @@ impl Consumer {
                 "enable.heartbeat.background",
                 "experimental.snapshot.enable",
                 "session.timeout.ms",
-                "heartbeat.interval.ms",
                 "max.poll.interval.ms",
             ];
             for key in KEYS {
