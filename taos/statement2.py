@@ -136,7 +136,7 @@ def createTagsBind(statement2, tagsTbs):
             field = getField(statement2, i, True)
             values = [tagsTb[i]]
             log.debug(f" i = {i} type={field.type} precision={field.precision}  values = {values}  tagsTb = {tagsTb}\n")
-            bindsTb[i].set_value(field.type, field.precision, values)
+            bindsTb[i].set_value(field.type, values, field.precision)
         binds.append(bindsTb)
 
     return binds    
@@ -151,7 +151,7 @@ def createColsBind(statement2, colsTbs):
         bindsTb = bind2.new_stmt2_binds(n)
         for i in range(n):
             field = getField(statement2, i, isTag=False)
-            bindsTb[i].set_value(field.type, field.precision, colsTb[i])
+            bindsTb[i].set_value(field.type, colsTb[i], field.precision)
         binds.append(bindsTb)
 
     return binds    
