@@ -6,11 +6,63 @@ import taos
 from taos.statement2 import *
 from taos.constants import FieldType
 from taos import log
+from taos import bind2
 
 @pytest.fixture
 def conn():
     # type: () -> taos.TaosConnection
     return taos.connect()
+
+
+def checkResultCorrect(conn, sql, tagsTb, datasTb):
+    # column to rows
+    log.debug(f"check sql correct: {sql}\n")
+    oris = []
+    ncol = len(datasTb)
+    nrow = len(datasTb[0]) 
+
+    for i in range(nrow):
+        row = []
+        for j in range(ncol):
+           if j == 0:
+               # ts column
+               c0 = datasTb[j][i]
+               if type(c0) is int :
+                   row.append(datasTb[j][i])
+               else:
+                   ts = int(bind2._datetime_to_timestamp(c0, PrecisionEnum.Milliseconds))
+                   row.append(ts)
+           else:
+               row.append(datasTb[j][i])
+
+        row += tagsTb
+        oris.append(row)
+    
+    # fetch all
+    lres = []
+    log.debug(sql)
+    res = conn.query(sql)
+    i = 0
+    for row in res:
+        lrow = list(row)
+        lrow[0] = int(lrow[0].timestamp()*1000)
+        if lrow != oris[i]:
+            log.info(f"insert data differet. i={i} expect ori data={oris[i]} query from db ={lrow}")
+            raise(BaseException("check insert data correct failed."))
+        else:
+            log.debug(f"i={i} origin data same with get from db\n")
+            log.debug(f" origin data = {oris[i]} \n")
+            log.debug(f" get from db = {lrow} \n")
+        i += 1
+
+
+def checkResultCorrects(conn, dbname, stbname, tbnames, tags, datas):
+    count = len(tbnames)
+    for i in range(count):
+        sql = f"select * from {dbname}.{stbname} where tbname='{tbnames[i]}' "
+        checkResultCorrect(conn, sql, tags[i], datas[i])
+    print("insert data check correct ..................... ok\n")
+
 
 def prepare(conn, dbname, stbname):
     conn.execute("drop database if exists %s" % dbname)
@@ -19,12 +71,8 @@ def prepare(conn, dbname, stbname):
     sql = f"create table if not exists {dbname}.{stbname}(ts timestamp, name binary(32), sex bool, score int) tags(grade binary(24), class int)"
     conn.execute(sql)
 
-
-def checkResultCorrects(conn, tbnames, tags, datas):
-    pass
-
 # performace is high
-def insert_bind_param(conn, stmt2):
+def insert_bind_param(conn, stmt2, dbname, stbname):
     # 
     #  table info , write 5 lines to 3 child tables d0, d1, d2 with super table
     #
@@ -55,26 +103,23 @@ def insert_bind_param(conn, stmt2):
         # class 3
         [
             # student
-            [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004,1601481600004],
+            [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004,1601481600005],
             ["Mary3",      "Tom3",       "Jack3",       "Jane3",     "alex3"       ,"Mark"      ],
             [0,            1,            1,             0,           1             ,None        ],
             [398,          380,          360,           3100,        399           ,None        ]
         ]
     ]
 
-    # call 
-    #types = [FieldType.C_TIMESTAMP, FieldType.C_BINARY, FieldType.C_BOOL, FieldType.C_INT]
-    #stmt2.set_columns_type(types)
     stmt2.bind_param(tbanmes, tags, datas)
     stmt2.execute()
 
     # check correct
-    checkResultCorrects(conn, tbanmes, tags, datas)
+    checkResultCorrects(conn, dbname, stbname, tbanmes, tags, datas)
 
 
 
 # performance is lower
-def insert_bind_param_with_tables(conn, stmt2):
+def insert_bind_param_with_tables(conn, stmt2, dbname, stbname):
 
     tbanmes = ["t1", "t2", "t3"]
     tags    = [
@@ -88,10 +133,10 @@ def insert_bind_param_with_tables(conn, stmt2):
             # table 1
             [
                 # student
-                [1601481600000,"2024-09-19 10:00:00","2024-09-19 10:00:01.123",datetime(2024,8,1,12,10,8,456),1601481600004],
-                ["Mary",       "Tom",                "Jack",                   "Jane",                        "alex"       ],
-                [0,            1,                    1,                        0,                             1            ],
-                [98,           80,                   60,                       100,                           99           ]
+                [1601481600000,1601481600004,"2024-09-19 10:00:00", "2024-09-19 10:00:01.123", datetime(2024,9,20,10,11,12,456)],
+                ["Mary",       "Tom",        "Jack",                "Jane",                    "alex"       ],
+                [0,            1,            1,                     0,                         1            ],
+                [98,           80,           60,                    100,                       99           ]
             ],
             # table 2
             [
@@ -127,7 +172,7 @@ def insert_bind_param_with_tables(conn, stmt2):
     stmt2.execute()
 
     # check correct
-    checkResultCorrects(conn, tbanmes, tags, datas)
+    checkResultCorrects(conn, dbname, stbname, tbanmes, tags, datas)
 
 
 #
@@ -148,11 +193,11 @@ def test_stmt2_insert(conn):
         print("insert prepare sql ............................ ok\n")
 
         # insert with table
-        insert_bind_param_with_tables(conn, stmt2)
+        insert_bind_param_with_tables(conn, stmt2, dbname, stbname)
         print("insert bind with tables ....................... ok\n")        
 
         # insert with split args
-        insert_bind_param(conn, stmt2)
+        insert_bind_param(conn, stmt2, dbname, stbname)
         print("insert bind ................................... ok\n")
         print("insert execute ................................ ok\n")        
 
@@ -242,8 +287,8 @@ def test_stmt2_query(conn):
 
         # prepare
         stmt2 = conn.statement2(f"insert into ? using {dbname}.{stbname} tags(?,?) values(?,?,?,?)")
-        insert_bind_param_with_tables(conn, stmt2)
-        insert_bind_param(conn, stmt2)
+        insert_bind_param_with_tables(conn, stmt2, dbname, stbname)
+        insert_bind_param(conn, stmt2, dbname, stbname)
         print("insert bind & execute ......................... ok\n")        
 
         
