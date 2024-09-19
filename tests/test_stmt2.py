@@ -28,37 +28,37 @@ def insert_bind_param(conn, stmt2):
     # 
     #  table info , write 5 lines to 3 child tables d0, d1, d2 with super table
     #
-    tbanmes = ["d1","d2","d3"]
+    tbanmes = ["d1","d2","d3",'d4']
     
     tags    = [
         ["grade1", 1],
-        ["grade1", 2],
-        ["grade1", 3]
+        ["grade1", None],
+        [None    , 3] 
     ]
     datas   = [
         # class 1
         [
             # student
-            [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004],
-            ["Mary",       "Tom",        "Jack",       "Jane",       "alex"       ],
-            [0,            1,            1,            0,            1            ],
-            [98,           80,           60,           100,          99           ]
+            [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004,1601481600005],
+            ["Mary",       "Tom",        "Jack",       "Jane",       "alex"       ,None         ],
+            [0,            1,            1,            0,            1            ,None         ],
+            [98,           80,           60,           100,          99           ,None         ]
         ],
         # class 2
         [
             # student
-            [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004],
-            ["Mary2",      "Tom2",       "Jack2",       "Jane2",     "alex2"       ],
-            [0,            1,            1,             0,           1             ],
-            [298,          280,          260,           2100,        299           ]
+            [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004,1601481600005],
+            ["Mary2",      "Tom2",       "Jack2",       "Jane2",     "alex2"      ,None         ],
+            [0,            1,            1,             0,           1            ,0            ],
+            [298,          280,          260,           2100,        299          ,None         ]
         ],
         # class 3
         [
             # student
-            [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004],
-            ["Mary3",      "Tom3",       "Jack3",       "Jane3",     "alex3"       ],
-            [0,            1,            1,             0,           1             ],
-            [398,          380,          360,           3100,        399           ]
+            [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004,1601481600004],
+            ["Mary3",      "Tom3",       "Jack3",       "Jane3",     "alex3"       ,"Mark"      ],
+            [0,            1,            1,             0,           1             ,None        ],
+            [398,          380,          360,           3100,        399           ,None        ]
         ]
     ]
 
@@ -148,7 +148,7 @@ def test_stmt2_insert(conn):
         print("insert prepare sql ............................ ok\n")
 
         # insert with table
-        #insert_bind_param_with_tables(conn, stmt2)
+        insert_bind_param_with_tables(conn, stmt2)
 
         # insert with split args
         insert_bind_param(conn, stmt2)

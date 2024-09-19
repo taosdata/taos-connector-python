@@ -292,7 +292,10 @@ class TaosStmt2(object):
         
         return taos_stmt2_error(self._stmt2)
     
-    # not engine interface
+    #
+    # if query must set columns type (not engine interface),
+    #  type is define class FieldType in constants.py
+    #
     def set_columns_type(self, types):
         self.fields = []
         for type in types:
