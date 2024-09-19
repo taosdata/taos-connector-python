@@ -129,6 +129,9 @@ impl Consumer {
                 "auto.commit.interval.ms",
                 "enable.heartbeat.background",
                 "experimental.snapshot.enable",
+                "session.timeout.ms",
+                "heartbeat.interval.ms",
+                "max.poll.interval.ms",
             ];
             for key in KEYS {
                 if let Some(value) = args.get_item(key) {
