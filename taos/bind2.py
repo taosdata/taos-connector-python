@@ -8,6 +8,7 @@ from typing import List, Optional
 from taos.cinterface import IS_V3
 from taos.constants import FieldType
 from taos.precision import PrecisionEnum, PrecisionError
+from taos import log
 
 
 _datetime_epoch = datetime.utcfromtimestamp(0)
@@ -84,7 +85,8 @@ class TaosStmt2Bind(ctypes.Structure):
     #
     # set bind value with field type
     #
-    def set_value(self, buffer_type, values, is_ignore_update=False):
+    def set_value(self, buffer_type, precision, values, is_ignore_update=False):
+        log.debug(f"set_value type={buffer_type} precision={precision} values={values}\n")
         if buffer_type == FieldType.C_BOOL:
             self.bool(values, is_ignore_update)
         elif buffer_type == FieldType.C_TINYINT:
@@ -104,7 +106,7 @@ class TaosStmt2Bind(ctypes.Structure):
         elif buffer_type == FieldType.C_BINARY:
             self.binary(values, is_ignore_update)
         elif buffer_type == FieldType.C_TIMESTAMP:
-            self.timestamp(values, is_ignore_update)
+            self.timestamp(values, precision, is_ignore_update)
         elif buffer_type == FieldType.C_NCHAR:
             self.nchar(values, is_ignore_update)
         elif buffer_type == FieldType.C_TINYINT_UNSIGNED:

@@ -4,8 +4,8 @@ from datetime import datetime
 import pytest
 import taos
 from taos.statement2 import *
-
 from taos.constants import FieldType
+from taos import log
 
 @pytest.fixture
 def conn():
@@ -89,9 +89,9 @@ def insert_bind_param_with_tables(conn, stmt2):
             [
                 # student
                 [1601481600000,"2024-09-19 10:00:00","2024-09-19 10:00:01.123",datetime(2024,8,1,12,10,8,456),1601481600004],
-                ["Mary",       "Tom",                "Jack",                   "Jane",                    "alex"       ],
-                [0,            1,                    1,                        0,                         1            ],
-                [98,           80,                   60,                       100,                       99           ]
+                ["Mary",       "Tom",                "Jack",                   "Jane",                        "alex"       ],
+                [0,            1,                    1,                        0,                             1            ],
+                [98,           80,                   60,                       100,                           99           ]
             ],
             # table 2
             [
@@ -159,7 +159,6 @@ def test_stmt2_insert(conn):
         #conn.execute("drop database if exists %s" % dbname)
         stmt2.close()
         conn.close()
-        print("test_stmt2_insert test successful.")
         print("test_stmt2_insert ............................. [passed]\n") 
     except Exception as err:
         #conn.execute("drop database if exists %s" % dbname)
@@ -200,12 +199,12 @@ def compare_result(conn, sql2, res2):
    
     # shor res2
     for row in res2:
-        print(f" res2 rows = {row} \n")
+        log.debug(f" res2 rows = {row} \n")
         lres2.append(row)
 
     res1 = conn.query(sql2)
     for row in res1:
-        print(f" res1 rows = {row} \n")
+        log.debug(f" res1 rows = {row} \n")
         lres1.append(row)
 
     row1 = len(lres1)
@@ -243,8 +242,7 @@ def test_stmt2_query(conn):
 
         # prepare
         stmt2 = conn.statement2(f"insert into ? using {dbname}.{stbname} tags(?,?) values(?,?,?,?)")
-        #insert_bind_param_with_tables(conn, stmt2)
-        #print("insert prepare sql ............................ ok\n")
+        insert_bind_param_with_tables(conn, stmt2)
         insert_bind_param(conn, stmt2)
         print("insert bind & execute ......................... ok\n")        
 
@@ -285,12 +283,12 @@ def test_stmt2_query(conn):
 
 if __name__ == "__main__":
     print("start stmt2 test case...\n")
-    taos.log.setting(True, True, True)
+    taos.log.setting(True, True, True, True, True, False)
 
     # insert 
     test_stmt2_insert(taos.connect())
 
     # query
-    #test_stmt2_query(taos.connect())
+    test_stmt2_query(taos.connect())
 
     print("end stmt2 test case.\n")
