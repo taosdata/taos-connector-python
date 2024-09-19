@@ -3,10 +3,10 @@ name: Test on macOS
 on:
   push:
     branches:
-      - 3.0
+      - 'main'
   pull_request:
     branches:
-      - 3.0
+      - 'main'
   workflow_dispatch:
     inputs:
       tdengine_branch:
@@ -26,7 +26,7 @@ jobs:
         with:
           repository: "taosdata/TDengine"
           path: "TDengine"
-          ref: ${{ github.base_ref }}
+          ref:  '3.0'
 
       - name: checkout TDengine by push
         if: github.event_name == 'push'
@@ -34,7 +34,7 @@ jobs:
         with:
           repository: "taosdata/TDengine"
           path: "TDengine"
-          ref: ${{ github.ref_name }}
+          ref:  '3.0'
 
       - name: checkout TDengine manually
         if: github.event_name == 'workflow_dispatch'
@@ -42,7 +42,7 @@ jobs:
         with:
           repository: "taosdata/TDengine"
           path: "TDengine"
-          ref: ${{ inputs.tdengine_branch }}
+          ref:  '3.0'
 
       - name: get_commit_id
         id: get_commit_id
