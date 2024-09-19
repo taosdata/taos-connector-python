@@ -85,7 +85,7 @@ class TaosStmt2Bind(ctypes.Structure):
     #
     # set bind value with field type
     #
-    def set_value(self, buffer_type, precision, values, is_ignore_update=False):
+    def set_value(self, buffer_type, values, precision = PrecisionEnum.Milliseconds,  is_ignore_update=False):
         log.debug(f"set_value type={buffer_type} precision={precision} values={values}\n")
         if buffer_type == FieldType.C_BOOL:
             self.bool(values, is_ignore_update)

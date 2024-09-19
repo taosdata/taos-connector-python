@@ -161,8 +161,12 @@ def createColsBind(statement2, colsTbs):
 # create bindv from list
 #
 def createBindV(statement2, tbnames, tags, datas):
+
+    if tbnames == None and tags == None and datas == None:
+        raise StatementError("all bind params is None.")
+
     # count
-    count = 0
+    count  = -1
     if tbnames != None:
         count = len(tbnames)
 
@@ -171,13 +175,24 @@ def createBindV(statement2, tbnames, tags, datas):
         bindTags = None
     else:
         bindTags = createTagsBind(statement2, tags)
+        if count == -1:
+            count = len(tags)
+        else:
+            if count != len(tags):
+                err = f"tags count is inconsistent. require count={count} real={len(tags)}"
+                raise StatementError(err)
 
     # datas
     if datas == None:
         bindDatas = None
     else:
         bindDatas = createColsBind(statement2, datas)
-        count = len(datas)
+        if count == -1:
+            count = len(datas)
+        else:
+            if count != len(datas):
+                err = f"datas count is inconsistent. require count={count} real={len(datas)}"
+                raise StatementError(err)
 
     # create
     return bind2.new_bindv(count, tbnames, bindTags, bindDatas)
