@@ -29,6 +29,7 @@ def insert_bind_param(conn, stmt2):
     #  table info , write 5 lines to 3 child tables d0, d1, d2 with super table
     #
     tbanmes = ["d1","d2","d3"]
+    
     tags    = [
         ["grade1", 1],
         ["grade1", 2],
@@ -122,8 +123,6 @@ def insert_bind_param_with_tables(conn, stmt2):
        table2.add_col_data(data)
 
     # columns type for stable
-    #types = [FieldType.C_TIMESTAMP, FieldType.C_BINARY, FieldType.C_BOOL, FieldType.C_INT]
-    #stmt2.set_columns_type(types)
     stmt2.bind_param_with_tables([table0, table1, table2])
     stmt2.execute()
 
@@ -135,6 +134,10 @@ def insert_bind_param_with_tables(conn, stmt2):
 # insert
 #
 def test_stmt2_insert(conn):
+    if not IS_V3:
+        print(" test_stmt2_query not support TDengine 2.X version.")
+        return 
+
     dbname  = "stmt2"
     stbname = "meters"
 
@@ -223,6 +226,10 @@ def compare_result(conn, sql2, res2):
 
 # query
 def test_stmt2_query(conn):
+    if not IS_V3:
+        print(" test_stmt2_query not support TDengine 2.X version.")
+        return 
+
     dbname  = "stmt2"
     stbname = "meters"
     sql1 = f"select * from {dbname}.d2 where name in (?) or score > ? ;"
@@ -276,6 +283,7 @@ def test_stmt2_query(conn):
 
 if __name__ == "__main__":
     print("start stmt2 test case...\n")
+    taos.log.setting(True, True, True)
 
     # insert 
     test_stmt2_insert(taos.connect())

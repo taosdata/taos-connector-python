@@ -210,6 +210,10 @@ class TaosStmt2(object):
     def bind_param(self, tbnames, tags, datas):
         if self._stmt2 is None:
             raise StatementError(ErrMsg.STMT2_NULL)
+        
+        log.debug(f"bind_param tbnames  = {tbnames} \n")
+        log.debug(f"bind_param tags     = {tags}    \n")
+        log.debug(f"bind_param datasTbs = {datas}   \n")
                         
         # obtain schema if insert
         if self.is_insert():
