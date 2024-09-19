@@ -31,6 +31,10 @@ __all__ = [
     "__version__",
     "IS_V3",
     "IGNORE",
+    "TAOS_FIELD_COL",
+    "TAOS_FIELD_TAG",
+    "TAOS_FIELD_QUERY",
+    "TAOS_FIELD_TBNAME",
     # functions
     "connect",
     "new_bind_param",
@@ -47,6 +51,7 @@ __all__ = [
     "TaosStmt",
     "TaosStmt2",
     "TaosStmt2Option",
+    "BindTable",
     "PrecisionEnum",
     "SmlPrecision",
     "SmlProtocol",

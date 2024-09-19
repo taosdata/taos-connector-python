@@ -199,6 +199,7 @@ class TaosStmt2(object):
         self.fields     = None
         self.tag_fields = None
         self.types      = None
+        self.valid_field_types = [TAOS_FIELD_COL, TAOS_FIELD_TAG, TAOS_FIELD_QUERY, TAOS_FIELD_TBNAME]
 
     def prepare(self, sql):
         if self._stmt2 is None:
@@ -278,13 +279,15 @@ class TaosStmt2(object):
             raise StatementError("stmt2 object is null.")
 
         return taos_stmt2_is_insert(self._stmt2)
-    
+
     def get_fields(self, field_type):
         if self._stmt2 is None:
             raise StatementError("stmt2 object is null.")
 
+        if field_type not in self.valid_field_types:
+            raise StatementError("invalid field_type value: %d." % field_type)
+
         return taos_stmt2_get_fields(self._stmt2, field_type)
-    
 
     def error(self):
         if self._stmt2 is None:

@@ -1097,7 +1097,11 @@ def taos_stmt2_init(taos, option):
     """
     _check_if_supported()
     option_ptr = ctypes.byref(option) if option is not None else c_void_p(None)
-    return c_void_p(_libtaos.taos_stmt2_init(taos, option_ptr))
+    stmt = c_void_p(_libtaos.taos_stmt2_init(taos, option_ptr))
+    if not stmt:
+        raise StatementError(msg="stmt2 init failed.")
+    #
+    return stmt
 
 
 # int taos_stmt2_prepare(TAOS_STMT2 *stmt, const char *sql, unsigned long length);

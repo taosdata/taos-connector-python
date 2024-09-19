@@ -7,11 +7,6 @@ import taos
 load_dotenv()
 
 
-def execute_sql(conn, sql):
-    res = taos_query(conn, sql)
-    taos_free_result(res)
-
-
 def test_is_null_type_value():
     if not taos.IS_V3:
         return
