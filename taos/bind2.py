@@ -38,7 +38,7 @@ def get_is_null_type(value) -> int:
 
 
 def _datetime_to_timestamp(value, precision, is_null_type=0):
-    # type: (datetime | float | int | str | c_int64, PrecisionEnum, bool) -> c_int64
+    # type: (datetime | float | int | str | c_int64, PrecisionEnum, int) -> c_int64
     if is_null_type > 0:
         return FieldType.C_BIGINT_NULL
 
@@ -46,14 +46,14 @@ def _datetime_to_timestamp(value, precision, is_null_type=0):
         if precision == PrecisionEnum.Milliseconds:
             return int(round((value - _datetime_epoch).total_seconds() * 1000))
         elif precision == PrecisionEnum.Microseconds:
-            return int(round((value - _datetime_epoch).total_seconds() * 10000000))
+            return int(round((value - _datetime_epoch).total_seconds() * 1000000))
         else:
             raise PrecisionError("datetime do not support nanosecond precision")
     elif type(value) is float:
         if precision == PrecisionEnum.Milliseconds:
             return int(round(value * 1000))
         elif precision == PrecisionEnum.Microseconds:
-            return int(round(value * 10000000))
+            return int(round(value * 1000000))
         else:
             raise PrecisionError("time float do not support nanosecond precision")
     elif isinstance(value, int) and not isinstance(value, bool):
@@ -61,9 +61,9 @@ def _datetime_to_timestamp(value, precision, is_null_type=0):
     elif isinstance(value, str):
         value = datetime.fromisoformat(value)
         if precision == PrecisionEnum.Milliseconds:
-            return int(round(value * 1000))
+            return int(round((value - _datetime_epoch).total_seconds() * 1000))
         elif precision == PrecisionEnum.Microseconds:
-            return int(round(value * 10000000))
+            return int(round((value - _datetime_epoch).total_seconds() * 1000000))
         else:
             raise PrecisionError("datetime do not support nanosecond precision")
     elif isinstance(value, c_int64):

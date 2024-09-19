@@ -113,14 +113,14 @@ class TaosBind(ctypes.Structure):
                 if precision == PrecisionEnum.Milliseconds:
                     ts = int(round((value - _datetime_epoch).total_seconds() * 1000))
                 elif precision == PrecisionEnum.Microseconds:
-                    ts = int(round((value - _datetime_epoch).total_seconds() * 10000000))
+                    ts = int(round((value - _datetime_epoch).total_seconds() * 1000000))
                 else:
                     raise PrecisionError("datetime do not support nanosecond precision")
             elif type(value) is float:
                 if precision == PrecisionEnum.Milliseconds:
                     ts = int(round(value * 1000))
                 elif precision == PrecisionEnum.Microseconds:
-                    ts = int(round(value * 10000000))
+                    ts = int(round(value * 1000000))
                 else:
                     raise PrecisionError("time float do not support nanosecond precision")
             elif isinstance(value, int) and not isinstance(value, bool):
@@ -128,9 +128,9 @@ class TaosBind(ctypes.Structure):
             elif isinstance(value, str):
                 value = datetime.fromisoformat(value)
                 if precision == PrecisionEnum.Milliseconds:
-                    ts = int(round(value * 1000))
+                    ts = int(round((value - _datetime_epoch).total_seconds() * 1000))
                 elif precision == PrecisionEnum.Microseconds:
-                    ts = int(round(value * 10000000))
+                    ts = int(round((value - _datetime_epoch).total_seconds() * 1000000))
                 else:
                     raise PrecisionError("datetime do not support nanosecond precision")
             self.buffer = cast(pointer(c_int64(ts)), c_void_p)
