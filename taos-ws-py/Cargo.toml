@@ -13,19 +13,21 @@ crate-type = ["cdylib"]
 anyhow = "1"
 log = "0.4"
 serde_json = "1"
-shadow-rs = "0.33.0"
-taos = { git = "https://github.com/taosdata/taos-connector-rust.git"}
+shadow-rs = { version = "0.33.0", default-features = false }
+taos = { git = "https://github.com/taosdata/taos-connector-rust.git", branch = "main", default-features = false, features = ["optin", "ws-rustls"] }
 pretty_env_logger = "0.5"
 chrono = "0.4"
 rustls = "=0.21.7"
 rustls-webpki = "=0.101.6"
 sct = "=0.7.0"
-#ring = "=0.16.20"
+# ring = "=0.17.8"
 
 [build-dependencies]
-shadow-rs = "0.33.0"
+shadow-rs = { version = "0.33.0", default-features = false }
 
 [dependencies.pyo3]
 version = "0.17.3"
 features = ["extension-module", "anyhow", "chrono", "abi3-py37"]
 
+[patch.crates-io]
+ring = { git = "https://github.com/taosdata/ring.git", branch = "fix/loongarch" }
