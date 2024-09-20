@@ -193,6 +193,75 @@ def test_taos_stmt2_init_with_option():
     print("pass test_taos_stmt2_init_with_option")
 
 
+def test_taos_stmt2_bind_without_prepare():
+    if not taos.IS_V3:
+        return
+
+    from taos.bind2 import TaosStmt2Bind, new_stmt2_binds, new_bindv
+    conn = taos_connect(**cfg)
+    option = None
+    stmt2 = taos_stmt2_init(conn, option)
+    assert stmt2 is not None
+    insert_flag = taos_stmt2_is_insert(stmt2)
+    assert insert_flag == False
+
+    # prepare data
+    tbanmes = ["d1"]
+    tags = [
+        ["grade1", 1]
+    ]
+    datas = [
+        # class 1
+        [
+            # student
+            [1601481600000, 1601481600001, 1601481600002, 1601481600003, 1601481600004],
+            ["Mary", "Tom", "Jack", "Jane", "alex"],
+            [0, 1, 1, 0, 1],
+            [98, 80, 60, 100, 99]
+        ],
+    ]
+
+    cnt_tbls = 1
+    cnt_tags = 2
+    cnt_cols = 4
+
+    # tags
+    stmt2_tags = []
+    for tag_list in tags:
+        n = len(tag_list)
+        assert n == cnt_tags
+        binds: Array[TaosStmt2Bind] = new_stmt2_binds(n)
+        binds[0].binary(tag_list[0])
+        binds[1].int(tag_list[1])
+        stmt2_tags.append(binds)
+    #
+
+    # cols
+    stmt2_cols = []
+    for data_list in datas:
+        n = len(data_list)
+        assert n == cnt_cols
+        binds: Array[TaosStmt2Bind] = new_stmt2_binds(n)
+        binds[0].timestamp(data_list[0])
+        binds[1].binary(data_list[1])
+        binds[2].bool(data_list[2])
+        binds[3].int(data_list[3])
+        stmt2_cols.append(binds)
+    #
+
+    bindv = new_bindv(cnt_tbls, tbanmes, stmt2_tags, stmt2_cols)
+
+    try:
+        taos_stmt2_bind_param(stmt2, bindv.get_address(), -1)
+        assert 1 == 2
+    except taos.error.StatementError as e:
+        pass
+    taos_stmt2_close(stmt2)
+    taos_close(conn)
+    print("pass test_taos_stmt2_bind_without_prepare")
+
+
+
 def test_taos_stmt2_insert():
     if not taos.IS_V3:
         return
