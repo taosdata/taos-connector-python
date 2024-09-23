@@ -131,7 +131,7 @@ class Message:
                     blocks[i] = f(block_data, [], num_rows, offsets, precision)
                 else:
                     f = convert_block_func(fields[i]["type"], self.decode_binary)
-                    is_null = [taos_is_null(self.msg, j, i) for j in range(num_rows)]
+                    is_null = taos_is_null_by_column(self.msg, num_rows, i)
                     blocks[i] = f(block_data, is_null, num_rows, [], precision)
 
             message_blocks.append(
