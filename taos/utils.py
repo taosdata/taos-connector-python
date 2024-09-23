@@ -76,3 +76,28 @@ def fmix32(h):
 
 def get_pid():
     return os.getpid()
+
+#
+# detect list contian none count
+#
+ALL_NONE     = 0  # all list item is none
+HAVE_NONE    = 1  # list item some is none, some is not none
+NOFOUND_NONE = 2  # all list item no found none 
+def detectListNone(items):
+    if items is None:
+        return ALL_NONE
+    # loop
+    n0 = 0 # none count
+    n1 = 0 # not noen count
+    for item in items:
+        if item is None:
+            n0 += 1
+        else:
+            n1 += 1
+    
+    # return 
+    if n0 == 0:
+        return NOFOUND_NONE
+    if n1 == 0:
+        return ALL_NONE
+    return HAVE_NONE

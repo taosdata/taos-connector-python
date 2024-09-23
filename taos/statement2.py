@@ -3,6 +3,7 @@ from taos.error import StatementError
 from taos.result import TaosResult
 from taos import bind2
 from taos import log
+from taos import utils
 from taos.precision import PrecisionEnum, PrecisionError
 from typing import Optional
 
@@ -167,13 +168,24 @@ def createBindV(statement2, tbnames, tags, datas):
 
     # count
     count  = -1
-    if tbnames != None:
+    ret = utils.detectListNone(tbnames)
+    if ret   == utils.ALL_NONE:
+        bindNames = None
+    elif ret == utils.HAVE_NONE:
+        raise StatementError("params tbnames some is None, some is not None, this is error.")
+    else:
+        # not found none
+        bindNames = tbnames 
         count = len(tbnames)
 
     # tags
-    if tags == None:
+    ret = utils.detectListNone(tags)
+    if ret   == utils.ALL_NONE:
         bindTags = None
+    elif ret == utils.HAVE_NONE:
+        raise StatementError("params tags some is None, some is not None, this is error.")
     else:
+        # not found none
         bindTags = createTagsBind(statement2, tags)
         if count == -1:
             count = len(tags)
@@ -183,9 +195,13 @@ def createBindV(statement2, tbnames, tags, datas):
                 raise StatementError(err)
 
     # datas
-    if datas == None:
+    ret = utils.detectListNone(datas)
+    if ret   == utils.ALL_NONE:
         bindDatas = None
+    elif ret == utils.HAVE_NONE:
+        raise StatementError("params datas some is None, some is not None, this is error.")
     else:
+        # not found none
         bindDatas = createColsBind(statement2, datas)
         if count == -1:
             count = len(datas)
@@ -195,7 +211,7 @@ def createBindV(statement2, tbnames, tags, datas):
                 raise StatementError(err)
 
     # create
-    return bind2.new_bindv(count, tbnames, bindTags, bindDatas)
+    return bind2.new_bindv(count, bindNames, bindTags, bindDatas)
 
 
 
