@@ -14,6 +14,18 @@ def conn():
     return taos.connect()
 
 
+def compareLine(oris, rows):
+    n = len(oris)
+    if len(rows) != n:
+        return False
+    for i in range(n):
+        if oris[i] != rows[i]:
+            if type(rows[i]) == bool:
+                if bool(oris[i]) != rows[i]:
+                    return False
+    return True
+
+
 def checkResultCorrect(conn, sql, tagsTb, datasTb):
     # column to rows
     log.debug(f"check sql correct: {sql}\n")
@@ -35,7 +47,8 @@ def checkResultCorrect(conn, sql, tagsTb, datasTb):
            else:
                row.append(datasTb[j][i])
 
-        row += tagsTb
+        if tagsTb is not None:
+            row += tagsTb
         oris.append(row)
     
     # fetch all
@@ -46,7 +59,7 @@ def checkResultCorrect(conn, sql, tagsTb, datasTb):
     for row in res:
         lrow = list(row)
         lrow[0] = int(lrow[0].timestamp()*1000)
-        if lrow != oris[i]:
+        if compareLine(oris[i], lrow) is False:
             log.info(f"insert data differet. i={i} expect ori data={oris[i]} query from db ={lrow}")
             raise(BaseException("check insert data correct failed."))
         else:
@@ -59,8 +72,13 @@ def checkResultCorrect(conn, sql, tagsTb, datasTb):
 def checkResultCorrects(conn, dbname, stbname, tbnames, tags, datas):
     count = len(tbnames)
     for i in range(count):
-        sql = f"select * from {dbname}.{stbname} where tbname='{tbnames[i]}' "
+        if stbname is None:
+            sql = f"select * from {dbname}.{tbnames[i]} "
+        else:
+            sql = f"select * from {dbname}.{stbname} where tbname='{tbnames[i]}' "
+            
         checkResultCorrect(conn, sql, tags[i], datas[i])
+
     print("insert data check correct ..................... ok\n")
 
 
@@ -68,7 +86,11 @@ def prepare(conn, dbname, stbname):
     conn.execute("drop database if exists %s" % dbname)
     conn.execute("create database if not exists %s precision 'ms' " % dbname)
     conn.select_db(dbname)
+    # stable
     sql = f"create table if not exists {dbname}.{stbname}(ts timestamp, name binary(32), sex bool, score int) tags(grade binary(24), class int)"
+    conn.execute(sql)
+    # normal table
+    sql = f"create table if not exists {dbname}.ntb (ts timestamp, name binary(32), sex bool, score int)"
     conn.execute(sql)
 
 # performace is high
@@ -118,7 +140,7 @@ def insert_bind_param(conn, stmt2, dbname, stbname):
 
 
 
-# performance is lower
+# insert with single table (performance is lower)
 def insert_bind_param_with_tables(conn, stmt2, dbname, stbname):
 
     tbanmes = ["t1", "t2", "t3"]
@@ -167,13 +189,81 @@ def insert_bind_param_with_tables(conn, stmt2, dbname, stbname):
     for data in datas[2]:
        table2.add_col_data(data)
 
-    # columns type for stable
+    # bind with single table
     stmt2.bind_param_with_tables([table0, table1, table2])
     stmt2.execute()
 
     # check correct
     checkResultCorrects(conn, dbname, stbname, tbanmes, tags, datas)
 
+# insert with single table (performance is lower)
+def insert_with_normal_tables(conn, stmt2, dbname):
+
+    tbanmes = ["ntb"]
+    tags    = [None]
+    # prepare data
+    datas = [
+            # table 1
+            [
+                # student
+                [1601481600000,1601481600004,"2024-09-19 10:00:00", "2024-09-19 10:00:01.123", datetime(2024,9,20,10,11,12,456)],
+                ["Mary",       "Tom",        "Jack",                "Jane",                    "alex"       ],
+                [0,            1,            1,                     0,                         1            ],
+                [98,           80,           60,                    100,                       99           ]
+            ]
+    ]
+
+    table0 = BindTable(tbanmes[0], tags[0])
+    for data in datas[0]:
+       table0.add_col_data(data)
+
+    # bind with single table
+    stmt2.bind_param_with_tables([table0])
+    stmt2.execute()
+
+    # check correct
+    checkResultCorrects(conn, dbname, None, tbanmes, tags, datas)
+
+
+# insert except test
+def insert_except_test(conn, stmt2):
+
+    tbanmes = ["t1", "t2", "t3"]
+    tags    = [
+        ["grade2", 1],
+        None,
+        ["grade2", 3]
+    ]
+
+    # prepare data
+    datas = [
+            # table 1
+            [
+                # student
+                [1601481600000,1601481600004,"2024-09-19 10:00:00", "2024-09-19 10:00:01.123", datetime(2024,9,20,10,11,12,456)],
+                ["Mary",       "Tom",        "Jack",                "Jane",                    "alex"       ],
+                [0,            1,            1,                     0,                         1            ],
+                [98,           80,           60,                    100,                       99           ]
+            ],
+            None,
+            None
+    ]
+
+    table0 = BindTable(tbanmes[0], tags[0])
+    table1 = BindTable(tbanmes[1], tags[1])
+    table2 = BindTable(tbanmes[2], tags[2])
+
+    for data in datas[0]:
+       table0.add_col_data(data)
+
+    table1.add_col_data(datas[1])
+    table2.add_col_data(datas[2])
+
+    # bind with single table
+    try:
+        stmt2.bind_param_with_tables([table0, table1, table2])
+    except Exception as err:
+        print(f"check except is pass. err={err}")
 
 #
 # insert
@@ -199,7 +289,16 @@ def test_stmt2_insert(conn):
         # insert with split args
         insert_bind_param(conn, stmt2, dbname, stbname)
         print("insert bind ................................... ok\n")
-        print("insert execute ................................ ok\n")        
+        print("insert execute ................................ ok\n")
+        stmt2.close()
+
+        stmt2 = conn.statement2(f"insert into {dbname}.ntb values(?,?,?,?)")
+        insert_with_normal_tables(conn, stmt2, dbname)
+        print("insert normal tables .......................... ok\n")
+
+        # insert except test
+        insert_except_test(conn, stmt2)
+        print("test insert except ............................ ok\n")           
 
         #conn.execute("drop database if exists %s" % dbname)
         stmt2.close()
