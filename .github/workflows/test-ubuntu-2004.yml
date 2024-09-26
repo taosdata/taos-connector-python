@@ -128,7 +128,7 @@ jobs:
           pip3 install pandas "numpy<2.0.0" sqlalchemy > /dev/null || echo "failed to install pandas"
           taosBenchmark -d power -t 10 -n 10 -y
           for i in `find . -name "*.py"   \
-            |grep -Ev "cloud|trades|v2|websocket_with_req_id|all_type|tmq_consumer|rest_cursor|rest_client.py|import-json|connect_rest_examples|schemaless_insert"`;           \
+            |grep -Ev "cloud|trades|v2|websocket_with_req_id|tmq_consumer|rest_cursor|rest_client.py|import-json|connect_rest_examples|schemaless_insert"`;           \
             do printf "$i " && python $i > /dev/null                            \
                 && echo -e "\033[32m $i success! \033[0m"                       \
                   | tee -a ~/examples-success.txt                               \
