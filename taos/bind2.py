@@ -147,6 +147,12 @@ class TaosStmt2Bind(ctypes.Structure):
         self.is_null = cast((c_char * len(values))(*is_null), c_char_p)
 
     def bool(self, values, is_ignore_update=False):
+        cnt = len(values)
+        for i in range(cnt):
+            if type(values[i]) is float:
+                values[i] = 0 if values[i] == 0 else 1
+
+        #print(f"after values={values}")
         self.numeric_common(values, c_int8, FieldType.C_BOOL_NULL, FieldType.C_BOOL)
 
     def tinyint(self, values, is_ignore_update=False):
