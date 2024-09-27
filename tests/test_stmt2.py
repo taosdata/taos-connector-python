@@ -90,7 +90,7 @@ def prepare(conn, dbname, stbname):
     sql = f"create table if not exists {dbname}.{stbname}(ts timestamp, name binary(32), sex bool, score int) tags(grade binary(24), class int)"
     conn.execute(sql)
     # normal table
-    sql = f"create table if not exists {dbname}.ntb (ts timestamp, name binary(32), sex bool, score int)"
+    sql = f"create table if not exists {dbname}.ntb (ts timestamp, name binary(32), sex bool, score int, geo geometry(128))"
     conn.execute(sql)
 
 # performace is high
@@ -209,7 +209,8 @@ def insert_with_normal_tables(conn, stmt2, dbname):
                 [1601481600000,1601481600004,"2024-09-19 10:00:00", "2024-09-19 10:00:01.123", datetime(2024,9,20,10,11,12,456)],
                 ["Mary",       "Tom",        "Jack",                "Jane",                    "alex"       ],
                 [0,            3.14,         True,                     0,                         1            ],
-                [98,           80,           60,                    100,                       99           ]
+                [98,           80,           60,                    100,                       99           ],
+                [None, "POINT(121.213 31.234)",  "POINT(122.22 32.222)", None, "POINT(124.22 34.222)"]
             ]
     ]
 
@@ -292,7 +293,7 @@ def test_stmt2_insert(conn):
         print("insert execute ................................ ok\n")
         stmt2.close()
 
-        stmt2 = conn.statement2(f"insert into {dbname}.ntb values(?,?,?,?)")
+        stmt2 = conn.statement2(f"insert into {dbname}.ntb values(?,?,?,?,?)")
         insert_with_normal_tables(conn, stmt2, dbname)
         print("insert normal tables .......................... ok\n")
 

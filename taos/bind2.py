@@ -192,7 +192,7 @@ class TaosStmt2Bind(ctypes.Structure):
         self.num = len(values)
         self.is_null = cast((c_char * len(values))(*is_null), c_char_p)
 
-    def _str_to_buffer(self, values, encode=True, is_ignore_update=False):
+    def _str_to_buffer(self, values, is_ignore_update=False):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
         #
@@ -207,33 +207,25 @@ class TaosStmt2Bind(ctypes.Structure):
             self.length = (c_int32 * len(values))(0 * self.num)
             return
 
-        _bytes_list = []
-        if sys.version_info < (3, 0):
-            _bytes_list = [bytes(value) if value is not None else None for value in values]
-        else:
-            if encode:
-                _bytes_list = [value.encode("utf-8") if value is not None else None for value in values]
-            else:
-                _bytes_list = [bytes(value) if value is not None else None for value in values]
-            #
-
+        # encode with utf-8
+        _bytes_list = [value.encode("utf-8") if value is not None else None for value in values]
         _bytes = b"".join([b for b in _bytes_list if b is not None])
         self.buffer = cast(create_string_buffer(_bytes), c_void_p)
         self.length = (c_int32 * len(values))(*[len(b) if b is not None else 0 for b in _bytes_list])
 
     def binary(self, values, is_ignore_update=False):
         self.buffer_type = FieldType.C_BINARY
-        self._str_to_buffer(values, is_ignore_update=is_ignore_update)
+        self._str_to_buffer(values, is_ignore_update)
 
     def nchar(self, values, is_ignore_update=False):
         # type: (list[str]) -> None
         self.buffer_type = FieldType.C_NCHAR
-        self._str_to_buffer(values, is_ignore_update=is_ignore_update)
+        self._str_to_buffer(values, is_ignore_update)
 
     def json(self, values, is_ignore_update=False):
         # type: (list[str]) -> None
         self.buffer_type = FieldType.C_JSON
-        self._str_to_buffer(values, is_ignore_update=is_ignore_update)
+        self._str_to_buffer(values, is_ignore_update)
 
     def tinyint_unsigned(self, values, is_ignore_update=False):
         self.numeric_common(values, c_uint8, FieldType.C_TINYINT_UNSIGNED_NULL, FieldType.C_TINYINT_UNSIGNED)
@@ -249,15 +241,15 @@ class TaosStmt2Bind(ctypes.Structure):
 
     def varchar(self, values, is_ignore_update=False):
         self.buffer_type = FieldType.C_VARCHAR
-        self._str_to_buffer(values, is_ignore_update=is_ignore_update)
+        self._str_to_buffer(values, is_ignore_update)
 
     def varbinary(self, values, is_ignore_update=False):
         self.buffer_type = FieldType.C_VARBINARY
-        self._str_to_buffer(values, encode=False, is_ignore_update=is_ignore_update)
+        self._str_to_buffer(values, is_ignore_update)
 
     def geometry(self, values, is_ignore_update=False):
         self.buffer_type = FieldType.C_GEOMETRY
-        self._str_to_buffer(values, encode=False, is_ignore_update=is_ignore_update)
+        self._str_to_buffer(values, is_ignore_update)
 
 
 class TaosStmt2BindV(ctypes.Structure):
