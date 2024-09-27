@@ -485,14 +485,17 @@ def test_taos_stmt2_get_fields():
 
     # TODO: get tbname when bind
     count, fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_TBNAME)
+    assert count == 1
     assert len(fields) == 0
 
     # TODO: get tag when bind
     count, fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_TAG)
+    assert count == cnt_tags
     assert len(fields) == cnt_tags
 
     # TODO: get col when bind
     count, fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_COL)
+    assert count == cnt_cols
     assert len(fields) == cnt_cols
 
     taos_stmt2_close(stmt2)
