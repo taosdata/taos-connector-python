@@ -111,8 +111,8 @@ def obtainSchema(statement2):
     #statement2.fields     = [FieldType.C_TIMESTAMP, FieldType.C_BINARY, FieldType.C_BOOL, FieldType.C_INT]
     #return len(statement2.fields) > 0
 
-    statement2.fields     = statement2.get_fields(TAOS_FIELD_COL)
-    statement2.tag_fields = statement2.get_fields(TAOS_FIELD_TAG)
+    count, statement2.fields     = statement2.get_fields(TAOS_FIELD_COL)
+    count, statement2.tag_fields = statement2.get_fields(TAOS_FIELD_TAG)
     log.debug(f"obtain schema tag fields = {statement2.tag_fields}")
     log.debug(f"obtain schema fields     = {statement2.fields}")
 
