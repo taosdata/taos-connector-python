@@ -207,8 +207,16 @@ class TaosStmt2Bind(ctypes.Structure):
             self.length = (c_int32 * len(values))(0 * self.num)
             return
 
-        # encode with utf-8
-        _bytes_list = [value.encode("utf-8") if value is not None else None for value in values]
+        # covert to bytes object
+        _bytes_list = []
+        for value in values:
+            if value is None:
+                _bytes_list.append(None)
+            elif type(value) == str:
+                _bytes_list.append(value.encode("utf-8"))
+            else:
+                # bytes object
+                _bytes_list.append(value)
         _bytes = b"".join([b for b in _bytes_list if b is not None])
         self.buffer = cast(create_string_buffer(_bytes), c_void_p)
         self.length = (c_int32 * len(values))(*[len(b) if b is not None else 0 for b in _bytes_list])
