@@ -36,7 +36,7 @@ def gen_req_id():
     return req_id
 
 
-def murmurhash3_32(key, length):
+def murmurhash3_32(key):
     data = key
     nblocks = length >> 2
     h1 = 0x12345678
@@ -53,7 +53,7 @@ def murmurhash3_32(key, length):
         h1 = h1 * 5 + 0xe6546b64
     tail = data[nblocks * 4:]
     k1 = 0
-    # print('length', length, length & 3)
+    # print('length' & 3)
     if length & 3 == 3:
         k1 ^= tail[2] << 16
     if length & 3 == 2:
@@ -110,7 +110,7 @@ def detectListNone(items):
         return ALL_NONE
     return HAVE_NONE
 
-def checkString(label, values, types, length):
+def checkString(label, values, types):
     for value in values:
         if value is None:
             continue
@@ -137,7 +137,7 @@ def checkNumber(label, values, types, min, max):
             raise DataTypeAndRangeError(err)            
 
 
-def checkTypeValid(buffer_type, values, length):
+def checkTypeValid(buffer_type, values):
     if buffer_type == FieldType.C_TIMESTAMP:
         for value in values:
             if value is None:
@@ -177,17 +177,17 @@ def checkTypeValid(buffer_type, values, length):
         checkNumber("unsigned bigint", values, [int, float], 0, 2**64-1)
     # str            
     elif buffer_type == FieldType.C_VARCHAR:
-        checkString("varchar", values, [str], length)
+        checkString("varchar", values, [str])
     elif buffer_type == FieldType.C_BINARY:
-        checkString("binary",  values, [str], length)
+        checkString("binary",  values, [str])
     elif buffer_type == FieldType.C_NCHAR:
-        checkString("nchar",   values, [str], length)
+        checkString("nchar",   values, [str])
     elif buffer_type == FieldType.C_JSON:
-        checkString("json",    values, [str], length)
+        checkString("json",    values, [str])
     elif buffer_type == FieldType.C_VARBINARY:
-        checkString("varbinary", values, [bytes], length)
+        checkString("varbinary", values, [bytes])
     elif buffer_type == FieldType.C_GEOMETRY:
-        checkString("geometry", values, [bytes], length)
+        checkString("geometry", values, [bytes])
     else:
         err = f"invalid datatype type={type(value)} value= {value}"
         raise DataTypeAndRangeError(err)
