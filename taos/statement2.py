@@ -136,7 +136,7 @@ def createTagsBind(statement2, tagsTbs):
         for i in range(n):
             field = getField(statement2, i, True)
             values = [tagsTb[i]]
-            log.debug(f" i = {i} type={field.type} precision={field.precision}  values = {values}  tagsTb = {tagsTb}\n")
+            log.debug(f"tag i = {i} type={field.type} precision={field.precision} length={field.bytes}  values = {values}  tagsTb = {tagsTb}\n")
             bindsTb[i].set_value(field.type, values, field.precision)
         binds.append(bindsTb)
 
