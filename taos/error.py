@@ -113,3 +113,9 @@ class TmqError(DatabaseError):
     """Exception raise in TMQ API"""
 
     pass
+
+class DataTypeAndRangeError(Error):
+    """Exception raise in check value datatype and range error API"""
+
+    pass
+    

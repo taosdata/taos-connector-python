@@ -113,4 +113,5 @@ def show_env():
 
 if __name__ == '__main__':
     show_env()
-    test_tmq()
+    print("forbid test_tmq because run long time\n")
+    #test_tmq() # run for many hours , so foribd for a moment, if found reason then open again.

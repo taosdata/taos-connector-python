@@ -6,7 +6,7 @@ import sys
 # info
 show_info  = True
 show_warn  = True
-show_debug  = False
+show_debug  = True
 show_debug1 = False
 show_debug2 = False
 show_debug3 = False
