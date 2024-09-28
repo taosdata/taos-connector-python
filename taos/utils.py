@@ -36,7 +36,7 @@ def gen_req_id():
     return req_id
 
 
-def murmurhash3_32(key):
+def murmurhash3_32(key, length):
     data = key
     nblocks = length >> 2
     h1 = 0x12345678
@@ -53,7 +53,7 @@ def murmurhash3_32(key):
         h1 = h1 * 5 + 0xe6546b64
     tail = data[nblocks * 4:]
     k1 = 0
-    # print('length' & 3)
+    # print('length', length, length & 3)
     if length & 3 == 3:
         k1 ^= tail[2] << 16
     if length & 3 == 2:
