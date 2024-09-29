@@ -3,6 +3,7 @@ from ctypes import *
 from datetime import datetime
 import pytest
 import taos
+import math
 from taos.statement2 import *
 from taos.constants import FieldType
 from taos import log
@@ -18,11 +19,27 @@ def compareLine(oris, rows):
     n = len(oris)
     if len(rows) != n:
         return False
+    log.debug(f"    len is {n} oris={oris} rows={rows}")
     for i in range(n):
         if oris[i] != rows[i]:
             if type(rows[i]) == bool:
                 if bool(oris[i]) != rows[i]:
+                    log.debug1(f"    diff bool i={i} oris[i] == rows[i] {oris[i]} == {rows[i]}")
                     return False
+                else:
+                    log.debug1(f"    float i={i} oris[i] == rows[i] {oris[i]} == {rows[i]}")
+            elif type(rows[i]) == float:
+                if math.isclose(oris[i], rows[i], rel_tol=1e-3) is False:
+                    log.debug1(f"    diff float i={i} oris[i] == rows[i] {oris[i]} == {rows[i]}")
+                    return False
+                else:
+                    log.debug1(f"    float i={i} oris[i] == rows[i] {oris[i]} == {rows[i]}")                
+            else:
+                log.debug1(f"    diff i={i} oris[i] == rows[i] {oris[i]} == {rows[i]}")
+                return False 
+        else:
+            log.debug1(f"    i={i} oris[i] == rows[i] {oris[i]} == {rows[i]}")
+
     return True
 
 
