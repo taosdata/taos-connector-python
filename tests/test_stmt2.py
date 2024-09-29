@@ -87,10 +87,10 @@ def prepare(conn, dbname, stbname):
     conn.execute("create database if not exists %s precision 'ms' " % dbname)
     conn.select_db(dbname)
     # stable
-    sql = f"create table if not exists {dbname}.{stbname}(ts timestamp, name binary(32), sex bool, score int) tags(grade binary(24), class int)"
+    sql = f"create table if not exists {dbname}.{stbname}(ts timestamp, name binary(32), sex bool, score int) tags(grade nchar(8), class int)"
     conn.execute(sql)
     # normal table
-    sql = f"create table if not exists {dbname}.ntb (ts timestamp, name binary(32), sex bool, score int)"
+    sql = f"create table if not exists {dbname}.ntb (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128))"
     conn.execute(sql)
 
 # performace is high
@@ -110,7 +110,7 @@ def insert_bind_param(conn, stmt2, dbname, stbname):
         [
             # student
             [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004,1601481600005],
-            ["Mary",       "Tom",        "Jack",       "Jane",       "alex"       ,None         ],
+            ["Mary",       "Tom",        "Jack",       "Jane",       "alex"       ,None           ],
             [0,            1,            1,            0,            1            ,None         ],
             [98,           80,           60,           100,          99           ,None         ]
         ],
@@ -207,9 +207,10 @@ def insert_with_normal_tables(conn, stmt2, dbname):
             [
                 # student
                 [1601481600000,1601481600004,"2024-09-19 10:00:00", "2024-09-19 10:00:01.123", datetime(2024,9,20,10,11,12,456)],
-                ["Mary",       "Tom",        "Jack",                "Jane",                    "alex"       ],
+                [b"Mary",       b"tom",        b"Jack",                b"Jane",                   None       ],
                 [0,            3.14,         True,                     0,                         1            ],
-                [98,           80,           60,                    100,                       99           ]
+                [98,           99.87,           60,                    100,                       99           ],
+                [None, b"POINT(121.213 31.234)",  b"POINT(122.22 32.222)", None, b"POINT(124.22 34.222)"]
             ]
     ]
 
@@ -292,7 +293,7 @@ def test_stmt2_insert(conn):
         print("insert execute ................................ ok\n")
         stmt2.close()
 
-        stmt2 = conn.statement2(f"insert into {dbname}.ntb values(?,?,?,?)")
+        stmt2 = conn.statement2(f"insert into {dbname}.ntb values(?,?,?,?,?)")
         insert_with_normal_tables(conn, stmt2, dbname)
         print("insert normal tables .......................... ok\n")
 

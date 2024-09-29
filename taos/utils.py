@@ -1,7 +1,15 @@
 import time
 import uuid
 import os
+import datetime
 from threading import Lock
+
+from taos.cinterface import IS_V3
+from taos.constants import FieldType
+from taos.precision import PrecisionEnum, PrecisionError
+from taos import log
+from taos.error import *
+
 
 tUUIDHashId = 0
 tUUIDSerialNo = 0
@@ -101,3 +109,85 @@ def detectListNone(items):
     if n1 == 0:
         return ALL_NONE
     return HAVE_NONE
+
+def checkString(label, values, types):
+    for value in values:
+        if value is None:
+            continue
+        # type
+        if type(value) not in types:
+            err = f"{label} type bind not support type = {type(value)}"
+            raise DataTypeAndRangeError(err)
+        # check length should do for engine
+        #if length is not None and len(value) + 2 > length:
+        #    err = f"{label} type value:{value} length exceeds the max length {length}"
+        #    raise DataTypeAndRangeError(err)
+
+def checkNumber(label, values, types, min, max):
+    for value in values:
+        if value is None:
+            continue
+        # type
+        if type(value) not in types:
+            err = f"{label} type bind not support type: {type(value)}"
+            raise DataTypeAndRangeError(err)
+        # range
+        if value < min or value > max:
+            err = f"{label} type value:{value} exceeds the indicated range [{min}, {max}]"
+            raise DataTypeAndRangeError(err)            
+
+
+def checkTypeValid(buffer_type, values):
+    if buffer_type == FieldType.C_TIMESTAMP:
+        for value in values:
+            if value is None:
+                continue
+            # check type
+            if type(value) not in (int, str, datetime.datetime):
+                err = f"timestamp type bind not support type = {type(value)}"
+                raise DataTypeAndRangeError(err)
+    elif buffer_type == FieldType.C_BOOL:
+        for value in values:
+            if value is None:
+                continue
+            # check type
+            if type(value) not in (bool, int, float):
+                err = f"bool type bind not support type = {type(value)}"
+                raise DataTypeAndRangeError(err)
+    elif buffer_type == FieldType.C_TINYINT:
+        checkNumber("tinyint", values, [int, float], -128,   127)
+    elif buffer_type == FieldType.C_SMALLINT:
+        checkNumber("smallint", values, [int, float], -32768, 32767)
+    elif buffer_type == FieldType.C_INT:
+        checkNumber("int", values, [int, float],    -2**31, 2**31-1)
+    elif buffer_type == FieldType.C_BIGINT:
+        checkNumber("bigint", values, [int, float], -2**63, 2**63-1)
+    elif buffer_type == FieldType.C_FLOAT:
+        checkNumber("float", values, [int, float], -3.4E38, 3.4E38)
+    elif buffer_type == FieldType.C_DOUBLE:
+        checkNumber("double", values, [int, float], -1.7E308, 1.7E308)
+    # unsigned
+    elif buffer_type == FieldType.C_TINYINT_UNSIGNED:
+        checkNumber("unsigned tinyint", values, [int, float], 0, 255)
+    elif buffer_type == FieldType.C_SMALLINT_UNSIGNED:
+        checkNumber("unsigned smallint", values, [int, float], 0, 65535)
+    elif buffer_type == FieldType.C_INT_UNSIGNED:
+        checkNumber("unsigned int", values, [int, float], 0, 2**32-1)
+    elif buffer_type == FieldType.C_BIGINT_UNSIGNED:
+        checkNumber("unsigned bigint", values, [int, float], 0, 2**64-1)
+    # str            
+    elif buffer_type == FieldType.C_VARCHAR:
+        checkString("varchar", values, [str])
+    elif buffer_type == FieldType.C_BINARY:
+        checkString("binary",  values, [str])
+    elif buffer_type == FieldType.C_NCHAR:
+        checkString("nchar",   values, [str])
+    elif buffer_type == FieldType.C_JSON:
+        checkString("json",    values, [str])
+    elif buffer_type == FieldType.C_VARBINARY:
+        checkString("varbinary", values, [bytes])
+    elif buffer_type == FieldType.C_GEOMETRY:
+        checkString("geometry", values, [bytes])
+    else:
+        err = f"invalid datatype type={type(value)} value= {value}"
+        raise DataTypeAndRangeError(err)
