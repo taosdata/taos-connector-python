@@ -185,9 +185,9 @@ def checkTypeValid(buffer_type, values):
     elif buffer_type == FieldType.C_JSON:
         checkString("json",    values, [str])
     elif buffer_type == FieldType.C_VARBINARY:
-        checkString("varbinary", values, [bytes])
+        checkString("varbinary", values, [bytes, bytearray])
     elif buffer_type == FieldType.C_GEOMETRY:
-        checkString("geometry", values, [bytes])
+        checkString("geometry", values, [bytes, bytearray])
     else:
         err = f"invalid datatype type={type(value)} value= {value}"
         raise DataTypeAndRangeError(err)

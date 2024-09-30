@@ -1246,12 +1246,12 @@ TAOS_FIELD_QUERY  = 3
 TAOS_FIELD_TBNAME = 4
 # get fields 
 def taos_stmt2_get_fields(stmt, field_type):
-    # type: (ctypes.c_void_p, TAOS_FIELD_T) -> List[TaosFieldEx]
+    # type: (ctypes.c_void_p, TAOS_FIELD_T) -> Tuple[int, List[TaosFieldEx]]
     """
     Get fields information for a given statement and field type.
     @stmt: c_void_p TAOS_STMT2*
     @field_type: TAOS_FIELD_T field type to retrieve
-    @return: List[TAOS_FIELD_E] list of fields
+    @return: Tuple(int, List[TAOS_FIELD_E]) count, list of fields
     """
     _check_if_supported()
     _check_if_supported("taos_stmt2_free_fields")
@@ -1284,7 +1284,7 @@ def taos_stmt2_get_fields(stmt, field_type):
     #
 
     _libtaos.taos_stmt2_free_fields(stmt, fields_ptr)
-    return fields
+    return count.value, fields
 
 
 # TAOS_RES *taos_stmt2_result(TAOS_STMT2 *stmt);

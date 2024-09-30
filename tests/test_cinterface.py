@@ -392,7 +392,7 @@ def test_taos_stmt2_get_fields():
 
     # # TODO: get tbname when not bind
     # try:
-    #     fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_TBNAME)
+    #     count, fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_TBNAME)
     #     print(fields)
     #     assert 1==2
     # except StatementError as e:
@@ -400,7 +400,7 @@ def test_taos_stmt2_get_fields():
     #
     # # TODO: get tag when not bind
     # try:
-    #     fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_TAG)
+    #     count, fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_TAG)
     #     print(fields)
     #     assert 1==2
     # except StatementError as e:
@@ -408,7 +408,7 @@ def test_taos_stmt2_get_fields():
     #
     # # TODO: get col when not bind
     # try:
-    #     fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_COL)
+    #     count, fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_COL)
     #     print(fields)
     #     assert 1==2
     # except StatementError as e:
@@ -484,15 +484,18 @@ def test_taos_stmt2_get_fields():
     taos_stmt2_bind_param(stmt2, bindv.get_address(), -1)
 
     # TODO: get tbname when bind
-    fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_TBNAME)
+    count, fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_TBNAME)
+    assert count == 1
     assert len(fields) == 0
 
     # TODO: get tag when bind
-    fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_TAG)
+    count, fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_TAG)
+    assert count == cnt_tags
     assert len(fields) == cnt_tags
 
     # TODO: get col when bind
-    fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_COL)
+    count, fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_COL)
+    assert count == cnt_cols
     assert len(fields) == cnt_cols
 
     taos_stmt2_close(stmt2)
