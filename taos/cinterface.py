@@ -1169,8 +1169,6 @@ def taos_stmt2_exec(stmt):
     _check_if_supported()
     affected_rows = ctypes.c_int(0)
     res = _libtaos.taos_stmt2_exec(stmt, ctypes.byref(affected_rows))
-
-    # 检查执行结果
     if res != 0:
         error_msg = taos_stmt2_error(stmt)
         raise StatementError(msg=error_msg, errno=res)
