@@ -248,10 +248,12 @@ class TaosStmt2(object):
                         
         # obtain schema if insert
         if self.is_insert():
-            bindv = createBindV(self, tbnames, None, None)
-            if bindv == None:
-                raise StatementError("create stmt2 bindV failed.")
-            taos_stmt2_bind_param(self._stmt2, bindv.get_address(), -1)
+            if tbnames is not None:
+                bindv = createBindV(self, tbnames, None, None)
+                if bindv == None:
+                    raise StatementError("create stmt2 bindV failed.")
+                taos_stmt2_bind_param(self._stmt2, bindv.get_address(), -1)
+
             if obtainSchema(self) is False:
                 raise StatementError(f"obtain schema failed. tbnames={tbnames}")
             

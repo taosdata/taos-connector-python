@@ -109,6 +109,9 @@ def prepare(conn, dbname, stbname):
     # normal table
     sql = f"create table if not exists {dbname}.ntb (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128))"
     conn.execute(sql)
+    sql = f"create table if not exists {dbname}.ntb2 (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128))"
+    conn.execute(sql)
+
 
 # performace is high
 def insert_bind_param(conn, stmt2, dbname, stbname):
@@ -155,6 +158,27 @@ def insert_bind_param(conn, stmt2, dbname, stbname):
     # check correct
     checkResultCorrects(conn, dbname, stbname, tbanmes, tags, datas)
 
+
+def insert_bind_param_normal_tables(conn, stmt2, dbname):
+    tbnames = None
+    tags    = None
+    datas   = [
+            # table 1
+            [
+                # student
+                [1601481600000,1601481600004,"2024-09-19 10:00:00", "2024-09-19 10:00:01.123", datetime(2024,9,20,10,11,12,456)],
+                [b"Mary",       b"tom",         b"Jack",            b"Jane",            None        ],
+                [0,             3.14,           True,               0,                  1           ],
+                [98,            99.87,          60,                 100,                99          ],
+                [None, b"POINT(121.213 31.234)",  b"POINT(122.22 32.222)", None, b"POINT(124.22 34.222)"]
+            ]
+    ]
+
+    stmt2.bind_param(tbnames, tags, datas)
+    stmt2.execute()
+
+    # check correct
+    checkResultCorrects(conn, dbname, None, ["ntb2"], [None], datas)
 
 
 # insert with single table (performance is lower)
@@ -320,6 +344,12 @@ def test_stmt2_insert(conn):
 
         #conn.execute("drop database if exists %s" % dbname)
         stmt2.close()
+
+        stmt2 = conn.statement2(f"insert into {dbname}.ntb2 values(?,?,?,?,?)")
+        insert_bind_param_normal_tables(conn, stmt2, dbname)
+        print("insert bind param normal tables ............... ok\n")
+        stmt2.close()
+
         conn.close()
         print("test_stmt2_insert ............................. [passed]\n") 
     except Exception as err:
@@ -445,9 +475,11 @@ def test_stmt2_query(conn):
 
 if __name__ == "__main__":
     print("start stmt2 test case...\n")
+
+
     taos.log.setting(True, True, True, True, True, False)
 
-    # insert 
+    # insert
     test_stmt2_insert(taos.connect())
 
     # query
