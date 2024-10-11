@@ -6,6 +6,7 @@ from sqlalchemy import false
 
 import taos
 import math
+import traceback
 from taos.statement2 import *
 from taos.constants import FieldType
 from taos import log
@@ -120,7 +121,7 @@ def insert_bind_param(conn, stmt2, dbname, stbname):
     # 
     #  table info , write 5 lines to 3 child tables d0, d1, d2 with super table
     #
-    tbanmes = ["d1","d2","d3"]
+    tbnames = ["d1","d2","d3"]
     
     tags    = [
         ["grade1", 1],
@@ -154,11 +155,11 @@ def insert_bind_param(conn, stmt2, dbname, stbname):
         ]
     ]
 
-    stmt2.bind_param(tbanmes, tags, datas)
+    stmt2.bind_param(tbnames, tags, datas)
     stmt2.execute()
 
     # check correct
-    checkResultCorrects(conn, dbname, stbname, tbanmes, tags, datas)
+    checkResultCorrects(conn, dbname, stbname, tbnames, tags, datas)
 
 
 def insert_bind_param_normal_tables(conn, stmt2, dbname):
@@ -186,7 +187,7 @@ def insert_bind_param_normal_tables(conn, stmt2, dbname):
 # insert with single table (performance is lower)
 def insert_bind_param_with_tables(conn, stmt2, dbname, stbname):
 
-    tbanmes = ["t1", "t2", "t3"]
+    tbnames = ["t1", "t2", "t3"]
     tags    = [
         ["grade2", 1],
         ["grade2", 2],
@@ -221,9 +222,9 @@ def insert_bind_param_with_tables(conn, stmt2, dbname, stbname):
             ]
     ]
 
-    table0 = BindTable(tbanmes[0], tags[0])
-    table1 = BindTable(tbanmes[1], tags[1])
-    table2 = BindTable(tbanmes[2], tags[2])
+    table0 = BindTable(tbnames[0], tags[0])
+    table1 = BindTable(tbnames[1], tags[1])
+    table2 = BindTable(tbnames[2], tags[2])
 
     for data in datas[0]:
        table0.add_col_data(data)
@@ -237,12 +238,86 @@ def insert_bind_param_with_tables(conn, stmt2, dbname, stbname):
     stmt2.execute()
 
     # check correct
-    checkResultCorrects(conn, dbname, stbname, tbanmes, tags, datas)
+    checkResultCorrects(conn, dbname, stbname, tbnames, tags, datas)
+
+
+def do_check_invalid(stmt2, tbnames, tags, datas):
+    table0 = BindTable(tbnames[0], tags[0])
+    table1 = BindTable(tbnames[1], tags[1])
+    table2 = BindTable(tbnames[2], tags[2])
+
+    for data in datas[0]:
+       table0.add_col_data(data)
+    for data in datas[1]:
+       table1.add_col_data(data)
+    for data in datas[2]:
+       table2.add_col_data(data)
+
+    # bind with single table
+    try:
+        stmt2.bind_param_with_tables([table0, table1, table2])
+        stmt2.execute()
+    except Exception as err:
+        #traceback.print_stack()
+        print(f"failed to do_check_invalid. err={err}")
+        return 
+
+    print(f"input invalid data  passed , unexpect. \ntbnames={tbnames}\ntags={tags} \ndatas={datas} \n")
+    assert False
+
+
+def check_input_invalid_param(conn, stmt2, dbname, stbname):
+
+    tbnames = ["t1", "t2", "t3"]
+    tags    = [
+        ["grade2", 1],
+        ["grade2", 2],
+        ["grade2", 3]
+    ]
+
+    # prepare data
+    datas = [
+            # table 1
+            [
+                # student
+                [1601481600000,1601481600004,"2024-09-19 10:00:00", "2024-09-19 10:00:01.123", datetime(2024,9,20,10,11,12,456)],
+                ["Mary",       "Tom",        "Jack",                "Jane",                    "alex"       ],
+                [0,            1,            1,                     0,                         1            ],
+                [98,           80,           60,                    100,                       99           ]
+            ],
+            # table 2
+            [
+                # student
+                [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004],
+                ["Mary2",      "Tom2",       "Jack2",       "Jane2",     "alex2"       ],
+                [0,            1,            1,             0,           1             ],
+                [298,          280,          260,           2100,        299           ]
+            ],
+            # table 3
+            [
+                # student
+                [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004],
+                ["Mary3",      "Tom3",       "Jack3",       "Jane3",     "alex3"       ],
+                [0,            1,            1,             0,           1             ],
+                [398,          380,          360,           3100,        399           ]
+            ]
+    ]
+
+    # some tags is none 
+    tags1 = [ ["grade2", 1], None, ["grade2", 3] ]
+    do_check_invalid(stmt2, tbnames, tags1, datas)
+
+    # timestamp is over range
+    origin = datas[0][0][0]
+    datas[0][0][0] = 100000000000000000000000
+    do_check_invalid(stmt2, tbnames, tags, datas)
+    datas[0][0][0] = origin # restore
+
 
 # insert with single table (performance is lower)
 def insert_with_normal_tables(conn, stmt2, dbname):
 
-    tbanmes = ["ntb"]
+    tbnames = ["ntb"]
     tags    = [None]
     # prepare data
     datas = [
@@ -257,7 +332,7 @@ def insert_with_normal_tables(conn, stmt2, dbname):
             ]
     ]
 
-    table0 = BindTable(tbanmes[0], tags[0])
+    table0 = BindTable(tbnames[0], tags[0])
     for data in datas[0]:
        table0.add_col_data(data)
 
@@ -266,48 +341,7 @@ def insert_with_normal_tables(conn, stmt2, dbname):
     stmt2.execute()
 
     # check correct
-    checkResultCorrects(conn, dbname, None, tbanmes, tags, datas)
-
-
-# insert except test
-def insert_except_test(conn, stmt2):
-
-    tbanmes = ["t1", "t2", "t3"]
-    tags    = [
-        ["grade2", 1],
-        None,
-        ["grade2", 3]
-    ]
-
-    # prepare data
-    datas = [
-            # table 1
-            [
-                # student
-                [1601481600000,1601481600004,"2024-09-19 10:00:00", "2024-09-19 10:00:01.123", datetime(2024,9,20,10,11,12,456)],
-                ["Mary",       "Tom",        "Jack",                "Jane",                    "alex"       ],
-                [0,            1,            1,                     0,                         1            ],
-                [98,           80,           60,                    100,                       99           ]
-            ],
-            None,
-            None
-    ]
-
-    table0 = BindTable(tbanmes[0], tags[0])
-    table1 = BindTable(tbanmes[1], tags[1])
-    table2 = BindTable(tbanmes[2], tags[2])
-
-    for data in datas[0]:
-       table0.add_col_data(data)
-
-    table1.add_col_data(datas[1])
-    table2.add_col_data(datas[2])
-
-    # bind with single table
-    try:
-        stmt2.bind_param_with_tables([table0, table1, table2])
-    except Exception as err:
-        print(f"check except is pass. err={err}")
+    checkResultCorrects(conn, dbname, None, tbnames, tags, datas)
 
 
 def test_stmt2_prepare_empty_sql(conn):
@@ -350,6 +384,8 @@ def test_stmt2_insert(conn):
         # insert with table
         insert_bind_param_with_tables(conn, stmt2, dbname, stbname)
         print("insert bind with tables ....................... ok\n")        
+        check_input_invalid_param(conn, stmt2, dbname, stbname)
+        print("check input invalid params .................... ok\n")        
 
         # insert with split args
         insert_bind_param(conn, stmt2, dbname, stbname)
@@ -360,10 +396,6 @@ def test_stmt2_insert(conn):
         stmt2 = conn.statement2(f"insert into {dbname}.ntb values(?,?,?,?,?)")
         insert_with_normal_tables(conn, stmt2, dbname)
         print("insert normal tables .......................... ok\n")
-
-        # insert except test
-        insert_except_test(conn, stmt2)
-        print("test insert except ............................ ok\n")           
 
         #conn.execute("drop database if exists %s" % dbname)
         stmt2.close()
@@ -387,8 +419,8 @@ def test_stmt2_insert(conn):
 #
 def query_bind_param(conn, stmt2):
     # set param
-    #tbanmes = ["d2"]
-    tbanmes = None
+    #tbnames = ["d2"]
+    tbnames = None
     tags    = None
     datas   = [
         # class 1
@@ -404,7 +436,7 @@ def query_bind_param(conn, stmt2):
     stmt2.set_columns_type(types)
 
     # bind
-    stmt2.bind_param(tbanmes, tags, datas)
+    stmt2.bind_param(tbnames, tags, datas)
 
 
 # compare

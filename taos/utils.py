@@ -146,6 +146,13 @@ def checkTypeValid(buffer_type, values):
             if type(value) not in (int, str, datetime.datetime):
                 err = f"timestamp type bind not support type = {type(value)}"
                 raise DataTypeAndRangeError(err)
+            elif type(value) is int:
+                # check range (same bigint)
+                min = -2**63
+                max = 2**63-1
+                if value < min or value > max:
+                    err = f"timestamp type value:{value} exceeds the indicated range [{min}, {max}]"
+                    raise DataTypeAndRangeError(err)
     elif buffer_type == FieldType.C_BOOL:
         for value in values:
             if value is None:
