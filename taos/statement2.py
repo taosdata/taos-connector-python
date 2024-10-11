@@ -234,7 +234,10 @@ class TaosStmt2(object):
     def prepare(self, sql):
         if self._stmt2 is None:
             raise StatementError(ErrMsg.STMT2_NULL)
-        
+
+        if sql is None or len(sql) == 0:
+            raise StatementError("sql is null or empty.")
+
         taos_stmt2_prepare(self._stmt2, sql)
 
 
