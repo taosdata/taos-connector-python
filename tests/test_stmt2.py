@@ -2,6 +2,8 @@
 from ctypes import *
 from datetime import datetime
 import pytest
+from sqlalchemy import false
+
 import taos
 import math
 from taos.statement2 import *
@@ -306,6 +308,27 @@ def insert_except_test(conn, stmt2):
         stmt2.bind_param_with_tables([table0, table1, table2])
     except Exception as err:
         print(f"check except is pass. err={err}")
+
+
+def test_stmt2_prepare_empty_sql(conn):
+    if not IS_V3:
+        print(" test_stmt2_prepare_empty_sql not support TDengine 2.X version.")
+        return
+
+    try:
+        # prepare
+        stmt2 = conn.statement2()
+        stmt2.prepare(sql='')
+
+        # should not run here
+        conn.close()
+        print("prepare empty sql ............................. failed\n")
+        assert False
+
+    except StatementError as err:
+        print("prepare empty sql ............................. ok\n")
+        conn.close()
+
 
 #
 # insert

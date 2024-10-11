@@ -234,7 +234,16 @@ class TaosStmt2(object):
     def prepare(self, sql):
         if self._stmt2 is None:
             raise StatementError(ErrMsg.STMT2_NULL)
-        
+
+        if sql is None:
+            raise StatementError("sql is null.")
+
+        if not isinstance(sql, str):
+            raise StatementError("sql is not str type.")
+
+        if len(sql) == 0:
+            raise StatementError("sql is empty.")
+
         taos_stmt2_prepare(self._stmt2, sql)
 
 
