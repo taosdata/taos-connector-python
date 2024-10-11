@@ -229,6 +229,7 @@ class TaosStmt2(object):
         self.fields     = None
         self.tag_fields = None
         self.types      = None
+        self._is_insert = None
         self.valid_field_types = [TAOS_FIELD_COL, TAOS_FIELD_TAG, TAOS_FIELD_QUERY, TAOS_FIELD_TBNAME]
 
     def prepare(self, sql):
@@ -244,8 +245,16 @@ class TaosStmt2(object):
         if len(sql) == 0:
             raise StatementError("sql is empty.")
 
+        self.fields     = None
+        self.tag_fields = None
+        self._is_insert = None
+
         taos_stmt2_prepare(self._stmt2, sql)
 
+        # obtain schema if insert
+        if self.is_insert():
+            if obtainSchema(self) is False:
+                raise StatementError(f"obtain schema failed. tbnames={tbnames}")
 
     def bind_param(self, tbnames, tags, datas):
         if self._stmt2 is None:
@@ -254,22 +263,11 @@ class TaosStmt2(object):
         log.debug(f"bind_param tbnames  = {tbnames} \n")
         log.debug(f"bind_param tags     = {tags}    \n")
         log.debug(f"bind_param datasTbs = {datas}   \n")
-                        
-        # obtain schema if insert
-        if self.is_insert():
-            if tbnames is not None:
-                bindv = createBindV(self, tbnames, None, None)
-                if bindv == None:
-                    raise StatementError("create stmt2 bindV failed.")
-                taos_stmt2_bind_param(self._stmt2, bindv.get_address(), -1)
 
-            if obtainSchema(self) is False:
-                raise StatementError(f"obtain schema failed. tbnames={tbnames}")
-            
-            # check consistent
-            if checkConsistent(tbnames, tags, datas) == False:
-                raise StatementError("check consistent failed.")
-        
+        # check consistent
+        if checkConsistent(tbnames, tags, datas) == False:
+            raise StatementError("check consistent failed.")
+
         # bindV
         bindv = createBindV(self, tbnames, tags, datas)
         if bindv == None:
@@ -319,7 +317,10 @@ class TaosStmt2(object):
         if self._stmt2 is None:
             raise StatementError("stmt2 object is null.")
 
-        return taos_stmt2_is_insert(self._stmt2)
+        if self._is_insert is None:
+            self._is_insert = taos_stmt2_is_insert(self._stmt2)
+
+        return self._is_insert
 
     def get_fields(self, field_type):
         if self._stmt2 is None:

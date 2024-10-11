@@ -183,6 +183,31 @@ def insert_bind_param_normal_tables(conn, stmt2, dbname):
     # check correct
     checkResultCorrects(conn, dbname, None, ["ntb2"], [None], datas)
 
+def insert_bind_param_with_table(conn, stmt2, dbname, stbname, ctb):
+
+    tbnames = None
+    tags    = [
+        ["grade2", 1]
+    ]
+
+    # prepare data
+    datas = [
+            # table 1
+            [
+                # student
+                [1601481600000,1601481600004,"2024-09-19 10:00:00", "2024-09-19 10:00:01.123", datetime(2024,9,20,10,11,12,456)],
+                ["Mary",       "Tom",        "Jack",                "Jane",                    "alex"       ],
+                [0,            1,            1,                     0,                         1            ],
+                [98,           80,           60,                    100,                       99           ]
+            ]
+    ]
+
+    stmt2.bind_param(tbnames, tags, datas)
+    stmt2.execute()
+
+    # check correct
+    checkResultCorrects(conn, dbname, stbname, [ctb], tags, datas)
+
 
 # insert with single table (performance is lower)
 def insert_bind_param_with_tables(conn, stmt2, dbname, stbname):
@@ -377,6 +402,13 @@ def test_stmt2_insert(conn):
 
     try:
         prepare(conn, dbname, stbname)
+
+        ctb = 'ctb'
+        stmt2 = conn.statement2(f"insert into {dbname}.{ctb} using {dbname}.{stbname} tags (?,?) values(?,?,?,?)")
+        insert_bind_param_with_table(conn, stmt2, dbname, stbname, ctb)
+        print("insert normal table ........................... ok\n")
+        stmt2.close()
+
         # prepare
         stmt2 = conn.statement2(f"insert into ? using {dbname}.{stbname} tags(?,?) values(?,?,?,?)")
         print("insert prepare sql ............................ ok\n")
