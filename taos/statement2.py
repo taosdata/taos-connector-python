@@ -1,3 +1,6 @@
+# encoding:UTF-8
+import threading
+
 from taos.cinterface import *
 from taos.error import StatementError
 from taos.result import TaosResult
@@ -39,9 +42,19 @@ def taos_stmt2_async_exec(userdata, result_set, error_code):
     print(f"Executing asynchronously with userdata: {userdata}, result_set: {result_set}, error_code: {error_code}")
 
 
+local_data = threading.local()
+
+def get_default_reqid() -> int:
+    local_data.reqid = getattr(local_data, 'reqid', 0) + 1
+    return local_data.reqid
+
+
 class TaosStmt2Option:
-    def __init__(self, reqid: int, single_stb_insert: bool=False, single_table_bind_once: bool=False, **kwargs):
+    def __init__(self, reqid: int=None, single_stb_insert: bool=False, single_table_bind_once: bool=False, **kwargs):
         self._impl = TaosStmt2OptionImpl()
+        if reqid is None:
+            reqid = get_default_reqid()
+
         self.reqid = reqid
         self.single_stb_insert = single_stb_insert
         self.single_table_bind_once = single_table_bind_once

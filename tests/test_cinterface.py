@@ -167,6 +167,30 @@ def execute_sql(conn, sql):
     taos_free_result(res)
 
 
+def test_taos_stmt2_option_default_reqid():
+    if not taos.IS_V3:
+        return
+
+    import threading
+
+    def worker():
+        for i in range(5):
+            option = taos.TaosStmt2Option()
+            # print(f"Thread {threading.get_ident()}: reqid = {option.reqid}")
+            assert option.reqid == i + 1
+
+    threads = []
+    for i in range(3):
+        t = threading.Thread(target=worker)
+        threads.append(t)
+        t.start()
+
+    for t in threads:
+        t.join()
+
+    print("pass test_taos_stmt2_option_default_reqid")
+
+
 def test_taos_stmt2_init_without_option():
     if not taos.IS_V3:
         return
