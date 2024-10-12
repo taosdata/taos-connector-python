@@ -126,11 +126,12 @@ class TaosConnection(object):
             return None
         if option is not None:
             option = option.get_impl()
-        stmt = taos_stmt2_init(self._conn, option)
+        _stmt2 = taos_stmt2_init(self._conn, option)
+        stmt2 = TaosStmt2(_stmt2, decode_binary=self.decode_binary)
         if sql is not None:
-            taos_stmt2_prepare(stmt, sql)
+            stmt2.prepare(sql)
 
-        return TaosStmt2(stmt, decode_binary=self.decode_binary)
+        return stmt2
 
     def load_table_info(self, tables):
         # type: (str) -> None
