@@ -111,10 +111,14 @@ def obtainSchema(statement2):
     #statement2.fields     = [FieldType.C_TIMESTAMP, FieldType.C_BINARY, FieldType.C_BOOL, FieldType.C_INT]
     #return len(statement2.fields) > 0
 
-    count, statement2.fields     = statement2.get_fields(TAOS_FIELD_COL)
-    count, statement2.tag_fields = statement2.get_fields(TAOS_FIELD_TAG)
-    log.debug(f"obtain schema tag fields = {statement2.tag_fields}")
-    log.debug(f"obtain schema fields     = {statement2.fields}")
+    try:
+        count, statement2.fields     = statement2.get_fields(TAOS_FIELD_COL)
+        count, statement2.tag_fields = statement2.get_fields(TAOS_FIELD_TAG)
+        log.debug(f"obtain schema tag fields = {statement2.tag_fields}")
+        log.debug(f"obtain schema fields     = {statement2.fields}")
+    except Exception as err:
+        log.debug(f"obtain schema tag/col fields failed, reason: {repr(err)}")
+        return False
 
     return len(statement2.fields) > 0
 
@@ -254,7 +258,7 @@ class TaosStmt2(object):
         # obtain schema if insert
         if self.is_insert():
             if obtainSchema(self) is False:
-                raise StatementError(f"obtain schema failed. tbnames={tbnames}")
+                raise StatementError(f"obtain schema failed. sql={sql}")
 
     def bind_param(self, tbnames, tags, datas):
         if self._stmt2 is None:
