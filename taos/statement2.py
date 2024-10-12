@@ -258,7 +258,7 @@ class TaosStmt2(object):
         # obtain schema if insert
         if self.is_insert():
             if obtainSchema(self) is False:
-                raise StatementError(f"obtain schema failed. sql={sql}")
+                raise StatementError(f"obtain schema failed, maybe this sql is not supported, sql: {sql}")
 
     def bind_param(self, tbnames, tags, datas):
         if self._stmt2 is None:
