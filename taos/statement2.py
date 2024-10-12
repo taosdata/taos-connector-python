@@ -54,6 +54,9 @@ class TaosStmt2Option:
         self._impl = TaosStmt2OptionImpl()
         if reqid is None:
             reqid = get_default_reqid()
+        else:
+            if type(reqid) is not int:
+                raise StatementError(f"reqid type error, expected int type but get {type(reqid)}.")
 
         self.reqid = reqid
         self.single_stb_insert = single_stb_insert

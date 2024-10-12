@@ -191,6 +191,20 @@ def test_taos_stmt2_option_default_reqid():
     print("pass test_taos_stmt2_option_default_reqid")
 
 
+def test_taos_stmt2_option_reqid_wrong_type():
+    if not taos.IS_V3:
+        return
+
+    try:
+        option = taos.TaosStmt2Option(reqid=True)
+        # should not get here
+        assert False
+    except StatementError as err:
+        pass
+
+    print("pass test_taos_stmt2_option_reqid_wrong_type")
+
+
 def test_taos_stmt2_init_without_option():
     if not taos.IS_V3:
         return
@@ -631,3 +645,6 @@ def test_taos_stmt2_query():
 
 
 ############################################ stmt2 end ############################################
+
+if __name__ == "__main__":
+    pass
