@@ -651,4 +651,4 @@ def test_taos_stmt2_query():
 ############################################ stmt2 end ############################################
 
 if __name__ == "__main__":
-    test_taos_stmt2_option_default_reqid
+    pass
