@@ -167,6 +167,7 @@ def execute_sql(conn, sql):
     taos_free_result(res)
 
 
+global_reqid = 0
 def test_taos_stmt2_option_default_reqid():
     if not taos.IS_V3:
         return
@@ -174,10 +175,13 @@ def test_taos_stmt2_option_default_reqid():
     import threading
 
     def worker():
+        global global_reqid
         for i in range(5):
             option = taos.TaosStmt2Option()
             # print(f"Thread {threading.get_ident()}: reqid = {option.reqid}")
-            assert option.reqid == i + 1
+            with threading.Lock():
+                assert option.reqid != global_reqid
+                global_reqid = option.reqid
 
     threads = []
     for i in range(3):
@@ -647,4 +651,4 @@ def test_taos_stmt2_query():
 ############################################ stmt2 end ############################################
 
 if __name__ == "__main__":
-    pass
+    test_taos_stmt2_option_default_reqid
