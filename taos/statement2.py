@@ -1,3 +1,4 @@
+# encoding:UTF-8
 from taos.cinterface import *
 from taos.error import StatementError
 from taos.result import TaosResult
@@ -40,8 +41,14 @@ def taos_stmt2_async_exec(userdata, result_set, error_code):
 
 
 class TaosStmt2Option:
-    def __init__(self, reqid: int, single_stb_insert: bool=False, single_table_bind_once: bool=False, **kwargs):
+    def __init__(self, reqid: int=None, single_stb_insert: bool=False, single_table_bind_once: bool=False, **kwargs):
         self._impl = TaosStmt2OptionImpl()
+        if reqid is None:
+            reqid = utils.gen_req_id()
+        else:
+            if type(reqid) is not int:
+                raise StatementError(f"reqid type error, expected int type but get {type(reqid)}.")
+
         self.reqid = reqid
         self.single_stb_insert = single_stb_insert
         self.single_table_bind_once = single_table_bind_once
