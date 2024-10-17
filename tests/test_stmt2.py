@@ -389,6 +389,40 @@ def test_stmt2_prepare_empty_sql(conn):
         conn.close()
 
 
+def test_bind_invalid_tbnames_type():
+    if not IS_V3:
+        print(" test_bind_invalid_tbnames_type not support TDengine 2.X version.")
+        return
+
+    dbname = "stmt2"
+    stbname = "stmt2_stable"
+    subtbname = "stmt2_subtable"
+
+    try:
+        conn = taos.connect()
+        conn.execute(f"drop database if exists {dbname}")
+        conn.execute(f"create database {dbname}")
+        conn.select_db(dbname)
+        conn.execute(f"create stable {stbname} (ts timestamp, a int) tags (b int);")
+        conn.execute(f"create table {subtbname} using {stbname} tags(0);")
+
+        stmt2 = conn.statement2(f"insert into ? using {dbname}.{stbname} tags(?) values(?,?)")
+
+        tags = [[1]]
+        datas = [[[1626861392589], [1]]]
+
+        stmt2.bind_param(subtbname, tags, datas)
+
+        # should not run here
+        conn.close()
+        print("bind invalid tbnames type ..................... failed\n")
+        assert False
+
+    except StatementError as err:
+        print("bind invalid tbnames type ..................... ok\n")
+        conn.close()
+
+
 #
 # insert
 #
