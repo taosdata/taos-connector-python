@@ -47,7 +47,7 @@ class TaosStmt2Option:
             reqid = utils.gen_req_id()
         else:
             if type(reqid) is not int:
-                raise StatementError(f"reqid type error, expected int type but get {type(reqid)}.")
+                raise StatementError(f"reqid type error, expected int type but got {type(reqid)}.")
 
         self.reqid = reqid
         self.single_stb_insert = single_stb_insert
@@ -186,6 +186,9 @@ def createBindV(statement2, tbnames, tags, datas):
         raise StatementError("params tbnames some is None, some is not None, this is error.")
     else:
         # not found none
+        if type(tbnames) not in [list, tuple]:
+            raise StatementError(f"tbnames type error, expected list or tuple type but got {type(tbnames)}.")
+
         bindNames = tbnames 
         count = len(tbnames)
 
