@@ -86,55 +86,52 @@ class TaosStmt2Bind(ctypes.Structure):
     #
     # set bind value with field type
     #
-    def set_value(self, buffer_type, values, precision = PrecisionEnum.Milliseconds,  is_ignore_update=False):
+    def set_value(self, buffer_type, values, precision = PrecisionEnum.Milliseconds):
         log.debug(f"set_value type={buffer_type} precision={precision} values={values}\n")
         if values is not None:
             utils.checkTypeValid(buffer_type, values)
         if buffer_type == FieldType.C_BOOL:
-            self.bool(values, is_ignore_update)
+            self.bool(values)
         elif buffer_type == FieldType.C_TINYINT:
-            self.tinyint(values, is_ignore_update)
+            self.tinyint(values)
         elif buffer_type == FieldType.C_SMALLINT:
-            self.smallint(values, is_ignore_update)
+            self.smallint(values)
         elif buffer_type == FieldType.C_INT:
-            self.int(values, is_ignore_update)
+            self.int(values)
         elif buffer_type == FieldType.C_BIGINT:
-            self.bigint(values, is_ignore_update)
+            self.bigint(values)
         elif buffer_type == FieldType.C_FLOAT:
-            self.float(values, is_ignore_update)
+            self.float(values)
         elif buffer_type == FieldType.C_DOUBLE:
-            self.double(values, is_ignore_update)
+            self.double(values)
         elif buffer_type == FieldType.C_VARCHAR:
-            self.varchar(values, is_ignore_update)
+            self.varchar(values)
         elif buffer_type == FieldType.C_BINARY:
-            self.binary(values, is_ignore_update)
+            self.binary(values)
         elif buffer_type == FieldType.C_TIMESTAMP:
-            self.timestamp(values, precision, is_ignore_update)
+            self.timestamp(values, precision)
         elif buffer_type == FieldType.C_NCHAR:
-            self.nchar(values, is_ignore_update)
+            self.nchar(values)
         elif buffer_type == FieldType.C_TINYINT_UNSIGNED:
-            self.tinyint_unsigned(values, is_ignore_update)
+            self.tinyint_unsigned(values)
         elif buffer_type == FieldType.C_SMALLINT_UNSIGNED:
-            self.smallint_unsigned(values, is_ignore_update)
+            self.smallint_unsigned(values)
         elif buffer_type == FieldType.C_INT_UNSIGNED:
-            self.int_unsigned(values, is_ignore_update)
+            self.int_unsigned(values)
         elif buffer_type == FieldType.C_BIGINT_UNSIGNED:
-            self.bigint_unsigned(values, is_ignore_update)
+            self.bigint_unsigned(values)
         elif buffer_type == FieldType.C_JSON:
-            self.json(values, is_ignore_update)
+            self.json(values)
         elif buffer_type == FieldType.C_VARBINARY:
-            self.varbinary(values, is_ignore_update)
+            self.varbinary(values)
         elif buffer_type == FieldType.C_GEOMETRY:
-            self.geometry(values, is_ignore_update)
+            self.geometry(values)
 
-    def numeric_common(self, values, ctypes_type, buffer_null_type, buffer_value_type, is_ignore_update=False):
+    def numeric_common(self, values, ctypes_type, buffer_null_type, buffer_value_type):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
         #
         is_null = [get_is_null_type(value) for value in values]
-        if is_ignore_update == True:
-            values = [buffer_null_type if is_null[idx] > 0 else value for idx, value in enumerate(values)]
-        #
         try:
             buffer = cast(values, c_void_p)
         except:
@@ -149,7 +146,7 @@ class TaosStmt2Bind(ctypes.Structure):
         self.num = len(values)
         self.is_null = cast((c_char * len(values))(*is_null), c_char_p)
 
-    def bool(self, values, is_ignore_update=False):
+    def bool(self, values):
         cnt = len(values)
         for i in range(cnt):
             if type(values[i]) is float:
@@ -158,32 +155,29 @@ class TaosStmt2Bind(ctypes.Structure):
         #print(f"after values={values}")
         self.numeric_common(values, c_int8, FieldType.C_BOOL_NULL, FieldType.C_BOOL)
 
-    def tinyint(self, values, is_ignore_update=False):
+    def tinyint(self, values):
         self.numeric_common(values, c_int8, FieldType.C_TINYINT_NULL, FieldType.C_TINYINT)
 
-    def smallint(self, values, is_ignore_update=False):
+    def smallint(self, values):
         self.numeric_common(values, c_int16, FieldType.C_SMALLINT_NULL, FieldType.C_SMALLINT)
 
-    def int(self, values, is_ignore_update=False):
+    def int(self, values):
         self.numeric_common(values, c_int32, FieldType.C_INT_NULL, FieldType.C_INT)
 
-    def bigint(self, values, is_ignore_update=False):
+    def bigint(self, values):
         self.numeric_common(values, c_int64, FieldType.C_BIGINT_NULL, FieldType.C_BIGINT)
 
-    def float(self, values, is_ignore_update=False):
+    def float(self, values):
         self.numeric_common(values, c_float, FieldType.C_FLOAT_NULL, FieldType.C_FLOAT)
 
-    def double(self, values, is_ignore_update=False):
+    def double(self, values):
         self.numeric_common(values, c_double, FieldType.C_DOUBLE_NULL, FieldType.C_DOUBLE)
 
-    def timestamp(self, values, precision=PrecisionEnum.Milliseconds, is_ignore_update=False):
+    def timestamp(self, values, precision=PrecisionEnum.Milliseconds):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
         #
         is_null = [get_is_null_type(value) for value in values]
-        if is_ignore_update == True:
-            values = [FieldType.C_BIGINT_NULL if is_null[idx] > 0 else value for idx, value in enumerate(values)]
-        #
         try:
             buffer = cast(values, c_void_p)
         except:
@@ -195,14 +189,11 @@ class TaosStmt2Bind(ctypes.Structure):
         self.num = len(values)
         self.is_null = cast((c_char * len(values))(*is_null), c_char_p)
 
-    def _str_to_buffer(self, values, encode=True, is_ignore_update=False):
+    def _str_to_buffer(self, values, encode=True):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
         #
         is_null = [get_is_null_type(value) for value in values]
-        if is_ignore_update == True:
-            values = [None if is_null[idx] > 0 else value for idx, value in enumerate(values)]
-        #
         self.num = len(values)
         self.is_null = cast((c_byte * self.num)(*is_null), c_char_p)
 
@@ -212,55 +203,55 @@ class TaosStmt2Bind(ctypes.Structure):
 
         _bytes_list = []
         if sys.version_info < (3, 0):
-            _bytes_list = [bytes(value) if value is not None else None for value in values]
+            _bytes_list = [None if is_null[idx] > 0 else bytes(value) for idx, value in enumerate(values)]
         else:
             if encode:
-                _bytes_list = [value.encode("utf-8") if value is not None else None for value in values]
+                _bytes_list = [None if is_null[idx] > 0 else value.encode("utf-8") for idx, value in enumerate(values)]
             else:
-                _bytes_list = [bytes(value) if value is not None else None for value in values]
+                _bytes_list = [None if is_null[idx] > 0 else bytes(value) for idx, value in enumerate(values)]
             #
 
         _bytes = b"".join([b for b in _bytes_list if b is not None])
         self.buffer = cast(create_string_buffer(_bytes), c_void_p)
         self.length = (c_int32 * len(values))(*[len(b) if b is not None else 0 for b in _bytes_list])
 
-    def binary(self, values, is_ignore_update=False):
+    def binary(self, values):
         self.buffer_type = FieldType.C_BINARY
-        self._str_to_buffer(values, is_ignore_update=is_ignore_update)
+        self._str_to_buffer(values)
 
-    def nchar(self, values, is_ignore_update=False):
+    def nchar(self, values):
         # type: (list[str]) -> None
         self.buffer_type = FieldType.C_NCHAR
-        self._str_to_buffer(values, is_ignore_update=is_ignore_update)
+        self._str_to_buffer(values)
 
-    def json(self, values, is_ignore_update=False):
+    def json(self, values):
         # type: (list[str]) -> None
         self.buffer_type = FieldType.C_JSON
-        self._str_to_buffer(values, is_ignore_update=is_ignore_update)
+        self._str_to_buffer(values)
 
-    def tinyint_unsigned(self, values, is_ignore_update=False):
+    def tinyint_unsigned(self, values):
         self.numeric_common(values, c_uint8, FieldType.C_TINYINT_UNSIGNED_NULL, FieldType.C_TINYINT_UNSIGNED)
 
-    def smallint_unsigned(self, values, is_ignore_update=False):
+    def smallint_unsigned(self, values):
         self.numeric_common(values, c_uint16, FieldType.C_SMALLINT_UNSIGNED_NULL, FieldType.C_SMALLINT_UNSIGNED)
 
-    def int_unsigned(self, values, is_ignore_update=False):
+    def int_unsigned(self, values):
         self.numeric_common(values, c_uint32, FieldType.C_INT_UNSIGNED_NULL, FieldType.C_INT_UNSIGNED)
 
-    def bigint_unsigned(self, values, is_ignore_update=False):
+    def bigint_unsigned(self, values):
         self.numeric_common(values, c_uint64, FieldType.C_BIGINT_UNSIGNED_NULL, FieldType.C_BIGINT_UNSIGNED)
 
-    def varchar(self, values, is_ignore_update=False):
+    def varchar(self, values):
         self.buffer_type = FieldType.C_VARCHAR
-        self._str_to_buffer(values, is_ignore_update=is_ignore_update)
+        self._str_to_buffer(values)
 
-    def varbinary(self, values, is_ignore_update=False):
+    def varbinary(self, values):
         self.buffer_type = FieldType.C_VARBINARY
-        self._str_to_buffer(values, encode=False, is_ignore_update=is_ignore_update)
+        self._str_to_buffer(values, encode=False)
 
-    def geometry(self, values, is_ignore_update=False):
+    def geometry(self, values):
         self.buffer_type = FieldType.C_GEOMETRY
-        self._str_to_buffer(values, encode=False, is_ignore_update=is_ignore_update)
+        self._str_to_buffer(values, encode=False)
 
 
 class TaosStmt2BindV(ctypes.Structure):
