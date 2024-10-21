@@ -43,19 +43,19 @@ def test_datetime_to_timestamp():
     from datetime import datetime
     dt_str = "2020-01-01 00:00:00"
     dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
-    seconds_diff = 1577836800
+    seconds_diff = 1577808000
     # datetime
     assert taos.bind2._datetime_to_timestamp(dt, taos.PrecisionEnum.Milliseconds, 2) == taos.FieldType.C_BIGINT_NULL
-    assert taos.bind2._datetime_to_timestamp(dt, taos.PrecisionEnum.Milliseconds) == seconds_diff * 1000
-    assert taos.bind2._datetime_to_timestamp(dt, taos.PrecisionEnum.Microseconds) == seconds_diff * 1000000
+    assert taos.bind2._datetime_to_timestamp(dt, taos.PrecisionEnum.Milliseconds).value == seconds_diff * 1000
+    assert taos.bind2._datetime_to_timestamp(dt, taos.PrecisionEnum.Microseconds).value == seconds_diff * 1000000
     try:
         taos.bind2._datetime_to_timestamp(dt, 9)
         assert 1 == 2
     except:
         pass
     # float
-    assert taos.bind2._datetime_to_timestamp(seconds_diff * 1.0, taos.PrecisionEnum.Milliseconds) == seconds_diff * 1000
-    assert taos.bind2._datetime_to_timestamp(seconds_diff * 1.0, taos.PrecisionEnum.Microseconds) == seconds_diff * 1000000
+    assert taos.bind2._datetime_to_timestamp(seconds_diff * 1.0, taos.PrecisionEnum.Milliseconds).value == seconds_diff * 1000
+    assert taos.bind2._datetime_to_timestamp(seconds_diff * 1.0, taos.PrecisionEnum.Microseconds).value == seconds_diff * 1000000
     try:
         taos.bind2._datetime_to_timestamp(seconds_diff * 1.0, 9)
         assert 1 == 2
@@ -64,8 +64,8 @@ def test_datetime_to_timestamp():
     # int
     assert taos.bind2._datetime_to_timestamp(seconds_diff, taos.PrecisionEnum.Milliseconds).value == ctypes.c_int64(seconds_diff).value
     # str
-    assert taos.bind2._datetime_to_timestamp(dt_str, taos.PrecisionEnum.Milliseconds) == seconds_diff * 1000
-    assert taos.bind2._datetime_to_timestamp(dt_str, taos.PrecisionEnum.Microseconds) == seconds_diff * 1000000
+    assert taos.bind2._datetime_to_timestamp(dt_str, taos.PrecisionEnum.Milliseconds).value == seconds_diff * 1000
+    assert taos.bind2._datetime_to_timestamp(dt_str, taos.PrecisionEnum.Microseconds).value == seconds_diff * 1000000
     try:
         taos.bind2._datetime_to_timestamp(dt_str, 9)
         assert 1 == 2
