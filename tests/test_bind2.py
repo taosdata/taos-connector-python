@@ -41,9 +41,16 @@ def test_datetime_to_timestamp_default():
         return
     #
     from datetime import datetime
+    now = datetime.now()
+    timezone_info = now.astimezone().tzinfo
+    print(f"Current timezone: {timezone_info}")
+
     dt_str = "2020-01-01 00:00:00"
     dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
-    seconds_diff = 1577808000
+    # Time zone: Asia/Shanghai (CST, +0800)
+    # seconds_diff = 1577808000
+    seconds_diff = int(dt.timestamp())
+
     # datetime
     assert taos.bind2._datetime_to_timestamp(dt, taos.PrecisionEnum.Milliseconds, 2) == taos.FieldType.C_BIGINT_NULL
     assert taos.bind2._datetime_to_timestamp(dt, taos.PrecisionEnum.Milliseconds).value == seconds_diff * 1000
