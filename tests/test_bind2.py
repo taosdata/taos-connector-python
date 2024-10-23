@@ -47,6 +47,7 @@ def test_datetime_to_timestamp_default():
 
     dt_str = "2020-01-01 00:00:00"
     dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+    taos.field.set_tz(None)
     # Time zone: Asia/Shanghai (CST, +0800)
     # seconds_diff = 1577808000
     seconds_diff = int(dt.timestamp())
