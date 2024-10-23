@@ -196,5 +196,5 @@ def checkTypeValid(buffer_type, values):
     elif buffer_type == FieldType.C_GEOMETRY:
         checkString("geometry", values, [bytes, bytearray])
     else:
-        err = f"invalid datatype type={type(value)} value= {value}"
+        err = f"invalid datatype type={buffer_type} values= {values}"
         raise DataTypeAndRangeError(err)
