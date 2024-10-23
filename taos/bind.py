@@ -8,6 +8,7 @@ from typing import List, Optional
 from taos.cinterface import IS_V3
 from taos.constants import FieldType
 from taos.precision import PrecisionEnum, PrecisionError
+from taos.field import get_tz
 
 
 _datetime_epoch = datetime.utcfromtimestamp(0)
@@ -208,34 +209,51 @@ class TaosBind(ctypes.Structure):
         self.binary(value)
 
 
+def _parse_datetime_to_utc_timestamp(dt) -> int:
+    if isinstance(dt, str):
+        dt_naive = datetime.fromisoformat(dt)
+    elif isinstance(dt, datetime):
+        dt_naive = dt
+    else:
+        raise TypeError(f"dt type error, expected str or datetime type but got {type(dt)}.")
+    #
+    if dt_naive.tzinfo is None or dt_naive.tzinfo.utcoffset(dt_naive) is None:
+        tz = get_tz()
+        if tz is not None:
+            dt_aware = dt_naive.replace(tzinfo=tz)
+        else:
+            dt_aware = dt_naive
+    else:
+        dt_aware = dt_naive.astimezone(timezone.utc)
+    #
+    result = int(dt_aware.timestamp())
+    return result
+
+
 def _datetime_to_timestamp(value, precision):
     # type: (datetime | float | int | str | c_int64, PrecisionEnum) -> c_int64
     if value is None:
         return FieldType.C_BIGINT_NULL
-    if type(value) is datetime:
+
+    if type(value) is datetime or isinstance(value, str):
+        utc_timestamp = _parse_datetime_to_utc_timestamp(value)
         if precision == PrecisionEnum.Milliseconds:
-            return int(round((value - _datetime_epoch).total_seconds() * 1000))
+            ret_value = c_int64(utc_timestamp * 1000)
+            return ret_value
         elif precision == PrecisionEnum.Microseconds:
-            return int(round((value - _datetime_epoch).total_seconds() * 10000000))
+            ret_value = c_int64(utc_timestamp * 1000000)
+            return ret_value
         else:
             raise PrecisionError("datetime do not support nanosecond precision")
     elif type(value) is float:
         if precision == PrecisionEnum.Milliseconds:
-            return int(round(value * 1000))
+            return c_int64(round(value * 1000))
         elif precision == PrecisionEnum.Microseconds:
-            return int(round(value * 10000000))
+            return c_int64(round(value * 1000000))
         else:
             raise PrecisionError("time float do not support nanosecond precision")
     elif isinstance(value, int) and not isinstance(value, bool):
         return c_int64(value)
-    elif isinstance(value, str):
-        value = datetime.fromisoformat(value)
-        if precision == PrecisionEnum.Milliseconds:
-            return int(round(value * 1000))
-        elif precision == PrecisionEnum.Microseconds:
-            return int(round(value * 10000000))
-        else:
-            raise PrecisionError("datetime do not support nanosecond precision")
     elif isinstance(value, c_int64):
         return value
     return FieldType.C_BIGINT_NULL
