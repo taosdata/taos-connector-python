@@ -62,7 +62,7 @@ def checkResultCorrect(conn, sql, tagsTb, datasTb):
                if type(c0) is int :
                    row.append(datasTb[j][i])
                else:
-                   ts = int(bind2._datetime_to_timestamp(c0, PrecisionEnum.Milliseconds))
+                   ts = int(bind2.datetime_to_timestamp(c0, PrecisionEnum.Milliseconds).value)
                    row.append(ts)
            else:
                row.append(datasTb[j][i])
