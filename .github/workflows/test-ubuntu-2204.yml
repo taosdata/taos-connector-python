@@ -134,7 +134,7 @@ jobs:
           cd TDengine_v3
           mkdir build
           cd build
-          cmake ../ -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false
+          cmake ../ -DBUILD_JDBC=false  -DBUILD_CONTRIB=true -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false
           make -j4
           sudo make install
           ls -alh /etc/taos/
