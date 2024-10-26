@@ -91,9 +91,9 @@ jobs:
         run: |
           pwd
           git branch -vv
-          ls -la ~/.cos-local.2/
-          ls -la ~/.cos-local.2/lib/
-          ls -la ~/.cos-local.2/lib64/
+          # ls -la ~/.cos-local.2/
+          # ls -la ~/.cos-local.2/lib/
+          # ls -la ~/.cos-local.2/lib64/
           cd TDengine_v3
           mkdir build
           cd build
