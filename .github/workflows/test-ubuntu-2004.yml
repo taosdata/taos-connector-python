@@ -89,8 +89,11 @@ jobs:
 
       - name: Build TDengine 3.0
         run: |
-          git branch -v
-          sudo apt install libcurl4-openssl-dev libxml2-dev libssl-dev -y > /dev/null
+          pwd
+          git branch -vv
+          ls -la ~/.cos-local.2/
+          ls -la ~/.cos-local.2/lib/
+          ls -la ~/.cos-local.2/lib64/
           cd TDengine_v3
           mkdir build
           cd build
