@@ -36,10 +36,10 @@ def compareLine(oris, rows):
                     log.debug1(f"    diff float i={i} oris[i] == rows[i] {oris[i]} == {rows[i]}")
                     return False
                 else:
-                    log.debug1(f"    float i={i} oris[i] == rows[i] {oris[i]} == {rows[i]}")                
+                    log.debug1(f"    float i={i} oris[i] == rows[i] {oris[i]} == {rows[i]}")
             else:
                 log.debug1(f"    diff i={i} oris[i] == rows[i] {oris[i]} == {rows[i]}")
-                return False 
+                return False
         else:
             log.debug1(f"    i={i} oris[i] == rows[i] {oris[i]} == {rows[i]}")
 
@@ -51,7 +51,7 @@ def checkResultCorrect(conn, sql, tagsTb, datasTb):
     log.debug(f"check sql correct: {sql}\n")
     oris = []
     ncol = len(datasTb)
-    nrow = len(datasTb[0]) 
+    nrow = len(datasTb[0])
 
     for i in range(nrow):
         row = []
@@ -70,7 +70,7 @@ def checkResultCorrect(conn, sql, tagsTb, datasTb):
         if tagsTb is not None:
             row += tagsTb
         oris.append(row)
-    
+
     # fetch all
     lres = []
     log.debug(sql)
@@ -96,7 +96,7 @@ def checkResultCorrects(conn, dbname, stbname, tbnames, tags, datas):
             sql = f"select * from {dbname}.{tbnames[i]} "
         else:
             sql = f"select * from {dbname}.{stbname} where tbname='{tbnames[i]}' "
-            
+
         checkResultCorrect(conn, sql, tags[i], datas[i])
 
     print("insert data check correct ..................... ok\n")
@@ -118,15 +118,15 @@ def prepare(conn, dbname, stbname):
 
 # performace is high
 def insert_bind_param(conn, stmt2, dbname, stbname):
-    # 
+    #
     #  table info , write 5 lines to 3 child tables d0, d1, d2 with super table
     #
     tbnames = ["d1","d2","d3"]
-    
+
     tags    = [
         ["grade1", 1],
         ["grade1", None],
-        [None    , 3] 
+        [None    , 3]
     ]
     datas   = [
         # class 1
@@ -285,7 +285,7 @@ def do_check_invalid(stmt2, tbnames, tags, datas):
     except Exception as err:
         #traceback.print_stack()
         print(f"failed to do_check_invalid. err={err}")
-        return 
+        return
 
     print(f"input invalid data  passed , unexpect. \ntbnames={tbnames}\ntags={tags} \ndatas={datas} \n")
     assert False
@@ -328,7 +328,7 @@ def check_input_invalid_param(conn, stmt2, dbname, stbname):
             ]
     ]
 
-    # some tags is none 
+    # some tags is none
     tags1 = [ ["grade2", 1], None, ["grade2", 3] ]
     do_check_invalid(stmt2, tbnames, tags1, datas)
 
@@ -429,7 +429,7 @@ def test_bind_invalid_tbnames_type():
 def test_stmt2_insert(conn):
     if not IS_V3:
         print(" test_stmt2_query not support TDengine 2.X version.")
-        return 
+        return
 
     dbname  = "stmt2"
     stbname = "meters"
@@ -472,7 +472,7 @@ def test_stmt2_insert(conn):
         stmt2.close()
 
         conn.close()
-        print("test_stmt2_insert ............................. [passed]\n") 
+        print("test_stmt2_insert ............................. [passed]\n")
     except Exception as err:
         #conn.execute("drop database if exists %s" % dbname)
         print("insert ........................................ failed\n")
@@ -509,7 +509,7 @@ def query_bind_param(conn, stmt2):
 def compare_result(conn, sql2, res2):
     lres1 = []
     lres2 = []
-   
+
     # shor res2
     for row in res2:
         log.debug(f" res2 rows = {row} \n")
@@ -539,10 +539,10 @@ def compare_result(conn, sql2, res2):
                 raise(f" two results data different. i={i} j={j} data1={res1[i][j]} data2={res2[i][j]}\n")
 
 # query
-def xtest_stmt2_query(conn):
+def test_stmt2_query(conn):
     if not IS_V3:
         print(" test_stmt2_query not support TDengine 2.X version.")
-        return 
+        return
 
     dbname  = "stmt2"
     stbname = "meters"
@@ -554,12 +554,20 @@ def xtest_stmt2_query(conn):
         prepare(conn, dbname, stbname)
 
         # prepare
-        stmt2 = conn.statement2(f"insert into ? using {dbname}.{stbname} tags(?,?) values(?,?,?,?)")
-        insert_bind_param_with_tables(conn, stmt2, dbname, stbname)
-        insert_bind_param(conn, stmt2, dbname, stbname)
-        print("insert bind & execute ......................... ok\n")
+        # stmt2 = conn.statement2(f"insert into ? using {dbname}.{stbname} tags(?,?) values(?,?,?,?)")
+        # insert_bind_param_with_tables(conn, stmt2, dbname, stbname)
+        # insert_bind_param(conn, stmt2, dbname, stbname)
+        # stmt2.close()
+        # print("insert bind & execute ......................... ok\n")
 
-        
+        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.000', 'Mary2', false, 298)")
+        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.001', 'Tom2', true, 280)")
+        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.002', 'Jack2', true, 260)")
+        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.003', 'Jane2', false, 2100)")
+        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.004', 'alex2', true, 299)")
+        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.005', NULL, false, NULL)")
+
+
         # statement2
         stmt2 = conn.statement2(sql1)
         print("query prepare sql ............................. ok\n")
@@ -575,7 +583,7 @@ def xtest_stmt2_query(conn):
 
         # query execute
         stmt2.execute()
-        
+
         # fetch result
         res2 = stmt2.result()
 
@@ -586,7 +594,7 @@ def xtest_stmt2_query(conn):
         #conn.execute("drop database if exists %s" % dbname)
         stmt2.close()
         conn.close()
-        print("test_stmt2_query .............................. [passed]\n") 
+        print("test_stmt2_query .............................. [passed]\n")
 
     except Exception as err:
         print("query ......................................... failed\n")
@@ -607,3 +615,4 @@ if __name__ == "__main__":
     test_stmt2_query(taos.connect())
 
     print("end stmt2 test case.\n")
+
