@@ -52,30 +52,6 @@ jobs:
           cd TDengine
           echo "commit_id=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
-      - name: Cache server by pr
-        if: github.event_name == 'pull_request'
-        id: cache-server-pr
-        uses: actions/cache@v3
-        with:
-          path: server.tar.gz
-          key: ${{ runner.os }}-build-${{ github.base_ref }}-${{ steps.get_commit_id.outputs.commit_id }}
-
-      - name: Cache server by push
-        if: github.event_name == 'push'
-        id: cache-server-push
-        uses: actions/cache@v3
-        with:
-          path: server.tar.gz
-          key: ${{ runner.os }}-build-${{ github.ref_name }}-${{ steps.get_commit_id.outputs.commit_id }}
-
-      - name: Cache server manually
-        if: github.event_name == 'workflow_dispatch'
-        id: cache-server-manually
-        uses: actions/cache@v3
-        with:
-          path: server.tar.gz
-          key: ${{ runner.os }}-build-${{ inputs.tdengine_branch }}-${{ steps.get_commit_id.outputs.commit_id }}
-
       - name: prepare install
         if: >
           (github.event_name == 'workflow_dispatch' && steps.cache-server-manually.outputs.cache-hit != 'true') ||
