@@ -8,7 +8,8 @@ from typing import List, Optional
 from taos.cinterface import IS_V3
 from taos.constants import FieldType
 from taos.precision import PrecisionEnum, PrecisionError
-
+from taos.field import get_tz
+from taos.bind_base import datetime_to_timestamp
 
 _datetime_epoch = datetime.utcfromtimestamp(0)
 
@@ -208,39 +209,6 @@ class TaosBind(ctypes.Structure):
         self.binary(value)
 
 
-def _datetime_to_timestamp(value, precision):
-    # type: (datetime | float | int | str | c_int64, PrecisionEnum) -> c_int64
-    if value is None:
-        return FieldType.C_BIGINT_NULL
-    if type(value) is datetime:
-        if precision == PrecisionEnum.Milliseconds:
-            return int(round((value - _datetime_epoch).total_seconds() * 1000))
-        elif precision == PrecisionEnum.Microseconds:
-            return int(round((value - _datetime_epoch).total_seconds() * 10000000))
-        else:
-            raise PrecisionError("datetime do not support nanosecond precision")
-    elif type(value) is float:
-        if precision == PrecisionEnum.Milliseconds:
-            return int(round(value * 1000))
-        elif precision == PrecisionEnum.Microseconds:
-            return int(round(value * 10000000))
-        else:
-            raise PrecisionError("time float do not support nanosecond precision")
-    elif isinstance(value, int) and not isinstance(value, bool):
-        return c_int64(value)
-    elif isinstance(value, str):
-        value = datetime.fromisoformat(value)
-        if precision == PrecisionEnum.Milliseconds:
-            return int(round(value * 1000))
-        elif precision == PrecisionEnum.Microseconds:
-            return int(round(value * 10000000))
-        else:
-            raise PrecisionError("datetime do not support nanosecond precision")
-    elif isinstance(value, c_int64):
-        return value
-    return FieldType.C_BIGINT_NULL
-
-
 class TaosMultiBind(ctypes.Structure):
     _fields_ = [
         ("buffer_type", c_int),
@@ -430,7 +398,7 @@ class TaosMultiBind(ctypes.Structure):
             buffer = cast(values, c_void_p)
         except:
             buffer_type = c_int64 * len(values)
-            buffer = buffer_type(*[_datetime_to_timestamp(value, precision) for value in values])
+            buffer = buffer_type(*[datetime_to_timestamp(value, precision) for value in values])
 
         self.buffer_type = FieldType.C_TIMESTAMP
         self.buffer = cast(buffer, c_void_p)

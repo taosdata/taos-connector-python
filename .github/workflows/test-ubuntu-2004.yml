@@ -89,12 +89,13 @@ jobs:
 
       - name: Build TDengine 3.0
         run: |
-          git branch -v
-          sudo apt install libcurl4-openssl-dev libxml2-dev libssl-dev -y > /dev/null
+          pwd
+          git branch -vv
           cd TDengine_v3
+          rm build -rf
           mkdir build
           cd build
-          cmake ../ -DBUILD_JDBC=false -DBUILD_TOOLS=true -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false
+          cmake ../ -DBUILD_JDBC=false -DBUILD_TOOLS=true -DBUILD_CONTRIB=false -DBUILD_DEPENDENCY_TESTS=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false
           make -j4
           sudo make install
           ls -alh /etc/taos/

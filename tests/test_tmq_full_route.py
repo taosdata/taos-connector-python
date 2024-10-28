@@ -15,7 +15,7 @@ class insertThread(threading.Thread):
         conn.select_db("tmq_test")
         conn.execute("insert into tb1 values (now, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
         print("Finish insert data")
-        sleep(0.5)
+        sleep(1.5)
         conn.execute("insert into tb1 values (now, true,1,1,1,1,1,1,1,1,1,1,1,'1','1')")
         print("insert data again")
 
@@ -68,7 +68,7 @@ class ConsumerThread(threading.Thread):
                 print("table: {}".format(t))
                 v.fetchall()
                 v.__iter__()
-                break
+                # break
             assert topic == "topic1"
             res.__iter__()
 
