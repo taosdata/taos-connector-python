@@ -9,6 +9,10 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - '.github/workflows/taos-ws-py.yaml'
+      - 'taos-ws-py/**'
+
 env:
   PYTHON_VERSION: "3.10" # to build abi3 wheels
 
@@ -179,9 +183,12 @@ jobs:
           target: ${{ matrix.target }}
           rust-toolchain: stable
           working-directory: taos-ws-py
+          docker-options: -e "CFLAGS_aarch64_unknown_linux_gnu=-D__ARM_ARCH=8" -e "CFLAGS_armv7_unknown_linux_gnueabihf=-D__ARM_ARCH=7"
           manylinux: auto
           args: --release --strip
-          before-script-linux: "curl --proto '=https' --tlsv1.2 -LsSf https://github.com/rust-lang/rust-bindgen/releases/download/v0.69.5/bindgen-cli-installer.sh | sh"
+          before-script-linux: |
+            apt-get install -y libc6-dev libc6-dev-arm64-cross libc6-dev-armhf-cross libc6-dev-armel-cross
+            curl --proto '=https' --tlsv1.2 -LsSf https://github.com/rust-lang/rust-bindgen/releases/download/v0.69.5/bindgen-cli-installer.sh | sh
       - uses: uraimo/run-on-arch-action@v2
         name: Install built wheel
         with:
