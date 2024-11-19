@@ -177,7 +177,7 @@ jobs:
           working-directory: taos-ws-py
           manylinux: auto
           args: --release --strip
-      - uses: uraimo/run-on-arch-action@v2.0.5
+      - uses: uraimo/run-on-arch-action@v2
         name: Install built wheel
         with:
           arch: ${{ matrix.target }}
