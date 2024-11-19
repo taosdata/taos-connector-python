@@ -170,7 +170,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Build wheels
-        uses: messense/maturin-action@v1
+        uses: messense/maturin-action@v2
         with:
           target: ${{ matrix.target }}
           rust-toolchain: stable
