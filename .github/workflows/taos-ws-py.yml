@@ -170,14 +170,14 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Build wheels
-        uses: messense/maturin-action@v2
+        uses: messense/maturin-action@v1
         with:
           target: ${{ matrix.target }}
           rust-toolchain: stable
           working-directory: taos-ws-py
           manylinux: auto
           args: --release --strip
-      - uses: uraimo/run-on-arch-action@v2.0.5
+      - uses: uraimo/run-on-arch-action@v2
         name: Install built wheel
         with:
           arch: ${{ matrix.target }}
