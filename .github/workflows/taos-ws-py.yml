@@ -172,7 +172,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      - run: yum install -y glibc-headers glibc-devel
+      - run: apt-get install -y libc6-dev
       - name: Build wheels
         uses: messense/maturin-action@v1
         with:
