@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.3.5 - 2024-11-20
 
+## v0.3.5 - 2024-11-20
+
 ### Bug Fixes:
 
 - **(taos-ws-py)**: fix crypto provider error
