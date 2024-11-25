@@ -1,7 +1,27 @@
+from sqlalchemy import types as sqltypes
 from sqlalchemy.engine import default, reflection
-from sqlalchemy import text
 
 import taosrest
+
+TYPES_MAP = {
+    "TIMESTAMP": sqltypes.DATETIME,
+    "INT": sqltypes.Integer,
+    "INT UNSIGNED": sqltypes.Integer,
+    "BIGINT": sqltypes.BigInteger,
+    "BIGINT UNSIGNED": sqltypes.BigInteger,
+    "FLOAT": sqltypes.FLOAT,
+    "DOUBLE": sqltypes.DECIMAL,
+    "BINARY": sqltypes.String,
+    "SMALLINT": sqltypes.SmallInteger,
+    "SMALLINT UNSIGNED": sqltypes.SmallInteger,
+    "TINYINT": sqltypes.SmallInteger,
+    "TINYINT UNSIGNED": sqltypes.SmallInteger,
+    "BOOL": sqltypes.Boolean,
+    "NCHAR": sqltypes.String,
+    "JSON": sqltypes.JSON,
+    "VARCHAR": sqltypes.String,
+    "VARBINARY": sqltypes.String,
+}
 
 
 class AlchemyRestConnection:
@@ -48,28 +68,72 @@ class TaosRestDialect(default.DefaultDialect):
     @classmethod
     def import_dbapi(cls):
         return AlchemyRestConnection()
-
-    def has_schema(self, connection, schema):
-        return False
-
-    def has_table(self, connection, table_name, schema=None):
-        try:
-            connection.execute(text(f"describe {table_name}"))
-            return True
-        except:
-            return False
+    
+    @reflection.cache
+    def get_schema_names(self, connection, **kw):
+        cursor = connection.execute("SHOW databases")
+        return [row[0] for row in cursor.fetchall()]
 
     @reflection.cache
-    def get_indexes(self, connection, table_name, schema=None, **kw):
-        """
-        Gets all indexes
-        """
-        # no index is supported by TDengine
+    def has_table(self, connection, table_name, schema=None):
+        return table_name in self.get_table_names(connection, schema)
+        
+    @reflection.cache   
+    def get_table_names(self, connection, schema=None, **kw):
+        sql = (
+            "SELECT stable_name FROM information_schema.INS_STABLES "
+            f"WHERE db_name = '{schema}'"
+        )
+        cursor = connection.execute(sql)
+        return [row[0] for row in cursor.fetchall()]
+        
+    @reflection.cache
+    def get_view_names(self, connection, schema=None, **kw):
+        # view is only supported by TDengine Enterprise Edition
         return []
 
+    @reflection.cache
     def get_columns(self, connection, table_name, schema=None, **kw):
-        try:
-            cursor = connection.execute(text("describe {}" % table_name))
-            return [row[0] for row in cursor.fetchall()]
-        except:
-            return []
+        cursor = connection.execute(f"DESCRIBE {schema}.{table_name}")
+        columns = []
+        
+        for row in cursor.fetchall():
+            column = dict(row)
+            column["name"] = column.pop("field")
+            column["type"] = self._resolve_type(column["type"])
+            columns.append(column)
+            
+        return columns
+        
+    @reflection.cache    
+    def get_pk_constraint(self, connection, table_name, schema=None, **kw):
+        columns = self.get_columns(connection, table_name, schema)
+        return {"constrained_columns": [columns[0]["name"]], "name": None}
+    
+    @reflection.cache
+    def get_foreign_keys(self, connection, table_name, schema=None, **kw):
+        # no foreign key is supported by TDengine
+        return []
+    
+    @reflection.cache
+    def get_indexes(self, connection, table_name, schema=None, **kw):
+        sql = (
+            "SELECT * FROM information_schema.INS_INDEXES "
+            f"WHERE db_name = '{schema}'"
+            f"AND table_name = '{table_name}'"
+        )
+        
+        cursor = connection.execute(sql)
+        rows = cursor.fetchall()
+        indexes = []
+        
+        for row in rows:
+            indexes.append(
+                {"name": row[0], "column_names": [row[5]], "type": "index", "unique": False}
+            )
+        
+        return indexes
+        
+    def _resolve_type(self, type_):
+        return TYPES_MAP.get(type_, sqltypes.UserDefinedType)
+
