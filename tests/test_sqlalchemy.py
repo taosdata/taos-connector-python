@@ -2,11 +2,7 @@ import taos
 
 from sqlalchemy import create_engine
 from sqlalchemy import inspect
-
 from dotenv import load_dotenv
-
-from utils import tear_down_database
-
 load_dotenv()
 
 
@@ -15,9 +11,9 @@ def test_insert_test_data():
     c = conn.cursor()
     c.execute("drop database if exists test")
     c.execute("create database test")
-    c.execute("create table test.tb " "(ts timestamp, c1 int, c2 double)")
-    c.execute("insert into test.tb values " "(now, -100, -200.3) " "(now+10s, -101, -340.2423424)")
-
+    c.execute("create table test.meters (ts timestamp, c1 int, c2 double) tags(t1 int)")
+    c.execute("insert into test.d0 using test.meters tags(0) values (1733189403001, 1, 1.11) (1733189403002, 2, 2.22)")
+    c.execute("insert into test.d1 using test.meters tags(1) values (1733189403003, 3, 3.33) (1733189403004, 4, 4.44)")
 
 def test_read_from_sqlalchemy_taos():
     if not taos.IS_V3:
@@ -28,18 +24,18 @@ def test_read_from_sqlalchemy_taos():
 
     print("inspection.get_schema_names()", inspection.get_schema_names())
 
-    print("inspection.has_table", inspection.has_table("test.tb"))
+    print("inspection.has_table", inspection.has_table("test.meters"))
 
     # has_schema
     print("inspection.has_schema", inspection.dialect.has_schema(conn, "test"))
 
     # get_columns
-    print("inspection.get_columns", inspection.get_columns("test.tb"))
+    print("inspection.get_columns", inspection.get_columns("test.meters"))
 
     # get_indexes
-    print("inspection.get_indexes", inspection.get_indexes("test.tb"))
+    print("inspection.get_indexes", inspection.get_indexes("test.meters"))
 
-    res = conn.execute("select * from test.tb")
+    res = conn.execute("select * from test.meters")
     print("res", res.fetchall())
 
     # import_dbapi
@@ -64,18 +60,18 @@ def test_read_from_sqlalchemy_taosws():
 
     print("inspection.get_schema_names()", inspection.get_schema_names())
 
-    print("inspection.has_table", inspection.has_table("test.tb"))
+    print("inspection.has_table", inspection.has_table("test.meters"))
 
     # has_schema
     print("inspection.has_schema", inspection.dialect.has_schema(conn, "test"))
 
     # get_columns
-    print("inspection.get_columns", inspection.get_columns("test.tb"))
+    print("inspection.get_columns", inspection.get_columns("test.meters"))
 
     # get_indexes
-    print("inspection.get_indexes", inspection.get_indexes("test.tb"))
+    print("inspection.get_indexes", inspection.get_indexes("test.meters"))
 
-    res = conn.execute("select * from test.tb")
+    res = conn.execute("select * from test.meters")
     print("res", res.fetchall())
 
     # import_dbapi
@@ -89,12 +85,14 @@ def test_read_from_sqlalchemy_taosws():
 
 def teardown_module(module):
     conn = taos.connect()
-    db_name = "test"
-    tear_down_database(conn, db_name)
+    conn.execute("DROP DATABASE IF EXISTS test")
     conn.close()
 
-
 if __name__ == "__main__":
+    print("hello, test sqlalcemy db api.\n")
     test_insert_test_data()
+    print("Insert table and data ............................. [OK]\n")
     test_read_from_sqlalchemy_taos()
+    print("Test rest api ..................................... [OK]\n")
     test_read_from_sqlalchemy_taosws()
+    print("Test websocket api ................................ [OK]\n")
