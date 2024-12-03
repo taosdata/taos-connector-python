@@ -24,9 +24,10 @@ TYPES_MAP = {
 }
 
 
-class TaosWsDialect(default.DefaultDialect):
-    name = "taosws"
-    driver = "taosws"
+#
+#  base class for dialect
+#
+class BaseDialect(default.DefaultDialect):
     supports_native_boolean = True
     implicit_returning = True
     supports_statement_cache = True
@@ -35,47 +36,24 @@ class TaosWsDialect(default.DefaultDialect):
         return dbname.lower() in [ "information_schema", "performance_schema"]
 
     def do_rollback(self, connection):
-        
         pass
 
     def _get_server_version_info(self, connection):
-        
         cursor = connection.execute(text("select server_version()"))
         return cursor.fetchone()
 
-    @classmethod
-    def dbapi(cls):
-        
-        import taosws
-
-        return taosws
-
-    @classmethod
-    def import_dbapi(cls):
-        
-        import taosws
-        return taosws
-
-
     @reflection.cache
-    def has_schema(self, connection, schema):
-        
+    def has_schema(self, connection, schema):        
         return True
 
+    # has table
     @reflection.cache
     def has_table(self, connection, table_name, schema=None):
-        
         return table_name in self.get_table_names(connection, schema)
 
+    # get column
     @reflection.cache
-    def get_indexes(self, connection, table_name, schema=None, **kw):
-        
-        # no index is supported by TDengine
-        return []
-
-    @reflection.cache
-    def get_columns(self, connection, table_name, schema=None, **kw):
-        
+    def get_columns(self, connection, table_name, schema=None, **kw):        
         sysdb = False
         if schema is None:
             sql = f"describe {table_name}"
@@ -88,21 +66,15 @@ class TaosWsDialect(default.DefaultDialect):
             for row in cursor.fetchall():
                 #print(row)
                 column = dict()                
-                if sysdb:
-                    #column["name"] = "`" + row[0] + "`"
-                    column["name"] = row[0]
-                else:
-                    column["name"] = row[0]
+                column["name"] = row[0]
                 column["type"] = self._resolve_type(row[1])
-                #print(column)
                 columns.append(column)
             return columns
         except:
             return []
 
     @reflection.cache    
-    def get_pk_constraint(self, connection, table_name, schema=None, **kw):
-        
+    def get_pk_constraint(self, connection, table_name, schema=None, **kw):        
         columns = self.get_columns(connection, table_name, schema)
         return {"constrained_columns": [columns[0]["name"]], "name": None}
 
@@ -111,6 +83,7 @@ class TaosWsDialect(default.DefaultDialect):
         # no foreign key is supported by TDengine
         return []
 
+    # get indexs
     @reflection.cache
     def get_indexes(self, connection, table_name, schema=None, **kw):
         sql = (
@@ -118,7 +91,6 @@ class TaosWsDialect(default.DefaultDialect):
             f"WHERE db_name = '{schema}'"
             f"AND table_name = '{table_name}'"
         )
-
         try:
             cursor = connection.execute(sql)
             rows = cursor.fetchall()
@@ -130,30 +102,32 @@ class TaosWsDialect(default.DefaultDialect):
         except:
             return []
 
-
+    # get database name
     @reflection.cache
     def get_schema_names(self, connection, **kw):
-        sql = "select name from information_schema.ins_databases"
+        sql = "select name from information_schema.ins_databases where `vgroups` is not null"
         try:
             cursor = connection.execute(sql)
             return [row[0] for row in cursor.fetchall()]
         except:
             return []
     
+    # get table names
     @reflection.cache
-    def get_table_names(self, connection, schema=None, **kw):
-        
+    def get_table_names(self, connection, schema=None, **kw):        
         if schema is None:
             return []
-        if schema.lower() in [ "information_schema", "performance_schema"]:
-            sql = f"select table_name from information_schema.ins_tables where db_name = '{schema}'"
-        else:
-            sql = f"select stable_name from information_schema.ins_stables where db_name = '{schema}'"
+        # sql
+        sqls = [
+            f"select stable_name from information_schema.ins_stables where db_name = '{schema}'",
+            f"select  table_name from information_schema.ins_tables  where db_name = '{schema}' and type='NORMAL_TABLE'"]
+        # execute
         try:
-
-            cursor = connection.execute(sql)
-            names = [row[0] for row in cursor.fetchall()]
-            print(f"sql={sql} names={names}\n")
+            names = []
+            for sql in sqls:
+                cursor = connection.execute(sql)
+                for row in cursor.fetchall():
+                    names.append(row[0])
             return names
         except:
             return []
@@ -167,33 +141,29 @@ class TaosWsDialect(default.DefaultDialect):
         return TYPES_MAP.get(type_, sqltypes.UserDefinedType)
 
 
+#
+# ---------------- taos impl -------------
+#
+import taos
+
+#
+# Alchemy connect
+#
 class AlchemyTaosConnection:
     paramstyle = "pyformat"
-
+    # connect
     def connect(self, **kwargs):
         host = kwargs.get("host", "localhost")
         port = kwargs.get("port", "6030")
         user = kwargs.get("username", "root")
         password = kwargs.get("password", "taosdata")
         database = kwargs.get("database", None)
-
-        import taos
-
         return taos.connect(host=host, user=user, password=password, port=int(port), database=database)
 
-
-class TaosDialect(default.DefaultDialect):
+# taos dialet
+class TaosDialect(BaseDialect):
     name = "taos"
     driver = "taos"
-    supports_native_boolean = True
-    implicit_returning = True
-    supports_statement_cache = True
-
-    def do_rollback(self, connection):
-        pass
-
-    def _get_server_version_info(self, connection):
-        return tuple(connection.connection.server_info)
 
     @classmethod
     def dbapi(cls):
@@ -203,30 +173,24 @@ class TaosDialect(default.DefaultDialect):
     def import_dbapi(cls):
         return AlchemyTaosConnection()
 
-    def has_schema(self, connection, schema):
-        return False
 
-    def has_table(self, connection, table_name, schema=None):
-        try:
-            connection.execute(f"describe {table_name}")
-            return True
-        except:
-            return False
+#
+# ---------------- taosws impl -------------
+#
+import taosws
 
-    @reflection.cache
-    def get_indexes(self, connection, table_name, schema=None, **kw):
-        """
-        Gets all indexes
-        """
-        # no index is supported by TDengine
-        return []
+# ws dailet
+class TaosWsDialect(BaseDialect):
+    # set taosws
+    name = "taosws"
+    driver = "taosws"
 
-    def get_columns(self, connection, table_name, schema=None, **kw):
-        try:
-            cursor = connection.execute(text("describe {}" % table_name))
-            return [row[0] for row in cursor.fetchall()]
-        except:
-            return []
+    # doapi
+    @classmethod
+    def dbapi(cls):
+        return taosws
 
-    def _resolve_type(self, type_):
-        return TYPES_MAP.get(type_.lower(), sqltypes.UserDefinedType)
+    # import dbapi
+    @classmethod
+    def import_dbapi(cls):
+        return taosws
