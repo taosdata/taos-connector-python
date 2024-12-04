@@ -3,7 +3,7 @@ import os
 import pytest
 from sqlalchemy import create_engine, inspect
 
-URL = os.environ["DATABASE_URL"] or "taosrest://root:taosdata@localhost:6041/test"
+URL = "taosrest://root:taosdata@localhost:6041/test"
 
 @pytest.fixture(scope="module")
 def engine():
