@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "taospy"
-version = "2.8.0"
+version = "2.7.17"
 description = "TDengine connector for python"
 authors = ["Taosdata Inc. <support@taosdata.com>"]
 license = "MIT"
