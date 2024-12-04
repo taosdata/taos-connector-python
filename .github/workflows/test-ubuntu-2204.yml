@@ -128,7 +128,7 @@ jobs:
           mkdir build
           cd build
           cmake ../ -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false
-          make -j4
+          make -j12
           sudo make install
           ls -alh /etc/taos/
           cd ../../
@@ -152,7 +152,7 @@ jobs:
           #source $VENV
           export TDENGINE_URL=localhost:6041
           curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
-          poetry run pip install psutil "numpy<2.0.0" pandas pytest-cov
+          poetry run pip install taos-ws-py psutil "numpy<2.0.0" pandas pytest-cov
           poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
 
 
