@@ -43,8 +43,8 @@ class BaseDialect(default.DefaultDialect):
         return cursor.fetchone()
 
     @reflection.cache
-    def has_schema(self, connection, schema):        
-        return True
+    def has_schema(self, connection, schema):
+        return schema in self.get_schema_names(connection)
 
     # has table
     @reflection.cache
