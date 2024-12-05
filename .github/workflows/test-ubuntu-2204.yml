@@ -89,7 +89,7 @@ jobs:
           export LD_LIBRARY_PATH=$PWD/TDengine_v2/build/build/lib
           #source $VENV
           export TDENGINE_URL=localhost:6041
-          poetry run pip install psutil "numpy<2.0.0" pandas pytest-cov
+          poetry run pip install taos-ws-py psutil "numpy<2.0.0" pandas pytest-cov
           poetry run pytest tests --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest tests
 
       - name: 'Upload taosd logs'
