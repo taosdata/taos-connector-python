@@ -2,6 +2,7 @@ import sys
 from sqlalchemy import types as sqltypes
 from sqlalchemy.engine import default, reflection
 from sqlalchemy import text
+from sqlalchemy import sql
 
 TYPES_MAP = {
     "BOOL"             : sqltypes.Boolean,
@@ -23,6 +24,383 @@ TYPES_MAP = {
     "JSON"             : sqltypes.JSON,
 }
 
+# TDengine reserved words
+RESERVED_WORDS_TDENGINE = {
+    "account",
+    "accounts",
+    "add",
+    "aggregate",
+    "all",
+    "alter",
+    "analyze",
+    "and",
+    "anti",
+    "anode",
+    "anodes",
+    "anomaly_window",
+    "apps",
+    "as",
+    "asc",
+    "asof",
+    "at_once",
+    "balance",
+    "batch_scan",
+    "between",
+    "bigint",
+    "binary",
+    "bnode",
+    "bnodes",
+    "bool",
+    "both",
+    "buffer",
+    "bufsize",
+    "by",
+    "cache",
+    "cachemodel",
+    "cachesize",
+    "case",
+    "cast",
+    "child",
+    "client_version",
+    "cluster",
+    "column",
+    "comment",
+    "comp",
+    "compact",
+    "compacts",
+    "connection",
+    "connections",
+    "conns",
+    "consumer",
+    "consumers",
+    "contains",
+    "count",
+    "count_window",
+    "create",
+    "createdb",
+    "current_user",
+    "database",
+    "databases",
+    "dbs",
+    "delete",
+    "delete_mark",
+    "desc",
+    "describe",
+    "distinct",
+    "distributed",
+    "dnode",
+    "dnodes",
+    "double",
+    "drop",
+    "duration",
+    "else",
+    "enable",
+    "encryptions",
+    "encrypt_algorithm",
+    "encrypt_key",
+    "end",
+    "exists",
+    "expired",
+    "explain",
+    "event_window",
+    "every",
+    "file",
+    "fill",
+    "fill_history",
+    "first",
+    "float",
+    "flush",
+    "from",
+    "for",
+    "force",
+    "full",
+    "function",
+    "functions",
+    "geometry",
+    "grant",
+    "grants",
+    "full",
+    "logs",
+    "machines",
+    "group",
+    "hash_join",
+    "having",
+    "host",
+    "if",
+    "ignore",
+    "import",
+    "in",
+    "index",
+    "indexes",
+    "inner",
+    "insert",
+    "int",
+    "integer",
+    "interval",
+    "into",
+    "is",
+    "jlimit",
+    "join",
+    "json",
+    "keep",
+    "key",
+    "kill",
+    "language",
+    "last",
+    "last_row",
+    "leader",
+    "leading",
+    "left",
+    "licences",
+    "like",
+    "limit",
+    "linear",
+    "local",
+    "match",
+    "maxrows",
+    "max_delay",
+    "bwlimit",
+    "merge",
+    "meta",
+    "only",
+    "minrows",
+    "minus",
+    "mnode",
+    "mnodes",
+    "modify",
+    "modules",
+    "normal",
+    "nchar",
+    "next",
+    "near",
+    "nmatch",
+    "none",
+    "not",
+    "now",
+    "no_batch_scan",
+    "null",
+    "null_f",
+    "nulls",
+    "offset",
+    "on",
+    "or",
+    "order",
+    "outer",
+    "outputtype",
+    "pages",
+    "pagesize",
+    "para_tables_sort",
+    "partition",
+    "partition_first",
+    "pass",
+    "port",
+    "position",
+    "pps",
+    "primary",
+    "precision",
+    "prev",
+    "privileges",
+    "qnode",
+    "qnodes",
+    "qtime",
+    "queries",
+    "query",
+    "pi",
+    "rand",
+    "range",
+    "ratio",
+    "pause",
+    "read",
+    "recursive",
+    "redistribute",
+    "rename",
+    "replace",
+    "replica",
+    "reset",
+    "resume",
+    "restore",
+    "retentions",
+    "revoke",
+    "right",
+    "rollup",
+    "schemaless",
+    "scores",
+    "select",
+    "semi",
+    "server_status",
+    "server_version",
+    "session",
+    "set",
+    "show",
+    "single_stable",
+    "skip_tsma",
+    "sliding",
+    "slimit",
+    "sma",
+    "smalldata_ts_sort",
+    "smallint",
+    "snode",
+    "snodes",
+    "sort_for_group",
+    "soffset",
+    "split",
+    "stable",
+    "stables",
+    "start",
+    "state",
+    "state_window",
+    "storage",
+    "stream",
+    "streams",
+    "strict",
+    "stt_trigger",
+    "subscribe",
+    "subscriptions",
+    "substr",
+    "substring",
+    "subtable",
+    "sysinfo",
+    "system",
+    "table",
+    "tables",
+    "table_prefix",
+    "table_suffix",
+    "tag",
+    "tags",
+    "tbname",
+    "then",
+    "timestamp",
+    "timezone",
+    "tinyint",
+    "to",
+    "today",
+    "topic",
+    "topics",
+    "trailing",
+    "transaction",
+    "transactions",
+    "trigger",
+    "trim",
+    "tsdb_pagesize",
+    "tseries",
+    "tsma",
+    "tsmas",
+    "ttl",
+    "union",
+    "unsafe",
+    "unsigned",
+    "untreated",
+    "update",
+    "use",
+    "user",
+    "users",
+    "using",
+    "value",
+    "value_f",
+    "values",
+    "varchar",
+    "variables",
+    "verbose",
+    "vgroup",
+    "vgroups",
+    "view",
+    "views",
+    "vnode",
+    "vnodes",
+    "wal_fsync_period",
+    "wal_level",
+    "wal_retention_period",
+    "wal_retention_size",
+    "wal_roll_period",
+    "wal_segment_size",
+    "watermark",
+    "when",
+    "where",
+    "window",
+    "window_close",
+    "window_offset",
+    "with",
+    "write",
+    "_c0",
+    "_irowts",
+    "_irowts_origin",
+    "_isfilled",
+    "_qduration",
+    "_qend",
+    "_qstart",
+    "_rowts",
+    "_tags",
+    "_wduration",
+    "_wend",
+    "_wstart",
+    "_flow",
+    "_fhigh",
+    "_frowts",
+    "alive",
+    "varbinary",
+    "s3_chunkpages",
+    "s3_keeplocal",
+    "s3_compact",
+    "s3migrate",
+    "keep_time_offset",
+    "arbgroups",
+    "is_import",
+    "force_window_close"
+}
+
+# backup generator function
+'''
+generator from TDengine/source/libs/parse/src/parTokenizer.c -> keywordTable
+
+import sys
+def readKeyWord(filename):
+    keys = ""
+    print(f"read file {filename}\n")
+    with open(filename) as file:
+        for line in file.readlines():
+            pos1 = line.find('"')
+            if pos1 == -1 :
+                print(f"NO FOUND FIRST QUOTA: {line}\n")
+                continue
+            pos2 = line.find('"', pos1 + 1)
+            if pos2 == -1 :
+                print(f"NO FOUND SECOND QUOTA: {line}\n")
+                continue
+            word = line[pos1:pos2+1]
+            if keys == "":
+                keys = "RESERVED_WORDS_TDENGINE = {\n    " + word.lower()
+            else:
+                keys += ",\n    " + word.lower()
+
+    # end
+    keys += "\n}"
+    print(f"\n\n{keys}\n")
+
+
+if __name__ == "__main__":
+    readKeyWord("./keyword.txt")
+
+'''
+
+#
+# identifier for TDengine
+#
+class TDengineIdentifierPreparer(sql.compiler.IdentifierPreparer):
+    reserved_words = RESERVED_WORDS_TDENGINE
+
+    def __init__(self, dialect, server_ansiquotes=False, **kw):
+        if not server_ansiquotes:
+            quote = "`"
+        else:
+            quote = '"'
+
+        super(TDengineIdentifierPreparer, self).__init__(
+            dialect, initial_quote=quote, escape_quote=quote
+        )
+
+    def _quote_free_identifiers(self, *ids):
+        """Unilaterally identifier-quote any number of strings."""
+        return tuple([self.quote_identifier(i) for i in ids if i is not None])
 
 #
 #  base class for dialect
@@ -31,6 +409,9 @@ class BaseDialect(default.DefaultDialect):
     supports_native_boolean = True
     implicit_returning = True
     supports_statement_cache = True
+
+    # set back-quote and time grain keywords
+    preparer = TDengineIdentifierPreparer
 
     def is_sys_db(self, dbname):
         return dbname.lower() in [ "information_schema", "performance_schema"]
