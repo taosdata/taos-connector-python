@@ -14,8 +14,11 @@ class insertThread(threading.Thread):
         print("Start insert data")
         conn = taos.connect()
         conn.select_db("tmq_test")
-        conn.execute(
-            "insert into tb1 values (now, true,1,1,1,1,1,1,1,1,1,1,1,'1','1','binary value_1','POINT (3.0 5.0)')")
+        for i in range(100):
+            sql = f"insert into tb1 values (now + {1+i}s, true,1,{i},1,1,1,1,1,1,1,1,1,'1','1','binary value_1','POINT (3.0 5.0)')"
+            conn.execute(sql)
+            print(sql)
+            sleep(0.05)
         print("Finish insert data")
 
 
@@ -46,10 +49,16 @@ class ConsumerThread(threading.Thread):
 
     def run(self) -> None:
         print("Starting subscribe")
+        i = 0
         while True:
-            res = self.consumer.poll(1000)
+            print(f"i={i} consumer.poll(6s) ... \n")
+            res = self.consumer.poll(6)
+            i += 1 
             if not res:
+                # throw except
+                assert i < 10
                 continue
+
             assert res.error() is None
 
             topic = res.topic()
