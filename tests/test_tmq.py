@@ -14,11 +14,11 @@ class insertThread(threading.Thread):
         print("Start insert data")
         conn = taos.connect()
         conn.select_db("tmq_test")
-        for i in range(100):
+        for i in range(50):
             sql = f"insert into tb1 values (now + {1+i}s, true,1,{i},1,1,1,1,1,1,1,1,1,'1','1','binary value_1','POINT (3.0 5.0)')"
             conn.execute(sql)
             print(sql)
-            sleep(0.05)
+            sleep(0.02)
         print("Finish insert data")
 
 
