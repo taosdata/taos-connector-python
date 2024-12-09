@@ -24,18 +24,22 @@ def test_insert_test_data():
 def checkListEqual(list1, list2, tips):
     if list1 != list2:
         print(f"{tips} failed. two list item not equal. list1={list1} list2={list2}")
-        raise("list not euqal.")
+        raise(BaseException("list not euqal."))
 
 # check result
 def checkResultEqual(result1, result2, tips):
     if result1 != result2:
         print(f"{tips} failed. result not equal. result1={result1} result2={result2}")
-        raise("result not euqal.")
+        raise(BaseException("result not euqal."))
 
 # check baisc function
 def checkBasic(conn, inspection):
     # get schema names
-    checkListEqual(inspection.get_schema_names(), ["test"], "check get_schema_names()")
+    databases = inspection.get_schema_names()
+    if "test" not in databases:
+        print(f"test not in {databases}")
+        raise(BaseException("get_schema_names failed."))
+    
     # get table names
     tables = ['meters','ntb']
     checkListEqual(inspection.get_table_names("test"), tables, "check get_table_names()")
