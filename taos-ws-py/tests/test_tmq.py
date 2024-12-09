@@ -113,4 +113,5 @@ def show_env():
 
 if __name__ == '__main__':
     show_env()
-    test_tmq()
+    print("ws maybe tmp can not stop , test ....\n")
+    #test_tmq()
