@@ -408,7 +408,7 @@ class TDengineIdentifierPreparer(sql.compiler.IdentifierPreparer):
 class BaseDialect(default.DefaultDialect):
     supports_native_boolean = True
     implicit_returning = True
-    supports_statement_cache = True
+    #supports_statement_cache = True
 
     # set back-quote and time grain keywords
     preparer = TDengineIdentifierPreparer

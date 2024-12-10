@@ -10,14 +10,13 @@ load_dotenv()
 
 
 def test_insert_test_data(conn):
-    c = conn.cursor()
-    c.execute("drop database if exists test")
-    c.execute("create database test")
-    c.execute("create table test.meters (ts timestamp, c1 int, c2 double) tags(t1 int)")
-    c.execute("insert into test.d0 using test.meters tags(0) values (1733189403001, 1, 1.11) (1733189403002, 2, 2.22)")
-    c.execute("insert into test.d1 using test.meters tags(1) values (1733189403003, 3, 3.33) (1733189403004, 4, 4.44)")
-    c.execute("create table test.ntb(ts timestamp, age int)")
-    c.execute("insert into test.ntb values(now, 23)")
+    conn.execute("drop database if exists test")
+    conn.execute("create database test")
+    conn.execute("create table test.meters (ts timestamp, c1 int, c2 double) tags(t1 int)")
+    conn.execute("insert into test.d0 using test.meters tags(0) values (1733189403001, 1, 1.11) (1733189403002, 2, 2.22)")
+    conn.execute("insert into test.d1 using test.meters tags(1) values (1733189403003, 3, 3.33) (1733189403004, 4, 4.44)")
+    conn.execute("create table test.ntb(ts timestamp, age int)")
+    conn.execute("insert into test.ntb values(now, 23)")
 
 # compare list
 def checkListEqual(list1, list2, tips):
