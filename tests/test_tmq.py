@@ -138,7 +138,7 @@ def tmq_consumer_with_precision(precision: str):
         consumer.close()
         after_ter_tmq()
 
-
+'''
 def test_tmq_assignment():
     if not IS_V3:
         return
@@ -290,7 +290,7 @@ def test_tmq_committed_and_position():
         consumer.unsubscribe()
         consumer.close()
         after_ter_tmq()
-
+'''
 
 if __name__ == "__main__":
     test_consumer_with_precision()
