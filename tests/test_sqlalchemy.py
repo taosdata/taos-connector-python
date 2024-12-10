@@ -89,6 +89,7 @@ def checkBasic(conn, inspection):
 def test_read_from_sqlalchemy_taos():
     if not taos.IS_V3:
         return
+    test_insert_test_data()
     engine = create_engine("taos://root:taosdata@localhost:6030?timezone=Asia/Shanghai")
     conn = engine.connect()
     inspection = inspect(engine)
@@ -98,6 +99,7 @@ def test_read_from_sqlalchemy_taos():
 def test_read_from_sqlalchemy_taosws():
     if not taos.IS_V3:
         return
+    test_insert_test_data()
     engine = create_engine("taosws://root:taosdata@localhost:6041?timezone=Asia/Shanghai")
     conn = engine.connect()
     inspection = inspect(engine)
@@ -107,6 +109,7 @@ def test_read_from_sqlalchemy_taosws():
 def test_read_from_sqlalchemy_taosrest():
     if not taos.IS_V3:
         return
+    test_insert_test_data()
     engine = create_engine("taosrest://root:taosdata@localhost:6041?timezone=Asia/Shanghai")
     conn = engine.connect()
     inspection = inspect(engine)
@@ -115,7 +118,6 @@ def test_read_from_sqlalchemy_taosrest():
 # main test
 if __name__ == "__main__":
     print("hello, test sqlalcemy db api.\n")
-    test_insert_test_data()
     print("Insert table and data ............................. [OK]\n")
     test_read_from_sqlalchemy_taos()
     print("Test taos api ..................................... [OK]\n")
