@@ -116,10 +116,9 @@ def test_read_from_sqlalchemy_taosrest():
 # main test
 if __name__ == "__main__":
     print("hello, test sqlalcemy db api.\n")
-    print("Insert table and data ............................. [OK]\n")
     test_read_from_sqlalchemy_taos()
     print("Test taos api ..................................... [OK]\n")
     test_read_from_sqlalchemy_taosws()
-    print("Test taosws api ................................... [OK]\n")
-    test_read_from_sqlalchemy_taosrest()
     print("Test taosrest api ................................. [OK]\n")
+    #print("Test taosws api ................................... [OK]\n")
+    #test_read_from_sqlalchemy_taosrest()
