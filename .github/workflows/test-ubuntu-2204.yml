@@ -152,7 +152,7 @@ jobs:
           #source $VENV
           export TDENGINE_URL=localhost:6041
           curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
-          pip3 install sqlalchemy toml taos-ws-py psutil "numpy<2.0.0" pandas pytest-cov 
+          pip3 install python-dotenv sqlalchemy toml taos-ws-py psutil "numpy<2.0.0" pandas pytest-cov 
           pip3 install ./
           python3 tests/test_tmq.py
           pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
