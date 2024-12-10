@@ -420,7 +420,7 @@ class BaseDialect(default.DefaultDialect):
         pass
 
     def _get_server_version_info(self, connection):
-        cursor = connection.execute(text("select server_version()"))
+        cursor = connection.execute("select server_version()")
         return cursor.fetchone()
 
     @reflection.cache

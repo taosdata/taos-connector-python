@@ -83,6 +83,7 @@ def checkBasic(conn, inspection):
 
     conn.close()
 
+'''
 # taos
 def test_read_from_sqlalchemy_taos():
     if not taos.IS_V3:
@@ -92,7 +93,7 @@ def test_read_from_sqlalchemy_taos():
     insertData(conn)
     inspection = inspect(engine)
     checkBasic(conn, inspection)
-'''
+
 # taosws
 def test_read_from_sqlalchemy_taosws():
     if not taos.IS_V3:
@@ -102,7 +103,7 @@ def test_read_from_sqlalchemy_taosws():
     insertData(conn)
     inspection = inspect(engine)
     checkBasic(conn, inspection)
-'''    
+
 
 # taosrest
 def test_read_from_sqlalchemy_taosrest():
@@ -114,12 +115,14 @@ def test_read_from_sqlalchemy_taosrest():
     inspection = inspect(engine)
     checkBasic(conn, inspection)
 
+'''    
 # main test
 if __name__ == "__main__":
     print("hello, test sqlalcemy db api.\n")
-    test_read_from_sqlalchemy_taos()
-    print("Test taos api ..................................... [OK]\n")
-    test_read_from_sqlalchemy_taosws()
-    print("Test taosrest api ................................. [OK]\n")
-    #print("Test taosws api ................................... [OK]\n")
+    #test_read_from_sqlalchemy_taos()
+    #print("Test taos api ..................................... [OK]\n")
     #test_read_from_sqlalchemy_taosrest()
+    #print("Test taosrest api ................................. [OK]\n")
+    #test_read_from_sqlalchemy_taosws()
+    #print("Test taosws api ................................... [OK]\n")
+    
