@@ -153,6 +153,7 @@ jobs:
           export TDENGINE_URL=localhost:6041
           curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
           poetry run pip install taos-ws-py psutil "numpy<2.0.0" pandas pytest-cov
+          python3 tests/test_tmq.py
           pytest tests
 
 
