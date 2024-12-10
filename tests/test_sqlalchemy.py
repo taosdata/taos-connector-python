@@ -9,8 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def test_insert_test_data():
-    conn = taos.connect()
+def test_insert_test_data(conn):
     c = conn.cursor()
     c.execute("drop database if exists test")
     c.execute("create database test")
@@ -89,9 +88,9 @@ def checkBasic(conn, inspection):
 def test_read_from_sqlalchemy_taos():
     if not taos.IS_V3:
         return
-    test_insert_test_data()
     engine = create_engine("taos://root:taosdata@localhost:6030?timezone=Asia/Shanghai")
     conn = engine.connect()
+    test_insert_test_data(conn)
     inspection = inspect(engine)
     checkBasic(conn, inspection)
 
@@ -99,9 +98,9 @@ def test_read_from_sqlalchemy_taos():
 def test_read_from_sqlalchemy_taosws():
     if not taos.IS_V3:
         return
-    test_insert_test_data()
     engine = create_engine("taosws://root:taosdata@localhost:6041?timezone=Asia/Shanghai")
     conn = engine.connect()
+    test_insert_test_data(conn)
     inspection = inspect(engine)
     checkBasic(conn, inspection)
 
@@ -109,9 +108,9 @@ def test_read_from_sqlalchemy_taosws():
 def test_read_from_sqlalchemy_taosrest():
     if not taos.IS_V3:
         return
-    test_insert_test_data()
     engine = create_engine("taosrest://root:taosdata@localhost:6041?timezone=Asia/Shanghai")
     conn = engine.connect()
+    test_insert_test_data(conn)
     inspection = inspect(engine)
     checkBasic(conn, inspection)
 
