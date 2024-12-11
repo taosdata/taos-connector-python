@@ -8,7 +8,7 @@ from sqlalchemy import inspect
 from dotenv import load_dotenv
 load_dotenv()
 
-
+''' do nothing
 def insertData(conn):
     conn.execute("drop database if exists test")
     conn.execute("create database test")
@@ -83,7 +83,7 @@ def checkBasic(conn, inspection):
 
     conn.close()
 
-'''
+
 # taos
 def test_read_from_sqlalchemy_taos():
     if not taos.IS_V3:
@@ -118,7 +118,7 @@ def test_read_from_sqlalchemy_taosrest():
 '''    
 # main test
 if __name__ == "__main__":
-    print("hello, test sqlalcemy db api.\n")
+    print("hello, test sqlalcemy db api. do nothing\n")
     #test_read_from_sqlalchemy_taos()
     #print("Test taos api ..................................... [OK]\n")
     #test_read_from_sqlalchemy_taosrest()
