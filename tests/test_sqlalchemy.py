@@ -1,5 +1,4 @@
 import taos
-import taosws
 import taosrest
 import datetime
 from sqlalchemy import types as sqltypes
@@ -103,6 +102,7 @@ def test_read_from_sqlalchemy_taos():
 def test_read_from_sqlalchemy_taosws():
     if not taos.IS_V3:
         return
+    import taosws
     engine = create_engine("taosws://root:taosdata@localhost:6041?timezone=Asia/Shanghai")
     conn = engine.connect()
     insertData(None)
