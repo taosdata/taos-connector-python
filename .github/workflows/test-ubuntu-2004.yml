@@ -91,7 +91,7 @@ jobs:
           mkdir build
           cd build
           cmake ../ -DBUILD_JDBC=false -DBUILD_TOOLS=true -DBUILD_DEPENDENCY_TESTS=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false
-          make -j12
+          make -j14
           sudo make install
           ls -alh /etc/taos/
           cd ../../
@@ -116,9 +116,8 @@ jobs:
           #source $VENV
           export TDENGINE_URL=localhost:6041
           curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
-          pip3 install python-dotenv sqlalchemy toml taos-ws-py psutil "numpy<2.0.0" pandas pytest-cov 
-          pip3 install ./
-          pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
+          poetry run pip install psutil pandas pytest-cov "numpy<2.0.0"
+          poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
 
 
       - name: Test examples 3.0
@@ -153,4 +152,3 @@ jobs:
           elif [ -f ~/examples-success.txt ]; then
             cat ~/examples-success.txt
           fi
-
