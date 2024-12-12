@@ -120,6 +120,7 @@ class RestClient:
         q : SQL statement to execute. Can't be USE statement since REST api is stateless.
         req_id : request id, optional
         """
+        #print(f"execute rest sql = {q}\n")
         data = q.encode("utf8")
         if req_id:
             url = f"{self._sql_utc_url}?req_id={req_id}"
