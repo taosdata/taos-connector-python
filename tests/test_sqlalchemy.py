@@ -8,15 +8,20 @@ from sqlalchemy import inspect
 from dotenv import load_dotenv
 load_dotenv()
 
-''' do nothing
+
 def insertData(conn):
-    conn.execute("drop database if exists test")
-    conn.execute("create database test")
-    conn.execute("create table test.meters (ts timestamp, c1 int, c2 double) tags(t1 int)")
-    conn.execute("insert into test.d0 using test.meters tags(0) values (1733189403001, 1, 1.11) (1733189403002, 2, 2.22)")
-    conn.execute("insert into test.d1 using test.meters tags(1) values (1733189403003, 3, 3.33) (1733189403004, 4, 4.44)")
-    conn.execute("create table test.ntb(ts timestamp, age int)")
-    conn.execute("insert into test.ntb values(now, 23)")
+    if conn is None:
+       c = taos.connect()
+    else:
+       c = conn
+    c.execute("drop database if exists test")
+    c.execute("create database test")
+    c.execute("create table test.meters (ts timestamp, c1 int, c2 double) tags(t1 int)")
+    c.execute("insert into test.d0 using test.meters tags(0) values (1733189403001, 1, 1.11) (1733189403002, 2, 2.22)")
+    c.execute("insert into test.d1 using test.meters tags(1) values (1733189403003, 3, 3.33) (1733189403004, 4, 4.44)")
+    c.execute("create table test.ntb(ts timestamp, age int)")
+    c.execute("insert into test.ntb values(now, 23)")
+
 
 # compare list
 def checkListEqual(list1, list2, tips):
@@ -100,7 +105,7 @@ def test_read_from_sqlalchemy_taosws():
         return
     engine = create_engine("taosws://root:taosdata@localhost:6041?timezone=Asia/Shanghai")
     conn = engine.connect()
-    insertData(conn)
+    insertData(None)
     inspection = inspect(engine)
     checkBasic(conn, inspection)
 
@@ -115,14 +120,14 @@ def test_read_from_sqlalchemy_taosrest():
     inspection = inspect(engine)
     checkBasic(conn, inspection)
 
-'''    
+
 # main test
 if __name__ == "__main__":
     print("hello, test sqlalcemy db api. do nothing\n")
-    #test_read_from_sqlalchemy_taos()
-    #print("Test taos api ..................................... [OK]\n")
-    #test_read_from_sqlalchemy_taosrest()
-    #print("Test taosrest api ................................. [OK]\n")
-    #test_read_from_sqlalchemy_taosws()
-    #print("Test taosws api ................................... [OK]\n")
+    test_read_from_sqlalchemy_taos()
+    print("Test taos api ..................................... [OK]\n")
+    test_read_from_sqlalchemy_taosrest()
+    print("Test taosrest api ................................. [OK]\n")
+    test_read_from_sqlalchemy_taosws()
+    print("Test taosws api ................................... [OK]\n")
     
