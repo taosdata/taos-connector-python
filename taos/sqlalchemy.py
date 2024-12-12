@@ -558,7 +558,6 @@ class TaosDialect(BaseDialect):
 #
 # ---------------- taosws impl -------------
 #
-import taosws
 
 # ws dailet
 class TaosWsDialect(BaseDialect):
@@ -569,9 +568,11 @@ class TaosWsDialect(BaseDialect):
     # doapi
     @classmethod
     def dbapi(cls):
+        import taosws
         return taosws
 
     # import dbapi
     @classmethod
     def import_dbapi(cls):
+        import taosws
         return taosws
