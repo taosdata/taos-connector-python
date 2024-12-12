@@ -100,9 +100,10 @@ def test_read_from_sqlalchemy_taos():
 
 # taosws
 def test_read_from_sqlalchemy_taosws():
-    if not taos.IS_V3:
+    try:
+        import taosws
+    except ImportError:
         return
-    import taosws
     engine = create_engine("taosws://root:taosdata@localhost:6041?timezone=Asia/Shanghai")
     conn = engine.connect()
     insertData(None)
