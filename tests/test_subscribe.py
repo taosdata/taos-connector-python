@@ -6,7 +6,6 @@ import pytest
 import time
 from random import random
 
-'''
 
 @pytest.fixture
 def conn():
@@ -125,5 +124,3 @@ def test_sub_error():
 if __name__ == "__main__":
     test_subscribe(taos.connect())
     test_subscribe_callback(taos.connect())
-
-'''

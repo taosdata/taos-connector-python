@@ -5,7 +5,6 @@ from time import sleep
 import taos
 from taos.tmq import *
 
-''' nothing
 
 class insertThread(threading.Thread):
     def __init__(self):
@@ -291,7 +290,6 @@ def test_tmq_committed_and_position():
         consumer.unsubscribe()
         consumer.close()
         after_ter_tmq()
-'''
 
 if __name__ == "__main__":
     print("call tst_tmp.py nothing do.\n")
