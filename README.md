@@ -18,29 +18,23 @@ an API which is compliant with the Python DB API 2.0 (PEP-249). It contains two 
 You can use `pip` to install the connector from PyPI:
 
 ```bash
-pip install taospy
+pip3 install taospy
 ```
 
 Or with git url:
 
 ```bash
-pip install git+https://github.com/taosdata/taos-connector-python.git
+pip3 install git+https://github.com/taosdata/taos-connector-python.git
 ```
 
 Note: taospy v2.7.2 requirs Python 3.6+. The early versions of taospy from v2.5.0 to v2.7.1 require Python 3.7+.
 
-## Install taos-ws-py
-
-### Install with taospy
+## Install taos-ws-py (Support WebSokcet)
 
 ```bash
-pip install taospy[ws]
-```
-
-### Install taos-ws-py only
-
-```bash
-pip install taos-ws-py
+# taos-ws-py depends taospy
+pip3 install taospy
+pip3 install taos-ws-py
 ```
 
 Note: The taosws module is provided by taos-ws-py package separately from v2.7.2. It is part of early version of taospy.
