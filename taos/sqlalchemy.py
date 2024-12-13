@@ -12,7 +12,7 @@ TYPES_MAP = {
     "BIGINT"           : sqltypes.BigInteger,
     "BIGINT UNSIGNED"  : sqltypes.BigInteger,
     "FLOAT"            : sqltypes.FLOAT,
-    "DOUBLE"           : sqltypes.DECIMAL,
+    "DOUBLE"           : sqltypes.FLOAT,
     "TINYINT"          : sqltypes.SmallInteger,
     "TINYINT UNSIGNED" : sqltypes.SmallInteger,
     "SMALLINT"         : sqltypes.SmallInteger,
