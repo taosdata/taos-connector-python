@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.7.18 - 2024-12-14
+
+### Features:
+
+-  support taos taosws taosrest protocol for superset
+
+### Bug Fixes:
+
+-  2.x add taos-ws-py compose
+-  DATABASE_URL KeyError
+-  add pip3 install ./
+-  add report Codecov.io with token
+-  add report Codecov.io with token1
+-  case test_tmp death wait message
+-  change dotenv name
+-  ci test passed
+-  coverage with pytest run
+-  dotenv remove install
+-  forbid test_tmp.py case
+-  if v3 return for taosw
+-  insert test_sqlalchemy.py ok
+-  insert with conn do
+-  insertData is inner testfun
+-  move import taosws to fun
+-  need insert data before checkBasic for sqlalcmy
+-  need install taos-ws-py
+-  no poetry install need module
+-  only run pytest tet
+-  reduce insert data
+-  remove other test function
+-  remove pytest coverage
+-  rest test already in test_sqlalchemy.py
+-  restore all case
+-  restore pytest coverage
+-  restore test_tmq.py case
+-  setup superset driverTDengine.py to package
+-  test with rest and taosc
+-  ubuntu20.4 remove poetry run
+-  use text
+-  version from 2.7.16 to 2.7.17
+- **(taos-ws-py)**:  fix crypto provider error
+
+### Enhancements:
+
+-  double match to sqltypes.float reference sqlite rule
+
+### Tests:
+
+-  do nothing for tmp and sqlalchemy
+
+### Documents:
+
+-  optimize taospy documents on PyPi official website
+
 ## v2.7.17 - 2024-12-14
 
 ### Features:
