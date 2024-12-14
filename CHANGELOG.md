@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v2.7.17 - 2024-12-14
 
+## v2.7.17 - 2024-12-14
+
 ### Features:
 
 -  support taos taosws taosrest protocol for superset

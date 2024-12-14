@@ -29,7 +29,7 @@ pip3 install git+https://github.com/taosdata/taos-connector-python.git
 
 Note: taospy v2.7.2 requirs Python 3.6+. The early versions of taospy from v2.5.0 to v2.7.1 require Python 3.7+.
 
-## Install taos-ws-py (Support WebSokcet)
+## Install taos-ws-py (Support WebSocket)
 
 ```bash
 # taos-ws-py depends taospy
