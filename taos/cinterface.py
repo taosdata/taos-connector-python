@@ -1269,10 +1269,11 @@ def taos_stmt2_get_fields(stmt):
         field_c: TaosFieldAll = fields_ptr[i]
         field_py = TaosFieldAllCls(
             name       = field_c.name,
-            field_type = field_c.type,
+            type       = field_c.type,
             precision  = field_c.precision,
             scale      = field_c.scale,
-            bytes_     = field_c.bytes
+            bytes_     = field_c.bytes,
+            field_type = field_c.field_type
         )
         fields.append(field_py)
 
