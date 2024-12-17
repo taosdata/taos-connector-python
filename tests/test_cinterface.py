@@ -493,10 +493,19 @@ def test_taos_stmt2_get_fields():
 
     taos_stmt2_bind_param(stmt2, bindv.get_address(), -1)
 
-    # TODO: get tbname when bind
+    # check
+    check_fields = [
+        TaosFieldAllCls(name="grade", type=8, precision=0, scale=0, bytes=26, field_type=2), 
+        TaosFieldAllCls(name="class", type=4, precision=0, scale=0, bytes=4, field_type=2), 
+        TaosFieldAllCls(name="ts",    type=9, precision=0, scale=0, bytes=8, field_type=1), 
+        TaosFieldAllCls(name="name",  type=8, precision=0, scale=0, bytes=34, field_type=1), 
+        TaosFieldAllCls(name="sex",   type=1, precision=0, scale=0, bytes=1, field_type=1), 
+        TaosFieldAllCls(name="score", type=4, precision=0, scale=0, bytes=4, field_type=1)
+    ]
     count, fields = taos_stmt2_get_fields(stmt2)
-    assert count == cnt_tags + cnt_cols + 1
+    assert count == cnt_tags + cnt_cols
     assert len(fields) == count
+    assert check_fields == fields
 
     taos_stmt2_close(stmt2)
     taos_close(conn)
@@ -609,4 +618,4 @@ def test_taos_stmt2_query():
 ############################################ stmt2 end ############################################
 
 if __name__ == "__main__":
-    pass
+    test_taos_stmt2_get_fields()

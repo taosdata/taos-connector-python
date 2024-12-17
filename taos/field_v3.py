@@ -228,5 +228,5 @@ class TaosFieldAllCls:
         self.field_type = field_type
 
     def __repr__(self):
-        return f"TaosFieldAllCls(name={self.name}, type={self.type}, precision={self.precision}, scale={self.scale}, bytes={self.bytes}, field_type={self.field_type})"
+        return f"TaosFieldAllCls(name=\"{self.name}\", type={self.type}, precision={self.precision}, scale={self.scale}, bytes={self.bytes}, field_type={self.field_type})"
 
