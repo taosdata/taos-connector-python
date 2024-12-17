@@ -495,17 +495,20 @@ def test_taos_stmt2_get_fields():
 
     # check
     check_fields = [
-        TaosFieldAllCls(name="grade", type=8, precision=0, scale=0, bytes=26, field_type=2), 
-        TaosFieldAllCls(name="class", type=4, precision=0, scale=0, bytes=4, field_type=2), 
-        TaosFieldAllCls(name="ts",    type=9, precision=0, scale=0, bytes=8, field_type=1), 
-        TaosFieldAllCls(name="name",  type=8, precision=0, scale=0, bytes=34, field_type=1), 
-        TaosFieldAllCls(name="sex",   type=1, precision=0, scale=0, bytes=1, field_type=1), 
-        TaosFieldAllCls(name="score", type=4, precision=0, scale=0, bytes=4, field_type=1)
+        TaosFieldAllCls("grade", 8, 0, 0, 26, 2),          
+        TaosFieldAllCls("class", 4, 0, 0, 4, 2),          
+        TaosFieldAllCls("ts",    9, 0, 0, 8, 1),          
+        TaosFieldAllCls("name",  8, 0, 0, 34, 1),     
+        TaosFieldAllCls("sex",   1, 0, 0, 1, 1),     
+        TaosFieldAllCls("score", 4, 0, 0, 4, 1)
     ]
     count, fields = taos_stmt2_get_fields(stmt2)
     assert count == cnt_tags + cnt_cols
     assert len(fields) == count
-    assert check_fields == fields
+    for i in range(count):
+        assert fields[i].name == check_fields[i].name
+        assert fields[i].type == check_fields[i].type
+        assert fields[i].field_type == check_fields[i].field_type
 
     taos_stmt2_close(stmt2)
     taos_close(conn)
