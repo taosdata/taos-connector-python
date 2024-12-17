@@ -163,3 +163,65 @@ class TaosFields(object):
     def __str__(self):
         """Print"""
         return ",".join(str(f) for f in self)
+
+
+TAOS_FIELD_T = ctypes.c_int
+class TaosFieldEx(ctypes.Structure):
+    _fields_ = [
+        ("_name", ctypes.c_char * 65),
+        ("_type", ctypes.c_int8),
+        ("_precision", ctypes.c_uint8),
+        ("_scale", ctypes.c_uint8),
+        ("_bytes", ctypes.c_int32)
+    ]
+
+    @property
+    def name(self):
+        return self._name.decode("utf-8")
+
+    @property
+    def type(self):
+        return self._type
+
+    @property
+    def precision(self):
+        return self._precision
+
+    @property
+    def scale(self):
+        return self._scale
+
+    @property
+    def length(self):
+        """Alias to self.bytes."""
+        return self._bytes
+
+    @property
+    def bytes(self):
+        return self._bytes
+
+
+    def __dict__(self):
+        """Construct dict."""
+        return {"name": self.name, "type": self.type, "precision": self.precision, "scale": self.scale, "bytes": self.length}
+
+    def __str__(self):
+        """Construct str."""
+        return "{name: %s, type: %d, precision: %d, scale: %d, bytes: %d}" % (self.name, self.type, self.precision, self.scale, self.length)
+
+    def __getitem__(self, item):
+        """Get attr."""
+        return getattr(self, item)
+
+
+class TaosFieldExCls:
+    def __init__(self, name, field_type, precision, scale, bytes_):
+        self.name = name
+        self.type = field_type
+        self.precision = precision
+        self.scale = scale
+        self.bytes = bytes_
+
+    def __repr__(self):
+        return f"TaosFieldExCls(name={self.name}, type={self.type}, precision={self.precision}, scale={self.scale}, bytes={self.bytes})"
+

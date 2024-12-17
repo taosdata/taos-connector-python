@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - 'main'
+      - '3.0'
   pull_request:
     branches:
       - 'main'
+      - '3.0'
 
 jobs:
   test:
@@ -120,15 +122,18 @@ jobs:
         with:
           repository: "taosdata/TDengine"
           path: "TDengine_v3"
-          ref: ${{ steps.determine-branch.outputs.value }}
+          ref:  '3.0'
 
       - name: Build TDengine 3.0
         run: |
+          pwd
+          git branch -vv
           cd TDengine_v3
+          rm build -rf
           mkdir build
           cd build
           cmake ../ -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false
-          make -j4
+          make -j14
           sudo make install
           ls -alh /etc/taos/
           cd ../../

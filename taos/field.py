@@ -25,6 +25,11 @@ def set_tz(tz):
     _priv_datetime_epoch = _utc_datetime_epoch.astimezone(_priv_tz)
 
 
+def get_tz():
+    # type: (str) -> timezone
+    return _priv_tz
+
+
 def _convert_millisecond_to_datetime(milli):
     try:
         if _priv_tz is None:
