@@ -120,7 +120,7 @@ def obtainSchema(statement2):
         for field in fields:
             if field.field_type == TAOS_FIELD_TAG:
                 statement2.tag_fields.append(field)
-            elif field.field_type == TAOS_FIELD_TAG:
+            elif field.field_type == TAOS_FIELD_COL:
                 statement2.fields.append(field)
         log.debug(f"obtain schema tag fields = {statement2.tag_fields}")
         log.debug(f"obtain schema fields     = {statement2.fields}")
