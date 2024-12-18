@@ -437,7 +437,7 @@ def test_stmt2_insert(conn):
     ntb2    = "ntb2"
 
     try:
-        prepare(conn, dbname, stbname)
+        prepare(conn, dbname, stbname, ntb1, ntb2)
 
         ctb = 'ctb' # child table
         stmt2 = conn.statement2(f"insert into {dbname}.{ctb} using {dbname}.{stbname} tags (?,?) values(?,?,?,?)")
@@ -548,12 +548,14 @@ def test_stmt2_query(conn):
 
     dbname  = "stmt2"
     stbname = "meters"
+    ntb1    = "ntb1"
+    ntb2    = "ntb2"
     sql1 = f"select * from {dbname}.d2 where name in (?) or score > ? ;"
     sql2 = f"select * from {dbname}.d2 where name in ('Tom2') or score > 1000;"
 
     try:
         # prepare
-        prepare(conn, dbname, stbname)
+        prepare(conn, dbname, stbname, ntb1, ntb2)
 
         # prepare
         # stmt2 = conn.statement2(f"insert into ? using {dbname}.{stbname} tags(?,?) values(?,?,?,?)")
