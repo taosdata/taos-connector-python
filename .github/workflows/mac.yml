@@ -107,7 +107,7 @@ jobs:
           cd TDengine
           mkdir debug
           cd debug
-          cmake .. -DBUILD_TEST=off -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false
+          cmake .. -DBUILD_TEST=off -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false -DVERNUMBER=3.9.9.9
           make -j 14
 
       - name: package
@@ -137,7 +137,7 @@ jobs:
           tar -zcvf server.tar.gz ./release
 
   build-poetry:
-    runs-on: macos-14
+    runs-on: macos-latest
     needs: build-tdengine
     steps:
       - name: get cache server by pr
@@ -231,7 +231,7 @@ jobs:
           poetry build
 
   test:
-    runs-on: macos-12
+    runs-on: macos-latest
     needs: build-tdengine
     steps:
       - name: get cache server by pr
