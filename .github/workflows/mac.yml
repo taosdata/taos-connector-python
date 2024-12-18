@@ -27,7 +27,7 @@ jobs:
           github.event_name == 'pull_request'
           || github.event_name == 'push'
           || github.event_name == 'schedule'
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: 'taosdata/TDengine'
           path: 'TDengine'
@@ -183,7 +183,7 @@ jobs:
 
       - name: Cache Poetry
         id: cache-poetry
-        uses: actions/cache@v2.1.5
+        uses: actions/cache@v4
         with:
           path: ~/.poetry
           key: macos-poetry
@@ -277,7 +277,7 @@ jobs:
 
       - name: Cache Poetry
         id: cache-poetry
-        uses: actions/cache@v2.1.5
+        uses: actions/cache@v4
         with:
           path: ~/.poetry
           key: macos-poetry
@@ -297,7 +297,7 @@ jobs:
       #----------------------------------------------
       - name: Load cached venv
         id: cached-poetry-dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
