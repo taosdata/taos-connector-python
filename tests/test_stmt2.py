@@ -3,6 +3,9 @@ from ctypes import *
 from datetime import datetime
 import pytest
 from sqlalchemy import false
+# geometry support
+from shapely.wkb import dumps, loads
+from shapely.wkt import dumps as wkt_dumps, loads as wkt_loads
 
 import taos
 import math
@@ -11,6 +14,14 @@ from taos.statement2 import *
 from taos.constants import FieldType
 from taos import log
 from taos import bind2
+
+# input WKT return WKB (bytes object)
+def WKB(wkt, hex = False):
+    if wkb is None:
+        return None
+    wkb = wkt_loads(wkt)
+    wkb_bytes = dumps(wkb, hex)
+    return wkb_bytes
 
 @pytest.fixture
 def conn():
@@ -165,6 +176,9 @@ def insert_bind_param(conn, stmt2, dbname, stbname):
 def insert_bind_param_normal_tables(conn, stmt2, dbname, ntb):
     tbnames = [ntb]
     tags    = None
+    wkts    = [None, b"POINT(121.213 31.234)",  b"POINT(122.22 32.222)", None, b"POINT(124.22 34.222)"]
+    wkbs    = [WKB(wkt) for wkt in wkts]
+
     datas   = [
             # table 1
             [
@@ -173,7 +187,7 @@ def insert_bind_param_normal_tables(conn, stmt2, dbname, ntb):
                 [b"Mary",       b"tom",         b"Jack",            b"Jane",            None        ],
                 [0,             3.14,           True,               0,                  1           ],
                 [98,            99.87,          60,                 100,                99          ],
-                [None, b"POINT(121.213 31.234)",  b"POINT(122.22 32.222)", None, b"POINT(124.22 34.222)"]
+                wkbs
             ]
     ]
 
@@ -345,6 +359,10 @@ def insert_with_normal_tables(conn, stmt2, dbname, ntb):
     tbnames = [ntb]
     tags    = [None]
     # prepare data
+
+    wkts = [None, "POINT(121.213 31.234)",  "POINT(122.22 32.222)", None, "POINT(124.22 34.222)"]
+    wkbs = [WKB(wkt) for wkt in wkts]
+
     datas = [
             # table 1
             [
@@ -353,7 +371,7 @@ def insert_with_normal_tables(conn, stmt2, dbname, ntb):
                 [b"Mary",       b"tom",        b"Jack",                b"Jane",                   None       ],
                 [0,            3.14,         True,                     0,                         1            ],
                 [98,           99.87,           60,                    100,                       99           ],
-                [None, b"POINT(121.213 31.234)",  b"POINT(122.22 32.222)", None, b"POINT(124.22 34.222)"]
+                wkbs
             ]
     ]
 
@@ -477,7 +495,7 @@ def test_stmt2_insert(conn):
         print("test_stmt2_insert ............................. [passed]\n")
     except Exception as err:
         #conn.execute("drop database if exists %s" % dbname)
-        print("insert ........................................ failed\n")
+        print("test_stmt2_insert ............................. failed\n")
         conn.close()
         raise err
 
