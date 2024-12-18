@@ -102,7 +102,7 @@ def checkResultCorrects(conn, dbname, stbname, tbnames, tags, datas):
     print("insert data check correct ..................... ok\n")
 
 
-def prepare(conn, dbname, stbname):
+def prepare(conn, dbname, stbname, ntb1, ntb2):
     conn.execute("drop database if exists %s" % dbname)
     conn.execute("create database if not exists %s precision 'ms' " % dbname)
     conn.select_db(dbname)
@@ -110,9 +110,9 @@ def prepare(conn, dbname, stbname):
     sql = f"create table if not exists {dbname}.{stbname}(ts timestamp, name binary(32), sex bool, score int) tags(grade nchar(8), class int)"
     conn.execute(sql)
     # normal table
-    sql = f"create table if not exists {dbname}.ntb (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128))"
+    sql = f"create table if not exists {dbname}.{ntb1} (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128))"
     conn.execute(sql)
-    sql = f"create table if not exists {dbname}.ntb2 (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128))"
+    sql = f"create table if not exists {dbname}.{ntb2} (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128))"
     conn.execute(sql)
 
 
@@ -433,6 +433,8 @@ def test_stmt2_insert(conn):
 
     dbname  = "stmt2"
     stbname = "meters"
+    ntb1    = "ntb1"
+    ntb2    = "ntb2"
 
     try:
         prepare(conn, dbname, stbname)
@@ -458,19 +460,17 @@ def test_stmt2_insert(conn):
         # print("insert bind ................................... ok\n")
         # print("insert execute ................................ ok\n")
         # stmt2.close()
-
-        ntb = "ntb1"
-        stmt2 = conn.statement2(f"insert into {dbname}.{ntb} values(?,?,?,?,?)")
-        insert_with_normal_tables(conn, stmt2, dbname, ntb)
+        
+        # ntb1
+        stmt2 = conn.statement2(f"insert into {dbname}.{ntb1} values(?,?,?,?,?)")
+        insert_with_normal_tables(conn, stmt2, dbname, ntb1)
         print("insert normal tables .......................... ok\n")
-
-        #conn.execute("drop database if exists %s" % dbname)
         stmt2.close()
 
-        ntb = "ntb2"
-        stmt2 = conn.statement2(f"insert into {dbname}.ntb2 values(?,?,?,?,?)")
-        insert_bind_param_normal_tables(conn, stmt2, dbname, ntb)
-        print("insert normal tables ( bind param ) .......... ok\n")
+        # ntb2
+        stmt2 = conn.statement2(f"insert into {dbname}.{ntb2} values(?,?,?,?,?)")
+        insert_bind_param_normal_tables(conn, stmt2, dbname, ntb2)
+        print("insert normal tables (bind param) ............. ok\n")
         stmt2.close()
 
         conn.close()
