@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Poetry Setup
         uses: abatilo/actions-poetry@v2
@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Build tools
         run: |
@@ -83,7 +83,7 @@ jobs:
           mkdir build
           cd build
           cmake ../ -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/`
-          make -j
+          make -j14
           cd ../../
 
       - name: Start TDengine
