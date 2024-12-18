@@ -17,7 +17,7 @@ from taos import bind2
 
 # input WKT return WKB (bytes object)
 def WKB(wkt, hex = False):
-    if wkb is None:
+    if wkt is None:
         return None
     wkb = wkt_loads(wkt)
     wkb_bytes = dumps(wkb, hex)
