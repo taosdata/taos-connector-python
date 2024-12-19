@@ -79,7 +79,7 @@ jobs:
           if_false: '3.0'
 
       - name: Checkout tdengine
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: "taosdata/TDengine"
           path: "TDengine_v3"
