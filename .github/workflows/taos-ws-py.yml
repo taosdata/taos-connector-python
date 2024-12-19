@@ -121,7 +121,7 @@ jobs:
       - name: Upload wheels windows
         uses: actions/upload-artifact@v4
         with:
-          name: taos-ws-py
+          name: taos-ws-py-windows
           path: taos-ws-py/target/wheels/**
 
   linux:
