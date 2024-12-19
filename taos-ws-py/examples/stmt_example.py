@@ -33,7 +33,7 @@ def stmt_insert():
     stmt.prepare("insert into t1 values (?, ?, ?, ?)")
 
     stmt.bind_param([
-        taosws.millis_timestamps_to_column([1686844800000, 1686844801000, 1686844802000, 1686844803000]),
+        taosws.millis_timestamps_to_column([1686844900000, 1686844901000, 1686844902000, 1686844903000]),
         taosws.ints_to_column([1, 2, 3, 4]),
         taosws.floats_to_column([1.1, 2.2, 3.3, 4.4]),
         taosws.varchar_to_column(['a', 'b', 'c', 'd']),
@@ -60,7 +60,7 @@ def stmt_insert_into_stable():
         taosws.varchar_to_tag('aaa'),
     ])
     stmt.bind_param([
-        taosws.millis_timestamps_to_column([1686844800000, 1686844801000, 1686844802000, 1686844803000]),
+        taosws.millis_timestamps_to_column([1686844900000, 1686844901000, 1686844902000, 1686844903000]),
         taosws.ints_to_column([1, 2, 3, 4]),
         taosws.floats_to_column([1.1, 2.2, 3.3, 4.4]),
         taosws.varchar_to_column(['a', 'b', 'c', 'd']),

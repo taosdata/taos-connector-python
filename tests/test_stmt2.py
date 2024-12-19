@@ -3,6 +3,9 @@ from ctypes import *
 from datetime import datetime
 import pytest
 from sqlalchemy import false
+# geometry support
+from shapely.wkb import dumps, loads
+from shapely.wkt import dumps as wkt_dumps, loads as wkt_loads
 
 import taos
 import math
@@ -11,6 +14,14 @@ from taos.statement2 import *
 from taos.constants import FieldType
 from taos import log
 from taos import bind2
+
+# input WKT return WKB (bytes object)
+def WKB(wkt, hex = False):
+    if wkt is None:
+        return None
+    wkb = wkt_loads(wkt)
+    wkb_bytes = dumps(wkb, hex)
+    return wkb_bytes
 
 @pytest.fixture
 def conn():
@@ -102,7 +113,7 @@ def checkResultCorrects(conn, dbname, stbname, tbnames, tags, datas):
     print("insert data check correct ..................... ok\n")
 
 
-def prepare(conn, dbname, stbname):
+def prepare(conn, dbname, stbname, ntb1, ntb2):
     conn.execute("drop database if exists %s" % dbname)
     conn.execute("create database if not exists %s precision 'ms' " % dbname)
     conn.select_db(dbname)
@@ -110,9 +121,9 @@ def prepare(conn, dbname, stbname):
     sql = f"create table if not exists {dbname}.{stbname}(ts timestamp, name binary(32), sex bool, score int) tags(grade nchar(8), class int)"
     conn.execute(sql)
     # normal table
-    sql = f"create table if not exists {dbname}.ntb (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128))"
+    sql = f"create table if not exists {dbname}.{ntb1} (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128))"
     conn.execute(sql)
-    sql = f"create table if not exists {dbname}.ntb2 (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128))"
+    sql = f"create table if not exists {dbname}.{ntb2} (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128))"
     conn.execute(sql)
 
 
@@ -162,9 +173,12 @@ def insert_bind_param(conn, stmt2, dbname, stbname):
     checkResultCorrects(conn, dbname, stbname, tbnames, tags, datas)
 
 
-def insert_bind_param_normal_tables(conn, stmt2, dbname):
-    tbnames = None
+def insert_bind_param_normal_tables(conn, stmt2, dbname, ntb):
+    tbnames = [ntb]
     tags    = None
+    wkts    = [None, b"POINT(121.213 31.234)",  b"POINT(122.22 32.222)", None, b"POINT(124.22 34.222)"]
+    wkbs    = [WKB(wkt) for wkt in wkts]
+
     datas   = [
             # table 1
             [
@@ -173,7 +187,7 @@ def insert_bind_param_normal_tables(conn, stmt2, dbname):
                 [b"Mary",       b"tom",         b"Jack",            b"Jane",            None        ],
                 [0,             3.14,           True,               0,                  1           ],
                 [98,            99.87,          60,                 100,                99          ],
-                [None, b"POINT(121.213 31.234)",  b"POINT(122.22 32.222)", None, b"POINT(124.22 34.222)"]
+                wkbs
             ]
     ]
 
@@ -181,7 +195,7 @@ def insert_bind_param_normal_tables(conn, stmt2, dbname):
     stmt2.execute()
 
     # check correct
-    checkResultCorrects(conn, dbname, None, ["ntb2"], [None], datas)
+    checkResultCorrects(conn, dbname, None, tbnames, [None], datas)
 
 def insert_bind_param_with_table(conn, stmt2, dbname, stbname, ctb):
 
@@ -340,11 +354,15 @@ def check_input_invalid_param(conn, stmt2, dbname, stbname):
 
 
 # insert with single table (performance is lower)
-def insert_with_normal_tables(conn, stmt2, dbname):
+def insert_with_normal_tables(conn, stmt2, dbname, ntb):
 
-    tbnames = ["ntb"]
+    tbnames = [ntb]
     tags    = [None]
     # prepare data
+
+    wkts = [None, "POINT(121.213 31.234)",  "POINT(122.22 32.222)", None, "POINT(124.22 34.222)"]
+    wkbs = [WKB(wkt) for wkt in wkts]
+
     datas = [
             # table 1
             [
@@ -353,7 +371,7 @@ def insert_with_normal_tables(conn, stmt2, dbname):
                 [b"Mary",       b"tom",        b"Jack",                b"Jane",                   None       ],
                 [0,            3.14,         True,                     0,                         1            ],
                 [98,           99.87,           60,                    100,                       99           ],
-                [None, b"POINT(121.213 31.234)",  b"POINT(122.22 32.222)", None, b"POINT(124.22 34.222)"]
+                wkbs
             ]
     ]
 
@@ -433,14 +451,16 @@ def test_stmt2_insert(conn):
 
     dbname  = "stmt2"
     stbname = "meters"
+    ntb1    = "ntb1"
+    ntb2    = "ntb2"
 
     try:
-        prepare(conn, dbname, stbname)
+        prepare(conn, dbname, stbname, ntb1, ntb2)
 
-        ctb = 'ctb'
+        ctb = 'ctb' # child table
         stmt2 = conn.statement2(f"insert into {dbname}.{ctb} using {dbname}.{stbname} tags (?,?) values(?,?,?,?)")
         insert_bind_param_with_table(conn, stmt2, dbname, stbname, ctb)
-        print("insert normal table ........................... ok\n")
+        print("insert child table ........................... ok\n")
         stmt2.close()
 
         # # prepare
@@ -458,24 +478,24 @@ def test_stmt2_insert(conn):
         # print("insert bind ................................... ok\n")
         # print("insert execute ................................ ok\n")
         # stmt2.close()
-
-        stmt2 = conn.statement2(f"insert into {dbname}.ntb values(?,?,?,?,?)")
-        insert_with_normal_tables(conn, stmt2, dbname)
+        
+        # ntb1
+        stmt2 = conn.statement2(f"insert into {dbname}.{ntb1} values(?,?,?,?,?)")
+        insert_with_normal_tables(conn, stmt2, dbname, ntb1)
         print("insert normal tables .......................... ok\n")
-
-        #conn.execute("drop database if exists %s" % dbname)
         stmt2.close()
 
-        stmt2 = conn.statement2(f"insert into {dbname}.ntb2 values(?,?,?,?,?)")
-        insert_bind_param_normal_tables(conn, stmt2, dbname)
-        print("insert bind param normal tables ............... ok\n")
+        # ntb2
+        stmt2 = conn.statement2(f"insert into {dbname}.{ntb2} values(?,?,?,?,?)")
+        insert_bind_param_normal_tables(conn, stmt2, dbname, ntb2)
+        print("insert normal tables (bind param) ............. ok\n")
         stmt2.close()
 
         conn.close()
         print("test_stmt2_insert ............................. [passed]\n")
     except Exception as err:
         #conn.execute("drop database if exists %s" % dbname)
-        print("insert ........................................ failed\n")
+        print("test_stmt2_insert ............................. failed\n")
         conn.close()
         raise err
 
@@ -546,12 +566,14 @@ def test_stmt2_query(conn):
 
     dbname  = "stmt2"
     stbname = "meters"
+    ntb1    = "ntb1"
+    ntb2    = "ntb2"
     sql1 = f"select * from {dbname}.d2 where name in (?) or score > ? ;"
     sql2 = f"select * from {dbname}.d2 where name in ('Tom2') or score > 1000;"
 
     try:
         # prepare
-        prepare(conn, dbname, stbname)
+        prepare(conn, dbname, stbname, ntb1, ntb2)
 
         # prepare
         # stmt2 = conn.statement2(f"insert into ? using {dbname}.{stbname} tags(?,?) values(?,?,?,?)")

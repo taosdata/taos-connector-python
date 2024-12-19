@@ -112,15 +112,16 @@ def checkConsistent(tbnames, tags, datas):
 def obtainSchema(statement2):
     if statement2._stmt2 is None:
         raise StatementError("stmt2 object is null.")
-    
-    # test
-    #statement2.tag_fields = [FieldType.C_BINARY, FieldType.C_INT]
-    #statement2.fields     = [FieldType.C_TIMESTAMP, FieldType.C_BINARY, FieldType.C_BOOL, FieldType.C_INT]
-    #return len(statement2.fields) > 0
 
     try:
-        count, statement2.fields     = statement2.get_fields(TAOS_FIELD_COL)
-        count, statement2.tag_fields = statement2.get_fields(TAOS_FIELD_TAG)
+        count, fields = statement2.get_fields()
+        statement2.tag_fields = []
+        statement2.fields     = []
+        for field in fields:
+            if field.field_type == TAOS_FIELD_TAG:
+                statement2.tag_fields.append(field)
+            elif field.field_type == TAOS_FIELD_COL:
+                statement2.fields.append(field)
         log.debug(f"obtain schema tag fields = {statement2.tag_fields}")
         log.debug(f"obtain schema fields     = {statement2.fields}")
     except Exception as err:
@@ -244,7 +245,6 @@ class TaosStmt2(object):
         self.tag_fields = None
         self.types      = None
         self._is_insert = None
-        self.valid_field_types = [TAOS_FIELD_COL, TAOS_FIELD_TAG, TAOS_FIELD_QUERY, TAOS_FIELD_TBNAME]
 
     def prepare(self, sql):
         if self._stmt2 is None:
@@ -336,14 +336,11 @@ class TaosStmt2(object):
 
         return self._is_insert
 
-    def get_fields(self, field_type):
+    def get_fields(self):
         if self._stmt2 is None:
             raise StatementError("stmt2 object is null.")
 
-        if field_type not in self.valid_field_types:
-            raise StatementError("invalid field_type value: %d." % field_type)
-
-        return taos_stmt2_get_fields(self._stmt2, field_type)
+        return taos_stmt2_get_fields(self._stmt2)
 
     def error(self):
         if self._stmt2 is None:
@@ -358,7 +355,7 @@ class TaosStmt2(object):
     def set_columns_type(self, types):
         self.fields = []
         for type in types:
-            item = TaosFieldExCls(None, type, PrecisionEnum.Milliseconds, None, None)
+            item = TaosFieldAllCls(None, type, PrecisionEnum.Milliseconds, None, None, TAOS_FIELD_COL)
             self.fields.append(item)
 
     def __del__(self):

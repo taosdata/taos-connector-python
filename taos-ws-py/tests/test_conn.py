@@ -1,6 +1,5 @@
 import taosws
 
-
 def test_ws_connect():
     print("-" * 40)
     print("test_ws_connect")
@@ -10,7 +9,6 @@ def test_ws_connect():
     print("test_ws_connect done")
     print("-" * 40)
 
-
 def test_default_connect():
     print("-" * 40)
     print("test_default_connect")
@@ -19,7 +17,6 @@ def test_default_connect():
     print("r: ", r.fields)
     print("test_default_connect done")
     print("-" * 40)
-
 
 def test_connect_invalid_user():
     print("-" * 40)
@@ -38,7 +35,6 @@ def test_connect_invalid_user():
     print("test_connect_invalid_user done")
     print("-" * 40)
 
-
 def show_env():
     import os
 
@@ -49,7 +45,6 @@ def show_env():
     print("TAOS_C_CLIENT_VERSION_STR: ", os.environ.get("TAOS_C_CLIENT_VERSION_STR"))
     print("taosws.__version__", taosws.__version__)
     print("-" * 40)
-
 
 if __name__ == "__main__":
     show_env()

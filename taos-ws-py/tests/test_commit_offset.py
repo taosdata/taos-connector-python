@@ -21,7 +21,7 @@ def setup():
             NULL, NULL, NULL, NULL, NULL,
             NULL, NULL, NULL, NULL)
             tb1 values(now, true, -2, -3, -4, -5, 
-            '2022-02-02 02:02:02.222', -0.1, -0.12345678910, 'abc 和我', 'Unicode + 涛思',
+            '2024-02-02 02:02:02.222', -0.1, -0.12345678910, 'abc 和我', 'Unicode + 涛思',
             254, 65534, 1, 1)""",
         "create table stb2(ts timestamp, c1 bool, c2 tinyint, c3 smallint, c4 int, c5 bigint,\
             c6 timestamp, c7 float, c8 double, c9 varchar(10), c10 nchar(10),\
@@ -30,7 +30,7 @@ def setup():
             t6 timestamp, t7 float, t8 double, t9 varchar(10), t10 nchar(16),\
             t11 tinyint unsigned, t12 smallint unsigned, t13 int unsigned, t14 bigint unsigned)",
         "create table tb2 using stb2 tags(true, -2, -3, -4, -5, \
-            '2022-02-02 02:02:02.222', -0.1, -0.12345678910, 'abc 和我', 'Unicode + 涛思',\
+            '2024-02-02 02:02:02.222', -0.1, -0.12345678910, 'abc 和我', 'Unicode + 涛思',\
             254, 65534, 1, 1)",
         "create table tb3 using stb2 tags( NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)",
         "create table `table` (ts timestamp, v int)",

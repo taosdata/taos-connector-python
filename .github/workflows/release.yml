@@ -82,8 +82,8 @@ jobs:
           git submodule update --depth 1 --init --recursive
           mkdir build
           cd build
-          cmake ../ -DBUILD_HTTP=false -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/`
-          make -j
+          cmake ../ -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/`
+          make -j14
           cd ../../
 
       - name: Start TDengine

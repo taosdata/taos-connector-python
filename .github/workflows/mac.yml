@@ -18,34 +18,21 @@ on:
 
 jobs:
   build-tdengine:
-    runs-on: macos-12
+    runs-on: macos-latest
     outputs:
       commit_id: ${{ steps.get_commit_id.outputs.commit_id }}
     steps:
-      - name: checkout TDengine by pr
-        if: github.event_name == 'pull_request'
-        uses: actions/checkout@v3
+      - name: Checkout TDengine
+        if: |
+          github.event_name == 'pull_request'
+          || github.event_name == 'push'
+          || github.event_name == 'schedule'
+        uses: actions/checkout@v4
         with:
-          repository: "taosdata/TDengine"
-          path: "TDengine"
-          ref:  '3.0'
-
-      - name: checkout TDengine by push
-        if: github.event_name == 'push'
-        uses: actions/checkout@v3
-        with:
-          repository: "taosdata/TDengine"
-          path: "TDengine"
-          ref:  '3.0'
-
-      - name: checkout TDengine manually
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/checkout@v3
-        with:
-          repository: "taosdata/TDengine"
-          path: "TDengine"
-          ref:  '3.0'
-
+          repository: 'taosdata/TDengine'
+          path: 'TDengine'
+          ref: ${{ github.event.pull_request.base.ref }}
+  
       - name: get_commit_id
         id: get_commit_id
         run: |
@@ -55,7 +42,7 @@ jobs:
       - name: Cache server by pr
         if: github.event_name == 'pull_request'
         id: cache-server-pr
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: server.tar.gz
           key: ${{ runner.os }}-build-${{ github.base_ref }}-${{ steps.get_commit_id.outputs.commit_id }}
@@ -63,7 +50,7 @@ jobs:
       - name: Cache server by push
         if: github.event_name == 'push'
         id: cache-server-push
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: server.tar.gz
           key: ${{ runner.os }}-build-${{ github.ref_name }}-${{ steps.get_commit_id.outputs.commit_id }}
@@ -71,7 +58,7 @@ jobs:
       - name: Cache server manually
         if: github.event_name == 'workflow_dispatch'
         id: cache-server-manually
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: server.tar.gz
           key: ${{ runner.os }}-build-${{ inputs.tdengine_branch }}-${{ steps.get_commit_id.outputs.commit_id }}
@@ -83,6 +70,34 @@ jobs:
           (github.event_name == 'push' && steps.cache-server-push.outputs.cache-hit != 'true')
         run: brew install argp-standalone pkgconfig geos
 
+      - name: Set up homebrew
+        if: |
+          github.event_name == 'pull_request'
+          || github.event_name == 'push'
+          || github.event_name == 'schedule'
+        run: |
+          brew update
+          brew install --overwrite argp-standalone pkg-config
+          brew info argp-standalone
+
+      - name: Set up Go
+        if: |
+          github.event_name == 'pull_request'
+          || github.event_name == 'push'
+          || github.event_name == 'schedule'
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+
+      - name: Set up Rust
+        if: |
+          github.event_name == 'pull_request'
+          || github.event_name == 'push'
+          || github.event_name == 'schedule'
+        uses: actions-rs/toolchain@v1.0.6
+        with:
+          toolchain: stable
+
       - name: install TDengine
         if: >
           (github.event_name == 'workflow_dispatch' && steps.cache-server-manually.outputs.cache-hit != 'true') ||
@@ -92,8 +107,8 @@ jobs:
           cd TDengine
           mkdir debug
           cd debug
-          cmake .. -DBUILD_TEST=off -DBUILD_HTTP=false -DVERNUMBER=3.9.9.9
-          make -j 4
+          cmake .. -DBUILD_TEST=off -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false -DVERNUMBER=3.9.9.9
+          make -j 14
 
       - name: package
         if: >
@@ -122,13 +137,13 @@ jobs:
           tar -zcvf server.tar.gz ./release
 
   build-poetry:
-    runs-on: macos-12
+    runs-on: macos-latest
     needs: build-tdengine
     steps:
       - name: get cache server by pr
         if: github.event_name == 'pull_request'
         id: get-cache-server-pr
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: server.tar.gz
           key: ${{ runner.os }}-build-${{ github.base_ref }}-${{ needs.build-tdengine.outputs.commit_id }}
@@ -138,7 +153,7 @@ jobs:
       - name: get cache server by push
         if: github.event_name == 'push'
         id: get-cache-server-push
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: server.tar.gz
           key: ${{ runner.os }}-build-${{ github.ref_name }}-${{ needs.build-tdengine.outputs.commit_id }}
@@ -148,7 +163,7 @@ jobs:
       - name: get cache server manually
         if: github.event_name == 'workflow_dispatch'
         id: get-cache-server-manually
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: server.tar.gz
           key: ${{ runner.os }}-build-${{ inputs.tdengine_branch }}-${{ needs.build-tdengine.outputs.commit_id }}
@@ -164,11 +179,11 @@ jobs:
           cd release && sudo sh install.sh
 
       - name: Checkout Connector
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Cache Poetry
         id: cache-poetry
-        uses: actions/cache@v2.1.5
+        uses: actions/cache@v4
         with:
           path: ~/.poetry
           key: macos-poetry
@@ -188,7 +203,7 @@ jobs:
       #----------------------------------------------
       - name: Load cached venv
         id: cached-poetry-dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
@@ -216,13 +231,13 @@ jobs:
           poetry build
 
   test:
-    runs-on: macos-12
+    runs-on: macos-latest
     needs: build-tdengine
     steps:
       - name: get cache server by pr
         if: github.event_name == 'pull_request'
         id: get-cache-server-pr
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: server.tar.gz
           key: ${{ runner.os }}-build-${{ github.base_ref }}-${{ needs.build-tdengine.outputs.commit_id }}
@@ -232,7 +247,7 @@ jobs:
       - name: get cache server by push
         if: github.event_name == 'push'
         id: get-cache-server-push
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: server.tar.gz
           key: ${{ runner.os }}-build-${{ github.ref_name }}-${{ needs.build-tdengine.outputs.commit_id }}
@@ -242,7 +257,7 @@ jobs:
       - name: get cache server manually
         if: github.event_name == 'workflow_dispatch'
         id: get-cache-server-manually
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: server.tar.gz
           key: ${{ runner.os }}-build-${{ inputs.tdengine_branch }}-${{ needs.build-tdengine.outputs.commit_id }}
@@ -258,11 +273,11 @@ jobs:
           cd release && sudo sh install.sh
 
       - name: Checkout Connector
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Cache Poetry
         id: cache-poetry
-        uses: actions/cache@v2.1.5
+        uses: actions/cache@v4
         with:
           path: ~/.poetry
           key: macos-poetry
@@ -282,7 +297,7 @@ jobs:
       #----------------------------------------------
       - name: Load cached venv
         id: cached-poetry-dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
