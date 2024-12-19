@@ -202,7 +202,7 @@ jobs:
       - name: Upload wheels linux-cross
         uses: actions/upload-artifact@v4
         with:
-          name: taos-ws-py
+          name: taos-ws-py-cross
           path: taos-ws-py/target/wheels/**
 
   release:
