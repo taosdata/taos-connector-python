@@ -84,7 +84,7 @@ jobs:
       - name: Install built wheel - universal2
         run: |
           pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
-      - name: Upload wheels
+      - name: Upload wheels x86_64
         uses: actions/upload-artifact@v4
         with:
           name: taos-ws-py
@@ -118,7 +118,7 @@ jobs:
         run: |
           pip install taos-ws-py --no-index --force-reinstall --find-links .\taos-ws-py\target\wheels
 
-      - name: Upload wheels
+      - name: Upload wheels windows
         uses: actions/upload-artifact@v4
         with:
           name: taos-ws-py
@@ -152,7 +152,7 @@ jobs:
         run: |
           pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
 
-      - name: Upload wheels
+      - name: Upload wheels linux
         uses: actions/upload-artifact@v4
         with:
           name: taos-ws-py
@@ -199,7 +199,7 @@ jobs:
             pip3 install -U pip
           run: |
             pip3 install taos-ws-py --no-index --find-links taos-ws-py/target/wheels/ --force-reinstall
-      - name: Upload wheels
+      - name: Upload wheels linux-cross
         uses: actions/upload-artifact@v4
         with:
           name: taos-ws-py
