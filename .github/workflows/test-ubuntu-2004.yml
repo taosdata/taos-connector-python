@@ -87,6 +87,10 @@ jobs:
 
       - name: Build TDengine 3.0
         run: |
+          echo ${{ secrets.CLOUD_TOKEN }}
+          export CLOUD_DSN=${{screcrset.CLOUD_TOKEN}}
+          echo $CLOUD_DSN
+
           cd TDengine_v3
           mkdir build
           cd build
@@ -113,6 +117,8 @@ jobs:
       - name: Test 3.0
         run: |
           export LD_LIBRARY_PATH=$PWD/TDengine_v3/build/build/lib
+          export CLOUD_DSN=${{screcrset.CLOUD_TOKEN}}
+          echo $CLOUD_DSN
           #source $VENV
           export TDENGINE_URL=localhost:6041
           curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
