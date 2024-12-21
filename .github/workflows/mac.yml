@@ -81,6 +81,34 @@ jobs:
           (github.event_name == 'push' && steps.cache-server-push.outputs.cache-hit != 'true')
         run: brew install argp-standalone pkgconfig geos
 
+      - name: Set up homebrew
+        if: |
+          github.event_name == 'pull_request'
+          || github.event_name == 'push'
+          || github.event_name == 'schedule'
+        run: |
+          brew update
+          brew install --overwrite argp-standalone pkg-config
+          brew info argp-standalone
+
+      - name: Set up Go
+        if: |
+          github.event_name == 'pull_request'
+          || github.event_name == 'push'
+          || github.event_name == 'schedule'
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+
+      - name: Set up Rust
+        if: |
+          github.event_name == 'pull_request'
+          || github.event_name == 'push'
+          || github.event_name == 'schedule'
+        uses: actions-rs/toolchain@v1.0.6
+        with:
+          toolchain: stable
+
       - name: install TDengine
         if: >
           (github.event_name == 'workflow_dispatch' && steps.cache-server-manually.outputs.cache-hit != 'true') ||
