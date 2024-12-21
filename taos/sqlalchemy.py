@@ -492,7 +492,7 @@ class BaseDialect(default.DefaultDialect):
             names = []
             for row in cursor.fetchall():
                 if self.is_sys_db(row[0]) is False:
-                    names.append[row[0]]
+                    names.append(row[0])
             return names
         except:
             return []
@@ -502,12 +502,10 @@ class BaseDialect(default.DefaultDialect):
     def get_table_names(self, connection, schema=None, **kw):
         if schema is None:
             return []
-        # use db
-        connection.execute(f"use {schema}")
         # sql
         sqls = [
-            f"show stables",
-            f"show normal tables"]
+            f"show `{schema}`.stables",
+            f"show normal `{schema}`.tables"]
         # execute
         try:
             names = []
