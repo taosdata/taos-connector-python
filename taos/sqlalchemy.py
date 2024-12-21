@@ -521,18 +521,13 @@ class BaseDialect(default.DefaultDialect):
     def get_view_names(self, connection, schema=None, **kw):
         if schema is None:
             return []
-        # sql
-        sqls = [
-            f"show `{schema}`.views"
-        ]
+        # sql        
+        sql =  f"show `{schema}`.views"
         # execute
         try:
-            names = []
-            for sql in sqls:
-                cursor = connection.execute(sql)
-                for row in cursor.fetchall():
-                    names.append(row[0])
-            return names
+            
+            cursor = connection.execute(sql)
+            [row[0] for row in cursor.fetchall() ]
         except:
             return []
 
