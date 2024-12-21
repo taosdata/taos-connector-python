@@ -86,8 +86,6 @@ jobs:
           ref: ${{ steps.determine-branch.outputs.value }}
 
       - name: Build TDengine 3.0
-        env:
-          CLOUD_DSN:${{secrets.CLOUD_TOKEN}}
         run: |
           echo ${{ secrets.CLOUD_TOKEN }}
           echo $CLOUD_DSN
