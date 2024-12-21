@@ -527,7 +527,7 @@ class BaseDialect(default.DefaultDialect):
         try:
             
             cursor = connection.execute(sql)
-            [row[0] for row in cursor.fetchall() ]
+            return [row[0] for row in cursor.fetchall() ]
         except:
             return []
 
