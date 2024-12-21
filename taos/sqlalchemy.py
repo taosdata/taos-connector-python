@@ -486,10 +486,14 @@ class BaseDialect(default.DefaultDialect):
     # get database name
     @reflection.cache
     def get_schema_names(self, connection, **kw):
-        sql = "select name from information_schema.ins_databases where `vgroups` is not null"
+        sql = "show databases"
         try:
             cursor = connection.execute(sql)
-            return [row[0] for row in cursor.fetchall()]
+            names = []
+            for row in cursor.fetchall():
+                if self.is_sys_db(row[0]) is False:
+                    names.append[row[0]]
+            return names
         except:
             return []
     
@@ -498,10 +502,12 @@ class BaseDialect(default.DefaultDialect):
     def get_table_names(self, connection, schema=None, **kw):
         if schema is None:
             return []
+        # use db
+        connection.execute(f"use {schema}")
         # sql
         sqls = [
-            f"select stable_name from information_schema.ins_stables where db_name = '{schema}'",
-            f"select  table_name from information_schema.ins_tables  where db_name = '{schema}' and type='NORMAL_TABLE'"]
+            f"show stables",
+            f"show normal tables"]
         # execute
         try:
             names = []
