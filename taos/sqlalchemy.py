@@ -519,7 +519,22 @@ class BaseDialect(default.DefaultDialect):
 
     @reflection.cache
     def get_view_names(self, connection, schema=None, **kw):
-        return []
+        if schema is None:
+            return []
+        # sql
+        sqls = [
+            f"show `{schema}`.views"
+        ]
+        # execute
+        try:
+            names = []
+            for sql in sqls:
+                cursor = connection.execute(sql)
+                for row in cursor.fetchall():
+                    names.append(row[0])
+            return names
+        except:
+            return []
 
     def _resolve_type(self, type_):
         #print(f"call function {sys._getframe().f_code.co_name} type: {type_} ...\n")
