@@ -86,9 +86,10 @@ jobs:
           ref: ${{ steps.determine-branch.outputs.value }}
 
       - name: Build TDengine 3.0
+        env:
+          CLOUD_DSN:${{secrets.CLOUD_TOKEN}}
         run: |
           echo ${{ secrets.CLOUD_TOKEN }}
-          export CLOUD_DSN=${{screcrset.CLOUD_TOKEN}}
           echo $CLOUD_DSN
 
           cd TDengine_v3
@@ -117,7 +118,6 @@ jobs:
       - name: Test 3.0
         run: |
           export LD_LIBRARY_PATH=$PWD/TDengine_v3/build/build/lib
-          export CLOUD_DSN=${{screcrset.CLOUD_TOKEN}}
           echo $CLOUD_DSN
           #source $VENV
           export TDENGINE_URL=localhost:6041
