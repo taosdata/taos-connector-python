@@ -124,7 +124,7 @@ jobs:
           curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
           export CLOUD_DSN=${{ secrets.CLOUD_TOKEN }}
           echo "dsn=$CLOUD_DSN"
-          poetry run pip install psutil pandas pytest-cov "numpy<2.0.0"
+          poetry run pip install psutil pandas pytest-cov "numpy<2.0.0" taos-ws-py
           poetry run pytest taos-ws-py/tests/test_cloud.py
           poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
 
