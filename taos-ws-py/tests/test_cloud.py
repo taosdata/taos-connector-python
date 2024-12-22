@@ -19,7 +19,7 @@ def test_ws_connect(token):
     print("-" * 40)
 
 if __name__ == "__main__":
-    if len(sys.argv) == 0:
+    if len(sys.argv) < 2 :
         print("need token argument passed.\n")
     else:
-        test_ws_connect(sys.argv[0])
+        test_ws_connect(sys.argv[1])
