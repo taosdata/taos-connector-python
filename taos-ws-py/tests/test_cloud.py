@@ -2,12 +2,9 @@ import os
 import sys
 import taosws
 
-def test_ws_connect(token):
+def taos_ws_connect(token):
     print("-" * 40)
     print("test_ws_connect")
-    # get evn
-    #token = os.environ.get("CLOUD_TOKEN")
-    print(token)
     conn = taosws.connect("%s?token=%s" % ('wss://gw.cloud.taosdata.com', token))
     res = conn.query_with_req_id("show databases", 1)
     dbs = [row[0] for row in res]
@@ -22,4 +19,4 @@ if __name__ == "__main__":
     if len(sys.argv) < 2 :
         print("need token argument passed.\n")
     else:
-        test_ws_connect(sys.argv[1])
+        taos_ws_connect(sys.argv[1])
