@@ -30,6 +30,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -  optimize taospy documents on PyPi official website
 
+## v2.7.16 - 2024-09-19
+
+### Features:
+
+- Add subscription configuration (session. timeout. ms, Max. roll. interval. ms).
+
+## v2.7.15 - 2024-04-12
+
+### Features:
+
+- Added support for VARBINRY and GEOMETRY types.
+
+## v2.7.14 - 2024-04-12
+
+### Bug Fixes:
+
+- Fix Known Issues.
+
 ## v2.7.13 - 2024-01-26
 
 ### Bug Fixes:
@@ -110,8 +128,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - update cmd
 - update readme
-
-## v2.7.7 - 2023-03-29
 
 ## v2.7.7 - 2023-03-28
 
