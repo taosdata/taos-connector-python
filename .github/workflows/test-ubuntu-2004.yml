@@ -119,6 +119,9 @@ jobs:
       - name: Test 3.0
         run: |
           export LD_LIBRARY_PATH=$PWD/TDengine_v3/build/build/lib
+
+          echo "---------- test end for test_cloud.py -------------"
+
           #source $VENV
           export TDENGINE_URL=localhost:6041
           curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
@@ -127,11 +130,12 @@ jobs:
 
 
       - name: Test examples 3.0
-        run: |
-          cd examples || ls -l
-          pip3 install .. > /dev/null || echo "failed to install taospy from source code"
+        run: |          
+          pip3 install ./ > /dev/null || echo "failed to install taospy from source code"
           pip3 install taos-ws-py > /dev/null || echo "failed to install taos-ws-py"
           pip3 install pandas "numpy<2.0.0" sqlalchemy > /dev/null || echo "failed to install pandas"
+          python3 taos-ws-py/tests/test_cloud.py ${{ secrets.CLOUD_TOKEN }}
+          cd examples || ls -l
           taosBenchmark -d power -t 10 -n 10 -y
           for i in `find . -name "*.py"   \
             |grep -Ev "cloud|trades|v2|websocket_with_req_id|tmq_consumer|rest_cursor|rest_client.py|import-json|connect_rest_examples|schemaless_insert"`;           \
