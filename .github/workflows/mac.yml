@@ -108,7 +108,11 @@ jobs:
           mkdir debug
           cd debug
           cmake .. -DBUILD_TEST=off -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false -DVERNUMBER=3.9.9.9
-          make -j 14
+          make -j 14 install
+          echo "do make_install grep libtao"
+          pwd
+          ls /usr/local/lib | grep libtao
+
 
       - name: package
         if: >
@@ -130,8 +134,10 @@ jobs:
           cp ./taosd /usr/local/bin
           cp ./taosadapter /usr/local/bin
           cp ./libtaos.3.9.9.9.dylib /usr/local/lib
-          ln -sf /usr/local/lib/libtaos.3.9.9.9.dylib /usr/local/lib/libtaos.1.dylib
-          ln -sf /usr/local/lib/libtaos.1.dylib /usr/local/lib/libtaos.dylib
+          pwd
+          ls /usr/local/lib | grep libtaos
+          ln -sfv /usr/local/lib/libtaos.3.9.9.9.dylib /usr/local/lib/libtaos.1.dylib
+          ln -sfv /usr/local/lib/libtaos.1.dylib /usr/local/lib/libtaos.dylib
           cp ./taos.h /usr/local/include
           EOF
           tar -zcvf server.tar.gz ./release
