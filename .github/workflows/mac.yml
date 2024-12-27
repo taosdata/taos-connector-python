@@ -137,9 +137,6 @@ jobs:
           ls /usr/local/lib | grep libtaos
           ln -sfv /usr/local/lib/libtaos.3.9.9.9.dylib /usr/local/lib/libtaos.1.dylib
           ln -sfv /usr/local/lib/libtaos.1.dylib /usr/local/lib/libtaos.dylib
-          mkdir -p ../TDengine/debug/build/lib/
-          ln -sfv /usr/local/lib/libtaos.1.dylib ../TDengine/debug/build/lib/libtaos.1.dylib
-          ls -l ../TDengine/debug/build/lib/
           cp ./taos.h /usr/local/include
           EOF
           tar -zcvf server.tar.gz ./release
@@ -283,6 +280,10 @@ jobs:
           tar -zxvf server.tar.gz
           cd release && sudo sh install.sh
           ls -l /usr/local/lib/ | grep libtaos
+          pwd
+          mkdir -p ../TDengine/debug/build/lib/
+          ln -sfv /usr/local/lib/libtaos.1.dylib ../TDengine/debug/build/lib/libtaos.1.dylib
+          ls -l ../TDengine/debug/build/lib/
 
       - name: Checkout Connector
         uses: actions/checkout@v4
