@@ -270,12 +270,16 @@ jobs:
             ${{ runner.os }}-build-${{ inputs.tdengine_branch }}-
 
       - name: prepare install
-        run: brew install geos
+        run: |
+          brew install geos
+          sudo mkdir -p /usr/local/lib
+          sudo mkdir -p /usr/local/include
 
       - name: install TDengine
         run: |
           tar -zxvf server.tar.gz
           cd release && sudo sh install.sh
+          ls -l /usr/local/lib/ | grep libtaos
 
       - name: Checkout Connector
         uses: actions/checkout@v4
