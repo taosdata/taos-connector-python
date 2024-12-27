@@ -333,14 +333,14 @@ jobs:
         run: |
           export C_INCLUDE_PATH=$PWD/TDengine/build/build/include
           export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
-
           mkdir -p /tmp/taos/v3/log /tmp/taos/v3/data
-
           sudo taosd &
-          echo "start run taosadapter ..."
+          sleep 1
+
+      - name: Start taosAdapter
+        run: |
           sudo taosadapter &
 
-          sleep 1
 
       #----------------------------------------------
       # run test suite
@@ -350,8 +350,8 @@ jobs:
           export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
           source $VENV
           export TDENGINE_URL=localhost:6041
-          poetry run pip install psutil pandas "numpy<2.0.0" shapely
           ps aux | grep taos
+          poetry run pip install psutil pandas "numpy<2.0.0" shapely
           poetry run pytest tests
 
       - name: Build Artifacts
