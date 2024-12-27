@@ -18,7 +18,7 @@ on:
 
 jobs:
   build-tdengine:
-    runs-on: macos-latest
+    runs-on: macos-13
     outputs:
       commit_id: ${{ steps.get_commit_id.outputs.commit_id }}
     steps:
@@ -350,10 +350,7 @@ jobs:
           source $VENV
           export TDENGINE_URL=localhost:6041
           poetry run pip install psutil pandas "numpy<2.0.0" shapely
-          netstat | grep '6030|6041'
-          ps aux | grep 'taos'
-          echo "exclude test_rest_*"
-          poetry run pytest -k "test_rest"  tests
+          poetry run pytest tests
 
       - name: Build Artifacts
         run: |
