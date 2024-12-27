@@ -133,8 +133,6 @@ jobs:
           cp ./taosd /usr/local/bin
           cp ./taosadapter /usr/local/bin
           cp ./libtaos.3.9.9.9.dylib /usr/local/lib
-          pwd
-          ls /usr/local/lib | grep libtaos
           ln -sfv /usr/local/lib/libtaos.3.9.9.9.dylib /usr/local/lib/libtaos.1.dylib
           ln -sfv /usr/local/lib/libtaos.1.dylib /usr/local/lib/libtaos.dylib
           cp ./taos.h /usr/local/include
@@ -280,10 +278,6 @@ jobs:
           tar -zxvf server.tar.gz
           cd release && sudo sh install.sh
           ls -l /usr/local/lib/ | grep libtaos
-          pwd
-          mkdir -p ../TDengine/debug/build/lib/
-          ln -sfv /usr/local/lib/libtaos.1.dylib ../TDengine/debug/build/lib/libtaos.1.dylib
-          ls -l ../TDengine/debug/build/lib/
 
       - name: Checkout Connector
         uses: actions/checkout@v4
@@ -336,30 +330,23 @@ jobs:
       - name: Start TDengine
         run: |
           export C_INCLUDE_PATH=$PWD/TDengine/build/build/include
-          export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
           mkdir -p /tmp/taos/v3/log /tmp/taos/v3/data
           sudo taosd &
           sleep 1
 
       - name: Start taosAdapter
         run: |
-          export DYLD_LIBRARY_PATH="/usr/local/lib:$DYLD_LIBRARY_PATH"
-          echo "show evn dyld= $DYLD_LIBRARY_PATH LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
           pwd
-          mkdir -p /Users/runner/work/taos-connector-python/taos-connector-python/TDengine/debug/build/lib
-          ln -sfv /usr/local/lib/libtaos.1.dylib /Users/runner/work/taos-connector-python/taos-connector-python/TDengine/debug/build/lib/libtaos.1.dylib
-          ls -l /Users/runner/work/taos-connector-python/taos-connector-python/TDengine/debug/build/lib/
-          
+          mkdir -p TDengine/debug/build/lib
+          ln -sfv /usr/local/lib/libtaos.1.dylib TDengine/debug/build/lib/libtaos.1.dylib
+          ls -l TDengine/debug/build/lib/
           sudo taosadapter &
-
 
       #----------------------------------------------
       # run test suite
       #----------------------------------------------
       - name: Test
         run: |
-          export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
-          echo "show test evn dyld= $DYLD_LIBRARY_PATH LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
           source $VENV
           export TDENGINE_URL=localhost:6041
           ps aux | grep taos
