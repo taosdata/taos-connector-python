@@ -236,7 +236,7 @@ jobs:
           poetry build
 
   test:
-    runs-on: macos-latest
+    runs-on: macos-13
     needs: build-tdengine
     steps:
       - name: get cache server by pr
@@ -337,6 +337,7 @@ jobs:
           mkdir -p /tmp/taos/v3/log /tmp/taos/v3/data
 
           sudo taosd &
+          echo "start run taosadapter ..."
           sudo taosadapter &
 
           sleep 1
@@ -351,7 +352,7 @@ jobs:
           export TDENGINE_URL=localhost:6041
           poetry run pip install psutil pandas "numpy<2.0.0" shapely
           ps aux | grep taos
-          poetry run pytest -k "test_rest" tests
+          poetry run pytest --exclude "test_rest_api.py" --exclude "test_rest_client.py" --exclude "test_rest_connection.py"  tests
 
       - name: Build Artifacts
         run: |
