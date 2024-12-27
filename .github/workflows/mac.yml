@@ -338,7 +338,10 @@ jobs:
           sleep 1
 
       - name: Start taosAdapter
+        env:
+          DYLD_LIBRARY_PATH: /usr/local/lib:$DYLD_LIBRARY_PATH
         run: |
+          echo "show evn $DYLD_LIBRARY_PATH"
           sudo taosadapter &
 
 
@@ -346,10 +349,9 @@ jobs:
       # run test suite
       #----------------------------------------------
       - name: Test
-        env:
-          DYLD_LIBRARY_PATH: /usr/local/lib:$DYLD_LIBRARY_PATH
         run: |
           export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
+          echo "show evn1 $DYLD_LIBRARY_PATH"
           source $VENV
           export TDENGINE_URL=localhost:6041
           ps aux | grep taos
