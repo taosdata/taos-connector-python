@@ -51,8 +51,7 @@ jobs:
     steps:
       - name: Install gettext  
         run: |
-          brew install gettext 
-          ls -l /usr/local/opt/gettext/lib
+          sudo brew install gettext 
 
       - uses: actions/checkout@v4
 
