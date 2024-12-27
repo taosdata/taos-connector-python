@@ -18,7 +18,7 @@ on:
 
 jobs:
   build-tdengine:
-    runs-on: macos-13
+    runs-on: macos-latest
     outputs:
       commit_id: ${{ steps.get_commit_id.outputs.commit_id }}
     steps:
@@ -236,7 +236,7 @@ jobs:
           poetry build
 
   test:
-    runs-on: macos-13
+    runs-on: macos-latest
     needs: build-tdengine
     steps:
       - name: get cache server by pr
