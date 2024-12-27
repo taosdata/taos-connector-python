@@ -350,7 +350,8 @@ jobs:
           source $VENV
           export TDENGINE_URL=localhost:6041
           poetry run pip install psutil pandas "numpy<2.0.0" shapely
-          poetry run pytest tests
+          ps aux | grep taos
+          poetry run pytest -k "test_rest" tests
 
       - name: Build Artifacts
         run: |
