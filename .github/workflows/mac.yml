@@ -352,7 +352,7 @@ jobs:
           export TDENGINE_URL=localhost:6041
           poetry run pip install psutil pandas "numpy<2.0.0" shapely
           ps aux | grep taos
-          poetry run pytest --exclude "test_rest_api.py" --exclude "test_rest_client.py" --exclude "test_rest_connection.py"  tests
+          poetry run pytest -k "not test_rest" tests
 
       - name: Build Artifacts
         run: |
