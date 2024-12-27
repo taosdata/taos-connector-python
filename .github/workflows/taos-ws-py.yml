@@ -49,6 +49,11 @@ jobs:
       matrix:
         target: [x86_64]
     steps:
+      - name: Install gettext  
+        run: |
+          brew install gettext 
+          ls -l /usr/local/opt/gettext/lib
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
@@ -67,9 +72,6 @@ jobs:
       - name: Install Homebrew  
         run: |  
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"  
-      - name: Install gettext  
-        run: |
-          brew install gettext 
       - name: Set DYLD_LIBRARY_PATH  
         run: |
           echo "export DYLD_LIBRARY_PATH=/usr/local/opt/gettext/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
