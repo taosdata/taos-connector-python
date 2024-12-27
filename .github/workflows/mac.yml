@@ -344,7 +344,12 @@ jobs:
       - name: Start taosAdapter
         run: |
           export DYLD_LIBRARY_PATH="/usr/local/lib:$DYLD_LIBRARY_PATH"
-          echo "show evn $DYLD_LIBRARY_PATH"
+          echo "show evn dyld= $DYLD_LIBRARY_PATH LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+          pwd
+          mkdir -p /Users/runner/work/taos-connector-python/taos-connector-python/TDengine/debug/build/lib
+          ln -sfv /usr/local/lib/libtaos.1.dylib /Users/runner/work/taos-connector-python/taos-connector-python/TDengine/debug/build/lib/libtaos.1.dylib
+          ls -l /Users/runner/work/taos-connector-python/taos-connector-python/TDengine/debug/build/lib/
+          
           sudo taosadapter &
 
 
@@ -354,7 +359,7 @@ jobs:
       - name: Test
         run: |
           export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
-          echo "show evn1 $DYLD_LIBRARY_PATH"
+          echo "show test evn dyld= $DYLD_LIBRARY_PATH LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
           source $VENV
           export TDENGINE_URL=localhost:6041
           ps aux | grep taos
