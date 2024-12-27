@@ -111,7 +111,6 @@ jobs:
           make -j 14 install
           echo "do make_install grep libtao"
           pwd
-          ls /usr/local/lib | grep libtao
 
 
       - name: package
