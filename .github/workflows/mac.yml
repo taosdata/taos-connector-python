@@ -346,6 +346,8 @@ jobs:
       # run test suite
       #----------------------------------------------
       - name: Test
+        env:
+          DYLD_LIBRARY_PATH: /usr/local/lib:$DYLD_LIBRARY_PATH
         run: |
           export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
           source $VENV
