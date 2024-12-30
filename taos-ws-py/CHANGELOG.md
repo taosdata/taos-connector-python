@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.3.4 - 2024-11-19
 
+## v0.3.6 - 2024-12-30
+
+### Bug Fixes:
+
+-  add CLOUD_DSN replace plain text
+-  remove test_cloud.py test in example test
+
+### Tests:
+
+-  token pass with argument
+-  token pass with argument index 1
+
 ## v0.3.3 - 2024-09-19
 
 ### Enhancements:
