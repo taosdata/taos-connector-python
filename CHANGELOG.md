@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.7.19 - 2024-12-30
+
+### Features:
+
+-  support show view
+
+### Bug Fixes:
+
+-  add CLOUD_DSN replace plain text
+-  add mac build go
+-  add pip install taos-ws-py
+-  add pytest
+-  add token
+-  add token cloud
+-  remove test_cloud.py test in example test
+-  simple code
+-  support TDengine cloud
+-  view array return
+-  websocket use is not right
+
+### Tests:
+
+-  token pass with argument
+-  token pass with argument index 1
+
+### Documents:
+
+-  2.7.18 modify bug fixed log
+-  rewrite changelog with offical-website doc
+
 ## v2.7.18 - 2024-12-14
 
 ### Features:
