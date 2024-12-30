@@ -33,8 +33,8 @@ jobs:
           git submodule update --depth 1 --init --recursive
           mkdir build
           cd build
-          cmake ../ -DBUILD_HTTP=false -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/`
-          make -j
+          cmake ../ -DBUILD_HTTP=false -DBUILD_JDBC=false -DBUILD_DEPENDENCY_TESTS=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/`
+          make -j14
           cd ../../
 
       - name: Start TDengine 2.x
@@ -91,12 +91,12 @@ jobs:
           export LD_LIBRARY_PATH=$PWD/TDengine_v2/build/build/lib
           #source $VENV
           export TDENGINE_URL=localhost:6041
-          poetry run pip install psutil "numpy<2.0.0" pandas pytest-cov
+          poetry run pip install psutil "numpy<2.0.0" pandas pytest-cov shapely
           poetry run pytest tests --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest tests
 
       - name: 'Upload taosd logs'
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: taosd-log-v2
           path: /tmp/taos/v2/log/
@@ -132,8 +132,8 @@ jobs:
           rm build -rf
           mkdir build
           cd build
-          cmake ../ -DBUILD_JDBC=false  -DBUILD_CONTRIB=false -DBUILD_DEPENDENCY_TESTS=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false
-          make -j4
+          cmake ../ -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false
+          make -j14
           sudo make install
           ls -alh /etc/taos/
           cd ../../
@@ -157,13 +157,13 @@ jobs:
           #source $VENV
           export TDENGINE_URL=localhost:6041
           curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
-          poetry run pip install psutil "numpy<2.0.0" pandas pytest-cov
+          poetry run pip install psutil "numpy<2.0.0" pandas pytest-cov shapely
           poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
 
 
       - name: 'Upload taosd logs'
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: log-v3-taosd
           path: /tmp/taos/v3/log/

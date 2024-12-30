@@ -425,38 +425,6 @@ def test_taos_stmt2_get_fields():
     sql = f"insert into ? using {stbname} tags(?,?) values(?,?,?,?)"
     taos_stmt2_prepare(stmt2, sql)
 
-    # TODO: get fields
-    TAOS_FIELD_COL      = 1
-    TAOS_FIELD_TAG      = 2
-    TAOS_FIELD_QUERY    = 3
-    TAOS_FIELD_TBNAME   = 4
-
-
-    # # TODO: get tbname when not bind
-    # try:
-    #     count, fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_TBNAME)
-    #     print(fields)
-    #     assert 1==2
-    # except StatementError as e:
-    #     pass
-    #
-    # # TODO: get tag when not bind
-    # try:
-    #     count, fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_TAG)
-    #     print(fields)
-    #     assert 1==2
-    # except StatementError as e:
-    #     pass
-    #
-    # # TODO: get col when not bind
-    # try:
-    #     count, fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_COL)
-    #     print(fields)
-    #     assert 1==2
-    # except StatementError as e:
-    #     pass
-
-
     # prepare data
     tbanmes = ["d1", "d2", "d3"]
     tags = [
@@ -525,20 +493,22 @@ def test_taos_stmt2_get_fields():
 
     taos_stmt2_bind_param(stmt2, bindv.get_address(), -1)
 
-    # TODO: get tbname when bind
-    count, fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_TBNAME)
-    assert count == 1
-    assert len(fields) == 0
-
-    # TODO: get tag when bind
-    count, fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_TAG)
-    assert count == cnt_tags
-    assert len(fields) == cnt_tags
-
-    # TODO: get col when bind
-    count, fields = taos_stmt2_get_fields(stmt2, TAOS_FIELD_COL)
-    assert count == cnt_cols
-    assert len(fields) == cnt_cols
+    # check
+    check_fields = [
+        TaosFieldAllCls("grade", 8, 0, 0, 26, 2),          
+        TaosFieldAllCls("class", 4, 0, 0, 4, 2),          
+        TaosFieldAllCls("ts",    9, 0, 0, 8, 1),          
+        TaosFieldAllCls("name",  8, 0, 0, 34, 1),     
+        TaosFieldAllCls("sex",   1, 0, 0, 1, 1),     
+        TaosFieldAllCls("score", 4, 0, 0, 4, 1)
+    ]
+    count, fields = taos_stmt2_get_fields(stmt2)
+    assert count == cnt_tags + cnt_cols
+    assert len(fields) == count
+    for i in range(count):
+        assert fields[i].name == check_fields[i].name
+        assert fields[i].type == check_fields[i].type
+        assert fields[i].field_type == check_fields[i].field_type
 
     taos_stmt2_close(stmt2)
     taos_close(conn)
@@ -651,4 +621,4 @@ def test_taos_stmt2_query():
 ############################################ stmt2 end ############################################
 
 if __name__ == "__main__":
-    pass
+    test_taos_stmt2_get_fields()

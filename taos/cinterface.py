@@ -109,7 +109,7 @@ else:
     )
 
     # use _v3s TaosField overwrite _v2s here, dont change import order
-    from taos.field_v3 import CONVERT_FUNC_BLOCK_v3, TaosFields, TaosField, TAOS_FIELD_T, TaosFieldEx, TaosFieldExCls, convert_block_func_v3
+    from taos.field_v3 import CONVERT_FUNC_BLOCK_v3, TaosFields, TaosField, TAOS_FIELD_T, TaosFieldAll, TaosFieldAllCls, convert_block_func_v3
     from taos.constants import FieldType
 
     IS_V3 = True
@@ -1223,7 +1223,7 @@ def taos_stmt2_is_insert(stmt):
     return is_insert.value !=0
 
 
-# int taos_stmt2_get_fields(TAOS_STMT2 *stmt, TAOS_FIELD_T field_type, int *count, TAOS_FIELD_E **fields);
+# int taos_stmt2_get_fields(TAOS_STMT2 *stmt, int *count, TAOS_FIELD_E **fields);
 try:
     _libtaos.taos_stmt2_get_fields.restype = c_int
     _libtaos.taos_stmt2_get_fields.argstype = (c_void_p,c_int,ctypes.POINTER(ctypes.c_int),ctypes.c_void_p)
@@ -1235,7 +1235,7 @@ except Exception as err:
 try:
     _libtaos.taos_stmt2_free_fields.argstype = (c_void_p,c_int,ctypes.c_void_p)
 except Exception as err:
-    _UNSUPPORTED["taos_stmt2_get_fields"] = err
+    _UNSUPPORTED["taos_stmt2_free_fields"] = err
 
 # define field_type 
 TAOS_FIELD_COL    = 1 
@@ -1243,23 +1243,21 @@ TAOS_FIELD_TAG    = 2
 TAOS_FIELD_QUERY  = 3
 TAOS_FIELD_TBNAME = 4
 # get fields 
-def taos_stmt2_get_fields(stmt, field_type):
-    # type: (ctypes.c_void_p, TAOS_FIELD_T) -> Tuple[int, List[TaosFieldEx]]
+def taos_stmt2_get_fields(stmt):
+    # type: (ctypes.c_void_p) -> Tuple[int, List[TaosFieldAll]]
     """
     Get fields information for a given statement and field type.
     @stmt: c_void_p TAOS_STMT2*
-    @field_type: TAOS_FIELD_T field type to retrieve
     @return: Tuple(int, List[TAOS_FIELD_E]) count, list of fields
     """
     _check_if_supported()
     _check_if_supported("taos_stmt2_free_fields")
-    _field_type = TAOS_FIELD_T(field_type)
     count = ctypes.c_int(0)
     # fields_ptr = ctypes.c_void_p(0)
     # TODO: FIXME
-    fields_ptr = ctypes.POINTER(TaosFieldEx)()
+    fields_ptr = ctypes.POINTER(TaosFieldAll)()
 
-    res = _libtaos.taos_stmt2_get_fields(stmt, _field_type, ctypes.byref(count), ctypes.byref(fields_ptr))
+    res = _libtaos.taos_stmt2_get_fields(stmt, ctypes.byref(count), ctypes.byref(fields_ptr))
     if res != 0:
         error_msg = taos_stmt2_error(stmt)
         raise StatementError(msg=error_msg, errno=res)
@@ -1267,19 +1265,17 @@ def taos_stmt2_get_fields(stmt, field_type):
 
     # TODO: FIXME
     fields = []
-    if field_type in [TAOS_FIELD_TAG, TAOS_FIELD_COL]:
-        for i in range(count.value):
-            field_c: TaosFieldEx = fields_ptr[i]
-            field_py = TaosFieldExCls(
-                name = field_c.name,
-                field_type = field_c.type,
-                precision = field_c.precision,
-                scale = field_c.scale,
-                bytes_ = field_c.bytes
-            )
-            fields.append(field_py)
-        #
-    #
+    for i in range(count.value):
+        field_c: TaosFieldAll = fields_ptr[i]
+        field_py = TaosFieldAllCls(
+            name       = field_c.name,
+            type       = field_c.type,
+            precision  = field_c.precision,
+            scale      = field_c.scale,
+            bytes_     = field_c.bytes,
+            field_type = field_c.field_type
+        )
+        fields.append(field_py)
 
     _libtaos.taos_stmt2_free_fields(stmt, fields_ptr)
     return count.value, fields
