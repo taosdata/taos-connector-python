@@ -3,10 +3,12 @@ name: Test on macOS
 on:
   push:
     branches:
-      - main
+      - 'main'
+      - '3.0'
   pull_request:
     branches:
-      - main
+      - 'main'
+      - '3.0'
   workflow_dispatch:
     inputs:
       tdengine_branch:
@@ -20,30 +22,17 @@ jobs:
     outputs:
       commit_id: ${{ steps.get_commit_id.outputs.commit_id }}
     steps:
-      - name: checkout TDengine by pr
-        if: github.event_name == 'pull_request'
-        uses: actions/checkout@v3
+      - name: Checkout TDengine
+        if: |
+          github.event_name == 'pull_request'
+          || github.event_name == 'push'
+          || github.event_name == 'schedule'
+        uses: actions/checkout@v4
         with:
-          repository: "taosdata/TDengine"
-          path: "TDengine"
-          ref: ${{ github.base_ref }}
-
-      - name: checkout TDengine by push
-        if: github.event_name == 'push'
-        uses: actions/checkout@v3
-        with:
-          repository: "taosdata/TDengine"
-          path: "TDengine"
-          ref: ${{ github.ref_name }}
-
-      - name: checkout TDengine manually
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/checkout@v3
-        with:
-          repository: "taosdata/TDengine"
-          path: "TDengine"
-          ref: ${{ inputs.tdengine_branch }}
-
+          repository: 'taosdata/TDengine'
+          path: 'TDengine'
+          ref: ${{ github.event.pull_request.base.ref }}
+  
       - name: get_commit_id
         id: get_commit_id
         run: |
@@ -53,7 +42,7 @@ jobs:
       - name: Cache server by pr
         if: github.event_name == 'pull_request'
         id: cache-server-pr
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: server.tar.gz
           key: ${{ runner.os }}-build-${{ github.base_ref }}-${{ steps.get_commit_id.outputs.commit_id }}
@@ -61,7 +50,7 @@ jobs:
       - name: Cache server by push
         if: github.event_name == 'push'
         id: cache-server-push
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: server.tar.gz
           key: ${{ runner.os }}-build-${{ github.ref_name }}-${{ steps.get_commit_id.outputs.commit_id }}
@@ -69,7 +58,7 @@ jobs:
       - name: Cache server manually
         if: github.event_name == 'workflow_dispatch'
         id: cache-server-manually
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: server.tar.gz
           key: ${{ runner.os }}-build-${{ inputs.tdengine_branch }}-${{ steps.get_commit_id.outputs.commit_id }}
@@ -119,7 +108,10 @@ jobs:
           mkdir debug
           cd debug
           cmake .. -DBUILD_TEST=off -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false -DVERNUMBER=3.9.9.9
-          make -j 4
+          make -j 14 install
+          echo "do make_install grep libtao"
+          pwd
+
 
       - name: package
         if: >
@@ -141,8 +133,8 @@ jobs:
           cp ./taosd /usr/local/bin
           cp ./taosadapter /usr/local/bin
           cp ./libtaos.3.9.9.9.dylib /usr/local/lib
-          ln -sf /usr/local/lib/libtaos.3.9.9.9.dylib /usr/local/lib/libtaos.1.dylib
-          ln -sf /usr/local/lib/libtaos.1.dylib /usr/local/lib/libtaos.dylib
+          ln -sfv /usr/local/lib/libtaos.3.9.9.9.dylib /usr/local/lib/libtaos.1.dylib
+          ln -sfv /usr/local/lib/libtaos.1.dylib /usr/local/lib/libtaos.dylib
           cp ./taos.h /usr/local/include
           EOF
           tar -zcvf server.tar.gz ./release
@@ -154,7 +146,7 @@ jobs:
       - name: get cache server by pr
         if: github.event_name == 'pull_request'
         id: get-cache-server-pr
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: server.tar.gz
           key: ${{ runner.os }}-build-${{ github.base_ref }}-${{ needs.build-tdengine.outputs.commit_id }}
@@ -164,7 +156,7 @@ jobs:
       - name: get cache server by push
         if: github.event_name == 'push'
         id: get-cache-server-push
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: server.tar.gz
           key: ${{ runner.os }}-build-${{ github.ref_name }}-${{ needs.build-tdengine.outputs.commit_id }}
@@ -174,7 +166,7 @@ jobs:
       - name: get cache server manually
         if: github.event_name == 'workflow_dispatch'
         id: get-cache-server-manually
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: server.tar.gz
           key: ${{ runner.os }}-build-${{ inputs.tdengine_branch }}-${{ needs.build-tdengine.outputs.commit_id }}
@@ -190,11 +182,11 @@ jobs:
           cd release && sudo sh install.sh
 
       - name: Checkout Connector
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Cache Poetry
         id: cache-poetry
-        uses: actions/cache@v2.1.5
+        uses: actions/cache@v4
         with:
           path: ~/.poetry
           key: macos-poetry
@@ -214,7 +206,7 @@ jobs:
       #----------------------------------------------
       - name: Load cached venv
         id: cached-poetry-dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
@@ -248,7 +240,7 @@ jobs:
       - name: get cache server by pr
         if: github.event_name == 'pull_request'
         id: get-cache-server-pr
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: server.tar.gz
           key: ${{ runner.os }}-build-${{ github.base_ref }}-${{ needs.build-tdengine.outputs.commit_id }}
@@ -258,7 +250,7 @@ jobs:
       - name: get cache server by push
         if: github.event_name == 'push'
         id: get-cache-server-push
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: server.tar.gz
           key: ${{ runner.os }}-build-${{ github.ref_name }}-${{ needs.build-tdengine.outputs.commit_id }}
@@ -268,7 +260,7 @@ jobs:
       - name: get cache server manually
         if: github.event_name == 'workflow_dispatch'
         id: get-cache-server-manually
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: server.tar.gz
           key: ${{ runner.os }}-build-${{ inputs.tdengine_branch }}-${{ needs.build-tdengine.outputs.commit_id }}
@@ -276,19 +268,23 @@ jobs:
             ${{ runner.os }}-build-${{ inputs.tdengine_branch }}-
 
       - name: prepare install
-        run: brew install geos
+        run: |
+          brew install geos
+          sudo mkdir -p /usr/local/lib
+          sudo mkdir -p /usr/local/include
 
       - name: install TDengine
         run: |
           tar -zxvf server.tar.gz
           cd release && sudo sh install.sh
+          ls -l /usr/local/lib/ | grep libtaos
 
       - name: Checkout Connector
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Cache Poetry
         id: cache-poetry
-        uses: actions/cache@v2.1.5
+        uses: actions/cache@v4
         with:
           path: ~/.poetry
           key: macos-poetry
@@ -308,7 +304,7 @@ jobs:
       #----------------------------------------------
       - name: Load cached venv
         id: cached-poetry-dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
@@ -334,24 +330,27 @@ jobs:
       - name: Start TDengine
         run: |
           export C_INCLUDE_PATH=$PWD/TDengine/build/build/include
-          export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
-
           mkdir -p /tmp/taos/v3/log /tmp/taos/v3/data
-
           sudo taosd &
-          sudo taosadapter &
-
           sleep 1
+
+      - name: Start taosAdapter
+        run: |
+          pwd
+          mkdir -p TDengine/debug/build/lib
+          ln -sfv /usr/local/lib/libtaos.1.dylib TDengine/debug/build/lib/libtaos.1.dylib
+          ls -l TDengine/debug/build/lib/
+          sudo taosadapter &
 
       #----------------------------------------------
       # run test suite
       #----------------------------------------------
       - name: Test
         run: |
-          export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
           source $VENV
           export TDENGINE_URL=localhost:6041
-          poetry run pip install psutil pandas "numpy<2.0.0"
+          ps aux | grep taos
+          poetry run pip install psutil pandas "numpy<2.0.0" shapely
           poetry run pytest tests
 
       - name: Build Artifacts

@@ -11,26 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Features:
 
--  support show view
+-  Supported Apache SuperSet with TDengine Cloud Data Source
 
 ### Bug Fixes:
 
--  add CLOUD_DSN replace plain text
--  add mac build go
--  add pip install taos-ws-py
--  add pytest
--  add token
--  add token cloud
--  remove test_cloud.py test in example test
--  simple code
--  support TDengine cloud
--  view array return
--  websocket use is not right
+-  add mac build go upgrade 1.18
+-  add pip install taos-ws-py in the document
 
 ### Tests:
 
--  token pass with argument
--  token pass with argument index 1
+-  token pass with argument index
 
 ### Documents:
 
