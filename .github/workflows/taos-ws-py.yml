@@ -4,15 +4,13 @@ on:
   push:
     branches:
       - main
+      - '3.0'
     tags:
       - taos-ws-py-v*
   pull_request:
     branches:
       - main
-    paths:
-      - '.github/workflows/taos-ws-py.yaml'
-      - 'taos-ws-py/**'
-
+      - '3.0'
 env:
   PYTHON_VERSION: "3.10" # to build abi3 wheels
 
@@ -22,7 +20,7 @@ jobs:
     outputs:
       status: ${{ steps.output.outputs.rebuild }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Check if file changes would trigger a rebuild
@@ -44,14 +42,18 @@ jobs:
       - id: output
         run: echo "rebuild=${{ env.rebuild }}" >> $GITHUB_OUTPUT
   macos:
-    runs-on: macos-12
+    runs-on: macos-13
     needs: rebuild
     if: needs.rebuild.outputs.status == 'true'
     strategy:
       matrix:
         target: [x86_64]
     steps:
-      - uses: actions/checkout@v3
+      - name: Install gettext  
+        run: |
+          brew install gettext 
+
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
@@ -69,9 +71,6 @@ jobs:
       - name: Install Homebrew  
         run: |  
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"  
-      - name: Install gettext  
-        run: |
-          brew install gettext 
       - name: Set DYLD_LIBRARY_PATH  
         run: |
           echo "export DYLD_LIBRARY_PATH=/usr/local/opt/gettext/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
@@ -86,8 +85,8 @@ jobs:
       - name: Install built wheel - universal2
         run: |
           pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
-      - name: Upload wheels
-        uses: actions/upload-artifact@v3
+      - name: Upload wheels x86_64
+        uses: actions/upload-artifact@v4
         with:
           name: taos-ws-py
           path: taos-ws-py/target/wheels/**
@@ -100,7 +99,7 @@ jobs:
       matrix:
         target: [x64] #, x86
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
@@ -120,10 +119,10 @@ jobs:
         run: |
           pip install taos-ws-py --no-index --force-reinstall --find-links .\taos-ws-py\target\wheels
 
-      - name: Upload wheels
-        uses: actions/upload-artifact@v3
+      - name: Upload wheels windows
+        uses: actions/upload-artifact@v4
         with:
-          name: taos-ws-py
+          name: taos-ws-py-windows
           path: taos-ws-py/target/wheels/**
 
   linux:
@@ -134,7 +133,7 @@ jobs:
       matrix:
         target: [x86_64]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
@@ -154,10 +153,10 @@ jobs:
         run: |
           pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
 
-      - name: Upload wheels
-        uses: actions/upload-artifact@v3
+      - name: Upload wheels linux
+        uses: actions/upload-artifact@v4
         with:
-          name: taos-ws-py
+          name: taos-ws-py-linux
           path: taos-ws-py/target/wheels/**
 
   linux-cross:
@@ -171,7 +170,7 @@ jobs:
       matrix:
         target: [aarch64, armv7]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
@@ -201,10 +200,10 @@ jobs:
             pip3 install -U pip
           run: |
             pip3 install taos-ws-py --no-index --find-links taos-ws-py/target/wheels/ --force-reinstall
-      - name: Upload wheels
-        uses: actions/upload-artifact@v3
+      - name: Upload wheels linux-cross
+        uses: actions/upload-artifact@v4
         with:
-          name: taos-ws-py
+          name: taos-ws-py-cross-${{ matrix.target }}
           path: taos-ws-py/target/wheels/**
 
   release:

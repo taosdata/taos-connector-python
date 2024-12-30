@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - 'main'
+      - '3.0'
   pull_request:
     branches:
       - 'main'
+      - '3.0'
 
 jobs:
   test:
@@ -87,11 +89,15 @@ jobs:
 
       - name: Build TDengine 3.0
         run: |
+          pwd
+          git branch -vv
           cd TDengine_v3
+          rm build -rf
           mkdir build
           cd build
+
           cmake ../ -DBUILD_JDBC=false -DBUILD_DEPENDENCY_TESTS=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false
-          make -j4
+          make -j14
           sudo make install
           ls -alh /etc/taos/
           cd ../../
@@ -107,6 +113,7 @@ jobs:
           pip3 install -r requirements.txt
           pip3 install pyopenssl --upgrade
           pip3 install decorator
+          pip3 install tzlocal
 
 
       #----------------------------------------------
@@ -123,7 +130,7 @@ jobs:
 
       - name: 'Upload taosd logs'
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: log-v3-taosd
           path: /tmp/taos/v3/log/

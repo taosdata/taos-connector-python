@@ -42,7 +42,7 @@ taos-ws-py requires Python 3.7+.
 
 ## Docs
 
-[Reference](https://docs.tdengine.com/reference/connector/python/)
+[Reference](https://docs.tdengine.com/tdengine-reference/client-libraries/python/)
 
 ## Limitation
 

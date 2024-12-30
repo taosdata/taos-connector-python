@@ -3,10 +3,12 @@ name: Test on Ubuntu-20.04
 on:
   push:
     branches:
-      - main
+      - 'main'
+      - '3.0'
   pull_request:
     branches:
-      - main
+      - 'main'
+      - '3.0'
 
 jobs:
   test:
@@ -83,16 +85,17 @@ jobs:
         with:
           repository: "taosdata/TDengine"
           path: "TDengine_v3"
-          ref: ${{ steps.determine-branch.outputs.value }}
+          ref:  '3.0'
 
       - name: Build TDengine 3.0
         run: |
-          export CLOUD_DSN=${{ secrets.CLOUD_TOKEN }}
-          echo "dsn=$CLOUD_DSN"
-
+          pwd
+          git branch -vv
           cd TDengine_v3
+          rm build -rf
           mkdir build
           cd build
+
           cmake ../ -DBUILD_JDBC=false -DBUILD_TOOLS=true -DBUILD_DEPENDENCY_TESTS=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false
           make -j14
           sudo make install
@@ -122,7 +125,7 @@ jobs:
           #source $VENV
           export TDENGINE_URL=localhost:6041
           curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
-          poetry run pip install psutil pandas pytest-cov "numpy<2.0.0"
+          poetry run pip install psutil pandas pytest-cov "numpy<2.0.0" shapely
           poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
 
 
@@ -145,7 +148,7 @@ jobs:
 
       - name: 'Upload taosd logs'
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: log-v3-taosd
           path: /tmp/taos/v3/log/
