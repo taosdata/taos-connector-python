@@ -11,6 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Bug Fixes:
 
+-  add CLOUD_DSN replace plain text
+-  merge main change
+-  merge main to 3.0 1217
+-  pip3 install szlocal
+-  remove test_cloud.py test in example test
+-  version conflict for version.py
+
+### Tests:
+
+-  token pass with argument
+-  token pass with argument index 1
+
+## v0.3.6 - 2024-12-31
+
+### Bug Fixes:
+
 -  merge main change
 -  merge main to 3.0 1217
 -  pip3 install szlocal
