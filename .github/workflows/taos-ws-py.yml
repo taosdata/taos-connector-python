@@ -223,10 +223,10 @@ jobs:
           name: taos-ws-py-windows
       - uses: actions/download-artifact@v4
         with:
-          name: taos-ws-py-taos-ws-py-cross-aarch64
+          name: taos-ws-py-cross-aarch64
       - uses: actions/download-artifact@v4
         with:
-          name: taos-ws-py-taos-ws-py-cross-armv7
+          name: taos-ws-py-cross-armv7
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
