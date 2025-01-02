@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.3.4 - 2024-11-19
 
+## v0.3.8 - 2025-01-02
+
+### Bug Fixes:
+
+-  update rust repo to latest commid
+
 ## v0.3.7 - 2025-01-01
 
 ## v0.3.7 - 2025-01-01
