@@ -90,7 +90,10 @@ Refer to the examples in ./tests/
 
 Download the repository code and execute the following in root directory:
 ```bash
+# enter source code folder
 cd taos-ws-py
+
+# build
 python3 -m maturin build --strip
 
 # repalce xxx with real generated filename
