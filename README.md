@@ -96,7 +96,7 @@ cd taos-ws-py
 # build
 python3 -m maturin build --strip
 
-# repalce xxx with real generated filename
+# install  repalce xxx with real generated filename
 pip3 install ./target/wheels/taos_ws_py-xxx.whl
 ```
 **Testing**  
