@@ -54,7 +54,7 @@ taos-ws-py requires Python 3.7+.
 We use MIT license for Python connector.
 
 ## Contributing
----
+
 ### For taospy
 
 **Precondictions**
@@ -65,16 +65,14 @@ Download the repository code and execute the following in root directory:
 ``` bash
 pip3 install ./ 
 ```
-
 or install in editable mode (i.e. "develop mode") 
 ``` bash
 pip3 install -e ./ 
 ```
+**Testing**  
+Refer to the examples in ./tests/ 
 
-**Testing**
- Refer to the examples in ./tests/ 
 
----
 ### For taos-ws-py
 **Precondictions**
 1.  `TDengine` enviroment, install refer to [Here](https://www.taosdata.com/) 
@@ -89,5 +87,5 @@ python3 -m maturin build --strip
 # repalce xxx with real generated filename
 pip3 install ./target/wheels/taos_ws_py-xxx.whl
 ```
-**Testing**
- Refer to the examples in ./tests/ 
+**Testing**  
+Refer to the examples in ./tests/ 
