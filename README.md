@@ -57,10 +57,13 @@ We use MIT license for Python connector.
 
 ### For taospy
 
-**Precondictions**
+**Precondictions**  
+
 1.  `TDengine` enviroment, install refer to [Here](https://www.taosdata.com/) 
 2.  `Python3` enviroment, install refer to [Here](https://www.python.org/)
-**Building & Install**
+
+**Building & Install**  
+
 Download the repository code and execute the following in root directory:
 ``` bash
 pip3 install ./ 
@@ -70,16 +73,21 @@ or install in editable mode (i.e. "develop mode")
 pip3 install -e ./ 
 ```
 **Testing**  
+
 Refer to the examples in ./tests/ 
 
 
 ### For taos-ws-py
+
 **Precondictions**
+
 1.  `TDengine` enviroment, install refer to [Here](https://www.taosdata.com/) 
 2.  `Python3` enviroment, install refer to [Here](https://www.python.org/)
 3.  `Rust` build enviroment, install refer to [Here](https://www.rust-lang.org/learn/get-started)
 4.  Install `maturin` with `pip3 install maturin`
+
 **Building & Install**
+
 Download the repository code and execute the following in root directory:
 ```bash
 cd taos-ws-py
@@ -88,4 +96,5 @@ python3 -m maturin build --strip
 pip3 install ./target/wheels/taos_ws_py-xxx.whl
 ```
 **Testing**  
+
 Refer to the examples in ./tests/ 
