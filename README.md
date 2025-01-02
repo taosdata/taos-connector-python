@@ -29,12 +29,37 @@ pip3 install git+https://github.com/taosdata/taos-connector-python.git
 
 Note: taospy v2.7.2 requirs Python 3.6+. The early versions of taospy from v2.5.0 to v2.7.1 require Python 3.7+.
 
+## Install taospy from source code
+Download the repository code and execute the following in root directory:
+``` bash
+pip3 install ./ 
+```
+
+or install in editable mode (i.e. "develop mode") 
+``` bash
+pip3 install -e ./ 
+```
+
 ## Install taos-ws-py (Support WebSocket)
 
 ```bash
 # taos-ws-py depends taospy
 pip3 install taospy
 pip3 install taos-ws-py
+```
+
+## Install taos-ws-py from source code
+
+**Precondictions**
+1.  `Rust` build enviroment, install `Rust` see [Here](https://www.rust-lang.org/learn/get-started)
+2.  Install `maturin` with `pip3 install maturin`
+**Install**
+Download the repository code and execute the following in root directory:
+```bash
+cd taos-ws-py
+python3 -m maturin build --strip
+# repalce xxx with real generated filename
+pip3 install ./target/wheels/taos_ws_py-xxx.whl
 ```
 
 Note: The taosws module is provided by taos-ws-py package separately from v2.7.2. It is part of early version of taospy.
