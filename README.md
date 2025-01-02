@@ -92,6 +92,7 @@ Download the repository code and execute the following in root directory:
 ```bash
 cd taos-ws-py
 python3 -m maturin build --strip
+
 # repalce xxx with real generated filename
 pip3 install ./target/wheels/taos_ws_py-xxx.whl
 ```
