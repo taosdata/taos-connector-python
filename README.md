@@ -54,7 +54,7 @@ taos-ws-py requires Python 3.7+.
 We use MIT license for Python connector.
 
 ## Contributing
-
+---
 ### For taospy
 
 **Precondictions**
@@ -74,7 +74,7 @@ pip3 install -e ./
 **Testing**
  Refer to the examples in ./tests/ 
 
-
+---
 ### For taos-ws-py
 **Precondictions**
 1.  `TDengine` enviroment, install refer to [Here](https://www.taosdata.com/) 
