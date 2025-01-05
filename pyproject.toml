@@ -33,6 +33,8 @@ optional = true
 [tool.poetry.extras]
 ws = ["taos-ws-py"]
 
+[tool.poetry.group.dev]
+
 [tool.poetry.group.dev.dependencies]
 typing = "*"
 pytest = [
@@ -46,6 +48,8 @@ pandas = { version = ">=1.0", python = ">=3.8,<4.0" }
 python-dotenv = { version = "0.20.0" }
 toml = { version = ">=0.8.0", python = ">=3.7,<4.0" }
 shapely = { version = ">=2.0.0", python = ">=3.7,<4.0" }
+
+[tool.poetry.group.test]
 
 [tool.poetry.group.test.dependencies]
 typing = "*"
