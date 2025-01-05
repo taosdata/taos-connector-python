@@ -5,61 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Conventional Changelog](https://www.conventionalcommits.org/en/v1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v0.3.4 - 2024-11-19
 
 ## v0.3.8 - 2025-01-02
 
-### Bug Fixes:
+### Features:
 
--  update rust repo to latest commid
+-  Supported Apache SuperSet with TDengine Cloud Data Source
 
-## v0.3.7 - 2025-01-01
-
-## v0.3.7 - 2025-01-01
-
-## v0.3.6 - 2024-12-31
-
-### Bug Fixes:
-
--  add CLOUD_DSN replace plain text
--  merge main change
--  merge main to 3.0 1217
--  pip3 install szlocal
--  remove test_cloud.py test in example test
--  version conflict for version.py
-
-### Tests:
-
--  token pass with argument
--  token pass with argument index 1
-
-## v0.3.6 - 2024-12-31
-
-### Bug Fixes:
-
--  add CLOUD_DSN replace plain text
--  merge main change
--  merge main to 3.0 1217
--  pip3 install szlocal
--  remove test_cloud.py test in example test
--  version conflict for version.py
-
-### Tests:
-
--  token pass with argument
--  token pass with argument index 1
-
-## v0.3.6 - 2024-12-30
-
-### Bug Fixes:
-
--  add CLOUD_DSN replace plain text
--  remove test_cloud.py test in example test
-
-### Tests:
-
--  token pass with argument
--  token pass with argument index 1
 
 ## v0.3.3 - 2024-09-19
 
