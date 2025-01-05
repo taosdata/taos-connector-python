@@ -51,4 +51,4 @@ taos-ws-py requires Python 3.7+.
 
 ## License
 
-We use MIT license for Python connector.
+We use MIT license for Python connector
