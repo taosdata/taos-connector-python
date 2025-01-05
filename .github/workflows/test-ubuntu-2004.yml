@@ -29,13 +29,6 @@ jobs:
           python --version
 
 
-      - name: Cache Poetry
-        id: cache-poetry
-        uses: actions/cache@v2.1.5
-        with:
-          path: ~/.poetry
-          key: ubuntu-20.04-poetry
-
       #----------------------------------------------
       #  -----  install & configure poetry  -----
       #----------------------------------------------
