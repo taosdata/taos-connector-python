@@ -5,7 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Conventional Changelog](https://www.conventionalcommits.org/en/v1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v0.3.4 - 2024-11-19
+
+## v0.3.8 - 2025-01-02
+
+### Features:
+
+-  Supported Apache SuperSet with TDengine Cloud Data Source
+
 
 ## v0.3.3 - 2024-09-19
 

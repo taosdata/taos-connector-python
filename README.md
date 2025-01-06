@@ -42,7 +42,7 @@ taos-ws-py requires Python 3.7+.
 
 ## Docs
 
-[Reference](https://docs.tdengine.com/reference/connector/python/)
+[Reference](https://docs.tdengine.com/tdengine-reference/client-libraries/python/)
 
 ## Limitation
 
@@ -52,3 +52,53 @@ taos-ws-py requires Python 3.7+.
 ## License
 
 We use MIT license for Python connector.
+
+## Contributing
+
+### For taospy
+
+**1. Precondictions**  
+
+1.  `TDengine` enviroment, install refer to [Here](https://www.taosdata.com/) 
+2.  `Python3` enviroment, install refer to [Here](https://www.python.org/)
+
+**2. Building & Install**  
+
+Download the repository code and execute the following in root directory:
+``` bash
+pip3 install ./ 
+```
+or install in editable mode (i.e. "develop mode") 
+``` bash
+pip3 install -e ./ 
+```
+**3. Testing**  
+
+Refer to the examples in ./tests/ 
+
+
+### For taos-ws-py
+
+**1. Precondictions**
+
+1.  `TDengine` enviroment, install refer to [Here](https://www.taosdata.com/) 
+2.  `Python3` enviroment, install refer to [Here](https://www.python.org/)
+3.  `Rust` build enviroment, install refer to [Here](https://www.rust-lang.org/learn/get-started)
+4.  Install `maturin` with `pip3 install maturin`
+
+**2. Building & Install**
+
+Download the repository code and execute the following in root directory:
+```bash
+# enter source code folder
+cd taos-ws-py
+
+# build
+python3 -m maturin build --strip
+
+# install  repalce xxx with real generated filename
+pip3 install ./target/wheels/taos_ws_py-xxx.whl
+```
+**3. Testing**  
+
+Refer to the examples in ./tests/ 
