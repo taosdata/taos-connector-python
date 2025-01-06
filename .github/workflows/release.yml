@@ -62,7 +62,7 @@ jobs:
         run: |
           sudo apt install -y gnome-keyring
           pip3 install --upgrade requests
-          poetry install --no-interaction --no-root
+          poetry install --no-interaction --with=test --no-root
 
       #----------------------------------------------
       # install your root project, if required
