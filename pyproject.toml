@@ -33,7 +33,9 @@ optional = true
 [tool.poetry.extras]
 ws = ["taos-ws-py"]
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev]
+
+[tool.poetry.group.dev.dependencies]
 typing = "*"
 pytest = [
   { version = "^4.6", python = ">=2.7,<3.0" },
@@ -44,6 +46,21 @@ black = [{ version = ">=21.0", python = ">=3.6.2,<4.0" }]
 sqlalchemy = { version = "^1.4", python = ">=3.6,<4.0" }
 pandas = { version = ">=1.0", python = ">=3.8,<4.0" }
 python-dotenv = { version = "0.20.0" }
+toml = { version = ">=0.8.0", python = ">=3.7,<4.0" }
+shapely = { version = ">=2.0.0", python = ">=3.7,<4.0" }
+
+[tool.poetry.group.test]
+
+[tool.poetry.group.test.dependencies]
+typing = "*"
+pytest = [
+  { version = "^4.6", python = ">=2.7,<3.0" },
+@@ -44,6 +62,8 @@ black = [{ version = ">=21.0", python = ">=3.6.2,<4.0" }]
+sqlalchemy = { version = "^1.4", python = ">=3.6,<4.0" }
+pandas = { version = ">=1.0", python = ">=3.8,<4.0" }
+python-dotenv = { version = "0.20.0" }
+toml = { version = ">=0.8.0", python = ">=3.7,<4.0" }
+shapely = { version = ">=2.0.0", python = ">=3.7,<4.0" }
 
 [build-system]
 requires = ["poetry-core>=1.0.5"]
