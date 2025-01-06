@@ -85,14 +85,14 @@ jobs:
       # install your root project, if required
       #----------------------------------------------
       - name: Install library
-        run: poetry install --no-interaction
+        run: poetry install --no-interaction --with=test
 
       - name: Test 2.x
         run: |
           export LD_LIBRARY_PATH=$PWD/TDengine_v2/build/build/lib
           #source $VENV
           export TDENGINE_URL=localhost:6041
-          poetry run pip install psutil "numpy<2.0.0" pandas pytest-cov shapely
+          poetry run pip install psutil "numpy<2.0.0" pandas pytest-cov
           poetry run pytest tests --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest tests
 
       - name: 'Upload taosd logs'
@@ -158,7 +158,7 @@ jobs:
           #source $VENV
           export TDENGINE_URL=localhost:6041
           curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
-          poetry run pip install psutil "numpy<2.0.0" pandas pytest-cov shapely
+          poetry run pip install psutil "numpy<2.0.0" pandas pytest-cov
           poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
 
 

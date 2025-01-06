@@ -68,7 +68,7 @@ jobs:
       # install your root project, if required
       #----------------------------------------------
       - name: Install library
-        run: poetry install --no-interaction
+        run: poetry install --no-interaction --with=test
 
       - name: Set up Go
         uses: actions/setup-go@v2
@@ -103,7 +103,7 @@ jobs:
         run: |
           export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
           export TDENGINE_URL=localhost:6041
-          poetry run pip install psutil pandas "numpy<2.0.0" shapely
+          poetry run pip install psutil pandas "numpy<2.0.0"
           poetry run pytest tests
       - name: Build Artifacts
         run: |
