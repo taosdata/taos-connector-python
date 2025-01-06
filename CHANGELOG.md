@@ -7,9 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.7.21 - 2024-12-30
+
+
+### Features:
+
+-  Suport Stmt2 Write
+
+## v2.7.19 - 2024-12-30
+
+### Features:
+
+-  Supported Apache SuperSet with TDengine Cloud Data Source
+
+### Bug Fixes:
+
+-  add mac build go upgrade 1.18
+-  add pip install taos-ws-py in the document
+
+### Tests:
+
+-  token pass with argument index
+
+### Documents:
+
+-  2.7.18 modify bug fixed log
+-  rewrite changelog with offical-website doc
+
+## v2.7.18 - 2024-12-14
+
+### Features:
+
+-  support taos taosws taosrest protocol for superset
+
+### Bug Fixes:
+
+-  fix: case test_tmp death wait message
+- **(taos-ws-py)**:  fix crypto provider error
+
+### Enhancements:
+
+-  double match to sqltypes.float reference sqlite rule
+
+### Tests:
+
+-  do nothing for tmp and sqlalchemy
+
+### Documents:
+
+-  optimize taospy documents on PyPi official website
+
+## v2.7.16 - 2024-09-19
+
+### Features:
+
+- Add subscription configuration (session. timeout. ms, Max. roll. interval. ms).
+
 ## v2.7.15 - 2024-04-12
 
+### Features:
+
+- Added support for VARBINRY and GEOMETRY types.
+
 ## v2.7.14 - 2024-04-12
+
+### Bug Fixes:
+
+- Fix Known Issues.
 
 ## v2.7.13 - 2024-01-26
 
@@ -91,8 +155,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - update cmd
 - update readme
-
-## v2.7.7 - 2023-03-29
 
 ## v2.7.7 - 2023-03-28
 

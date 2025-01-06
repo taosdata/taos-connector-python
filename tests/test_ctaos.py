@@ -20,14 +20,14 @@ def test_simple(conn, caplog):
 
         res = taos_query(
             conn,
-            "create table if not exists log(ts timestamp, level tinyint, content binary(100), ipaddr binary(134))",
+            "create table if not exists log(ts timestamp, c_level tinyint, content binary(100), ipaddr binary(134))",
         )
         taos_free_result(res)
 
         res = taos_query(conn, "insert into log values(now, 1, 'hello', 'test')")
         taos_free_result(res)
 
-        res = taos_query(conn, "select level,content,ipaddr from log limit 1")
+        res = taos_query(conn, "select c_level,content,ipaddr from log limit 1")
 
         fields = taos_fetch_fields_raw(res)
         field_count = taos_field_count(res)
@@ -70,7 +70,7 @@ def test_simple_with_req_id(conn, caplog):
         req_id = gen_req_id()
         res = taos_query_with_reqid(
             conn,
-            "create table if not exists log(ts timestamp, level tinyint, content binary(100), ipaddr binary(134))",
+            "create table if not exists log(ts timestamp, c_level tinyint, content binary(100), ipaddr binary(134))",
             req_id,
         )
         taos_free_result(res)
@@ -86,7 +86,7 @@ def test_simple_with_req_id(conn, caplog):
         req_id = gen_req_id()
         res = taos_query_with_reqid(
             conn,
-            "select level,content,ipaddr from log limit 1",
+            "select c_level,content,ipaddr from log limit 1",
             req_id,
         )
 
