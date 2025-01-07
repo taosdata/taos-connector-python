@@ -18,7 +18,7 @@ on:
 
 jobs:
   build-tdengine:
-    runs-on: macos-latest
+    runs-on: macos-13
     outputs:
       commit_id: ${{ steps.get_commit_id.outputs.commit_id }}
     steps:
@@ -140,7 +140,7 @@ jobs:
           tar -zcvf server.tar.gz ./release
 
   build-poetry:
-    runs-on: macos-latest
+    runs-on: macos-13
     needs: build-tdengine
     steps:
       - name: get cache server by pr
@@ -180,11 +180,6 @@ jobs:
         run: |
           tar -zxvf server.tar.gz
           cd release && sudo sh install.sh
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.10.12
 
       - name: Checkout Connector
         uses: actions/checkout@v4
@@ -240,7 +235,7 @@ jobs:
           poetry build
 
   test:
-    runs-on: macos-latest
+    runs-on: macos-13
     needs: build-tdengine
     steps:
       - name: get cache server by pr
@@ -284,11 +279,6 @@ jobs:
           tar -zxvf server.tar.gz
           cd release && sudo sh install.sh
           ls -l /usr/local/lib/ | grep libtaos
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.10.12
 
       - name: Checkout Connector
         uses: actions/checkout@v4
