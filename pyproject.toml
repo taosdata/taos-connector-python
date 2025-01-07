@@ -49,6 +49,7 @@ pandas = { version = ">=1.5.0", python = ">=3.8,<4.0" }
 python-dotenv = { version = "0.20.0" }
 toml = { version = ">=0.8.0", python = ">=3.7,<4.0" }
 shapely = { version = ">=2.0.0", python = ">=3.7,<4.0" }
+numpy = { version = "<2.0.0" }
 
 [tool.poetry.group.test]
 
@@ -66,6 +67,7 @@ pandas = { version = ">=1.5.0", python = ">=3.8,<4.0" }
 python-dotenv = { version = "0.20.0" }
 toml = { version = ">=0.8.0", python = ">=3.7,<4.0" }
 shapely = { version = ">=2.0.0", python = ">=3.7,<4.0" }
+numpy = { version = "<2.0.0" }
 
 [build-system]
 requires = ["poetry-core>=1.0.5"]
