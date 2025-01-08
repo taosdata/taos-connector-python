@@ -65,7 +65,9 @@ jobs:
       # install your root project, if required
       #----------------------------------------------
       - name: Install library
-        run: poetry install --no-interaction --with=test
+        run: | 
+          poetry run pip install "numpy<2.0.0"
+          poetry install --no-interaction --with=test
 
       - name: Build TDengine 2.x
         run: |
