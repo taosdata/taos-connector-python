@@ -58,16 +58,16 @@ jobs:
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: | 
+          poetry install --no-interaction --no-root
           poetry run pip install "numpy<2.0.0"
-          poetry install --no-interaction --with=test --no-root
 
       #----------------------------------------------
       # install your root project, if required
       #----------------------------------------------
       - name: Install library
         run: | 
-          poetry run pip install "numpy<2.0.0"
           poetry install --no-interaction --with=test
+          poetry run pip install "numpy<2.0.0"
 
       - name: Build TDengine 2.x
         run: |
