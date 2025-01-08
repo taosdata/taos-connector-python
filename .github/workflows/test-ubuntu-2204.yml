@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v3
 
       - name: Build tools
         run: |
@@ -25,28 +25,6 @@ jobs:
       - name: Setup Python
         run: |
           sudo apt-get install -y python3 python3-pip python-is-python3
-
-      - name: Build TDengine 2.x
-        run: |
-          git clone --depth 1 https://github.com/taosdata/TDengine.git -b 2.6 TDengine_v2
-          cd TDengine_v2
-          git submodule update --depth 1 --init --recursive
-          mkdir build
-          cd build
-          cmake ../ -DBUILD_HTTP=false -DBUILD_JDBC=false -DBUILD_DEPENDENCY_TESTS=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/`
-          make -j14
-          cd ../../
-
-      - name: Start TDengine 2.x
-        run: |
-          tree TDengine_v2/build/build/
-          sudo mkdir -p /etc/taos/ || true
-          export C_INCLUDE_PATH=$PWD/TDengine_v2/build/build/bin
-          export LD_LIBRARY_PATH=$PWD/TDengine_v2/build/build/lib
-          mkdir -p /tmp/taos/v2/data /tmp/taos/log/v2
-          printf "dataDir /tmp/taos/v2/data\nlogDir /tmp/taos/v2/log\ndebugFlag 135\n" |sudo tee /etc/taos/taos.cfg
-          ./TDengine_v2/build/build/bin/taosadapter &
-          ./TDengine_v2/build/build/bin/taosd &
 
       - name: Cache Poetry
         id: cache-poetry
@@ -79,13 +57,37 @@ jobs:
       #----------------------------------------------
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --with=test --no-root
+        run: | 
+          poetry run pip install "numpy<2.0.0"
+          poetry install --no-interaction --with=test --no-root
 
       #----------------------------------------------
       # install your root project, if required
       #----------------------------------------------
       - name: Install library
         run: poetry install --no-interaction --with=test
+
+      - name: Build TDengine 2.x
+        run: |
+          git clone --depth 1 https://github.com/taosdata/TDengine.git -b 2.6 TDengine_v2
+          cd TDengine_v2
+          git submodule update --depth 1 --init --recursive
+          mkdir build
+          cd build
+          cmake ../ -DBUILD_HTTP=false -DBUILD_JDBC=false -DBUILD_DEPENDENCY_TESTS=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/`
+          make -j14
+          cd ../../
+
+      - name: Start TDengine 2.x
+        run: |
+          tree TDengine_v2/build/build/
+          sudo mkdir -p /etc/taos/ || true
+          export C_INCLUDE_PATH=$PWD/TDengine_v2/build/build/bin
+          export LD_LIBRARY_PATH=$PWD/TDengine_v2/build/build/lib
+          mkdir -p /tmp/taos/v2/data /tmp/taos/log/v2
+          printf "dataDir /tmp/taos/v2/data\nlogDir /tmp/taos/v2/log\ndebugFlag 135\n" |sudo tee /etc/taos/taos.cfg
+          ./TDengine_v2/build/build/bin/taosadapter &
+          ./TDengine_v2/build/build/bin/taosd &
 
       - name: Test 2.x
         run: |
