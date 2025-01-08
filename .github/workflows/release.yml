@@ -62,13 +62,13 @@ jobs:
         run: |
           sudo apt install -y gnome-keyring
           pip3 install --upgrade requests
-          poetry install --no-interaction --no-root
+          poetry install --no-interaction --with=test --no-root
 
       #----------------------------------------------
       # install your root project, if required
       #----------------------------------------------
       - name: Install library
-        run: poetry install --no-interaction
+        run: poetry install --no-interaction --with=test
 
       - name: Set up Go
         uses: actions/setup-go@v2
@@ -103,7 +103,6 @@ jobs:
         run: |
           export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
           export TDENGINE_URL=localhost:6041
-          poetry run pip install psutil pandas "numpy<2.0.0" shapely
           poetry run pytest tests
       - name: Build Artifacts
         run: |
