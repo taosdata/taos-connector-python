@@ -24,9 +24,10 @@ jobs:
           sudo apt-get install -y build-essential cmake libgeos-dev git libssl-dev libgflags2.2 libgflags-dev libsnappy-dev libjansson-dev
 
 
-      - name: Set up python
-        run: |
-          python --version
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
 
       - name: Cache Poetry
