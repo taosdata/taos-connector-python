@@ -2,12 +2,12 @@
 # TDengine Python Connector
 
 
-[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/taosdata/taos-connector-python/release.yml)](https://github.com/taosdata/taos-connector-python/actions/workflows/release.yml)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/taosdata/taos-connector-python/build.yml)](https://github.com/taosdata/taos-connector-python/actions/workflows/build.yml)
 [![codecov](https://codecov.io/gh/taosdata/taos-connector-python/branch/main/graph/badge.svg?token=BDANN3DBXS)](https://codecov.io/gh/taosdata/taos-connector-python)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/taosdata/taos-connector-python)
 ![PyPI](https://img.shields.io/pypi/dm/taospy)
 ![GitHub License](https://img.shields.io/github/license/taosdata/taos-connector-python)
-![PyPI](https://img.shields.io/pypi/v/taospy)
+[![PyPI](https://img.shields.io/pypi/v/taospy)](https://pypi.org/project/taospy/)
 <br />
 [![Twitter Follow](https://img.shields.io/twitter/follow/tdenginedb?label=TDengine&style=social)](https://twitter.com/tdenginedb)
 [![YouTube Channel](https://img.shields.io/badge/Subscribe_@tdengine--white?logo=youtube&style=social)](https://www.youtube.com/@tdengine)
@@ -70,15 +70,10 @@ The testing directory for `taos-ws-py` is located in the root directory: taos-ws
 The following command runs all test cases:
 ``` bash
 # for taospy
-pip3 install poetry==1.8.5
-poetry install --no-interaction --with=test
-poetry run pip install "numpy<2.0.0"
-export TDENGINE_URL=localhost:6041
-curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
-poetry run pytest ./tests
+bash ./test_taospy.sh
 
 # for taos-ws-py
-pytest ./taos-ws-py/tests/
+bash ./test_taos-ws-py.sh
 ```
 
 ### 5.2 Test Case Addition
@@ -88,7 +83,7 @@ You can add new test files or add test cases in existing test files that comply 
 Performance testing is in progress.
 
 ## 6. CI/CD
-- [Build Workflow](https://github.com/taosdata/taos-connector-python/actions/workflows/release.yml)
+- [Build Workflow](https://github.com/taosdata/taos-connector-python/actions/workflows/build.yml)
 - [Code Coverage](https://app.codecov.io/gh/taosdata/taos-connector-python)
 
 ## 7. Submitting Issues
