@@ -1,10 +1,10 @@
 <!-- omit in toc -->
 # TDengine Python Connector
 
-[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/taosdata/taos-connector-python/test-ubuntu-2204.yml)
+[GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/taosdata/taos-connector-python/test-ubuntu-2204.yml)
 [![codecov](https://codecov.io/gh/taosdata/taos-connector-python/branch/main/graph/badge.svg?token=BDANN3DBXS)](https://codecov.io/gh/taosdata/taos-connector-python)
-![GitHub commit activity](https://img.shields.io/github/commit-activity/m/taosdata/taos-connector-python)
-![GitHub License](https://img.shields.io/github/license/taosdata/taos-connector-python)
+[GitHub commit activity](https://img.shields.io/github/commit-activity/m/taosdata/taos-connector-python)
+[GitHub License](https://img.shields.io/github/license/taosdata/taos-connector-python)
 ![PyPI](https://img.shields.io/pypi/v/taospy)
 ![PyPI](https://img.shields.io/pypi/dm/taospy) 
 <br />
