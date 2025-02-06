@@ -66,7 +66,7 @@ The API for `taospy` is compliant with the Python DB API 2.0 (PEP-249). It conta
 
 ## 6. Build
 
-Download the repository code and execute the following in root directory:
+Download the repository code and execute the following in root directory to build develop environment:
 ``` bash
 pip3 install ./ 
 ```
@@ -83,13 +83,11 @@ The testing directory for `taos-ws-py` is located in the root directory: ./taos-
 
 The following command runs all test cases:
 ``` bash
-# taospy
-cd ./tests
-pytest ./ 
+# for taospy
+pytest ./tests
 
-# taos-ws-py
-cd ./taos-ws-py/tests/
-pytest ./ 
+# for taos-ws-py
+pytest ./taos-ws-py/tests/
 ```
 
 ### 7.2 Test Case Addition
