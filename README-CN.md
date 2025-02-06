@@ -49,7 +49,7 @@
 ## 3. 前置条件
 
 - Python 运行环境 (taospy: Python >= 3.6.2, taos-ws-py: Python >= 3.7)
-- 本地已部署 TDengine，具体步骤请参考 [部署服务端](https://docs.taosdata.com/get-started/package/)，且已经启动 taosd 与 taosAdapter。
+- 本地已部署 TDengine，具体步骤请参考 [部署服务端](https://docs.taosdata.com/get-started/package/)，且已经启动 taosd 与 taosAdapter
 
 ## 4. 构建
 
@@ -64,7 +64,7 @@ Python 连接器测试用例使用 `pytest` 测试框架
 组件 `taospy` 测试用例目录是: tests/  
 组件 `taos-ws-py` 测试用例目录是: taos-ws-py/tests/  
 
-运行及搭建本地测试环境代码已封装在一个脚本文件中，执行以下命令即可搭建测试环境并启动执行测试用例：
+搭建本地测试环境及运行测试用例的代码已封装在一个脚本文件中，执行以下命令即可轻松搭建及执行测试用例：
 ``` bash
 # for taospy
 bash ./test_taospy.sh
@@ -74,7 +74,7 @@ bash ./test_taos-ws-py.sh
 ```
 
 ### 5.2 添加用例
-您可以添加新的测试文件或在现有测试文件中添加符合 `pytest` 标准的测试用例
+您可以添加新测试文件或在现有测试文件中添加符合 `pytest` 标准的测试用例
 
 ### 5.3 性能测试
 性能测试还在开发中。
@@ -85,10 +85,10 @@ bash ./test_taos-ws-py.sh
 
 ## 7. 提交 Issue
 我们欢迎提交 [GitHub Issue](https://github.com/taosdata/taos-connector-python/issues/new?template=Blank+issue)。 提交时请说明下面信息：
-- 问题描述，是否必现，最好能包含详细调用堆栈。
-- Python 连接器版本。
-- Python 连接器连接参数（不需要用户名密码）。
-- TDengine 服务端版本。
+- 问题描述，是否必现，最好能包含详细调用堆栈
+- Python 连接器版本
+- Python 连接器连接参数（不需要用户名密码）
+- TDengine 服务端版本
 
 ## 8. 提交 PR
 我们欢迎开发者一起开发本项目，提交 PR 时请参考下面步骤：
