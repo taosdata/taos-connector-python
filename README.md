@@ -78,8 +78,8 @@ pip3 install -e ./
 ## 7. Testing
 ### 7.1 Test Execution
 The Python Connector testing framework is `pytest`  
-The testing directory for `taospy` is located in the root directory: ./tests/  
-The testing directory for `taos-ws-py` is located in the root directory: ./taos-ws-py/tests/  
+The testing directory for `taospy` is located in the root directory: tests/  
+The testing directory for `taos-ws-py` is located in the root directory: taos-ws-py/tests/  
 
 The following command runs all test cases:
 ``` bash
