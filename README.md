@@ -51,7 +51,7 @@ The API for `taospy` is compliant with the Python DB API 2.0 (PEP-249). It conta
 
 ## 3. Prerequisites
 
-- Python runtime environment (taospy: Python >= 3.6.2  taos-ws-py: Python >= 3.7)
+- Python runtime environment (taospy: Python >= 3.6.2, taos-ws-py: Python >= 3.7)
 - TDengine has been deployed locally. For specific steps, please refer to [Deploy TDengine](https://docs.tdengine.com/get-started/deploy-from-package/), and taosd and taosAdapter have been started.
 
 ## 4. Build
