@@ -63,14 +63,19 @@ pip3 install -e ./
 
 ## 5. Testing
 ### 5.1 Test Execution
-The Python Connector testing framework is `pytest`  
+The Python Connector testing framework is `pytest` , setup testing dependencies with  `poetry install --with=test`
 The testing directory for `taospy` is located in the root directory: tests/  
 The testing directory for `taos-ws-py` is located in the root directory: taos-ws-py/tests/  
 
 The following command runs all test cases:
 ``` bash
 # for taospy
-pytest ./tests
+pip3 install poetry==1.8.5
+poetry install --no-interaction --with=test
+poetry run pip install "numpy<2.0.0"
+export TDENGINE_URL=localhost:6041
+curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
+poetry run pytest ./tests
 
 # for taos-ws-py
 pytest ./taos-ws-py/tests/
