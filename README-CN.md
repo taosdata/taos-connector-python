@@ -1,136 +1,110 @@
+<!-- omit in toc -->
 # TDengine Python Connector
 
-| Github Workflow | PyPI Version | PyPI Downloads | CodeCov |
-| --------------- | ------------ | -------------- | ------- |
-| ![workflow](https://img.shields.io/github/actions/workflow/status/taosdata/taos-connector-python/test-ubuntu-2204.yml) | ![PyPI](https://img.shields.io/pypi/v/taospy) | ![PyPI](https://img.shields.io/pypi/dm/taospy) | [![codecov](https://codecov.io/gh/taosdata/taos-connector-python/branch/main/graph/badge.svg?token=BDANN3DBXS)](https://codecov.io/gh/taosdata/taos-connector-python) |
 
-English | [简体中文](./README-CN.md)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/taosdata/taos-connector-python/build.yml)](https://github.com/taosdata/taos-connector-python/actions/workflows/build.yml)
+[![codecov](https://codecov.io/gh/taosdata/taos-connector-python/branch/main/graph/badge.svg?token=BDANN3DBXS)](https://codecov.io/gh/taosdata/taos-connector-python)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/taosdata/taos-connector-python)
+![PyPI](https://img.shields.io/pypi/dm/taospy)
+![GitHub License](https://img.shields.io/github/license/taosdata/taos-connector-python)
+[![PyPI](https://img.shields.io/pypi/v/taospy)](https://pypi.org/project/taospy/)
+<br />
+[![Twitter Follow](https://img.shields.io/twitter/follow/tdenginedb?label=TDengine&style=social)](https://twitter.com/tdenginedb)
+[![YouTube Channel](https://img.shields.io/badge/Subscribe_@tdengine--white?logo=youtube&style=social)](https://www.youtube.com/@tdengine)
+[![Discord Community](https://img.shields.io/badge/Join_Discord--white?logo=discord&style=social)](https://discord.com/invite/VZdSuUg4pS)
+[![LinkedIn](https://img.shields.io/badge/Follow_LinkedIn--white?logo=linkedin&style=social)](https://www.linkedin.com/company/tdengine)
+[![StackOverflow](https://img.shields.io/badge/Ask_StackOverflow--white?logo=stackoverflow&style=social&logoColor=orange)](https://stackoverflow.com/questions/tagged/tdengine)
 
-## 1. Introduction
-[TDengine](https://github.com/taosdata/TDengine) connector for Python enables python programs to access TDengine, using
-an API which is compliant with the Python DB API 2.0 (PEP-249). It contains two modules:
+简体中文 | [English](./README.md)
 
-1. The `taos` module. It uses TDengine C client library for client server communications.
-2. The `taosrest` module. It wraps TDengine RESTful API to Python DB API 2.0 (PEP-249). With this module, you do not need to install the TDengine C client library.
+<!-- omit in toc -->
+## 目录
 
+- [1. 简介](#1-简介)
+- [2. 文档](#2-文档)
+- [3. 前置条件](#3-前置条件)
+- [4. 构建](#4-构建)
+- [5. 测试](#5-测试)
+  - [5.1 运行测试](#51-运行测试)
+  - [5.2 添加用例](#52-添加用例)
+  - [5.3 性能测试](#53-性能测试)
+- [6. CI/CD](#6-cicd)
+- [7. 提交 Issue](#7-提交-issue)
+- [8. 提交 PR](#8-提交-pr)
+- [9. 引用](#9-引用)
+- [10. 许可证](#10-许可证)
 
-## 2. Get the Driver
+## 1. 简介
 
-## Install taospy
+`taospy` 是 TDengine 官方 Python 连接器，允许 Python 开发人员访问 TDengine 数据库的应用程序, 支持数据普通写入、无模式写入、参数绑定写入、查询及订阅等功能。  
+`taospy` 的 API 符合 Python DB API 2.0（PEP-249） 规范，主要由两个模块组成：
+1. `taos` 模块, 它使用 TDengine C 客户端库进行客户端-服务器间通信。
+2. `taorsest` 模块, 它使用 TDengine RESTful API ，API 符合 Python DB API 2.0（PEP-249）规范, 使用此模块，您不需要再安装 TDengine C 客户端库。
 
-You can use `pip3` to install the connector from PyPI:
+## 2. 文档
+- 使用 `Python 连接器`, 请参考 [开发指南](https://docs.taosdata.com/develop/)，包含了应用如何引入 `Python 连接器` 及数据写入、查询及数据订阅等示例。
+- 其他参考信息请看 [参考手册](https://docs.taosdata.com/reference/connector/python/)，包含了版本历史、数据类型、示例程序汇总、API 说明和常见问题等。
+- 本 README 主要是为想自己贡献、编译、测试 `Python 连接器` 的开发者写的。如果要学习 TDengine，可以浏览 [官方文档](https://docs.taosdata.com/)。
 
-```bash
-pip3 install taospy
-```
+## 3. 前置条件
 
-Or with git url:
+- Python 运行环境 (taospy: Python >= 3.6.2, taos-ws-py: Python >= 3.7)
+- 本地已部署 TDengine，具体步骤请参考 [部署服务端](https://docs.taosdata.com/get-started/package/)，且已经启动 taosd 与 taosAdapter。
 
-```bash
-pip3 install git+https://github.com/taosdata/taos-connector-python.git
-```
+## 4. 构建
 
-Note: taospy v2.7.2 requirs Python 3.6+. The early versions of taospy from v2.5.0 to v2.7.1 require Python 3.7+.
-
-## Install taos-ws-py (Support WebSocket)
-
-```bash
-# taos-ws-py depends taospy
-pip3 install taospy
-pip3 install taos-ws-py
-```
-
-Note: The taosws module is provided by taos-ws-py package separately from v2.7.2. It is part of early version of taospy.
-taos-ws-py requires Python 3.7+.
-
-
-## 3. Documentation  
-- For development examples, see [Developer Guide](https://docs.tdengine.com/developer-guide/), which includes how an application can introduce the `taos-connector-python`, as well as examples of data writing, querying, schemaless writing, parameter binding, and data subscription.
-- For other reference information, see [Reference Manual](https://docs.tdengine.com/tdengine-reference/client-libraries/python/), which includes version history, data types, example programs, API descriptions, and FAQs.
-- To learn about TDengine, you can visit the [official documentation](https://docs.tdengine.com).
-
-## 4. Limitation
-
-- `taosrest` is designed to use with taosAdapter. If your TDengine version is older than v2.4.0.0, taosAdapter may not
-  be available.
-
-
-## 5. Prerequisites
-
-### For taospy
-
-1.  `TDengine` enviroment, install refer to [Here](https://www.taosdata.com/) 
-2.  `Python3` enviroment, install refer to [Here](https://www.python.org/)
-
-### For taos-ws-py
-
-1.  `TDengine` enviroment, install refer to [Here](https://www.taosdata.com/) 
-2.  `Python3` enviroment, install refer to [Here](https://www.python.org/)
-3.  `Rust` build enviroment, install refer to [Here](https://www.rust-lang.org/learn/get-started)
-4.  Install `maturin` with `pip3 install maturin`
-
-
-## 6. Build
-
-Download the repository code and execute the following in root directory:
-``` bash
-pip3 install ./ 
-```
-or install in editable mode (i.e. "develop mode") 
+下载代码库并在根目录中执行以下操作以构建开发环境：
 ``` bash
 pip3 install -e ./ 
 ```
 
-## 7. Testing
-### 7.1 Test Execution
+## 5. 测试
+### 5.1 运行测试
+Python 连接器测试用例使用 `pytest` 测试框架  
+组件 `taospy` 测试用例目录是: tests/  
+组件 `taos-ws-py` 测试用例目录是: taos-ws-py/tests/  
 
-python 连接器测试使用的是 `pytest` 测试框架编写的测试用例，使用 `pytest` 测试即可
-taospy 组件测试用例目录在根目录下的 tests/
-taos-ws-py 组件测试用例目录在根目录下的 taos-ws-py/tests/ 
-
+运行及搭建本地测试环境代码已封装在一个脚本文件中，执行以下命令即可搭建测试环境并启动执行测试用例：
 ``` bash
-# taospy
-cd tests
-pytest ./ 
+# for taospy
+bash ./test_taospy.sh
 
-# taos-ws-py
-cd taos-ws-py/tests/ 
-pytest ./ 
+# for taos-ws-py
+bash ./test_taos-ws-py.sh
 ```
 
-### 7.2 Test Case Addition
-All tests are located in the `tests/` directory of the project. The directory is divided according to the functions being tested. You can add new test files or add test cases in existing test files.
-The test cases use the JUnit framework. Generally, a connection is established and a database is created in the `before` method, and the database is droped and the connection is released in the `after` method.
+### 5.2 添加用例
+您可以添加新的测试文件或在现有测试文件中添加符合 `pytest` 标准的测试用例
 
-### 7.3 Performance Testing
-Performance testing is in progress.
+### 5.3 性能测试
+性能测试还在开发中。
 
-## 8. CI/CD
+## 6. CI/CD
 - [Build Workflow](https://github.com/taosdata/taos-connector-python/actions/workflows/build.yml)
 - [Code Coverage](https://app.codecov.io/gh/taosdata/taos-connector-python)
 
-## 9. Submitting Issues
-We welcome the submission of [GitHub Issue](https://github.com/taosdata/taos-connector-jdbc/issues/new?template=Blank+issue). When submitting, please provide the following information:
+## 7. 提交 Issue
+我们欢迎提交 [GitHub Issue](https://github.com/taosdata/taos-connector-python/issues/new?template=Blank+issue)。 提交时请说明下面信息：
+- 问题描述，是否必现，最好能包含详细调用堆栈。
+- Python 连接器版本。
+- Python 连接器连接参数（不需要用户名密码）。
+- TDengine 服务端版本。
 
-- Problem description, whether it always occurs, and it's best to include a detailed call stack.
-- JDBC driver version.
-- JDBC connection parameters (username and password not required).
-- TDengine server version.
+## 8. 提交 PR
+我们欢迎开发者一起开发本项目，提交 PR 时请参考下面步骤：
+1. Fork 本项目，请参考 ([how to fork a repo](https://docs.github.com/en/get-started/quickstart/fork-a-repo))。
+2. 从 main 分支创建一个新分支，请使用有意义的分支名称 (`git checkout -b my_branch`)。注意不要直接在 main 分支上修改。
+3. 修改代码，保证所有单元测试通过，并增加新的单元测试验证修改。
+4. 提交修改到远端分支 (`git push origin my_branch`)。
+5. 在 GitHub 上创建一个 Pull Request ([how to create a pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request))。
+6. 提交 PR 后，可以通过 [Pull Request](https://github.com/taosdata/taos-connector-python/pulls) 找到自己的 PR，点击对应链接进去可以看到自己 PR CI 是否通过，如果通过会显示 “All checks have passed”。无论 CI 是否通过，都可以点击 “Show all checks” -> “Details” 来查看详细用例日志。
+7. 提交 PR 后，如果 CI 通过，可以在 [codecov](https://app.codecov.io/gh/taosdata/taos-connector-python/pulls) 页面找到自己 PR，看单测覆盖率。
 
-## 10. Submitting PRs
-We welcome developers to contribute to this project. When submitting PRs, please follow these steps:
+## 9. 引用
 
-1. Fork this project, refer to ([how to fork a repo](https://docs.github.com/en/get-started/quickstart/fork-a-repo)).
-1. Create a new branch from the main branch with a meaningful branch name (`git checkout -b my_branch`). Do not modify the main branch directly.
-1. Modify the code, ensure all unit tests pass, and add new unit tests to verify the changes.
-1. Push the changes to the remote branch (`git push origin my_branch`).
-1. Create a Pull Request on GitHub ([how to create a pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request)).
-1. After submitting the PR, you can find your PR through the [Pull Request](https://github.com/taosdata/taos-connector-jdbc/pulls). Click on the corresponding link to see if the CI for your PR has passed. If it has passed, it will display "All checks have passed". Regardless of whether the CI passes or not, you can click "Show all checks" -> "Details" to view the detailed test case logs.
-1. After submitting the PR, if CI passes, you can find your PR on the [codecov](https://app.codecov.io/gh/taosdata/taos-connector-jdbc/pulls) page to check the test coverage.
+- [TDengine 官网](https://www.taosdata.com/)
+- [TDengine GitHub](https://github.com/taosdata/TDengine)
 
-## 11. References
-- [TDengine Official Website](https://www.tdengine.com/) 
-- [TDengine GitHub](https://github.com/taosdata/TDengine) 
+## 10. 许可证
 
-## 12. License
 [MIT License](./LICENSE)

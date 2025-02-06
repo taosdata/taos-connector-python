@@ -46,7 +46,7 @@ The API for `taospy` is compliant with the Python DB API 2.0 (PEP-249). It conta
 ## 2. Documentation
 
 - To use Python Connector, please check [Developer Guide](https://docs.tdengine.com/developer-guide/), which includes how an application can introduce the Python Connector , as well as examples of data writing, querying, schemaless writing, parameter binding, and data subscription.
-- For other reference information, please check [Reference Manual](https://docs.tdengine.com/tdengine-reference/client-libraries/python/), which includes version history, data types, example programs, API descriptions, and FAQs.
+- For other reference information, please check [Reference Manual](https://docs.taosdata.com/reference/connector/python/), which includes version history, data types, example programs, API descriptions, and FAQs.
 - This quick guide is mainly for developers who like to contribute/build/test the Python Connector by themselves. To learn about TDengine, you can visit the [official documentation](https://docs.tdengine.com).
 
 ## 3. Prerequisites
