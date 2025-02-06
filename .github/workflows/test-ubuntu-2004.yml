@@ -86,7 +86,7 @@ jobs:
         with:
           repository: "taosdata/TDengine"
           path: "TDengine_v3"
-          ref:  '3.0'
+          ref:  ${{ steps.determine-branch.outputs.value }}
 
       - name: Build TDengine 3.0
         run: |
