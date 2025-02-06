@@ -63,10 +63,10 @@ pip3 install -e ./
 
 ## 5. Testing
 ### 5.1 Test Execution
-The Python Connector testing framework is `pytest` , setup testing dependencies with  `poetry install --with=test`    
+The Python Connector testing framework is `pytest`  
 The testing directory for `taospy` is located in the root directory: tests/  
 The testing directory for `taos-ws-py` is located in the root directory: taos-ws-py/tests/  
-
+The test code has been written into one bash file. You can open and view the detailed testing process   
 The following command runs all test cases:
 ``` bash
 # for taospy
