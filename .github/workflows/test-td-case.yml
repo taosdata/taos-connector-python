@@ -15,14 +15,15 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Check out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
 
-      - name: Build tools
+      - name: Setup build tools
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y build-essential cmake libgeos-dev
-
+          sudo apt update -y
+          sudo apt install -y build-essential cmake \
+              libgeos-dev libjansson-dev libsnappy-dev liblzma-dev libz-dev \
+              zlib1g-dev pkg-config libssl-dev gawk
 
       - name: Set up python
         run: |
@@ -82,7 +83,7 @@ jobs:
           if_false: '3.0'
 
       - name: Checkout tdengine
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: "taosdata/TDengine"
           path: "TDengine_v3"

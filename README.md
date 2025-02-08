@@ -1,104 +1,115 @@
-# TDengine Connector for Python
-
-| Github Workflow | PyPI Version | PyPI Downloads | CodeCov |
-| --------------- | ------------ | -------------- | ------- |
-| ![workflow](https://img.shields.io/github/actions/workflow/status/taosdata/taos-connector-python/test-ubuntu-2204.yml) | ![PyPI](https://img.shields.io/pypi/v/taospy) | ![PyPI](https://img.shields.io/pypi/dm/taospy) | [![codecov](https://codecov.io/gh/taosdata/taos-connector-python/branch/main/graph/badge.svg?token=BDANN3DBXS)](https://codecov.io/gh/taosdata/taos-connector-python) |
+<!-- omit in toc -->
+# TDengine Python Connector
 
 
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/taosdata/taos-connector-python/build.yml)](https://github.com/taosdata/taos-connector-python/actions/workflows/build.yml)
+[![codecov](https://codecov.io/gh/taosdata/taos-connector-python/branch/main/graph/badge.svg?token=BDANN3DBXS)](https://codecov.io/gh/taosdata/taos-connector-python)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/taosdata/taos-connector-python)
+![PyPI](https://img.shields.io/pypi/dm/taospy)
+![GitHub License](https://img.shields.io/github/license/taosdata/taos-connector-python)
+[![PyPI](https://img.shields.io/pypi/v/taospy)](https://pypi.org/project/taospy/)
+<br />
+[![Twitter Follow](https://img.shields.io/twitter/follow/tdenginedb?label=TDengine&style=social)](https://twitter.com/tdenginedb)
+[![YouTube Channel](https://img.shields.io/badge/Subscribe_@tdengine--white?logo=youtube&style=social)](https://www.youtube.com/@tdengine)
+[![Discord Community](https://img.shields.io/badge/Join_Discord--white?logo=discord&style=social)](https://discord.com/invite/VZdSuUg4pS)
+[![LinkedIn](https://img.shields.io/badge/Follow_LinkedIn--white?logo=linkedin&style=social)](https://www.linkedin.com/company/tdengine)
+[![StackOverflow](https://img.shields.io/badge/Ask_StackOverflow--white?logo=stackoverflow&style=social&logoColor=orange)](https://stackoverflow.com/questions/tagged/tdengine)
 
+English | [简体中文](./README-CN.md)
 
-[TDengine](https://github.com/taosdata/TDengine) connector for Python enables python programs to access TDengine, using
-an API which is compliant with the Python DB API 2.0 (PEP-249). It contains two modules:
+<!-- omit in toc -->
+## Table of Contents
+
+- [1. Introduction](#1-introduction)
+- [2. Documentation](#2-documentation)
+- [3. Prerequisites](#3-prerequisites)
+- [4. Build](#4-build)
+- [5. Testing](#5-testing)
+  - [5.1 Test Execution](#51-test-execution)
+  - [5.2 Test Case Addition](#52-test-case-addition)
+  - [5.3 Performance Testing](#53-performance-testing)
+- [6. CI/CD](#6-cicd)
+- [7. Submitting Issues](#7-submitting-issues)
+- [8. Submitting PRs](#8-submitting-prs)
+- [9. References](#9-references)
+- [10. License](#10-license)
+
+## 1. Introduction
+
+`taospy` is the official Python Connector for TDengine, allowing Python developers to develop applications that access the TDengine database. It supports functions such as data writing, querying, subscription, schemaless writing, and parameter binding.
+
+The API for `taospy` is compliant with the Python DB API 2.0 (PEP-249). It contains two modules:
 
 1. The `taos` module. It uses TDengine C client library for client server communications.
 2. The `taosrest` module. It wraps TDengine RESTful API to Python DB API 2.0 (PEP-249). With this module, you do not need to install the TDengine C client library.
 
-## Install taospy
+## 2. Documentation
 
-You can use `pip` to install the connector from PyPI:
+- To use Python Connector, please check [Developer Guide](https://docs.tdengine.com/developer-guide/), which includes how an application can introduce the Python Connector , as well as examples of data writing, querying, schemaless writing, parameter binding, and data subscription.
+- For other reference information, please check [Reference Manual](https://docs.taosdata.com/reference/connector/python/), which includes version history, data types, example programs, API descriptions, and FAQs.
+- This quick guide is mainly for developers who like to contribute/build/test the Python Connector by themselves. To learn about TDengine, you can visit the [official documentation](https://docs.tdengine.com).
 
-```bash
-pip3 install taospy
-```
+## 3. Prerequisites
 
-Or with git url:
+- Python runtime environment (taospy: Python >= 3.6.2, taos-ws-py: Python >= 3.7)
+- TDengine has been deployed locally. For specific steps, please refer to [Deploy TDengine](https://docs.tdengine.com/get-started/deploy-from-package/), and taosd and taosAdapter have been started.
 
-```bash
-pip3 install git+https://github.com/taosdata/taos-connector-python.git
-```
+## 4. Build
 
-Note: taospy v2.7.2 requirs Python 3.6+. The early versions of taospy from v2.5.0 to v2.7.1 require Python 3.7+.
-
-## Install taos-ws-py (Support WebSocket)
-
-```bash
-# taos-ws-py depends taospy
-pip3 install taospy
-pip3 install taos-ws-py
-```
-
-Note: The taosws module is provided by taos-ws-py package separately from v2.7.2. It is part of early version of taospy.
-taos-ws-py requires Python 3.7+.
-
-## Docs
-
-[Reference](https://docs.tdengine.com/tdengine-reference/client-libraries/python/)
-
-## Limitation
-
-- `taosrest` is designed to use with taosAdapter. If your TDengine version is older than v2.4.0.0, taosAdapter may not
-  be available.
-
-## License
-
-We use MIT license for Python connector.
-
-## Contributing
-
-### For taospy
-
-**1. Precondictions**  
-
-1.  `TDengine` enviroment, install refer to [Here](https://www.taosdata.com/) 
-2.  `Python3` enviroment, install refer to [Here](https://www.python.org/)
-
-**2. Building & Install**  
-
-Download the repository code and execute the following in root directory:
-``` bash
-pip3 install ./ 
-```
-or install in editable mode (i.e. "develop mode") 
+Download the repository code and execute the following in root directory to build develop environment:
 ``` bash
 pip3 install -e ./ 
 ```
-**3. Testing**  
 
-Refer to the examples in ./tests/ 
-
-
-### For taos-ws-py
-
-**1. Precondictions**
-
-1.  `TDengine` enviroment, install refer to [Here](https://www.taosdata.com/) 
-2.  `Python3` enviroment, install refer to [Here](https://www.python.org/)
-3.  `Rust` build enviroment, install refer to [Here](https://www.rust-lang.org/learn/get-started)
-4.  Install `maturin` with `pip3 install maturin`
-
-**2. Building & Install**
-
-Download the repository code and execute the following in root directory:
-```bash
-# enter source code folder
-cd taos-ws-py
-
-# build
-python3 -m maturin build --strip
-
-# install  repalce xxx with real generated filename
-pip3 install ./target/wheels/taos_ws_py-xxx.whl
+## 5. Testing
+### 5.1 Test Execution
+The Python Connector testing framework is `pytest`  
+The testing directory for `taospy` is located in the root directory: tests/  
+The testing directory for `taos-ws-py` is located in the root directory: taos-ws-py/tests/  
+The test code has been written into one bash file. You can open and view the detailed testing process   
+The following command runs all test cases on Linux platform:
+``` bash
+# for taospy
+bash ./test_taospy.sh
 ```
-**3. Testing**  
 
-Refer to the examples in ./tests/ 
+``` bash
+# for taos-ws-py
+bash ./test_taos-ws-py.sh
+```
+
+### 5.2 Test Case Addition
+You can add new test files or add test cases in existing test files that comply with `pytest` standards
+
+### 5.3 Performance Testing
+Performance testing is in progress.
+
+## 6. CI/CD
+- [Build Workflow](https://github.com/taosdata/taos-connector-python/actions/workflows/build.yml)
+- [Code Coverage](https://app.codecov.io/gh/taosdata/taos-connector-python)
+
+## 7. Submitting Issues
+We welcome the submission of [GitHub Issue](https://github.com/taosdata/taos-connector-python/issues/new?template=Blank+issue). When submitting, please provide the following information:
+
+- Problem description, whether it always occurs, and it's best to include a detailed call stack.
+- Python Connector version.
+- Python Connection parameters (username and password not required).
+- TDengine server version.
+
+## 8. Submitting PRs
+We welcome developers to contribute to this project. When submitting PRs, please follow these steps:
+
+1. Fork this project, refer to ([how to fork a repo](https://docs.github.com/en/get-started/quickstart/fork-a-repo)).
+2. Create a new branch from the main branch with a meaningful branch name (`git checkout -b my_branch`). Do not modify the main branch directly.
+3. Modify the code, ensure all unit tests pass, and add new unit tests to verify the changes.
+4. Push the changes to the remote branch (`git push origin my_branch`).
+5. Create a Pull Request on GitHub ([how to create a pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request)).
+6. After submitting the PR, you can find your PR through the [Pull Request](https://github.com/taosdata/taos-connector-python/pulls). Click on the corresponding link to see if the CI for your PR has passed. If it has passed, it will display "All checks have passed". Regardless of whether the CI passes or not, you can click "Show all checks" -> "Details" to view the detailed test case logs.
+7. After submitting the PR, if CI passes, you can find your PR on the [codecov](https://app.codecov.io/gh/taosdata/taos-connector-python/pulls) page to check the test coverage.
+
+## 9. References
+- [TDengine Official Website](https://www.tdengine.com/) 
+- [TDengine GitHub](https://github.com/taosdata/TDengine) 
+
+## 10. License
+[MIT License](./LICENSE)

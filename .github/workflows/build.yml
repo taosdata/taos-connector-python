@@ -1,4 +1,4 @@
-name: Test on Ubuntu-22.04
+name: Build
 
 on:
   push:
@@ -126,7 +126,7 @@ jobs:
         with:
           repository: "taosdata/TDengine"
           path: "TDengine_v3"
-          ref:  '3.0'
+          ref:  ${{ steps.determine-branch.outputs.value }}
 
       - name: Build TDengine 3.0
         run: |
@@ -162,6 +162,8 @@ jobs:
           export TDENGINE_URL=localhost:6041
           curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
           poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
+          poetry run pip3 install taos-ws-py
+          poetry run pytest ./taos-ws-py/tests/
 
 
       - name: 'Upload taosd logs'
