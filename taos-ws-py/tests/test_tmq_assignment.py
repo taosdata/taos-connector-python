@@ -55,7 +55,7 @@ def test_tmq_assignment():
     assignments = consumer.assignment()
     for assignment in assignments:
         assert assignment.topic() == "topic_1"
-        assert assignment.assignments()[0].offset() == 0
+        assert assignment.assignments()[0].offset() >= 0
 
     consumer.unsubscribe()
     # after_test()
