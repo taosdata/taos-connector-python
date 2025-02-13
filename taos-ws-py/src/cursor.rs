@@ -296,14 +296,16 @@ impl Cursor {
 
         if let Some(size) = size {
             Python::with_gil(|py| {
-                let mut range = self.row_in_block..size;
+                let mut range = self.row_in_block..self.row_in_block + size;
                 let mut all = Vec::new();
                 loop {
                     if let Some(block) = self.block.take() {
                         let (slice, remain) = get_slice_of_block(py, &block, range.clone());
                         all.extend(slice);
                         if remain.is_none() {
-                            self.row_in_block += range.end - range.start;
+                            self.block = Some(block);
+                            self.row_in_block = range.end;
+                            self.row_count += range.end - range.start;
                             break;
                         } else {
                             let remain = remain.unwrap();
