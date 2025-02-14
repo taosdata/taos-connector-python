@@ -2402,6 +2402,7 @@ dependencies = [
  "tokio",
  "tracing",
  "url",
+ "uuid",
 ]
 
 [[package]]
@@ -2411,6 +2412,7 @@ source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#b9
 dependencies = [
  "anyhow",
  "async-trait",
+ "byteorder",
  "bytes",
  "cfg-if",
  "dashmap",
@@ -2432,7 +2434,7 @@ dependencies = [
 
 [[package]]
 name = "taos-ws-py"
-version = "0.3.4"
+version = "0.3.8"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2762,6 +2764,22 @@ name = "uuid"
 version = "1.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8c5f0a0af699448548ad1a2fbf920fb4bee257eae39953ba95cb84891a0446a"
+dependencies = [
+ "getrandom",
+ "rand",
+ "uuid-macro-internal",
+]
+
+[[package]]
+name = "uuid-macro-internal"
+version = "1.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8a86d88347b61a0e17b9908a67efcc594130830bf1045653784358dd023e294"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.87",
+]
 
 [[package]]
 name = "version_check"
@@ -3097,7 +3115,3 @@ dependencies = [
  "quote",
  "syn 2.0.87",
 ]
-
-[[patch.unused]]
-name = "taos"
-version = "0.12.4"
