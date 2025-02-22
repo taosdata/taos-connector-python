@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## v0.3.8 - 2025-01-02
+## v0.3.9 - 2025-02-22
+
+### Bug Fixes:
+
+-  offset maybe euqal or over 0
+-  poetry --with:dev compatible old programe
+-  test_pandas is taospy test case
+- **(ws)**:  fix cursor fetchmany
+
+### Documents:
+
+-  changelog rewrite
+
 
 ### Features:
 
