@@ -235,8 +235,8 @@ def test_tmq_seek():
         "group.id": "1", 
         "auto.offset.reset": "earliest",
          # 3.3.6.0 support
-        "fetch.max.wait.ms": 3000,
-        "min.poll.rows": 128
+        "fetch.max.wait.ms": "3000",
+        "min.poll.rows": "128"
     }
     consumer = Consumer(conf)
     consumer.subscribe(["topic1"])
