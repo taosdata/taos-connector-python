@@ -176,7 +176,7 @@ def test_stmt(conn, caplog):
         taos_query(conn, "drop database if exists " + dbname)
         taos_close(conn)
 
-        assert rowstr == "1626861392589 NULL 2 3 4 5 6 7 8 9 10.100000 10.110000 hello stmt"
+        assert rowstr == "1626861392589 NULL 2 3 4 5 6 7 8 9 10.1 10.11 hello stmt"
     except Exception as err:
         taos_query(conn, "drop database if exists " + dbname)
         raise err
@@ -260,7 +260,7 @@ def test_stmt_with_req_id(conn, caplog):
         )
         taos_close(conn)
 
-        assert rowstr == "1626861392589 NULL 2 3 4 5 6 7 8 9 10.100000 10.110000 hello stmt"
+        assert rowstr == "1626861392589 NULL 2 3 4 5 6 7 8 9 10.1 10.11 hello stmt"
     except InterfaceError as err:
         print(err)
     except Exception as err:
