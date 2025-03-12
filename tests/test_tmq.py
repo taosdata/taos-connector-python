@@ -104,7 +104,9 @@ def after_ter_tmq():
     except Exception:
         pass
 
-
+#
+# test precison
+#
 def test_consumer_with_precision():
     tmq_consumer_with_precision("ms")
     tmq_consumer_with_precision("us")
@@ -229,7 +231,14 @@ def test_tmq_seek():
     conn.execute("insert into tb1 values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2','binary value_1','POINT (3.0 5.0)')")
     conn.execute("insert into tb1 values (now-1s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2','binary value_1','POINT (3.0 5.0)')")
 
-    consumer = Consumer({"group.id": "1", "auto.offset.reset": "earliest"})
+    conf = {
+        "group.id": "1", 
+        "auto.offset.reset": "earliest",
+         # 3.3.6.0 support
+        "fetch.max.wait.ms": 3000,
+        "min.poll.rows": 128
+    }
+    consumer = Consumer(conf)
     consumer.subscribe(["topic1"])
     try:
         assignment = consumer.assignment()
