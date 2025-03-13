@@ -72,6 +72,9 @@ def test_tmq():
     conf = {
         "td.connect.websocket.scheme": "ws",
         "group.id": "0",
+         # 3.3.6.0 support
+        "fetch.max.wait.ms": "3001",
+        "min.poll.rows": "129"
     }
     consumer = Consumer(conf)
 
