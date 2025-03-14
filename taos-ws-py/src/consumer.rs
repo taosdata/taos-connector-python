@@ -122,19 +122,11 @@ impl Consumer {
 
             builder.set("enable.auto.commit", "true");
             builder.set("experimental.snapshot.enable", "false");
-            const KEYS: &[&str] = &[
-                "client.id",
-                "auto.offset.reset",
-                "enable.auto.commit",
-                "auto.commit.interval.ms",
-                "enable.heartbeat.background",
-                "experimental.snapshot.enable",
-                "session.timeout.ms",
-                "max.poll.interval.ms",
-            ];
-            for key in KEYS {
+ 
+            // enum args and set
+            for (key, value) in args.iter() {
                 if let Some(value) = args.get_item(key) {
-                    builder.set(*key, value.extract::<String>()?);
+                    builder.set(key.extract::<String>()?, value.extract::<String>()?);
                 }
             }
         }
