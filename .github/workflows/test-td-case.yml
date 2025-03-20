@@ -125,6 +125,7 @@ jobs:
         run: |
           pip3 install taos-ws-py
           cd TDengine_v3/tests/system-test
+          python3 ./test.py -f 1-insert/insert_drop.py
           python3 ./test.py -f 2-query/floor.py
           python3 ./test.py -f 7-tmq/basic5.py
 
