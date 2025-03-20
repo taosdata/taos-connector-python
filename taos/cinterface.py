@@ -191,7 +191,8 @@ _libtaos.taos_close.argtypes = (c_void_p,)
 def taos_close(connection):
     # type: (c_void_p) -> None
     """Close the TAOS* connection"""
-    _libtaos.taos_close(connection)
+    if _libtaos.taos_close is not None:
+        _libtaos.taos_close(connection)
 
 
 _libtaos.taos_connect.restype = c_void_p
