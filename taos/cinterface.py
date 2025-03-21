@@ -109,7 +109,7 @@ else:
     )
 
     # use _v3s TaosField overwrite _v2s here, dont change import order
-    from taos.field_v3 import CONVERT_FUNC_BLOCK_v3, TaosFields, TaosField, TAOS_FIELD_T, TaosFieldAll, TaosFieldAllCls, convert_block_func_v3
+    from taos.field_v3 import CONVERT_FUNC_BLOCK_v3, TaosFields, TaosFieldEs, TaosField, TaosFieldE, TAOS_FIELD_T, TaosFieldAll, TaosFieldAllCls, convert_block_func_v3
     from taos.constants import FieldType
 
     IS_V3 = True
@@ -643,11 +643,27 @@ def taos_fetch_fields_raw(result):
     return c_void_p(_libtaos.taos_fetch_fields(result))
 
 
+_libtaos.taos_fetch_fields_e.restype = c_void_p
+_libtaos.taos_fetch_fields_e.argstype = (c_void_p,)
+
+
+def taos_fetch_fields_e_raw(result):
+    # type: (c_void_p) -> c_void_p
+    return c_void_p(_libtaos.taos_fetch_fields_e(result))
+
+
 def taos_fetch_fields(result):
     # type: (c_void_p) -> TaosFields
     fields = taos_fetch_fields_raw(result)
     count = taos_field_count(result)
     return TaosFields(fields, count)
+
+
+def taos_fetch_fields_e(result):
+    # type: (c_void_p) -> TaosFieldEs
+    fields = taos_fetch_fields_e_raw(result)
+    count = taos_field_count(result)
+    return TaosFieldEs(fields, count)
 
 
 def taos_fetch_lengths(result, field_count=None):
@@ -732,10 +748,10 @@ _libtaos.taos_print_row.argstype = (c_char_p, c_void_p, c_void_p, c_int)
 
 
 def taos_print_row(row, fields, num_fields, buffer_size=4096):
-    # type: (ctypes.c_void_p, ctypes.c_void_p | TaosFields, int, int) -> str
+    # type: (ctypes.c_void_p, ctypes.c_void_p | TaosFields | TaosFieldEs, int, int) -> str
     """Print an row to string"""
     p = ctypes.create_string_buffer(buffer_size)
-    if isinstance(fields, TaosFields):
+    if isinstance(fields, (TaosFields, TaosFieldEs)):
         _libtaos.taos_print_row(p, row, fields.as_ptr(), num_fields)
     else:
         _libtaos.taos_print_row(p, row, fields, num_fields)

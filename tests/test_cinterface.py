@@ -149,16 +149,69 @@ def test_taos_stmt_errstr():
 
 
 def test_taos_use_result():
-    c = taos_connect(**cfg)
+    conn = taos_connect(**cfg)
     sql = "show databases"
-    r = taos_query(c, sql)
+    res = taos_query(conn, sql)
     try:
-        fields = taos_use_result(r)
+        fields = taos_use_result(res)
         assert isinstance(fields, list)
         print("pass test_taos_use_result")
     except Exception as e:
         print(e)
         raise e
+    finally:
+        taos_free_result(res)
+        taos_close(conn)
+
+
+def test_parsing_decimal():
+    conn = taos_connect(**cfg)
+    execute_sql(conn, "drop database if exists testdec")
+    execute_sql(conn, "create database if not exists testdec")
+    execute_sql(conn, "create table if not exists testdec.test(ts timestamp, dec64 decimal(10,6), dec128 decimal(24,10)) tags (note nchar(20))")
+    execute_sql(conn, "create table testdec.d0 using testdec.test(note) tags('test')")
+    execute_sql(conn, "insert into testdec.d0 values(now(), '9876.123456', '123456789012.0987654321')")
+    execute_sql(conn, "insert into testdec.d0 values(now()+1s, '-6789.654321', '-123456789012.0987654321')")
+
+    # taos_fetch_block_raw
+    res = taos_query(conn, "select dec64 from testdec.test")
+    block, num_rows = taos_fetch_block_raw(res)
+    col_index = 0
+    data = ctypes.cast(block, ctypes.POINTER(ctypes.c_void_p))[col_index]
+    ptr = ctypes.cast(data, ctypes.POINTER(ctypes.c_char * 64))
+
+    assert cast(ptr[0], c_char_p).value.decode("utf-8") == '9876.123456'
+    assert cast(ptr[1], c_char_p).value.decode("utf-8") == '-6789.654321'
+    taos_free_result(res)
+
+    # taos_fetch_row_raw
+    res = taos_query(conn, "select dec64 from testdec.test")
+    block = taos_fetch_row_raw(res)
+    col_index = 0
+    data = ctypes.cast(block, ctypes.POINTER(ctypes.c_void_p))[col_index]
+    ptr = ctypes.cast(data, ctypes.POINTER(ctypes.c_char * 64))
+    assert cast(ptr[0], c_char_p).value.decode("utf-8") == '9876.123456'
+
+    block = taos_fetch_row_raw(res)
+    data = ctypes.cast(block, ctypes.POINTER(ctypes.c_void_p))[col_index]
+    ptr = ctypes.cast(data, ctypes.POINTER(ctypes.c_char * 64))
+    assert cast(ptr[0], c_char_p).value.decode("utf-8") == '-6789.654321'
+    taos_free_result(res)
+
+    # fetch fields e
+    res = taos_query(conn, "select dec64 from testdec.test")
+    fields : TaosFieldEs = taos_fetch_fields_e(res)
+    print("count: %d" % fields.count)
+    for field in fields:
+        print(field)
+    #
+    row = taos_fetch_row_raw(res)
+    print("row: %s" % taos_print_row(row, fields.fields, fields.count))
+    taos_free_result(res)
+
+    taos_close(conn)
+    print("pass test_parsing_decimal")
+
 
 ############################################ stmt2 begin ############################################
 
