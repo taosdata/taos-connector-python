@@ -48,6 +48,66 @@ def test_query():
     conn.close()
 
 
+def test_query_decimal():
+    if not IS_V3:
+        return
+
+    conn = taos.connect()
+    conn.execute("drop database if exists test_query_py")
+    conn.execute("create database if not exists test_query_py")
+    conn.execute("use test_query_py")
+    conn.execute("create table if not exists tb1 (ts timestamp, v int, dec64 decimal(10,6), dec128 decimal(24,10)) tags(jt json)")
+    n = conn.execute('insert into tn1 using tb1 tags(\'{"name":"value"}\') values(now, null, null, null) (now + 10s, 1, "9876.123456", "123456789012.0987654321")')
+    n = conn.execute('insert into tn1 using tb1 tags(\'{"name":"value"}\') values(now, null, null, null) (now + 10s, 1, "-9876.123456", "-123456789012.0987654321")')
+    print("inserted %d rows" % n)
+    result = conn.query("select * from tb1")
+    fields = result.fields
+    for field in fields:
+        print("field: %s" % field)
+
+    # test re-consume fields
+    flag = 0
+    for _ in fields:
+        flag += 1
+    assert flag == 5
+
+    start = datetime.now()
+    for row in result:
+        print(row)
+        dec64 = row[2]
+        dec128 = row[3]
+        if dec64 is not None:
+            assert str(dec64) in ["9876.123456", "-9876.123456"]
+        #
+        if dec128 is not None:
+            assert str(dec128) in ["123456789012.0987654321", "-123456789012.0987654321"]
+        #
+
+
+    for row in result.rows_iter():
+        print(row)
+        dec64 = row[2]
+        dec128 = row[3]
+        if dec64 is not None:
+            assert str(dec64) in ["9876.123456", "-9876.123456"]
+        #
+        if dec128 is not None:
+            assert str(dec128) in ["123456789012.0987654321", "-123456789012.0987654321"]
+        #
+
+    result = conn.query("select * from tb1 limit 1")
+    results = result.fetch_all_into_dict()
+    print(results)
+
+    end = datetime.now()
+    elapsed = end - start
+    print("elapsed time: ", elapsed)
+    result.close()
+    db_name = "test_query_py"
+    tear_down_database(conn, db_name)
+    conn.close()
+
+
 def test_query_with_req_id():
     db_name = "test_query_py"
     conn = taos.connect()

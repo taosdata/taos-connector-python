@@ -28,7 +28,9 @@ class FieldType(object):
     C_BIGINT_UNSIGNED = 14
     C_JSON = 15
     C_VARBINARY = 16
+    C_DECIMAL = 17
     C_GEOMETRY = 20
+    C_DECIMAL64 = 21
     # NULL value definition
     # NOTE: These values should change according to C definition in tsdb.h
     C_BOOL_NULL = 0x02
