@@ -173,33 +173,44 @@ def test_parsing_decimal():
     execute_sql(conn, "insert into testdec.d0 values(now(), '9876.123456', '123456789012.0987654321')")
     execute_sql(conn, "insert into testdec.d0 values(now()+1s, '-6789.654321', '-123456789012.0987654321')")
 
-    # taos_fetch_block_raw
-    res = taos_query(conn, "select dec64 from testdec.test")
-    block, num_rows = taos_fetch_block_raw(res)
-    col_index = 0
-    data = ctypes.cast(block, ctypes.POINTER(ctypes.c_void_p))[col_index]
-    ptr = ctypes.cast(data, ctypes.POINTER(ctypes.c_char * 64))
+    def parsing_block(block, col_index = 0):
+        data = ctypes.cast(block, ctypes.POINTER(ctypes.c_void_p))[col_index]
+        ptr = ctypes.cast(data, ctypes.POINTER(ctypes.c_char * 64))
+        return ptr
 
-    assert cast(ptr[0], c_char_p).value.decode("utf-8") == '9876.123456'
-    assert cast(ptr[1], c_char_p).value.decode("utf-8") == '-6789.654321'
-    taos_free_result(res)
+    def check_decimal(res, values, block_type = True):
+        if block_type:
+            block, num_rows = taos_fetch_block_raw(res)
+        else:
+            block = taos_fetch_row_raw(res)
+        #
+        ptr = parsing_block(block)
+        for i, value in enumerate(values):
+            assert cast(ptr[i], c_char_p).value.decode("utf-8") == value
+        #
+
+    def check_decimal_block(conn, sql, values):
+        res = taos_query(conn, sql)
+        check_decimal(res, values)
+        taos_free_result(res)
+
+    def check_decimal_row(conn, sql, values):
+        res = taos_query(conn, sql)
+        for value in values:
+            check_decimal(res, [value], False)
+        #
+        taos_free_result(res)
+
+    # taos_fetch_block_raw
+    check_decimal_block(conn, "select dec64 from testdec.test", ['9876.123456', '-6789.654321'])
+    check_decimal_block(conn, "select dec128 from testdec.test", ['123456789012.0987654321', '-123456789012.0987654321'])
 
     # taos_fetch_row_raw
-    res = taos_query(conn, "select dec64 from testdec.test")
-    block = taos_fetch_row_raw(res)
-    col_index = 0
-    data = ctypes.cast(block, ctypes.POINTER(ctypes.c_void_p))[col_index]
-    ptr = ctypes.cast(data, ctypes.POINTER(ctypes.c_char * 64))
-    assert cast(ptr[0], c_char_p).value.decode("utf-8") == '9876.123456'
-
-    block = taos_fetch_row_raw(res)
-    data = ctypes.cast(block, ctypes.POINTER(ctypes.c_void_p))[col_index]
-    ptr = ctypes.cast(data, ctypes.POINTER(ctypes.c_char * 64))
-    assert cast(ptr[0], c_char_p).value.decode("utf-8") == '-6789.654321'
-    taos_free_result(res)
+    check_decimal_row(conn, "select dec64 from testdec.test", ['9876.123456', '-6789.654321'])
+    check_decimal_row(conn, "select dec128 from testdec.test", ['123456789012.0987654321', '-123456789012.0987654321'])
 
     # fetch fields e
-    res = taos_query(conn, "select dec64 from testdec.test")
+    res = taos_query(conn, "select dec64, dec128 from testdec.test")
     fields : TaosFieldEs = taos_fetch_fields_e(res)
     print("count: %d" % fields.count)
     for field in fields:
