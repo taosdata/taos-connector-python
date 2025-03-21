@@ -753,7 +753,7 @@ def taos_print_row(row, fields, num_fields, buffer_size=4096):
     # type: (ctypes.c_void_p, ctypes.c_void_p | TaosFields | TaosFieldEs, int, int) -> str
     """Print an row to string"""
     p = ctypes.create_string_buffer(buffer_size)
-    if isinstance(fields, (TaosFields, TaosFieldEs)):
+    if isinstance(fields, TaosFields) or (IS_V3 and isinstance(fields, TaosFieldEs)):
         _libtaos.taos_print_row(p, row, fields.as_ptr(), num_fields)
     else:
         _libtaos.taos_print_row(p, row, fields, num_fields)
