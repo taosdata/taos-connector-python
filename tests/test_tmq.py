@@ -100,7 +100,7 @@ def pre_test_tmq(precision: str):
             c14 nchar(8),
             c15 varbinary(50),
             c16 geometry(512),
-            c17 decimal(10,8),
+            c17 decimal(10,6),
             c18 decimal(24,10)
         ) tags (
             t1 bool,
@@ -188,7 +188,7 @@ def test_tmq_assignment():
         "insert into t2 using stb1 tags(false, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now-3s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1','binary value_1','POINT (3.0 5.0)','-9876.123456','-123456789012.0987654321')"
     )
     conn.execute(
-        "insert into t3 using stb1 tags(true, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, '2', '2') values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2','binary value_1','POINT (3.0 5.0)','569876.123','567890121234.5432109876')"
+        "insert into t3 using stb1 tags(true, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, '2', '2') values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2','binary value_1','POINT (3.0 5.0)','5676.123','567890121234.5432109876')"
     )
 
     consumer = Consumer({"group.id": "1", "auto.offset.reset": "earliest"})

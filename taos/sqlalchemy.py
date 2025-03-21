@@ -82,6 +82,7 @@ RESERVED_WORDS_TDENGINE = {
     "database",
     "databases",
     "dbs",
+    "decimal",
     "delete",
     "delete_mark",
     "desc",
