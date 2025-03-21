@@ -165,6 +165,10 @@ def test_taos_use_result():
 
 
 def test_parsing_decimal():
+    if not IS_V3:
+        print(" test_parsing_decimal not support TDengine 2.X version.")
+        return
+
     conn = taos_connect(**cfg)
     execute_sql(conn, "drop database if exists testdec")
     execute_sql(conn, "create database if not exists testdec")

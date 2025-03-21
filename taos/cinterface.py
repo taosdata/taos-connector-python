@@ -643,9 +643,11 @@ def taos_fetch_fields_raw(result):
     return c_void_p(_libtaos.taos_fetch_fields(result))
 
 
-_libtaos.taos_fetch_fields_e.restype = c_void_p
-_libtaos.taos_fetch_fields_e.argstype = (c_void_p,)
-
+try:
+    _libtaos.taos_fetch_fields_e.restype = c_void_p
+    _libtaos.taos_fetch_fields_e.argstype = (c_void_p,)
+except Exception as err:
+    _UNSUPPORTED["taos_fetch_fields_e"] = err
 
 def taos_fetch_fields_e_raw(result):
     # type: (c_void_p) -> c_void_p
