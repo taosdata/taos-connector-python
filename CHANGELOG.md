@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.7.22 - 2025-03-24
+
+### Bug Fixes:
+
+- fix python 3.12 abandoned (#313)
+
 ## v2.7.21 - 2024-12-30
 
 
