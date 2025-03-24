@@ -40,7 +40,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: "taosdata/TDengine"
-          path: "TDengine_v3"
+          path: "TDengine"
           ref: ${{ steps.determine-branch.outputs.value }}
 
       - name: get_commit_id
