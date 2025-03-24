@@ -149,16 +149,84 @@ def test_taos_stmt_errstr():
 
 
 def test_taos_use_result():
-    c = taos_connect(**cfg)
+    conn = taos_connect(**cfg)
     sql = "show databases"
-    r = taos_query(c, sql)
+    res = taos_query(conn, sql)
     try:
-        fields = taos_use_result(r)
+        fields = taos_use_result(res)
         assert isinstance(fields, list)
         print("pass test_taos_use_result")
     except Exception as e:
         print(e)
         raise e
+    finally:
+        taos_free_result(res)
+        taos_close(conn)
+
+
+def test_parsing_decimal():
+    if not IS_V3:
+        print(" test_parsing_decimal not support TDengine 2.X version.")
+        return
+
+    conn = taos_connect(**cfg)
+    execute_sql(conn, "drop database if exists testdec")
+    execute_sql(conn, "create database if not exists testdec")
+    execute_sql(conn, "create table if not exists testdec.test(ts timestamp, dec64 decimal(10,6), dec128 decimal(24,10)) tags (note nchar(20))")
+    execute_sql(conn, "create table testdec.d0 using testdec.test(note) tags('test')")
+    execute_sql(conn, "insert into testdec.d0 values(now(), '9876.123456', '123456789012.0987654321')")
+    execute_sql(conn, "insert into testdec.d0 values(now()+1s, '-6789.654321', '-123456789012.0987654321')")
+
+    def parsing_block(block, col_index = 0):
+        data = ctypes.cast(block, ctypes.POINTER(ctypes.c_void_p))[col_index]
+        ptr = ctypes.cast(data, ctypes.POINTER(ctypes.c_char * 64))
+        return ptr
+
+    def check_decimal(res, values, block_type = True):
+        if block_type:
+            block, num_rows = taos_fetch_block_raw(res)
+        else:
+            block = taos_fetch_row_raw(res)
+        #
+        ptr = parsing_block(block)
+        for i, value in enumerate(values):
+            assert cast(ptr[i], c_char_p).value.decode("utf-8") == value
+        #
+
+    def check_decimal_block(conn, sql, values):
+        res = taos_query(conn, sql)
+        check_decimal(res, values)
+        taos_free_result(res)
+
+    def check_decimal_row(conn, sql, values):
+        res = taos_query(conn, sql)
+        for value in values:
+            check_decimal(res, [value], False)
+        #
+        taos_free_result(res)
+
+    # taos_fetch_block_raw
+    check_decimal_block(conn, "select dec64 from testdec.test", ['9876.123456', '-6789.654321'])
+    check_decimal_block(conn, "select dec128 from testdec.test", ['123456789012.0987654321', '-123456789012.0987654321'])
+
+    # taos_fetch_row_raw
+    check_decimal_row(conn, "select dec64 from testdec.test", ['9876.123456', '-6789.654321'])
+    check_decimal_row(conn, "select dec128 from testdec.test", ['123456789012.0987654321', '-123456789012.0987654321'])
+
+    # fetch fields e
+    res = taos_query(conn, "select dec64, dec128 from testdec.test")
+    fields : TaosFieldEs = taos_fetch_fields_e(res)
+    print("count: %d" % fields.count)
+    for field in fields:
+        print(field)
+    #
+    row = taos_fetch_row_raw(res)
+    print("row: %s" % taos_print_row(row, fields.fields, fields.count))
+    taos_free_result(res)
+
+    taos_close(conn)
+    print("pass test_parsing_decimal")
+
 
 ############################################ stmt2 begin ############################################
 
