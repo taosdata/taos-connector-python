@@ -572,7 +572,7 @@ def test_taos_stmt2_get_fields():
     ]
     count, fields = taos_stmt2_get_fields(stmt2)
     print("count: %d, fields: %s" % (count, fields))
-    assert count == cnt_tags + cnt_cols
+    assert count == cnt_tags + cnt_cols + 1
     assert len(fields) == count
     for i in range(count):
         assert fields[i].name == check_fields[i].name

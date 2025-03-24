@@ -22,17 +22,27 @@ jobs:
     outputs:
       commit_id: ${{ steps.get_commit_id.outputs.commit_id }}
     steps:
+      #----------------------------------------------
+      # Determine TDengine branch dynamically
+      #----------------------------------------------
+      - name: Determine TDengine branch
+        uses: haya14busa/action-cond@v1
+        id: determine-branch
+        with:
+          cond: ${{ github.base_ref == 'main' }}
+          if_true: '3.3.6'
+          if_false: '3.0'
+
+      #----------------------------------------------
+      # Checkout TDengine repository
+      #----------------------------------------------
       - name: Checkout TDengine
-        if: |
-          github.event_name == 'pull_request'
-          || github.event_name == 'push'
-          || github.event_name == 'schedule'
         uses: actions/checkout@v4
         with:
-          repository: 'taosdata/TDengine'
-          path: 'TDengine'
-          ref: ${{ github.event.pull_request.base.ref }}
-  
+          repository: "taosdata/TDengine"
+          path: "TDengine_v3"
+          ref: ${{ steps.determine-branch.outputs.value }}
+
       - name: get_commit_id
         id: get_commit_id
         run: |
