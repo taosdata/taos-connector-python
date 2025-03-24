@@ -563,6 +563,7 @@ def test_taos_stmt2_get_fields():
 
     # check
     check_fields = [
+        TaosFieldAllCls("tbname", 8, 0, 0, 271, 4),          
         TaosFieldAllCls("grade", 8, 0, 0, 26, 2),          
         TaosFieldAllCls("class", 4, 0, 0, 4, 2),          
         TaosFieldAllCls("ts",    9, 0, 0, 8, 1),          
