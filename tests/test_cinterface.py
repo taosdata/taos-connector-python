@@ -563,6 +563,7 @@ def test_taos_stmt2_get_fields():
 
     # check
     check_fields = [
+        TaosFieldAllCls("tbname", 8, 0, 0, 271, 4),          
         TaosFieldAllCls("grade", 8, 0, 0, 26, 2),          
         TaosFieldAllCls("class", 4, 0, 0, 4, 2),          
         TaosFieldAllCls("ts",    9, 0, 0, 8, 1),          
@@ -571,7 +572,8 @@ def test_taos_stmt2_get_fields():
         TaosFieldAllCls("score", 4, 0, 0, 4, 1)
     ]
     count, fields = taos_stmt2_get_fields(stmt2)
-    assert count == cnt_tags + cnt_cols
+    print("count: %d, fields: %s" % (count, fields))
+    assert count == cnt_tags + cnt_cols + 1
     assert len(fields) == count
     for i in range(count):
         assert fields[i].name == check_fields[i].name
