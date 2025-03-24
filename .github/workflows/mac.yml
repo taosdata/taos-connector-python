@@ -284,7 +284,6 @@ jobs:
 
       - name: prepare install
         run: |
-          brew install geos
           sudo mkdir -p /usr/local/lib
           sudo mkdir -p /usr/local/include
 
@@ -363,6 +362,8 @@ jobs:
       # run test suite
       #----------------------------------------------
       - name: Test
+        env:
+          DYLD_LIBRARY_PATH: /usr/local/lib:$DYLD_LIBRARY_PATH
         run: |
           source $VENV
           export TDENGINE_URL=localhost:6041
