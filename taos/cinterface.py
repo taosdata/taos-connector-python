@@ -491,6 +491,13 @@ _libtaos.taos_is_null.argtypes = ctypes.c_void_p, c_int, c_int
 def taos_is_null(result, row, col):
     return _libtaos.taos_is_null(result, row, col)
 
+def taos_is_null_by_column(result, row, col):
+    pRow = pointer(c_int(row))
+    is_nulls = (c_bool * row)()
+    res = _libtaos.taos_is_null_by_column(result, col, is_nulls, pRow)
+    if res == 0:
+        return is_nulls
+    return None
 
 _libtaos.taos_fetch_block.restype = c_int
 _libtaos.taos_fetch_block.argtypes = c_void_p, c_void_p
