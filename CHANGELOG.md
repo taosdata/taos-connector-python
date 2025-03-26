@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.7.23 - 2025-03-24
+- support DECIMAL data type
+
 ## v2.7.22 - 2025-03-24
+- support Python 3.12 and above
 
 ### Bug Fixes:
 
