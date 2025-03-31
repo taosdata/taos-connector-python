@@ -122,7 +122,7 @@ impl Consumer {
 
             builder.set("enable.auto.commit", "true");
             builder.set("experimental.snapshot.enable", "false");
- 
+
             // enum args and set
             for (key, value) in args.iter() {
                 if let Some(value) = args.get_item(key) {
