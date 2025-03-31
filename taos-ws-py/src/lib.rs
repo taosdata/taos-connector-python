@@ -7,8 +7,8 @@ use pyo3::{create_exception, exceptions::PyException};
 use taos::taos_query;
 use taos::taos_query::common::{SchemalessPrecision, SchemalessProtocol, SmlDataBuilder};
 use taos::Value::{
-    BigInt, Bool, Double, Float, Int, Json, NChar, Null, SmallInt, Timestamp, TinyInt, UBigInt,
-    UInt, USmallInt, UTinyInt, VarBinary, VarChar, Geometry
+    BigInt, Bool, Double, Float, Geometry, Int, Json, NChar, Null, SmallInt, Timestamp, TinyInt,
+    UBigInt, UInt, USmallInt, UTinyInt, VarBinary, VarChar,
 };
 
 use consumer::{Consumer, Message};
