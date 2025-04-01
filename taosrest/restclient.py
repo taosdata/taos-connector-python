@@ -1,6 +1,7 @@
 import datetime
 import json
 from urllib.request import urlopen, Request
+import urllib.parse
 import requests
 
 from iso8601 import parse_date
@@ -56,7 +57,7 @@ class RestClient:
             self._url = "http://" + self._url
         # timeout
         self._timeout = timeout
-
+        self._password = urllib.parse.quote(password)
         # determine full URL to use and the header to user.
         if token:
             if not database:
@@ -65,7 +66,7 @@ class RestClient:
                 self._sql_utc_url = f"{self._url}/rest/sqlutc/{database}?token={token}"
             self._headers = {}
         else:
-            self._login_url = f"{self._url}/rest/login/{user}/{password}"
+            self._login_url = f"{self._url}/rest/login/{user}/{self._password}"
             if not database:
                 self._sql_utc_url = f"{self._url}/rest/sqlutc"
             else:

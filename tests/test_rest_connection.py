@@ -6,7 +6,7 @@ import os
 from decorators import check_env
 from dotenv import load_dotenv
 from taos.utils import gen_req_id
-from taosrest import HTTPError
+from taosrest import HTTPError, ConnectError
 
 load_dotenv()
 
@@ -253,6 +253,17 @@ def test_wrong_token():
         print(e)
         assert e.status_code == 401
 
+@check_env
+def test_special_characters():
+    try:
+        url = os.environ["TDENGINE_URL"]
+        root = taosrest.connect(url=url)
+        root.execute("CREATE USER user1 PASS 'Ab1!@#$%^&*()-_+=[]{}';")
+        user1 = taosrest.connect(url=url, user='user1', password='Ab1!@#$%^&*()-_+=[]{}')
+        print("conn server info: %s" % user1.server_info)
+        root.execute("DROP USER user1")
+    except ConnectError as e:
+        print(e)
 
 def teardown_module(module):
     url = os.environ["TDENGINE_URL"]
