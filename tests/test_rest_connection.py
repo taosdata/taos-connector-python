@@ -261,7 +261,7 @@ def test_user():
     url = os.environ["TDENGINE_URL"]
     try:
         root = taosrest.connect(url=url)
-        root.execute("CREATE USER test_user PASS 'YLKj@201707-*'")
+        root.execute("CREATE USER test_user PASS 'Ab1!@#$%^&*()-_+=[]{}'")
     except ConnectError as e:
         print(f"Failed to create user: {e}")
         assert e.errno == 0x0350
@@ -270,11 +270,8 @@ def test_user():
 def test_special_characters():
     try:
         url = os.environ["TDENGINE_URL"]
-        root = taosrest.connect(url=url)
-        root.execute("CREATE USER user1 PASS 'Ab1!@#$%^&*()-_+=[]{}';")
-        user1 = taosrest.connect(url=url, user='user1', password='Ab1!@#$%^&*()-_+=[]{}')
+        user1 = taosrest.connect(url=url, user='test_user', password='Ab1!@#$%^&*()-_+=[]{}')
         print("conn server info: %s" % user1.server_info)
-        root.execute("DROP USER user1")
     except ConnectError as e:
         print(e)
 
