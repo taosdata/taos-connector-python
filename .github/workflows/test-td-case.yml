@@ -71,6 +71,11 @@ jobs:
       - name: Install library
         run: poetry install --no-interaction --with=test
 
+      - name: Get CMake
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: 3.31.6
+
       #----------------------------------------------
       # build your TDengine 3.0
       #----------------------------------------------
