@@ -108,6 +108,11 @@ jobs:
         with:
           toolchain: stable
 
+      - name: Get CMake
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: 3.31.6
+
       - name: install TDengine
         if: >
           (github.event_name == 'workflow_dispatch' && steps.cache-server-manually.outputs.cache-hit != 'true') ||
