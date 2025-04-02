@@ -1,14 +1,13 @@
 [tool.poetry]
 name = "taospy"
-version = "2.7.23"
+version = "2.8.0"
 description = "The official TDengine python connector"
 authors = ["Taosdata Inc. <support@taosdata.com>"]
 license = "MIT"
 readme = "README.md"
 packages = [
   { include = "taos" },
-  { include = "taosrest" },
-  { include = "superset" }
+  { include = "taosrest" }
 ]
 
 [tool.poetry.plugins] # Optional super table
