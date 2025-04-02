@@ -55,7 +55,8 @@ pub unsafe fn get_row_of_block_unchecked(py: Python, block: &RawBlock, index: us
                 .into_py(py),
             BorrowedValue::VarBinary(v) => v.into_py(py),
             BorrowedValue::Geometry(v) => v.into_py(py),
-            BorrowedValue::Decimal(_) => todo!(),
+            BorrowedValue::Decimal64(v) => v.to_string().into_py(py),
+            BorrowedValue::Decimal(v) => v.to_string().into_py(py),
             BorrowedValue::Blob(_) => todo!(),
             BorrowedValue::MediumBlob(_) => todo!(),
         };

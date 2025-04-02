@@ -491,6 +491,21 @@ _libtaos.taos_is_null.argtypes = ctypes.c_void_p, c_int, c_int
 def taos_is_null(result, row, col):
     return _libtaos.taos_is_null(result, row, col)
 
+_can_get_is_null_by_column = True
+try:
+    _libtaos.taos_is_null_by_column.restype = c_int
+    _libtaos.taos_is_null_by_column.argtypes = (c_void_p, c_int, ctypes.POINTER(c_bool), ctypes.POINTER(c_int))
+except Exception as err:
+    _can_get_is_null_by_column = False
+    _UNSUPPORTED["taos_is_null_by_column"] = err
+
+def taos_is_null_by_column(result, row, col):
+    pRow = pointer(c_int(row))
+    is_nulls = (c_bool * row)()
+    errno = _libtaos.taos_is_null_by_column(result, col, is_nulls, pRow)
+    if errno != 0:
+        raise InternalError(errno=errno, msg=taos_errstr(result))
+    return is_nulls
 
 _libtaos.taos_fetch_block.restype = c_int
 _libtaos.taos_fetch_block.argtypes = c_void_p, c_void_p
@@ -541,7 +556,10 @@ def taos_fetch_block_v3(result, fields=None, field_count=None, decode_binary=Tru
             f = convert_block_func_v3(fields[i]["type"], decode_binary=decode_binary)
             blocks[i] = f(data, is_null, num_of_rows, offsets, precision)
         else:
-            is_null = [taos_is_null(result, j, i) for j in range(num_of_rows)]
+            if _can_get_is_null_by_column:
+                is_null = taos_is_null_by_column(result, num_of_rows, i)
+            else:
+                is_null = [taos_is_null(result, j, i) for j in range(num_of_rows)]
             f = convert_block_func(fields[i]["type"], decode_binary=decode_binary)
             blocks[i] = f(data, is_null, num_of_rows, offsets, precision)
 

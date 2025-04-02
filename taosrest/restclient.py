@@ -1,6 +1,8 @@
+import base64
 import datetime
 import json
 from urllib.request import urlopen, Request
+
 import requests
 
 from iso8601 import parse_date
@@ -56,33 +58,28 @@ class RestClient:
             self._url = "http://" + self._url
         # timeout
         self._timeout = timeout
-
         # determine full URL to use and the header to user.
         if token:
             if not database:
-                self._sql_utc_url = f"{self._url}/rest/sqlutc?token={token}"
+                self._sql_url = f"{self._url}/rest/sql?token={token}"
             else:
-                self._sql_utc_url = f"{self._url}/rest/sqlutc/{database}?token={token}"
+                self._sql_url = f"{self._url}/rest/sql/{database}?token={token}"
             self._headers = {}
         else:
-            self._login_url = f"{self._url}/rest/login/{user}/{password}"
             if not database:
-                self._sql_utc_url = f"{self._url}/rest/sqlutc"
+                self._sql_url = f"{self._url}/rest/sql"
             else:
-                self._sql_utc_url = f"{self._url}/rest/sqlutc/{database}"
-            self._taosd_token = self.get_taosd_token()
+                self._sql_url = f"{self._url}/rest/sql/{database}"
+
+            original_str = f"{user}:{password}"
+            original_bytes = original_str.encode('utf-8')
+            encoded_bytes = base64.b64encode(original_bytes)
+            auth = encoded_bytes.decode('utf-8')
             self._headers = {
-                "Authorization": "Taosd " + self._taosd_token
+                "Authorization": "Basic " + auth
             }
 
         self._convert_timestamp = convert_timestamp
-
-        try:
-            data = "select 1".encode("utf8")
-            request = Request(self._sql_utc_url, data, self._headers)
-            response = urlopen(request, timeout=self._timeout)
-        except:
-            self._sql_utc_url = self._sql_utc_url.replace("sqlutc", "sql")
 
         if timezone is None:
             self._timezone = None
@@ -92,22 +89,6 @@ class RestClient:
             self._timezone = timezone
         else:
             raise TypeError("timezone argument must be an instance of str or tzinfo")
-
-    def get_taosd_token(self) -> str:
-        """
-        Get authorization token.
-        """
-        response = urlopen(self._login_url, timeout=self._timeout)
-        self._check_status(response)
-
-        resp = json.load(response)
-        if "status" in resp:
-            if resp["status"] != "succ":
-                raise ConnectError(resp["desc"], status=resp["status"])
-        else:
-            if resp["code"] != 0:
-                raise ConnectError(resp["desc"], resp["code"])
-        return resp["desc"]
 
     def sql(self, q: str, req_id: Optional[int] = None) -> dict:
         """
@@ -123,9 +104,9 @@ class RestClient:
         #print(f"execute rest sql = {q}\n")
         data = q.encode("utf8")
         if req_id:
-            url = f"{self._sql_utc_url}?req_id={req_id}"
+            url = f"{self._sql_url}?req_id={req_id}"
         else:
-            url = self._sql_utc_url
+            url = self._sql_url
 
         r = requests.post(
             url,

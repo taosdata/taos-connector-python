@@ -16,11 +16,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
+        
+      - name: Get CMake
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: 3.31.6
+          
       - name: Build tools
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y build-essential cmake libgeos-dev
+          sudo apt-get install -y build-essential libgeos-dev
 
       - name: Setup Python
         run: |
@@ -69,56 +74,17 @@ jobs:
           poetry install --no-interaction --with=test
           poetry run pip install "numpy<2.0.0"
 
-      - name: Build TDengine 2.x
-        run: |
-          git clone --depth 1 https://github.com/taosdata/TDengine.git -b 2.6 TDengine_v2
-          cd TDengine_v2
-          git submodule update --depth 1 --init --recursive
-          mkdir build
-          cd build
-          cmake ../ -DBUILD_HTTP=false -DBUILD_JDBC=false -DBUILD_DEPENDENCY_TESTS=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/`
-          make -j14
-          cd ../../
-
-      - name: Start TDengine 2.x
-        run: |
-          tree TDengine_v2/build/build/
-          sudo mkdir -p /etc/taos/ || true
-          export C_INCLUDE_PATH=$PWD/TDengine_v2/build/build/bin
-          export LD_LIBRARY_PATH=$PWD/TDengine_v2/build/build/lib
-          mkdir -p /tmp/taos/v2/data /tmp/taos/log/v2
-          printf "dataDir /tmp/taos/v2/data\nlogDir /tmp/taos/v2/log\ndebugFlag 135\n" |sudo tee /etc/taos/taos.cfg
-          ./TDengine_v2/build/build/bin/taosadapter &
-          ./TDengine_v2/build/build/bin/taosd &
-
-      - name: Test 2.x
-        run: |
-          export LD_LIBRARY_PATH=$PWD/TDengine_v2/build/build/lib
-          #source $VENV
-          export TDENGINE_URL=localhost:6041
-          poetry run pytest tests --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest tests
-
-      - name: 'Upload taosd logs'
-        if: failure()
-        uses: actions/upload-artifact@v4
+      - name: Get CMake
+        uses: lukka/get-cmake@latest
         with:
-          name: taosd-log-v2
-          path: /tmp/taos/v2/log/
-          retention-days: 1
-
-      - name: Stop TDengine 2.x and clean data
-        run: |
-          kill -9 $(pidof taosd)
-          kill -9 $(pidof taosadapter)
-          rm -rf /tmp/taos/* || true
-          rm -rf /var/log/taos/* || true
+          cmakeVersion: 3.31.6
 
       - name: Determine TDengine branch
         uses: haya14busa/action-cond@v1
         id: determine-branch
         with:
           cond: ${{ github.base_ref == 'main' }}
-          if_true: 'main'
+          if_true: '3.3.6'
           if_false: '3.0'
 
       - name: Checkout tdengine
@@ -162,9 +128,6 @@ jobs:
           export TDENGINE_URL=localhost:6041
           curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
           poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
-          poetry run pip3 install taos-ws-py
-          poetry run pytest ./taos-ws-py/tests/
-
 
       - name: 'Upload taosd logs'
         if: failure()

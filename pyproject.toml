@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "taospy"
-version = "2.7.21"
-description = "TDengine connector for python"
+version = "2.7.23"
+description = "The official TDengine python connector"
 authors = ["Taosdata Inc. <support@taosdata.com>"]
 license = "MIT"
 readme = "README.md"
@@ -19,7 +19,7 @@ packages = [
 "taosws" = "taos.sqlalchemy:TaosWsDialect"
 
 [tool.poetry.dependencies]
-python = ">=3.6.2,<3.12"
+python = ">=3.6.2,<4.0"
 pytz = "*"
 iso8601 = "1.0.2"
 requests = ">=2.27.1"
