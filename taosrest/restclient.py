@@ -90,22 +90,6 @@ class RestClient:
         else:
             raise TypeError("timezone argument must be an instance of str or tzinfo")
 
-    # def get_taosd_token(self) -> str:
-    #     """
-    #     Get authorization token.
-    #     """
-    #     response = urlopen(self._login_url, timeout=self._timeout)
-    #     self._check_status(response)
-    #
-    #     resp = json.load(response)
-    #     if "status" in resp:
-    #         if resp["status"] != "succ":
-    #             raise ConnectError(resp["desc"], status=resp["status"])
-    #     else:
-    #         if resp["code"] != 0:
-    #             raise ConnectError(resp["desc"], resp["code"])
-    #     return resp["desc"]
-
     def sql(self, q: str, req_id: Optional[int] = None) -> dict:
         """
         Execute sql and return the JSON response.
