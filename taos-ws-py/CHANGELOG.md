@@ -6,11 +6,13 @@ The format is based on [Conventional Changelog](https://www.conventionalcommits.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## v0.3.9 - 2025-02-22
+## v0.4.0 - 2025-03-31
 
 ### Features:
 
 - support dynamic add tmq attribute for taosws
+
+## v0.3.9 - 2025-02-22
 
 ### Bug Fixes:
 
