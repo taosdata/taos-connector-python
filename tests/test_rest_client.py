@@ -15,7 +15,8 @@ load_dotenv()
 def test_auth():
     url = os.environ["TDENGINE_URL"]
     client = RestClient(url, user="root", password="taosdata")
-    print(client._taosd_token)
+    resp = client.sql("select server_version()")
+    print("\n", resp)
 
 
 @check_env

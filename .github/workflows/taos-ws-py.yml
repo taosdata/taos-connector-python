@@ -182,6 +182,11 @@ jobs:
           path: "TDengine_v3"
           ref:  ${{ steps.determine-branch.outputs.value }}
 
+      - name: Get CMake
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: 3.31.6
+
       - name: Build TDengine 3.0
         run: |
           pwd
