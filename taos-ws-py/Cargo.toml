@@ -1,9 +1,8 @@
 [package]
 name = "taos-ws-py"
-version = "0.3.2"
+version = "0.4.0"
 edition = "2021"
 publish = false
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
 name = "taosws"
@@ -11,20 +10,34 @@ crate-type = ["cdylib"]
 
 [dependencies]
 anyhow = "1"
-log = "0.4"
-serde_json = "1"
-shadow-rs = "0.20.0"
-taos = { version = "0.11.0", default-features = false, features = ["optin", "ws-rustls"] }
-pretty_env_logger = "0.5"
 chrono = "0.4"
+log = "0.4"
+pretty_env_logger = "0.5"
 rustls = "=0.21.7"
 rustls-webpki = "=0.101.6"
 sct = "=0.7.0"
-ring = "=0.16.20"
+serde_json = "1"
+shadow-rs = { version = "0.33.0", default-features = false }
 
 [build-dependencies]
-shadow-rs = "0.20.0"
+shadow-rs = { version = "0.33.0", default-features = false }
 
 [dependencies.pyo3]
 version = "0.17.3"
 features = ["extension-module", "anyhow", "chrono", "abi3-py37"]
+
+[target.'cfg(windows)'.dependencies]
+taos = { git = "https://github.com/taosdata/taos-connector-rust.git", branch = "main", default-features = false, features = [
+	"optin",
+	"ws-rustls",
+	"ws-rustls-aws-lc-crypto-provider",
+] }
+[target.'cfg(unix)'.dependencies]
+taos = { git = "https://github.com/taosdata/taos-connector-rust.git", branch = "main", default-features = false, features = [
+	"optin",
+	"ws-rustls",
+	"ws-rustls-ring-crypto-provider",
+] }
+
+[patch.crates-io]
+ring = { git = "https://github.com/taosdata/ring.git", branch = "fix/loongarch" }

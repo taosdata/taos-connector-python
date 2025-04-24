@@ -131,7 +131,7 @@ class Message:
                     blocks[i] = f(block_data, [], num_rows, offsets, precision)
                 else:
                     f = convert_block_func(fields[i]["type"], self.decode_binary)
-                    is_null = [taos_is_null(self.msg, j, i) for j in range(num_rows)]
+                    is_null = taos_is_null_by_column(self.msg, num_rows, i)
                     blocks[i] = f(block_data, is_null, num_rows, [], precision)
 
             message_blocks.append(
@@ -170,23 +170,6 @@ class TopicPartition:
 
 
 class Consumer:
-    default_config = {
-        'group.id',
-        'client.id',
-        'msg.with.table.name',
-        'enable.auto.commit',
-        'auto.commit.interval.ms',
-        'auto.offset.reset',
-        'experimental.snapshot.enable',
-        'enable.heartbeat.background',
-        'experimental.snapshot.batch.size',
-        'td.connect.ip',
-        'td.connect.user',
-        'td.connect.pass',
-        'td.connect.port',
-        'td.connect.db',
-    }
-
     def __init__(self, configs):
         if 'group.id' not in configs:
             raise TmqError('missing group.id in consumer config setting')
@@ -197,11 +180,9 @@ class Consumer:
         tmq_conf = tmq_conf_new()
         try:
             for key in configs:
-                if key not in self.default_config:
-                    if key == "decode_binary":
-                        self.decode_binary = configs[key]
-                        continue
-                    raise TmqError('Unrecognized configs: %s' % key)
+                if key == "decode_binary":
+                    self.decode_binary = configs[key]
+                    continue
                 tmq_conf_set(tmq_conf, key=key, value=configs[key])
 
             self._tmq = tmq_consumer_new(tmq_conf)

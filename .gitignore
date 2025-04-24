@@ -149,10 +149,11 @@ Thumbs.db
 
 # profiling data
 .prof
-
+.history/
 
 # End of https://www.toptal.com/developers/gitignore/api/python
 setup.py
+.devcontainer
 .vscode
 .idea
 docs

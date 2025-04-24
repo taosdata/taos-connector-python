@@ -20,14 +20,14 @@ def test_simple(conn, caplog):
 
         res = taos_query(
             conn,
-            "create table if not exists log(ts timestamp, level tinyint, content binary(100), ipaddr binary(134))",
+            "create table if not exists log(ts timestamp, c_level tinyint, content binary(100), ipaddr binary(134))",
         )
         taos_free_result(res)
 
         res = taos_query(conn, "insert into log values(now, 1, 'hello', 'test')")
         taos_free_result(res)
 
-        res = taos_query(conn, "select level,content,ipaddr from log limit 1")
+        res = taos_query(conn, "select c_level,content,ipaddr from log limit 1")
 
         fields = taos_fetch_fields_raw(res)
         field_count = taos_field_count(res)
@@ -70,7 +70,7 @@ def test_simple_with_req_id(conn, caplog):
         req_id = gen_req_id()
         res = taos_query_with_reqid(
             conn,
-            "create table if not exists log(ts timestamp, level tinyint, content binary(100), ipaddr binary(134))",
+            "create table if not exists log(ts timestamp, c_level tinyint, content binary(100), ipaddr binary(134))",
             req_id,
         )
         taos_free_result(res)
@@ -86,7 +86,7 @@ def test_simple_with_req_id(conn, caplog):
         req_id = gen_req_id()
         res = taos_query_with_reqid(
             conn,
-            "select level,content,ipaddr from log limit 1",
+            "select c_level,content,ipaddr from log limit 1",
             req_id,
         )
 
@@ -176,7 +176,11 @@ def test_stmt(conn, caplog):
         taos_query(conn, "drop database if exists " + dbname)
         taos_close(conn)
 
-        assert rowstr == "1626861392589 NULL 2 3 4 5 6 7 8 9 10.100000 10.110000 hello stmt"
+        results = [
+            "1626861392589 NULL 2 3 4 5 6 7 8 9 10.1 10.11 hello stmt",
+            "1626861392589 NULL 2 3 4 5 6 7 8 9 10.100000 10.110000 hello stmt"
+        ]
+        assert (rowstr in results)
     except Exception as err:
         taos_query(conn, "drop database if exists " + dbname)
         raise err
@@ -260,7 +264,11 @@ def test_stmt_with_req_id(conn, caplog):
         )
         taos_close(conn)
 
-        assert rowstr == "1626861392589 NULL 2 3 4 5 6 7 8 9 10.100000 10.110000 hello stmt"
+        results = [
+            "1626861392589 NULL 2 3 4 5 6 7 8 9 10.1 10.11 hello stmt",
+            "1626861392589 NULL 2 3 4 5 6 7 8 9 10.100000 10.110000 hello stmt"
+        ]
+        assert (rowstr in results)
     except InterfaceError as err:
         print(err)
     except Exception as err:

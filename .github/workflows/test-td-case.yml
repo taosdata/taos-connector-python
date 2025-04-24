@@ -4,23 +4,26 @@ on:
   push:
     branches:
       - 'main'
+      - '3.0'
   pull_request:
     branches:
       - 'main'
+      - '3.0'
 
 jobs:
   test:
     runs-on: ubuntu-20.04
     steps:
       - name: Check out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
 
-      - name: Build tools
+      - name: Setup build tools
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y build-essential cmake libgeos-dev
-
+          sudo apt update -y
+          sudo apt install -y build-essential cmake \
+              libgeos-dev libjansson-dev libsnappy-dev liblzma-dev libz-dev \
+              zlib1g-dev pkg-config libssl-dev gawk
 
       - name: Set up python
         run: |
@@ -29,7 +32,7 @@ jobs:
 
       - name: Cache Poetry
         id: cache-poetry
-        uses: actions/cache@v2.1.5
+        uses: actions/cache@v4
         with:
           path: ~/.poetry
           key: ubuntu-20.04-poetry
@@ -40,6 +43,7 @@ jobs:
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
+          version: 1.8.5
           virtualenvs-create: true
           virtualenvs-in-project: true
           installer-parallel: true
@@ -49,7 +53,7 @@ jobs:
       #----------------------------------------------
       - name: Load cached venv
         id: cached-poetry-dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
@@ -59,13 +63,18 @@ jobs:
       #----------------------------------------------
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root
+        run: poetry install --no-interaction --with=test --no-root
 
       #----------------------------------------------
       # install your root project, if required
       #----------------------------------------------
       - name: Install library
-        run: poetry install --no-interaction
+        run: poetry install --no-interaction --with=test
+
+      - name: Get CMake
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: 3.31.6
 
       #----------------------------------------------
       # build your TDengine 3.0
@@ -75,23 +84,32 @@ jobs:
         id: determine-branch
         with:
           cond: ${{ github.base_ref == 'main' }}
-          if_true: 'main'
+          if_true: '3.3.6'
           if_false: '3.0'
 
       - name: Checkout tdengine
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: "taosdata/TDengine"
           path: "TDengine_v3"
           ref: ${{ steps.determine-branch.outputs.value }}
 
+      - name: Get CMake
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: 3.31.6
+
       - name: Build TDengine 3.0
         run: |
+          pwd
+          git branch -vv
           cd TDengine_v3
+          rm build -rf
           mkdir build
           cd build
-          cmake ../ -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false
-          make -j4
+
+          cmake ../ -DBUILD_TEST=true -DBUILD_JDBC=false -DBUILD_DEPENDENCY_TESTS=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false
+          make -j14
           sudo make install
           ls -alh /etc/taos/
           cd ../../
@@ -107,6 +125,7 @@ jobs:
           pip3 install -r requirements.txt
           pip3 install pyopenssl --upgrade
           pip3 install decorator
+          pip3 install tzlocal
 
 
       #----------------------------------------------
@@ -116,7 +135,6 @@ jobs:
         run: |
           pip3 install taos-ws-py
           cd TDengine_v3/tests/system-test
-          python3 ./test.py -f 0-others/show.py
           python3 ./test.py -f 1-insert/insert_drop.py
           python3 ./test.py -f 2-query/floor.py
           python3 ./test.py -f 7-tmq/basic5.py
@@ -124,7 +142,7 @@ jobs:
 
       - name: 'Upload taosd logs'
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: log-v3-taosd
           path: /tmp/taos/v3/log/

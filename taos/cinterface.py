@@ -109,7 +109,7 @@ else:
     )
 
     # use _v3s TaosField overwrite _v2s here, dont change import order
-    from taos.field_v3 import CONVERT_FUNC_BLOCK_v3, TaosFields, TaosField, convert_block_func_v3
+    from taos.field_v3 import CONVERT_FUNC_BLOCK_v3, TaosFields, TaosFieldEs, TaosField, TaosFieldE, TAOS_FIELD_T, TaosFieldAll, TaosFieldAllCls, convert_block_func_v3
     from taos.constants import FieldType
 
     IS_V3 = True
@@ -191,7 +191,8 @@ _libtaos.taos_close.argtypes = (c_void_p,)
 def taos_close(connection):
     # type: (c_void_p) -> None
     """Close the TAOS* connection"""
-    _libtaos.taos_close(connection)
+    if _libtaos.taos_close is not None:
+        _libtaos.taos_close(connection)
 
 
 _libtaos.taos_connect.restype = c_void_p
@@ -470,6 +471,7 @@ def taos_use_result(result):
     """Use result after calling self.query, it's just for 1.6."""
     fields = []
     pfields = taos_fetch_fields_raw(result)
+    pfields = cast(pfields, POINTER(TaosField))
     for i in range(taos_field_count(result)):
         fields.append(
             {
@@ -489,6 +491,21 @@ _libtaos.taos_is_null.argtypes = ctypes.c_void_p, c_int, c_int
 def taos_is_null(result, row, col):
     return _libtaos.taos_is_null(result, row, col)
 
+_can_get_is_null_by_column = True
+try:
+    _libtaos.taos_is_null_by_column.restype = c_int
+    _libtaos.taos_is_null_by_column.argtypes = (c_void_p, c_int, ctypes.POINTER(c_bool), ctypes.POINTER(c_int))
+except Exception as err:
+    _can_get_is_null_by_column = False
+    _UNSUPPORTED["taos_is_null_by_column"] = err
+
+def taos_is_null_by_column(result, row, col):
+    pRow = pointer(c_int(row))
+    is_nulls = (c_bool * row)()
+    errno = _libtaos.taos_is_null_by_column(result, col, is_nulls, pRow)
+    if errno != 0:
+        raise InternalError(errno=errno, msg=taos_errstr(result))
+    return is_nulls
 
 _libtaos.taos_fetch_block.restype = c_int
 _libtaos.taos_fetch_block.argtypes = c_void_p, c_void_p
@@ -539,7 +556,10 @@ def taos_fetch_block_v3(result, fields=None, field_count=None, decode_binary=Tru
             f = convert_block_func_v3(fields[i]["type"], decode_binary=decode_binary)
             blocks[i] = f(data, is_null, num_of_rows, offsets, precision)
         else:
-            is_null = [taos_is_null(result, j, i) for j in range(num_of_rows)]
+            if _can_get_is_null_by_column:
+                is_null = taos_is_null_by_column(result, num_of_rows, i)
+            else:
+                is_null = [taos_is_null(result, j, i) for j in range(num_of_rows)]
             f = convert_block_func(fields[i]["type"], decode_binary=decode_binary)
             blocks[i] = f(data, is_null, num_of_rows, offsets, precision)
 
@@ -641,11 +661,29 @@ def taos_fetch_fields_raw(result):
     return c_void_p(_libtaos.taos_fetch_fields(result))
 
 
+try:
+    _libtaos.taos_fetch_fields_e.restype = c_void_p
+    _libtaos.taos_fetch_fields_e.argstype = (c_void_p,)
+except Exception as err:
+    _UNSUPPORTED["taos_fetch_fields_e"] = err
+
+def taos_fetch_fields_e_raw(result):
+    # type: (c_void_p) -> c_void_p
+    return c_void_p(_libtaos.taos_fetch_fields_e(result))
+
+
 def taos_fetch_fields(result):
     # type: (c_void_p) -> TaosFields
     fields = taos_fetch_fields_raw(result)
     count = taos_field_count(result)
     return TaosFields(fields, count)
+
+
+def taos_fetch_fields_e(result):
+    # type: (c_void_p) -> TaosFieldEs
+    fields = taos_fetch_fields_e_raw(result)
+    count = taos_field_count(result)
+    return TaosFieldEs(fields, count)
 
 
 def taos_fetch_lengths(result, field_count=None):
@@ -730,10 +768,10 @@ _libtaos.taos_print_row.argstype = (c_char_p, c_void_p, c_void_p, c_int)
 
 
 def taos_print_row(row, fields, num_fields, buffer_size=4096):
-    # type: (ctypes.c_void_p, ctypes.c_void_p | TaosFields, int, int) -> str
+    # type: (ctypes.c_void_p, ctypes.c_void_p | TaosFields | TaosFieldEs, int, int) -> str
     """Print an row to string"""
     p = ctypes.create_string_buffer(buffer_size)
-    if isinstance(fields, TaosFields):
+    if isinstance(fields, TaosFields) or (IS_V3 and isinstance(fields, TaosFieldEs)):
         _libtaos.taos_print_row(p, row, fields.as_ptr(), num_fields)
     else:
         _libtaos.taos_print_row(p, row, fields, num_fields)
@@ -767,9 +805,6 @@ def taos_stmt_init(connection):
     return c_void_p(_libtaos.taos_stmt_init(connection))
 
 
-_libtaos.taos_stmt_prepare.restype = c_int
-_libtaos.taos_stmt_prepare.argstype = (c_void_p, c_char_p, c_int)
-
 # taos_stmt_init_with_reqid
 try:
     _libtaos.taos_stmt_init_with_reqid.restype = c_void_p
@@ -789,6 +824,10 @@ def taos_stmt_init_with_reqid(connection, req_id):
     """
     _check_if_supported()
     return c_void_p(_libtaos.taos_stmt_init_with_reqid(connection, req_id))
+
+
+_libtaos.taos_stmt_prepare.restype = c_int
+_libtaos.taos_stmt_prepare.argstype = (c_void_p, c_char_p, c_int)
 
 
 def taos_stmt_prepare(stmt, sql):
@@ -1052,6 +1091,260 @@ try:
     )
 except Exception as err:
     _UNSUPPORTED["taos_schemaless_insert"] = err
+
+############################################ stmt2 begin ############################################
+
+# char *taos_stmt2_error(TAOS_STMT2 *stmt);
+try:
+    _libtaos.taos_stmt2_error.restype = c_char_p
+    _libtaos.taos_stmt2_error.argstype = (c_void_p,)
+except Exception as err:
+    _UNSUPPORTED["taos_stmt2_error"] = err
+
+
+def taos_stmt2_error(stmt):
+    # type: (ctypes.c_void_p) -> str | None
+    """
+    Get error message from statement
+    @stmt: c_void_p TAOS_STMT2*
+    """
+    _check_if_supported()
+    err = c_char_p(_libtaos.taos_stmt2_error(stmt))
+    if err:
+        return err.value.decode("utf-8")
+    else:
+        return None
+
+
+# TAOS_STMT2 *taos_stmt2_init(TAOS *taos, TAOS_STMT2_OPTION *option);
+try:
+    _libtaos.taos_stmt2_init.restype = c_void_p
+    _libtaos.taos_stmt2_init.argtypes = (c_void_p, c_void_p)
+except Exception as err:
+    _UNSUPPORTED["taos_stmt2_init"] = err
+
+
+def taos_stmt2_init(taos, option):
+    # type: (ctypes.c_void_p, TaosStmt2OptionImpl|None) -> ctypes.c_void_p
+    """
+    Initialize a statement with options.
+    @param taos: TAOS*, pointer to TAOS connection
+    @param option: TAOS_STMT2_OPTION*, initialization options
+    @return: c_void_p, pointer to initialized statement
+    """
+    _check_if_supported()
+    option_ptr = ctypes.byref(option) if option is not None else c_void_p(None)
+    stmt = c_void_p(_libtaos.taos_stmt2_init(taos, option_ptr))
+    if not stmt:
+        raise StatementError(msg="stmt2 init failed.")
+    #
+    return stmt
+
+
+# int taos_stmt2_prepare(TAOS_STMT2 *stmt, const char *sql, unsigned long length);
+try:
+    _libtaos.taos_stmt2_prepare.restype = c_int
+    _libtaos.taos_stmt2_prepare.argstype = (c_void_p, c_char_p, c_ulong)
+except Exception as err:
+    _UNSUPPORTED["taos_stmt2_prepare"] = err
+
+
+def taos_stmt2_prepare(stmt, sql):
+    # type: (ctypes.c_void_p, str) -> None
+    """
+    Prepare a statement query
+    @stmt: c_void_p TAOS_STMT2*
+    @sql: str SQL query
+    """
+    _check_if_supported()
+    buffer = sql.encode("utf-8")
+    res = _libtaos.taos_stmt2_prepare(stmt, ctypes.c_char_p(buffer), len(buffer))
+    if res != 0:
+        error_msg = taos_stmt2_error(stmt)
+        raise StatementError(msg=error_msg, errno=res)
+    #
+
+
+# int taos_stmt2_bind_param(TAOS_STMT2 *stmt, TAOS_STMT2_BINDV *bindv, int32_t col_idx);
+try:
+    _libtaos.taos_stmt2_bind_param.restype = ctypes.c_int
+    _libtaos.taos_stmt2_bind_param.argtypes = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int32)
+except Exception as err:
+    _UNSUPPORTED["taos_stmt2_bind_param"] = err
+
+
+def taos_stmt2_bind_param(stmt, bindv, col_idx):
+    # type: (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int32) -> None
+    """
+    Bind params in the statement.
+    @stmt: TAOS_STMT2*
+    @bindv: TAOS_STMT2_BINDV*
+    @col_idx: c_int32 column index
+    """
+    _check_if_supported()
+    res = _libtaos.taos_stmt2_bind_param(stmt, bindv, col_idx)
+    if res != 0:
+        error_msg = taos_stmt2_error(stmt)
+        raise StatementError(msg=error_msg, errno=res)
+
+
+# int taos_stmt2_exec(TAOS_STMT2 *stmt, int *affected_rows);
+try:
+    _libtaos.taos_stmt2_exec.restype = c_int
+    _libtaos.taos_stmt2_exec.argstype = (c_void_p,ctypes.POINTER(ctypes.c_int))
+except Exception as err:
+    _UNSUPPORTED["taos_stmt2_exec"] = err
+
+
+def taos_stmt2_exec(stmt):
+    # type: (ctypes.c_void_p) -> int
+    """
+    Execute a statement
+    @stmt: c_void_p *TAOS_STMT2
+    @return: int number of affected rows
+    """
+    _check_if_supported()
+    affected_rows = ctypes.c_int(0)
+    res = _libtaos.taos_stmt2_exec(stmt, ctypes.byref(affected_rows))
+    if res != 0:
+        error_msg = taos_stmt2_error(stmt)
+        raise StatementError(msg=error_msg, errno=res)
+    #
+    return affected_rows.value
+
+
+# int taos_stmt2_close(TAOS_STMT2 *stmt);
+try:
+    _libtaos.taos_stmt2_close.restype = c_int
+    _libtaos.taos_stmt2_close.argstype = (c_void_p,)
+except Exception as err:
+    _UNSUPPORTED["taos_stmt2_close"] = err
+
+
+def taos_stmt2_close(stmt):
+    # type: (ctypes.c_void_p) -> None
+    """
+    Close a statement
+    @stmt: c_void_p TAOS_STMT2*
+    """
+    _check_if_supported()
+    res = _libtaos.taos_stmt2_close(stmt)
+    if res != 0:
+        error_msg = taos_stmt2_error(stmt)
+        raise StatementError(msg=error_msg, errno=res)
+    #
+
+
+# int taos_stmt2_is_insert(TAOS_STMT2 *stmt, int *insert);
+try:
+    _libtaos.taos_stmt2_is_insert.restype = c_int
+    _libtaos.taos_stmt2_is_insert.argstype = (c_void_p,ctypes.POINTER(ctypes.c_int))
+except Exception as err:
+    _UNSUPPORTED["taos_stmt2_is_insert"] = err
+
+
+def taos_stmt2_is_insert(stmt):
+    # type: (ctypes.c_void_p) -> bool
+    """
+    Check if the statement is an insert statement.
+    @stmt: c_void_p TAOS_STMT2*
+    @return: bool True if it's an insert statement, False otherwise
+    """
+    _check_if_supported()
+    is_insert = ctypes.c_int(0)
+    res = _libtaos.taos_stmt2_is_insert(stmt, ctypes.byref(is_insert))
+    if res != 0:
+        error_msg = taos_stmt2_error(stmt)
+        raise StatementError(msg=error_msg, errno=res)
+    #
+    return is_insert.value !=0
+
+
+# int taos_stmt2_get_fields(TAOS_STMT2 *stmt, int *count, TAOS_FIELD_E **fields);
+try:
+    _libtaos.taos_stmt2_get_fields.restype = c_int
+    _libtaos.taos_stmt2_get_fields.argstype = (c_void_p,c_int,ctypes.POINTER(ctypes.c_int),ctypes.c_void_p)
+except Exception as err:
+    _UNSUPPORTED["taos_stmt2_get_fields"] = err
+
+
+# void taos_stmt2_free_fields(TAOS_STMT2 *stmt, TAOS_FIELD_E *fields);
+try:
+    _libtaos.taos_stmt2_free_fields.argstype = (c_void_p,c_int,ctypes.c_void_p)
+except Exception as err:
+    _UNSUPPORTED["taos_stmt2_free_fields"] = err
+
+# define field_type 
+TAOS_FIELD_COL    = 1 
+TAOS_FIELD_TAG    = 2
+TAOS_FIELD_QUERY  = 3
+TAOS_FIELD_TBNAME = 4
+# get fields 
+def taos_stmt2_get_fields(stmt):
+    # type: (ctypes.c_void_p) -> Tuple[int, List[TaosFieldAll]]
+    """
+    Get fields information for a given statement and field type.
+    @stmt: c_void_p TAOS_STMT2*
+    @return: Tuple(int, List[TAOS_FIELD_E]) count, list of fields
+    """
+    _check_if_supported()
+    _check_if_supported("taos_stmt2_free_fields")
+    count = ctypes.c_int(0)
+    # fields_ptr = ctypes.c_void_p(0)
+    # TODO: FIXME
+    fields_ptr = ctypes.POINTER(TaosFieldAll)()
+
+    res = _libtaos.taos_stmt2_get_fields(stmt, ctypes.byref(count), ctypes.byref(fields_ptr))
+    if res != 0:
+        error_msg = taos_stmt2_error(stmt)
+        raise StatementError(msg=error_msg, errno=res)
+    #
+
+    # TODO: FIXME
+    fields = []
+    for i in range(count.value):
+        field_c: TaosFieldAll = fields_ptr[i]
+        field_py = TaosFieldAllCls(
+            name       = field_c.name,
+            type       = field_c.type,
+            precision  = field_c.precision,
+            scale      = field_c.scale,
+            bytes_     = field_c.bytes,
+            field_type = field_c.field_type
+        )
+        fields.append(field_py)
+
+    _libtaos.taos_stmt2_free_fields(stmt, fields_ptr)
+    return count.value, fields
+
+
+# TAOS_RES *taos_stmt2_result(TAOS_STMT2 *stmt);
+try:
+    _libtaos.taos_stmt2_result.restype = c_void_p
+    _libtaos.taos_stmt2_result.argstype = (c_void_p,)
+except Exception as err:
+    _UNSUPPORTED["taos_stmt2_result"] = err
+
+
+def taos_stmt2_result(stmt):
+    # type: (ctypes.c_void_p) -> ctypes.c_void_p
+    """
+    Get the result set from a statement execution.
+    @stmt: c_void_p TAOS_STMT2*
+    @return: ctypes.POINTER(TAOS_RES) result set pointer
+    """
+    _check_if_supported()
+    res = _libtaos.taos_stmt2_result(stmt)
+    if not res:
+        error_msg = _libtaos.taos_stmt2_error(stmt)
+        raise StatementError(msg=error_msg, errno=-1)
+    #
+    return res
+
+
+
+
+############################################ stmt2 end ############################################
 
 
 def taos_schemaless_insert(
