@@ -5,7 +5,6 @@ from taos import utils, IS_V3
 from taos.error import InterfaceError
 import taos
 
-
 def test_query():
     """This test will use fetch_block for rows fetching, significantly faster than rows_iter"""
     conn = taos.connect()
