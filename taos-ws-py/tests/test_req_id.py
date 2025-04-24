@@ -139,12 +139,12 @@ def test_execute_with_req_id(ctx):
     conn, db = ctx
     ws = conn
     cur = ws.cursor()
-    res = cur.execute_with_req_id('show dnodes', 1)
+    res = cur.execute_with_req_id('show dnodes', 10)
     print(f'res: {res}')
-    cur.execute_with_req_id(f"drop database if exists {db}", req_id=1)
-    cur.execute_with_req_id(f"create database {db}", req_id=1)
-    cur.execute_with_req_id("use {name}", name=db, req_id=1)
-    cur.execute_with_req_id("create stable stb (ts timestamp, v1 int) tags(t1 int)", req_id=1)
+    cur.execute_with_req_id(f"drop database if exists {db}", req_id=11)
+    cur.execute_with_req_id(f"create database {db}", req_id=12)
+    cur.execute_with_req_id("use {name}", name=db, req_id=13)
+    cur.execute_with_req_id("create stable stb (ts timestamp, v1 int) tags(t1 int)", req_id=14)
 
     data = [
         {

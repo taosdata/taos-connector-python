@@ -5,7 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Conventional Changelog](https://www.conventionalcommits.org/en/v1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v0.2.2 - 2023-01-13
+
+## v0.4.0 - 2025-03-31
+
+### Features:
+
+- support dynamic add tmq attribute for taosws
+
+## v0.3.9 - 2025-02-22
+
+### Bug Fixes:
+
+-  offset maybe euqal or over 0
+-  poetry --with:dev compatible old programe
+-  test_pandas is taospy test case
+- **(ws)**:  fix cursor fetchmany
+
+### Documents:
+
+-  changelog rewrite
+
+## v0.3.8 - 2025-01-02
+
+### Features:
+
+-  Supported Apache SuperSet with TDengine Cloud Data Source
+
+
+## v0.3.3 - 2024-09-19
+
+### Enhancements:
+
+- add api committed, position
+- update  cargo taos version
+- **(ws)**: add tmq commit_offset
+- **(ws)**: add tmq list_topics
+
+### Documents:
+
+- update dev cmd
 
 ## v0.3.2 - 2023-12-15
 

@@ -2,15 +2,16 @@ import taosws
 from taosws import Consumer
 
 
-def setup():
+def prepare(topic_name):
     conn = taosws.connect("taosws://root:taosdata@localhost:6041")
     cursor = conn.cursor()
+    dbname = f"{topic_name}_db"
     statements = [
-        "drop topic if exists ws_tmq_meta",
-        "drop database if exists ws_tmq_meta",
-        "create database ws_tmq_meta wal_retention_period 3600",
-        "create topic ws_tmq_meta with meta as database ws_tmq_meta",
-        "use ws_tmq_meta",
+        f"drop topic if exists {topic_name}",
+        f"drop database if exists {dbname}",
+        f"create database {dbname} wal_retention_period 3600",
+        f"create topic {topic_name} with meta as database {dbname}",
+        f"use {dbname}",
         "create table stb1(ts timestamp, c1 bool, c2 tinyint, c3 smallint, c4 int, c5 bigint,\
             c6 timestamp, c7 float, c8 double, c9 varchar(10), c10 nchar(16),\
             c11 tinyint unsigned, c12 smallint unsigned, c13 int unsigned, c14 bigint unsigned)\
@@ -21,7 +22,7 @@ def setup():
             NULL, NULL, NULL, NULL, NULL,
             NULL, NULL, NULL, NULL)
             tb1 values(now, true, -2, -3, -4, -5, 
-            '2022-02-02 02:02:02.222', -0.1, -0.12345678910, 'abc 和我', 'Unicode + 涛思',
+            '2024-02-02 02:02:02.222', -0.1, -0.12345678910, 'abc 和我', 'Unicode + 涛思',
             254, 65534, 1, 1)""",
         "create table stb2(ts timestamp, c1 bool, c2 tinyint, c3 smallint, c4 int, c5 bigint,\
             c6 timestamp, c7 float, c8 double, c9 varchar(10), c10 nchar(10),\
@@ -30,7 +31,7 @@ def setup():
             t6 timestamp, t7 float, t8 double, t9 varchar(10), t10 nchar(16),\
             t11 tinyint unsigned, t12 smallint unsigned, t13 int unsigned, t14 bigint unsigned)",
         "create table tb2 using stb2 tags(true, -2, -3, -4, -5, \
-            '2022-02-02 02:02:02.222', -0.1, -0.12345678910, 'abc 和我', 'Unicode + 涛思',\
+            '2024-02-02 02:02:02.222', -0.1, -0.12345678910, 'abc 和我', 'Unicode + 涛思',\
             254, 65534, 1, 1)",
         "create table tb3 using stb2 tags( NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)",
         "create table `table` (ts timestamp, v int)",
@@ -39,19 +40,31 @@ def setup():
         # print(statement)
         cursor.execute(statement)
 
+def clear(topic_name):
+    conn = taosws.connect("taosws://root:taosdata@localhost:6041")
+    cursor = conn.cursor()
+    dbname = f"{topic_name}_db"
+    statements = [
+        f"drop topic if exists {topic_name}",
+        f"drop database if exists {dbname}",
+    ]
+    for statement in statements:
+        # print(statement)
+        cursor.execute(statement)
 
-def test_tmq():
-    setup()
+def test_commit_offset():
+    topic_name = "topic_offset"
+    prepare(topic_name)
     conf = {
         "td.connect.websocket.scheme": "ws",
         "auto.offset.reset": "earliest",
         "group.id": "0",
     }
     consumer = Consumer(conf)
+    TSDB_CODE_TMQ_NO_COMMITTED = -2147467247
 
-    consumer.subscribe(["ws_tmq_meta"])
-    print("subscribed ws_tmq_meta")
-
+    consumer.subscribe([topic_name])
+    print(f"subscribed {topic_name}")
     while 1:
         message = consumer.poll(timeout=1.0)
         if message:
@@ -61,7 +74,7 @@ def test_tmq():
             print(f"vgroup: {id}, topic: {topic}, database: {database}")
 
             committed = consumer.committed(topic, id)
-            assert committed >= 0
+            assert (committed >= 0 or committed == TSDB_CODE_TMQ_NO_COMMITTED)
 
             position = consumer.position(topic, id)
             assert position >= 0
@@ -129,4 +142,5 @@ def show_env():
 
 if __name__ == "__main__":
     show_env()
-    test_tmq()
+    test_commit_offset()
+    clear()

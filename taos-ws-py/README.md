@@ -1,6 +1,5 @@
 <!-- omit in toc -->
-# TDengine Python Connector
-
+# The official TDengine Python websocket connector
 
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/taosdata/taos-connector-python/build.yml)](https://github.com/taosdata/taos-connector-python/actions/workflows/build.yml)
 [![codecov](https://codecov.io/gh/taosdata/taos-connector-python/branch/main/graph/badge.svg?token=BDANN3DBXS)](https://codecov.io/gh/taosdata/taos-connector-python)
@@ -14,8 +13,6 @@
 [![Discord Community](https://img.shields.io/badge/Join_Discord--white?logo=discord&style=social)](https://discord.com/invite/VZdSuUg4pS)
 [![LinkedIn](https://img.shields.io/badge/Follow_LinkedIn--white?logo=linkedin&style=social)](https://www.linkedin.com/company/tdengine)
 [![StackOverflow](https://img.shields.io/badge/Ask_StackOverflow--white?logo=stackoverflow&style=social&logoColor=orange)](https://stackoverflow.com/questions/tagged/tdengine)
-
-English | [简体中文](./README-CN.md)
 
 <!-- omit in toc -->
 ## Table of Contents
@@ -58,20 +55,19 @@ The API for `taospy` is compliant with the Python DB API 2.0 (PEP-249). It conta
 
 Download the repository code and execute the following in root directory to build develop environment:
 ``` bash
-pip3 install -e ./ 
+maturin build
 ```
 
 ## 5. Testing
 ### 5.1 Test Execution
-The Python Connector testing framework is `pytest`  
-The testing directory for `taospy` is located in the root directory: tests/  
-The testing directory for `taos-ws-py` is located in the root directory: taos-ws-py/tests/  
-The test code has been written into one bash file. You can open and view the detailed testing process   
+
+The Python Connector testing framework is `pytest`.
+
+The testing directory for `taos-ws-py` is located in the root directory: taos-ws-py/tests/ .
+
+The test code has been written into one bash file. You can open and view the detailed testing process.
+
 The following command runs all test cases on Linux platform:
-``` bash
-# for taospy
-bash ./test_taospy.sh
-```
 
 ``` bash
 # for taos-ws-py
@@ -85,7 +81,7 @@ You can add new test files or add test cases in existing test files that comply 
 Performance testing is in progress.
 
 ## 6. CI/CD
-- [Build Workflow](https://github.com/taosdata/taos-connector-python/actions/workflows/build.yml)
+- [Build Workflow](https://github.com/taosdata/taos-connector-python/actions/workflows/taos-ws-py.yml)
 - [Code Coverage](https://app.codecov.io/gh/taosdata/taos-connector-python)
 
 ## 7. Submitting Issues
@@ -108,8 +104,8 @@ We welcome developers to contribute to this project. When submitting PRs, please
 7. After submitting the PR, if CI passes, you can find your PR on the [codecov](https://app.codecov.io/gh/taosdata/taos-connector-python/pulls) page to check the test coverage.
 
 ## 9. References
-- [TDengine Official Website](https://www.tdengine.com/) 
-- [TDengine GitHub](https://github.com/taosdata/TDengine) 
+- [TDengine Official Website](https://www.tdengine.com/)
+- [TDengine GitHub](https://github.com/taosdata/TDengine)
 
 ## 10. License
-[MIT License](./LICENSE)
+[MIT License](../LICENSE)
