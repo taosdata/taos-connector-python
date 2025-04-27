@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.8.0 - 2025-04-03
+
+### Bug Fixes:
+
+-  all workflows cmake config
+-  delete token auth
+-  modify version to 2.8.0
+-  optimize null value checks (#317)
+-  password supports special character
+-  remove superset driver TDengine.py
+-  restore 0.4.0 changelog
+-  test auth base64
+-  uniform python name
+-  workflows cmake config
+- **(ws)**:  update Cargo.lock
+
+### Documents:
+
+-  add changelog for v2.7.22/v2.7.23
+-  adjust taos-ws-py publish log
+-  python to Python
+
 ## v2.7.23 - 2025-03-24
 - support DECIMAL data type
 

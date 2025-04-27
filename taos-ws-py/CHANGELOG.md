@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## v0.4.0 - 2025-03-31
+## v0.4.0 - 2025-04-03
+
+### Features:
+
+-  support dynamic add tmq attribute for taosw
+
+### Bug Fixes:
+
+-  restore 0.4.0 changelog
+- **(ws)**:  update Cargo.lock
+
+### Documents:
+
+-  adjust taos-ws-py publish log
+
 
 ### Features:
 
