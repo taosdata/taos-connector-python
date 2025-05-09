@@ -212,6 +212,12 @@ impl Connection {
         let stmt = TaosStmt::init(self)?;
         Ok(stmt)
     }
+
+    pub fn stmt2_statement(&self) -> PyResult<TaosStmt2> {
+        let stmt2 = TaosStmt2::init(self)?;
+        Ok(stmt2)
+    }
+
 }
 
 #[pymethods]
@@ -452,6 +458,61 @@ impl TaosStmt {
         let rows = self
             ._inner
             .execute()
+            .map_err(|err| QueryError::new_err(err.to_string()))?;
+        Ok(rows)
+    }
+
+    fn affect_rows(&mut self) -> PyResult<usize> {
+        let rows = self._inner.affected_rows();
+        Ok(rows)
+    }
+
+    fn close(&self) -> PyResult<()> {
+        Ok(())
+    }
+}
+
+#[pyclass]
+#[derive(Debug)]
+struct TaosStmt2 {
+    _inner: Stmt2,
+}
+
+#[pyclass]
+#[derive(Debug, Clone)]
+struct PyStmt2BindParam {
+    _inner: Stmt2BindParam,
+}
+
+#[pymethods]
+impl TaosStmt2 {
+    #[new]
+    fn init(conn: &Connection) -> PyResult<TaosStmt2> {
+        let stmt: Stmt2 = Stmt2::init(conn.current_cursor()?)
+            .map_err(|err| ConnectionError::new_err(err.to_string()))?;
+        let stmt: TaosStmt2 = TaosStmt2 { _inner: stmt };
+        return Ok(stmt);
+    }
+
+    fn prepare(&mut self, sql: &str) -> PyResult<()> {
+        self._inner
+            .prepare(sql)
+            .map_err(|err| ProgrammingError::new_err(err.to_string()))?;
+        Ok(())
+    }
+
+    fn bind(&mut self, params: Vec<PyStmt2BindParam>) -> PyResult<()> {
+        let params = params.into_iter().map(|param| param._inner).collect_vec();
+        self._inner
+            .bind(&params)
+            .map_err(|err| ProgrammingError::new_err(err.to_string()))?;
+        Ok(())
+    }
+
+    fn execute(&mut self) -> PyResult<usize> {
+        let rows = self
+            ._inner
+            .exec()
             .map_err(|err| QueryError::new_err(err.to_string()))?;
         Ok(rows)
     }
