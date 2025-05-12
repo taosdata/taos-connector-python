@@ -156,21 +156,6 @@ def taos_options(option, value):
     _value = c_char_p(value.encode("utf-8"))
     _libtaos.taos_options(option, _value)
 
-def taos_options_connection(connection, option, value):
-    _value = c_char_p(value.encode("utf-8"))
-    res = _libtaos.taos_options_connection(connection, option, _value)
-    if res != 0:
-        raise DatabaseError("taos_options_connection error", res)
-    
-    file = open('./test.log', 'a')
-    file.write('{} {} \n'.format(option, value))
-    file.close()
-
-def taos_set_conn_mode(connection, mode, value):
-    res = _libtaos.taos_set_conn_mode(connection, mode, value)
-    if res != 0:
-        raise DatabaseError("taos_set_conn_mode error", res)
-
 def taos_init():
     # type: () -> None
     """

@@ -74,12 +74,6 @@ class TaosConnection(object):
         # type: () -> str
         return taos_get_server_info(self._conn)
 
-    def options_connection(self, option, value):
-        taos_options_connection(self._conn, option, value)
-
-    def set_conn_mode(self, mode, value):
-        taos_set_conn_mode(self._conn, mode, value)
-
     def select_db(self, database):
         # type: (str) -> None
         taos_select_db(self._conn, database)
