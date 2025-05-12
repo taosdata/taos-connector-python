@@ -8,8 +8,8 @@ def test_connect_args():
     Useless args, prevent mistakenly deleted args in connect init.
     Because some case in CI of earlier version may use it.
     """
-    host = "192.168.2.140:6030"
-    conn = connect(host)
+ 
+    conn = connect()
     conn.options_connection(0, "utf8")
     conn.options_connection(1, "UTC")
     conn.options_connection(2, "127.0.0.2")
