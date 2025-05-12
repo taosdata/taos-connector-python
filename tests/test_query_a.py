@@ -54,8 +54,6 @@ class Counter(Structure):
 
 def test_query(conn):
     # type: (TaosConnection) -> None
-    print("ignore test_query... \n")
-    return 
     counter = Counter(count=0)
     conn.execute("drop database if exists pytestquerya")
     conn.execute("create database pytestquerya")
@@ -94,9 +92,6 @@ def test_query(conn):
 
 def test_query_with_req_id(conn):
     # type: (TaosConnection) -> None
-    print("ignore test_query_with_req_id... \n")
-    return 
-
     db_name = "pytestquerya"
     try:
         counter = Counter(count=0)
