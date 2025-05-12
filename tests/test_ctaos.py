@@ -44,7 +44,7 @@ def test_simple(conn, caplog):
 
         row = taos_fetch_row_raw(res)
         rowstr = taos_print_row(row, fields, field_count)
-        assert rowstr == "1 hello test tianjin wuqing'"
+        assert rowstr == "1 hello test tianjin \\x777571696E67"
 
         row, num = taos_fetch_row(res, fields)
         print(row)
