@@ -185,7 +185,7 @@ def _crow_binary_to_python(data, is_null, num_of_rows, nbytes=None, precision=Fi
 
 def _crow_varbinary_to_python(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C binary row to python row."""
-    assert nbytes is not None
+    assert nbytes is None
     return [
         None if is_null[i] else ele.value
         for i, ele in enumerate((ctypes.cast(data, ctypes.POINTER(ctypes.c_char * nbytes)))[: abs(num_of_rows)])
