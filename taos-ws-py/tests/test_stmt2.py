@@ -50,11 +50,10 @@ def test_stmt2_normal():
     stmt2 = conn.stmt2_statement()
     stmt2.prepare("insert into t1 values (?, ?, ?, ?)")
 
-# ✅ 正确：columns 直接传递列对象列表
     pyStmt2Param = taosws.stmt2_bind_param_view(
         table_name="", 
         tags=None, 
-        columns=[  # 直接传递列列表
+        columns=[  
             taosws.millis_timestamps_to_column([1686844800000, 1686844801000, 1686844802000, 1686844803000]),
             taosws.ints_to_column([1, 2, 3, 4]),
             taosws.floats_to_column([1.1, 2.2, 3.3, 4.4]),
@@ -80,7 +79,7 @@ def test_stmt2_stable():
     pyStmt2Param = taosws.stmt2_bind_param_view(
         table_name="stb1_1", 
         tags=[taosws.int_to_tag(1), taosws.varchar_to_tag('aaa'),], 
-        columns=[  # 直接传递列列表
+        columns=[  
             taosws.millis_timestamps_to_column([1686844800000, 1686844801000, 1686844802000, 1686844803000]),
             taosws.ints_to_column([1, 2, 3, 4]),
             taosws.floats_to_column([1.1, 2.2, 3.3, 4.4]),

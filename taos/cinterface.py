@@ -156,6 +156,7 @@ def taos_options(option, value):
     _value = c_char_p(value.encode("utf-8"))
     _libtaos.taos_options(option, _value)
 
+
 def taos_init():
     # type: () -> None
     """

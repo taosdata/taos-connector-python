@@ -1,5 +1,6 @@
 from taos import *
 
+
 def test_connect_args():
     """
     DO NOT DELETE THIS TEST CASE!
