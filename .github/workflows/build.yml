@@ -138,11 +138,13 @@ jobs:
           retention-days: 1
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.xml
+          files: ./coverage.xml
           fail_ci_if_error: false
+          branch: ${{ github.head_ref }}
+          base_commit: ${{ github.base_ref }}
           
 
       - name: Build Artifacts
