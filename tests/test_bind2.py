@@ -81,7 +81,7 @@ def test_new_stmt_bind():
     bind.float(5555)
     bind.double(6.66666666)
     bind.varchar("涛思数据")
-    bind.binary(bytearray([0x01, 0x02, 0x03, 0x04]))
+    bind.binary(b"test bytes")
     bind.binary("涛思数据")
     bind.nchar("涛思数据")
     bind.bigint_unsigned(4)
