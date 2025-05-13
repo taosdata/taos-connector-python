@@ -1,4 +1,5 @@
 # encoding:UTF-8
+from datetime import datetime
 from dotenv import load_dotenv
 
 from taos.cinterface import *
@@ -85,7 +86,13 @@ def test_new_stmt_bind():
     bind.binary("涛思数据")
     bind.nchar("涛思数据")
     bind.bigint_unsigned(4)
-    
+    bind.timestamp(1626861392589)
+    bind.timestamp(datetime.now())
+    bind.timestamp(1612345678.123)
+    bind.timestamp("2025-01-01T00:00:00")
+    bind.json('{"key": "value"}')
+    bind.json(b'{"key": "bytes_value"}')
+
     bind.bool(None)
     bind.tinyint(None)
     bind.tinyint_unsigned(None)
@@ -99,6 +106,8 @@ def test_new_stmt_bind():
     bind.varchar(None)
     bind.binary(None)
     bind.bigint_unsigned(None)
+    bind.timestamp(None)
+    bind.json(None)
 
     print("pass test_new_stmt_binds")    
 
