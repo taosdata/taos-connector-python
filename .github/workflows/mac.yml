@@ -97,7 +97,7 @@ jobs:
           || github.event_name == 'schedule'
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: stable
 
       - name: Set up Rust
         if: |

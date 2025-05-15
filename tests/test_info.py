@@ -1,3 +1,4 @@
+import taos
 from taos.cinterface import *
 
 from taos import *
@@ -21,6 +22,13 @@ def test_server_info(conn):
     print("conn server info: %s" % conn.server_info)
     pass
 
+def test_log():
+    taos.log.setting(True, True, True, True, True, True)
+    taos.log.info("log is info")
+    taos.log.debug("log is debug")
+    taos.log.debug1("log is debug")
+    taos.log.debug2("log is debug")
+    taos.log.debug3("log is debug")
 
 if __name__ == "__main__":
     test_client_info()

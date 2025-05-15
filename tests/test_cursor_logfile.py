@@ -15,10 +15,10 @@ def test_logfile():
     cursor.execute("DROP DATABASE IF EXISTS test")
     cursor.execute("CREATE DATABASE test")
     cursor.execute("USE test")
-    cursor.execute("CREATE STABLE weather(ts TIMESTAMP, temperature FLOAT) TAGS (location INT)")
-    cursor.execute(f"INSERT INTO t1 USING weather TAGS(1) VALUES (now, 23.5) (now+100a, 23.5)")
+    cursor.execute("CREATE STABLE weather(ts TIMESTAMP, temperature FLOAT, city NCHAR(100), country BINARY(100), town VARBINARY(100)) TAGS (location INT)")
+    cursor.execute(f"INSERT INTO t1 USING weather TAGS(1) VALUES (now, 23.5, 'tianjin', 'china', 'wuqing') (now+100a, 23.5, 'tianjin', 'china', 'wuqing')")
     assert cursor.rowcount == 2
-    cursor.execute("SELECT tbname, ts, temperature, location FROM weather LIMIT 1")
+    cursor.execute("SELECT tbname, ts, temperature, city, country, town, location FROM weather LIMIT 1")
     # rowcount can only get correct value after fetching all data
     all_data = cursor.fetchall()
     assert cursor.rowcount == 1
@@ -33,9 +33,9 @@ def test_logfile():
         "DROP DATABASE IF EXISTS test;",
         "CREATE DATABASE test;",
         "USE test;",
-        "CREATE STABLE weather(ts TIMESTAMP, temperature FLOAT) TAGS (location INT);",
-        "INSERT INTO t1 USING weather TAGS(1) VALUES (now, 23.5) (now+100a, 23.5);",
-        "SELECT tbname, ts, temperature, location FROM weather LIMIT 1;",
+        "CREATE STABLE weather(ts TIMESTAMP, temperature FLOAT, city NCHAR(100), country BINARY(100), town VARBINARY(100)) TAGS (location INT);",
+        "INSERT INTO t1 USING weather TAGS(1) VALUES (now, 23.5, 'tianjin', 'china', 'wuqing') (now+100a, 23.5, 'tianjin', 'china', 'wuqing');",
+        "SELECT tbname, ts, temperature, city, country, town, location FROM weather LIMIT 1;",
         "DROP DATABASE IF EXISTS test;",
     ]
     unlink("log.txt")
