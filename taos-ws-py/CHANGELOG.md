@@ -5,8 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Conventional Changelog](https://www.conventionalcommits.org/en/v1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.5.0 - 2025-05-16
 
-## v0.3.8 - 2025-01-02
+### Features:
+
+- **(taos-ws-py)**:  support stmt2 in python websocket connector (#327)
+
 ## v0.4.0 - 2025-03-31
 
 ### Features:
@@ -25,7 +29,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documents:
 
 -  changelog rewrite
-
 
 ### Features:
 
