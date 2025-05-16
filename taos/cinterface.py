@@ -2305,19 +2305,3 @@ class CTaosInterface(object):
 
         return taos_connect(host, user, password, db, port)
 
-
-if __name__ == "__main__":
-    cinter = CTaosInterface()
-    conn = cinter.connect()
-    result = cinter.query(conn, "show databases")
-
-    print("Query Affected rows: {}".format(cinter.affected_rows(result)))
-
-    fields = taos_fetch_fields_raw(result)
-
-    data, num_of_rows = taos_fetch_block(result, fields)
-
-    print(data)
-
-    cinter.free_result(result)
-    cinter.close(conn)

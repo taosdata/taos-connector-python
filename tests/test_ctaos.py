@@ -9,8 +9,7 @@ from taos.utils import gen_req_id
 def conn():
     return CTaosInterface().connect()
 
-
-def test_simple(conn, caplog):
+def test_fetch_row(conn, caplog):
     dbname = "pytest_ctaos_simple"
     try:
         res = taos_query(conn, "create database if not exists %s" % dbname)
@@ -20,14 +19,51 @@ def test_simple(conn, caplog):
 
         res = taos_query(
             conn,
-            "create table if not exists log(ts timestamp, c_level tinyint, content binary(100), ipaddr binary(134))",
+            "create table if not exists log(ts timestamp, c_level tinyint, content binary(100), ipaddr binary(134), city NCHAR(100), town VARBINARY(100))",
         )
         taos_free_result(res)
 
-        res = taos_query(conn, "insert into log values(now, 1, 'hello', 'test')")
+        res = taos_query(conn, "insert into log values(now, 1, 'hello', 'test', 'tianjin', 'wuqing')")
         taos_free_result(res)
 
-        res = taos_query(conn, "select c_level,content,ipaddr from log limit 1")
+        res = taos_query(conn, "select c_level,content,ipaddr, city, town from log limit 1")
+
+        fields = taos_fetch_fields_raw(res)
+        field_count = taos_field_count(res)
+
+        fields = taos_fetch_fields(res)
+        for field in fields:
+            print(field)
+            
+        row, num = taos_fetch_row(res, fields)
+        print(row)
+        taos_free_result(res)
+        taos_query(conn, "drop database if exists " + dbname)
+        taos_close(conn)
+    except Exception as err:
+        taos_query(conn, "drop database if exists " + dbname)
+        raise err   
+
+def test_simple(conn, caplog):
+    dbname = "pytest_ctaos_simple"
+    try:
+        res = taos_query(conn, "create database if not exists %s" % dbname)
+        taos_free_result(res)
+
+        taos_select_db(conn, dbname)
+
+#  cursor.execute("CREATE STABLE weather(ts TIMESTAMP, temperature FLOAT, city NCHAR(100), country BINARY(100), town VARBINARY(100)) TAGS (location INT)")
+#     cursor.execute(f"INSERT INTO t1 USING weather TAGS(1) VALUES (now, 23.5, 'tianjin', 'china', 'wuqing') (now+100a, 23.5, 'tianjin', 'china', 'wuqing')")
+        res = taos_query(
+            conn,
+            "create table if not exists log(ts timestamp, c_level tinyint, content binary(100), ipaddr binary(134), city NCHAR(100), town VARBINARY(100))",
+        )
+        taos_free_result(res)
+
+        res = taos_query(conn, "insert into log values(now, 1, 'hello', 'test', 'tianjin', 'wuqing')")
+        taos_free_result(res)
+
+        res = taos_query(conn, "select c_level,content,ipaddr, city, town from log limit 1")
 
         fields = taos_fetch_fields_raw(res)
         field_count = taos_field_count(res)
@@ -42,7 +78,7 @@ def test_simple(conn, caplog):
 
         row = taos_fetch_row_raw(res)
         rowstr = taos_print_row(row, fields, field_count)
-        assert rowstr == "1 hello test"
+        assert rowstr == "1 hello test tianjin \\x777571696E67"
 
         row, num = taos_fetch_row(res, fields)
         print(row)
