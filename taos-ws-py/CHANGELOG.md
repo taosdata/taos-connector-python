@@ -5,9 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Conventional Changelog](https://www.conventionalcommits.org/en/v1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.5.0 - 2025-05-16
+
+### Features
+
+- **(ws-py)**: support stmt2 parameter binding
 
 ## v0.4.0 - 2025-03-31
-## v0.5.0 - 2025-05-16
 
 ### Bug Fixes:
 
