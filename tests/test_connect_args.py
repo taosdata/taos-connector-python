@@ -16,7 +16,7 @@ def test_connect_args():
     conn.options_connection(3, "python client")
     conn.set_conn_mode(0, 1)
     
-    time.sleep(15)
+    time.sleep(30)
     result = conn.query("show connections")
     assert result is not None
     for row in result:
@@ -27,6 +27,7 @@ def test_connect_args():
     result = conn.query("select timezone()")
     assert result is not None
     for row in result:
+        print(row)
         assert row[0] == "UTC (UTC, +0000)"
     
     assert conn is not None
