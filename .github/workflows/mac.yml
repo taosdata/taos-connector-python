@@ -149,11 +149,7 @@ jobs:
           cp ./taosd /usr/local/bin
           cp ./taosadapter /usr/local/bin
           cp ./libtaos.dylib /usr/local/lib
-          ln -sfv /usr/local/lib/libtaos.dylib /usr/local/lib/libtaos.1.dylib
-          ln -sfv /usr/local/lib/libtaos.1.dylib /usr/local/lib/libtaos.dylib
           cp ./libtaosnative.dylib /usr/local/lib
-          ln -sfv /usr/local/lib/libtaosnative.dylib /usr/local/lib/libtaosnative.1.dylib
-          ln -sfv /usr/local/lib/libtaosnative.1.dylib /usr/local/lib/libtaosnative.dylib
           cp ./taos.h /usr/local/include
           EOF
           tar -zcvf server.tar.gz ./release
@@ -358,8 +354,8 @@ jobs:
         run: |
           pwd
           mkdir -p TDengine/debug/build/lib
-          ln -sfv /usr/local/lib/libtaos.1.dylib TDengine/debug/build/lib/libtaos.1.dylib
-          ln -sfv /usr/local/lib/libtaosnative.1.dylib TDengine/debug/build/lib/libtaosnative.1.dylib
+          ln -sfv /usr/local/lib/libtaos.dylib TDengine/debug/build/lib/libtaos.1.dylib
+          ln -sfv /usr/local/lib/libtaosnative.dylib TDengine/debug/build/lib/libtaosnative.1.dylib
           ls -l TDengine/debug/build/lib/
           sudo taosadapter &
 
