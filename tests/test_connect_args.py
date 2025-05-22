@@ -1,5 +1,5 @@
 from taos import *
-
+import time
 
 def test_connect_args():
     """
@@ -16,13 +16,17 @@ def test_connect_args():
     conn.options_connection(3, "python client")
     conn.set_conn_mode(0, 1)
     
+    time.sleep(10)
     result = conn.query("show connections")
-    data = result.fetch_all()
-    print(data)
-    assert data is None
-    # assert rows is not None
-    # print(rows)
-    # for row in rows:
-    #     print(row)
+    assert result is not None
+    for row in result:
+        assert row[7] == "python client"
+        assert row[8] == "127.0.0.2"
+
+    result = conn.query("select timezone()")
+    assert result is not None
+    for row in result:
+        assert row[0] == "UTC (UTC, +0000)"
+    
     assert conn is not None
     conn.close()
