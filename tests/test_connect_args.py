@@ -16,10 +16,11 @@ def test_connect_args():
     conn.options_connection(3, "python client")
     conn.set_conn_mode(0, 1)
     
-    time.sleep(10)
+    time.sleep(15)
     result = conn.query("show connections")
     assert result is not None
     for row in result:
+        print(row)
         assert row[7] == "python client"
         assert row[8] == "127.0.0.2"
 
