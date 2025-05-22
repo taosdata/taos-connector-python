@@ -368,6 +368,8 @@ jobs:
         run: |
           source $VENV
           export TDENGINE_URL=localhost:6041
+          echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH"
+          python -c "import ctypes; print(ctypes.CDLL('/usr/local/lib/libtaos.dylib'))"
           ps aux | grep taos
           poetry run pip install psutil pandas "numpy<2.0.0" shapely
           ls -l /usr/local/lib/
