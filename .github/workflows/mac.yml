@@ -142,6 +142,7 @@ jobs:
           cp ./TDengine/debug/build/lib/libtaosnative.dylib ./release/
           cp ./TDengine/include/client/taos.h ./release/
           cat >./release/install.sh<<EOF 
+          ls -l /usr/local/lib/
           chmod +x ./taos
           chmod +x ./taosd
           chmod +x ./taosadapter
