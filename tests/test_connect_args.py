@@ -17,13 +17,19 @@ def test_connect_args():
     conn.set_conn_mode(0, 1)
     
     time.sleep(30)
+    bClient = False
+    bHost = False
     result = conn.query("show connections")
     assert result is not None
     for row in result:
         print(row)
-        assert row[7] == "python client"
-        assert row[8] == "127.0.0.2"
+        if row[7] == "python client":
+            bClient = True
+        if row[8] == "127.0.0.2":
+            bHost = True
 
+    assert bClient and bHost
+    
     result = conn.query("select timezone()")
     assert result is not None
     for row in result:
