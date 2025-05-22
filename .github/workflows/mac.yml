@@ -148,11 +148,13 @@ jobs:
           cp ./taos /usr/local/bin
           cp ./taosd /usr/local/bin
           cp ./taosadapter /usr/local/bin
+          sudo rm -rf /usr/local/lib/libtaso*
           cp ./libtaos.dylib /usr/local/lib
           ln -sfv /usr/local/lib/libtaos.dylib /usr/local/lib/libtaos.1.dylib
           cp ./libtaosnative.dylib /usr/local/lib
           ln -sfv /usr/local/lib/libtaosnative.dylib /usr/local/lib/libtaosnative.1.dylib
           cp ./taos.h /usr/local/include
+          ls -l /usr/local/lib/
           EOF
           tar -zcvf server.tar.gz ./release
 
