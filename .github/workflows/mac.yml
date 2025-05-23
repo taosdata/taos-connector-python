@@ -138,23 +138,24 @@ jobs:
           cp ./TDengine/debug/build/bin/taos ./release/
           cp ./TDengine/debug/build/bin/taosd ./release/
           cp ./TDengine/debug/build/bin/taosadapter ./release/
-          cp ./TDengine/debug/build/lib/libtaos.3.9.9.9.dylib ./release/
-          cp ./TDengine/debug/build/lib/libtaosnative.3.9.9.9.dylib ./release/
+          cp ./TDengine/debug/build/lib/libtaos.dylib ./release/
+          cp ./TDengine/debug/build/lib/libtaosnative.dylib ./release/
           cp ./TDengine/include/client/taos.h ./release/
           cat >./release/install.sh<<EOF 
+          echo "-------------"
+          ls -l /usr/local/lib/
           chmod +x ./taos
           chmod +x ./taosd
           chmod +x ./taosadapter
           cp ./taos /usr/local/bin
           cp ./taosd /usr/local/bin
           cp ./taosadapter /usr/local/bin
-          cp ./libtaos.3.9.9.9.dylib /usr/local/lib
-          ln -sfv /usr/local/lib/libtaos.3.9.9.9.dylib /usr/local/lib/libtaos.1.dylib
-          ln -sfv /usr/local/lib/libtaos.1.dylib /usr/local/lib/libtaos.dylib
-          cp ./libtaosnative.3.9.9.9.dylib /usr/local/lib
-          ln -sfv /usr/local/lib/libtaosnative.3.9.9.9.dylib /usr/local/lib/libtaosnative.1.dylib
-          ln -sfv /usr/local/lib/libtaosnative.1.dylib /usr/local/lib/libtaosnative.dylib
+          sudo rm -rf /usr/local/lib/libtaos*
+          cp ./libtaos.dylib /usr/local/lib
+          cp ./libtaosnative.dylib /usr/local/lib
           cp ./taos.h /usr/local/include
+          ls -l /usr/local/lib/
+          echo "!-------------!"
           EOF
           tar -zcvf server.tar.gz ./release
 
@@ -358,8 +359,10 @@ jobs:
         run: |
           pwd
           mkdir -p TDengine/debug/build/lib
-          ln -sfv /usr/local/lib/libtaos.1.dylib TDengine/debug/build/lib/libtaos.1.dylib
-          ln -sfv /usr/local/lib/libtaosnative.1.dylib TDengine/debug/build/lib/libtaosnative.1.dylib
+          ln -sfv /usr/local/lib/libtaos.dylib TDengine/debug/build/lib/libtaos.dylib
+          ln -sfv /usr/local/lib/libtaosnative.dylib TDengine/debug/build/lib/libtaosnative.dylib
+          ln -sfv /usr/local/lib/libtaos.dylib TDengine/debug/build/lib/libtaos.1.dylib
+          ln -sfv /usr/local/lib/libtaosnative.dylib TDengine/debug/build/lib/libtaosnative.1.dylib
           ls -l TDengine/debug/build/lib/
           sudo taosadapter &
 
@@ -372,7 +375,10 @@ jobs:
         run: |
           source $VENV
           export TDENGINE_URL=localhost:6041
+          echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH"
+          ls -l /usr/local/lib
           ps aux | grep taos
+          python -c "import ctypes; print(ctypes.CDLL('/usr/local/lib/libtaos.dylib'))"
           poetry run pip install psutil pandas "numpy<2.0.0" shapely
           poetry run pytest tests
 
