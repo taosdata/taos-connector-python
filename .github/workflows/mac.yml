@@ -359,8 +359,8 @@ jobs:
         run: |
           pwd
           mkdir -p TDengine/debug/build/lib
-          ln -sfv /usr/local/lib/libtaos.dylib TDengine/debug/build/lib/libtaos.1.dylib
-          ln -sfv /usr/local/lib/libtaosnative.dylib TDengine/debug/build/lib/libtaosnative.1.dylib
+          ln -sfv /usr/local/lib/libtaos.dylib TDengine/debug/build/lib/libtaos.dylib
+          ln -sfv /usr/local/lib/libtaosnative.dylib TDengine/debug/build/lib/libtaosnative.dylib
           ls -l TDengine/debug/build/lib/
           sudo taosadapter &
 
