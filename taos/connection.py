@@ -2,7 +2,7 @@
 from typing import Optional, List
 
 from taos.cinterface import *
-from taos.constants import TSDB_CONNECTIONS_MODE, TSDB_OPTION_CONNECTIONS
+from taos.constants import TSDB_CONNECTIONS_MODE, TSDB_OPTION_CONNECTION
 from taos.result import TaosResult
 from taos.cursor import TaosCursor
 from taos.subscription import TaosSubscription
@@ -33,16 +33,16 @@ class TaosConnection(object):
         self._conn = self._chandle.connect(self._host, self._user, self._password, self._database, self._port)
         
         if self._charset is not None:
-            self.set_option(TSDB_OPTION_CONNECTIONS.TSDB_OPTION_CONNECTION_CHARSET.value, self._charset)
+            self.set_option(TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_CHARSET.value, self._charset)
 
         if self._tz is not None:
-            self.set_option(TSDB_OPTION_CONNECTIONS.TSDB_OPTION_CONNECTION_TIMEZONE.value, self._tz)
+            self.set_option(TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_TIMEZONE.value, self._tz)
 
         if self._user_app is not None:
-            self.set_option(TSDB_OPTION_CONNECTIONS.TSDB_OPTION_CONNECTION_USER_APP.value, self._user_app)
+            self.set_option(TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_USER_APP.value, self._user_app)
 
         if self._user_ip is not None:
-            self.set_option(TSDB_OPTION_CONNECTIONS.TSDB_OPTION_CONNECTION_USER_IP.value, self._user_ip) 
+            self.set_option(TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_USER_IP.value, self._user_ip) 
 
         if self._bi_mode is not None:
             if self._bi_mode:

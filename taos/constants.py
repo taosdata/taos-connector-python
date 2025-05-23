@@ -51,7 +51,7 @@ class FieldType(object):
     C_TIMESTAMP_NANO = 2
     C_TIMESTAMP_UNKNOWN = 3
 
-class TSDB_OPTION_CONNECTIONS(Enum):
+class TSDB_OPTION_CONNECTION(Enum):
     TSDB_OPTION_CONNECTION_CLEAR = -1     # means clear all option in this connection
     TSDB_OPTION_CONNECTION_CHARSET = 0    # charset, Same as the scope supported by the system
     TSDB_OPTION_CONNECTION_TIMEZONE = 1   # timezone, Same as the scope supported by the system
