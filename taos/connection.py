@@ -2,6 +2,7 @@
 from typing import Optional, List
 
 from taos.cinterface import *
+from taos.constants import TSDB_CONNECTIONS_MODE, TSDB_OPTION_CONNECTIONS
 from taos.result import TaosResult
 from taos.cursor import TaosCursor
 from taos.subscription import TaosSubscription
@@ -22,9 +23,33 @@ class TaosConnection(object):
         self._config = None
         self._tz = None
         self.decode_binary = True
+        self._charset = None
+        self._user_app = None
+        self._user_ip = None
+        self._bi_mode = None
+
         self._init_config(**kwargs)
         self._chandle = CTaosInterface(self._config, self._tz)
         self._conn = self._chandle.connect(self._host, self._user, self._password, self._database, self._port)
+        
+        if self._charset is not None:
+            self.set_option(TSDB_OPTION_CONNECTIONS.TSDB_OPTION_CONNECTION_CHARSET.value, self._charset)
+
+        if self._tz is not None:
+            self.set_option(TSDB_OPTION_CONNECTIONS.TSDB_OPTION_CONNECTION_TIMEZONE.value, self._tz)
+
+        if self._user_app is not None:
+            self.set_option(TSDB_OPTION_CONNECTIONS.TSDB_OPTION_CONNECTION_USER_APP.value, self._user_app)
+
+        if self._user_ip is not None:
+            self.set_option(TSDB_OPTION_CONNECTIONS.TSDB_OPTION_CONNECTION_USER_IP.value, self._user_ip) 
+
+        if self._bi_mode is not None:
+            if self._bi_mode:
+                self.set_mode(TSDB_CONNECTIONS_MODE.TSDB_CONNECTIONS_MODE_BI.value, 1)
+            else:
+                self.set_mode(TSDB_CONNECTIONS_MODE.TSDB_CONNECTIONS_MODE_BI.value, 0)
+                
 
     def _init_config(self, **kwargs):
         # host
@@ -58,6 +83,18 @@ class TaosConnection(object):
         if "decode_binary" in kwargs:
             self.decode_binary = kwargs["decode_binary"]
 
+        if "charset" in kwargs:
+            self._charset = kwargs["charset"]  
+
+        if "user_app" in kwargs:
+            self._user_app = kwargs["user_app"] 
+
+        if "user_ip" in kwargs:
+            self._user_ip = kwargs["user_ip"] 
+
+        if "bi_mode" in kwargs:
+            self._bi_mode = kwargs["bi_mode"]                     
+
     def close(self):
         """Close current connection."""
         if self._conn:
@@ -74,10 +111,10 @@ class TaosConnection(object):
         # type: () -> str
         return taos_get_server_info(self._conn)
 
-    def options_connection(self, option, value):
+    def set_option(self, option, value):
         taos_options_connection(self._conn, option, value)
 
-    def set_conn_mode(self, mode, value):
+    def set_mode(self, mode, value):
         taos_set_conn_mode(self._conn, mode, value)
 
     def select_db(self, database):
