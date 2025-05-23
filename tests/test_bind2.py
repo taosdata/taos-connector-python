@@ -1,4 +1,5 @@
 # encoding:UTF-8
+from datetime import datetime
 from dotenv import load_dotenv
 
 from taos.cinterface import *
@@ -68,6 +69,47 @@ def test_new_stmt2_binds():
     bind.set_value(FieldType.C_BIGINT_UNSIGNED, [4, 400, None])
     print("pass test_new_stmt2_binds")
 
+def test_new_stmt_bind():
+    bind = taos.TaosBind()
+    bind.bool(True)
+    bind.tinyint(1)
+    bind.tinyint_unsigned(1)
+    bind.smallint(-1)
+    bind.smallint_unsigned(1)
+    bind.int(-1)
+    bind.int_unsigned(1)
+    bind.bigint(4)
+    bind.float(5555)
+    bind.double(6.66666666)
+    bind.varchar("涛思数据")
+    bind.binary(b"test bytes")
+    bind.binary("涛思数据")
+    bind.nchar("涛思数据")
+    bind.bigint_unsigned(4)
+    bind.timestamp(1626861392589)
+    bind.timestamp(datetime.now())
+    bind.timestamp(1612345678.123)
+    bind.timestamp("2025-01-01T00:00:00")
+    bind.json('{"key": "value"}')
+    bind.json(b'{"key": "bytes_value"}')
+
+    bind.bool(None)
+    bind.tinyint(None)
+    bind.tinyint_unsigned(None)
+    bind.smallint(None)
+    bind.smallint_unsigned(None)
+    bind.int(None)
+    bind.int_unsigned(None)
+    bind.bigint(None)
+    bind.float(None)
+    bind.double(None)
+    bind.varchar(None)
+    bind.binary(None)
+    bind.bigint_unsigned(None)
+    bind.timestamp(None)
+    bind.json(None)
+
+    print("pass test_new_stmt_binds")    
 
 def test_new_bindv():
     if not taos.IS_V3:

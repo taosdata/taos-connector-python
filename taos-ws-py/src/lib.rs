@@ -212,6 +212,12 @@ impl Connection {
         let stmt = TaosStmt::init(self)?;
         Ok(stmt)
     }
+
+    pub fn stmt2_statement(&self) -> PyResult<TaosStmt2> {
+        let stmt2 = TaosStmt2::init(self)?;
+        Ok(stmt2)
+    }
+
 }
 
 #[pymethods]
@@ -464,6 +470,98 @@ impl TaosStmt {
     fn close(&self) -> PyResult<()> {
         Ok(())
     }
+}
+
+#[pyclass]
+#[derive(Debug)]
+struct TaosStmt2 {
+    _inner: Stmt2,
+}
+
+#[pyclass]
+#[derive(Debug, Clone)]
+struct PyStmt2BindParam {
+    _inner: Stmt2BindParam,
+}
+
+#[pymethods]
+impl TaosStmt2 {
+    #[new]
+    fn init(conn: &Connection) -> PyResult<TaosStmt2> {
+        let stmt: Stmt2 = Stmt2::init(conn.current_cursor()?)
+            .map_err(|err| ConnectionError::new_err(err.to_string()))?;
+        let stmt: TaosStmt2 = TaosStmt2 { _inner: stmt };
+        return Ok(stmt);
+    }
+
+    fn prepare(&mut self, sql: &str) -> PyResult<()> {
+        self._inner
+            .prepare(sql)
+            .map_err(|err| ProgrammingError::new_err(err.to_string()))?;
+        Ok(())
+    }
+
+    fn bind(&mut self, params: Vec<PyStmt2BindParam>) -> PyResult<()> {
+        let params = params.into_iter().map(|param| param._inner).collect_vec();
+        self._inner
+            .bind(&params)
+            .map_err(|err| ProgrammingError::new_err(err.to_string()))?;
+        Ok(())
+    }
+
+    fn execute(&mut self) -> PyResult<usize> {
+        let rows = self
+            ._inner
+            .exec()
+            .map_err(|err| QueryError::new_err(err.to_string()))?;
+        Ok(rows)
+    }
+
+    fn affect_rows(&mut self) -> PyResult<usize> {
+        let rows = self._inner.affected_rows();
+        Ok(rows)
+    }
+
+    fn result_set(&mut self) -> PyResult<TaosResult> {
+        match self._inner.result_set() {
+            Ok(rs) => {
+                let cols = rs.num_of_fields();
+                Ok(TaosResult {
+                    _inner: rs,
+                    _block: None,
+                    _current: 0,
+                    _num_of_fields: cols as _,
+                })
+            }
+            Err(err) => Err(QueryError::new_err(err.to_string())),
+        }
+    }
+
+
+    fn close(&self) -> PyResult<()> {
+        Ok(())
+    }
+}
+
+#[pyfunction]
+fn stmt2_bind_param_view(table_name: Option<&str>, tags: Option<Vec<PyTagView>>, columns: Vec<PyColumnView>) -> PyResult<PyStmt2BindParam> {
+    if columns.is_empty() {
+        return Err(ProgrammingError::new_err("stmt2 columns cannot be empty"));
+    }
+
+    let table_name_opt = table_name.map(|s| s.to_string());
+
+    let tag_params = tags.map(|ts| ts.into_iter().map(|tag| tag._inner).collect::<Vec<Value>>());
+
+    let params = columns.into_iter().map(|column| column._inner).collect_vec();
+    
+    Ok(PyStmt2BindParam {
+        _inner: Stmt2BindParam::new(            
+            table_name_opt,  
+            tag_params,                   
+            Some(params)                 
+        ),
+    })
 }
 
 #[pyclass]
@@ -910,6 +1008,8 @@ fn taosws(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyPrecision>()?;
     m.add_class::<PyTagView>()?;
     m.add_class::<PyColumnView>()?;
+    m.add_class::<TaosStmt2>()?;
+    m.add_class::<PyStmt2BindParam>()?;
 
     m.add_function(wrap_pyfunction!(connect, m)?)?;
 
@@ -951,6 +1051,7 @@ fn taosws(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(binary_to_column, m)?)?;
     m.add_function(wrap_pyfunction!(varbinary_to_column, m)?)?;
     m.add_function(wrap_pyfunction!(geometry_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(stmt2_bind_param_view, m)?)?;
 
     m.add("apilevel", API_LEVEL)?;
     m.add("threadsafety", THREAD_SAFETY)?;

@@ -16,7 +16,7 @@ $ci/changelog-generate.sh . taos-ws-py >> CHANGELOG.md2
 sed "1,9d" CHANGELOG.md >> CHANGELOG.md2
 mv CHANGELOG.md2 CHANGELOG.md
 
-git commit -a -m "release(taos-ws-py): v$newv"
+# git commit -a -m "release(taos-ws-py): v$newv"
 #git push
 #git tag taos-ws-py-v$newv
 #git push --force origin taos-ws-py-v$newv:taos-ws-py-v$newv
