@@ -161,10 +161,6 @@ def taos_options_connection(connection, option, value):
     res = _libtaos.taos_options_connection(connection, option, _value)
     if res != 0:
         raise DatabaseError("taos_options_connection error", res)
-    
-    file = open('./test.log', 'a')
-    file.write('{} {} \n'.format(option, value))
-    file.close()
 
 def taos_set_conn_mode(connection, mode, value):
     res = _libtaos.taos_set_conn_mode(connection, mode, value)
