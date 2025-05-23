@@ -9,7 +9,8 @@ def test_connect_args():
     Because some case in CI of earlier version may use it.
     """
  
-    conn = connect()
+    host = "localhost:6030"
+    conn = connect(host)
     conn.options_connection(0, "utf8")
     conn.options_connection(1, "UTC")
     conn.options_connection(2, "127.0.0.2")
