@@ -29,6 +29,7 @@ class FieldType(object):
     C_JSON = 15
     C_VARBINARY = 16
     C_DECIMAL = 17
+    C_BLOB = 18
     C_GEOMETRY = 20
     C_DECIMAL64 = 21
     # NULL value definition
