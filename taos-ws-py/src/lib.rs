@@ -217,7 +217,6 @@ impl Connection {
         let stmt2 = TaosStmt2::init(self)?;
         Ok(stmt2)
     }
-
 }
 
 #[pymethods]
@@ -267,6 +266,7 @@ impl TaosResult {
                             BorrowedValue::Json(j) => std::str::from_utf8(&j).unwrap().into_py(py),
                             BorrowedValue::VarBinary(v) => v.as_ref().into_py(py),
                             BorrowedValue::Geometry(v) => v.as_ref().into_py(py),
+                            BorrowedValue::Blob(v) => v.as_ref().into_py(py),
                             _ => Option::<()>::None.into_py(py),
                         };
                         vec.push(value);
@@ -537,14 +537,17 @@ impl TaosStmt2 {
         }
     }
 
-
     fn close(&self) -> PyResult<()> {
         Ok(())
     }
 }
 
 #[pyfunction]
-fn stmt2_bind_param_view(table_name: Option<&str>, tags: Option<Vec<PyTagView>>, columns: Vec<PyColumnView>) -> PyResult<PyStmt2BindParam> {
+fn stmt2_bind_param_view(
+    table_name: Option<&str>,
+    tags: Option<Vec<PyTagView>>,
+    columns: Vec<PyColumnView>,
+) -> PyResult<PyStmt2BindParam> {
     if columns.is_empty() {
         return Err(ProgrammingError::new_err("stmt2 columns cannot be empty"));
     }
@@ -553,14 +556,13 @@ fn stmt2_bind_param_view(table_name: Option<&str>, tags: Option<Vec<PyTagView>>,
 
     let tag_params = tags.map(|ts| ts.into_iter().map(|tag| tag._inner).collect::<Vec<Value>>());
 
-    let params = columns.into_iter().map(|column| column._inner).collect_vec();
-    
+    let params = columns
+        .into_iter()
+        .map(|column| column._inner)
+        .collect_vec();
+
     Ok(PyStmt2BindParam {
-        _inner: Stmt2BindParam::new(            
-            table_name_opt,  
-            tag_params,                   
-            Some(params)                 
-        ),
+        _inner: Stmt2BindParam::new(table_name_opt, tag_params, Some(params)),
     })
 }
 
@@ -991,6 +993,18 @@ fn geometry_to_column(values: Vec<Option<Vec<u8>>>) -> PyColumnView {
     }
 }
 
+#[pyfunction]
+fn blob_to_column(values: Vec<Option<Vec<u8>>>) -> PyColumnView {
+    PyColumnView {
+        _inner: ColumnView::from_blob_bytes::<
+            Vec<u8>,
+            Option<Vec<u8>>,
+            std::vec::IntoIter<Option<Vec<u8>>>,
+            Vec<Option<Vec<u8>>>,
+        >(values),
+    }
+}
+
 #[pymodule]
 fn taosws(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     if std::env::var("RUST_LOG").is_ok() {
@@ -1051,6 +1065,7 @@ fn taosws(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(binary_to_column, m)?)?;
     m.add_function(wrap_pyfunction!(varbinary_to_column, m)?)?;
     m.add_function(wrap_pyfunction!(geometry_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(blob_to_column, m)?)?;
     m.add_function(wrap_pyfunction!(stmt2_bind_param_view, m)?)?;
 
     m.add("apilevel", API_LEVEL)?;
