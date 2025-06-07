@@ -6,6 +6,8 @@ from taos.constants import FieldType
 _RTYPE = ctypes.c_uint16
 _RTYPE_SIZE = ctypes.sizeof(_RTYPE)
 
+_BLOB_RTYPE = ctypes.c_uint32
+_BLOB_RTYPE_SIZE = ctypes.sizeof(_BLOB_RTYPE)
 
 def _crow_binary_to_python_block_v3(data, is_null, num_of_rows, offsets, precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C binary row to python row."""
@@ -47,7 +49,18 @@ def _crow_varbinary_to_python_block_v3(data, is_null, num_of_rows, offsets, prec
             chars = (ctypes.c_char * rbyte).from_address(data + offsets[i] + _RTYPE_SIZE).raw
             res.append(chars)
     return res
-
+def _crow_blob_to_python_block_v3(data, is_null, num_of_rows, offsets, precision=FieldType.C_TIMESTAMP_UNKNOWN):
+    """Function to convert C varbinary row to python row."""
+    assert offsets is not None
+    res = []
+    for i in range(abs(num_of_rows)):
+        if offsets[i] == -1:
+            res.append(None)
+        else:
+            rbyte = _RTYPE.from_address(data + offsets[i]).value
+            chars = (ctypes.c_char * rbyte).from_address(data + offsets[i] + _BLOB_RTYPE_SIZE).raw
+            res.append(chars)
+    return res
 
 def convert_block_func_v3(field_type: FieldType, decode_binary=True):
     """Get convert block func."""
@@ -63,7 +76,7 @@ CONVERT_FUNC_BLOCK_v3 = {
     FieldType.C_JSON: _crow_nchar_to_python_block_v3,
     FieldType.C_VARBINARY: _crow_varbinary_to_python_block_v3,
     FieldType.C_GEOMETRY: _crow_varbinary_to_python_block_v3,
-    FieldType.C_BLOB: _crow_varbinary_to_python_block_v3,
+    FieldType.C_BLOB: _crow_blob_to_python_block_v3,
 }
 
 
