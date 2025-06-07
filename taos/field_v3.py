@@ -49,6 +49,10 @@ def _crow_varbinary_to_python_block_v3(data, is_null, num_of_rows, offsets, prec
             chars = (ctypes.c_char * rbyte).from_address(data + offsets[i] + _RTYPE_SIZE).raw
             res.append(chars)
     return res
+<<<<<<< HEAD
+=======
+
+>>>>>>> 34f6f8eb433b059bbb66c245eb847442d53a0b3c
 def _crow_blob_to_python_block_v3(data, is_null, num_of_rows, offsets, precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C varbinary row to python row."""
     assert offsets is not None
