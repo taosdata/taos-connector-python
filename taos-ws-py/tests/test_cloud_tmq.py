@@ -10,7 +10,7 @@ token = os.environ["WS_CLOUD_TOKEN"]
 groupId = "group1"
 clientId = "1"
 tdConnWsScheme = "wss"
-autoOffsetReset = "latest"
+autoOffsetReset = "earliest"
 autoCommitState = "true"
 autoCommitIntv = "1000"
 
@@ -42,7 +42,7 @@ def prepareMeta():
 def create_consumer():
     try:
         consumer = taosws.Consumer(conf={
-            "td.connect.websocket.scheme": tdConnWsScheme,
+            "protocol": tdConnWsScheme,
             "group.id": groupId,
             "client.id": clientId,
             "auto.offset.reset": autoOffsetReset,
@@ -97,7 +97,7 @@ def subscribe(consumer):
 
 def commit_offset(consumer):
     try:
-        for i in range(50):
+        for i in range(5):
             records = consumer.poll(timeout=1.0)
             if records:
                 for block in records:

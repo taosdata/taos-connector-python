@@ -123,14 +123,16 @@ impl Consumer {
 
             // enum args and set
             for (key, _value) in args.iter() {
-                if key == "protocol" || key == "driver" {
+                let key_str = key.downcast::<PyString>()?.to_str()?;
+                if ["protocol", "driver", "username", "user"].contains(&key_str) {
                     continue;
                 }
-                if key == "td.connect.token" {
+
+                if key_str == "td.connect.token" {
                     builder.set("token", _value.extract::<String>()?);
                 }
                 else {
-                    builder.set(key.extract::<String>()?, _value.extract::<String>()?);
+                    builder.set(key_str, _value.extract::<String>()?);
                 }
             }
         }
