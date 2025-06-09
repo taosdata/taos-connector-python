@@ -135,14 +135,14 @@ impl Consumer {
                 "td.connect.pass",
                 "group.id",
             ];
-            
+
             // enum args and set
-            for (key, _value) in args.iter() {
+            for (key, value) in args.iter() {
                 let key_str = key.downcast::<PyString>()?.to_str()?;
                 if skip_keys.contains(&key_str) {
                         continue;
                 }
-                builder.set(key_str, _value.extract::<String>()?);
+                builder.set(key_str, value.extract::<String>()?);
             }
         }
         let builder = TmqBuilder::from_dsn(builder)
