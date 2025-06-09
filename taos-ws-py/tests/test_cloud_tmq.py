@@ -80,7 +80,6 @@ def seek_offset(consumer):
     # ANCHOR_END: assignment
 
 
-# ANCHOR: subscribe
 def subscribe(consumer):
     try:
         consumer.subscribe([topic])
@@ -96,10 +95,6 @@ def subscribe(consumer):
         print(f"Failed to poll data, topic: {topic}, groupId: {groupId}, clientId: {clientId}, ErrMessage:{err}.")
         raise err
 
-
-# ANCHOR_END: subscribe
-
-# ANCHOR: commit_offset
 def commit_offset(consumer):
     try:
         for i in range(50):

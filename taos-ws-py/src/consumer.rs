@@ -108,9 +108,7 @@ impl Consumer {
             {
                 builder.password.replace(value.extract()?);
             }
-            if let Some(value) = args.get_item("td.connect.token").or(args.get_item("token")) {
-                builder.set("token", value.extract::<String>()?);
-            }
+
 
             if let Some(value) = args.get_item("group.id") {
                 builder.set("group.id", value.extract::<String>()?);
@@ -124,9 +122,15 @@ impl Consumer {
             builder.set("experimental.snapshot.enable", "false");
 
             // enum args and set
-            for (key, value) in args.iter() {
-                if let Some(value) = args.get_item(key) {
-                    builder.set(key.extract::<String>()?, value.extract::<String>()?);
+            for (key, _value) in args.iter() {
+                if key == "protocol" || key == "driver" {
+                    continue;
+                }
+                if key == "td.connect.token" {
+                    builder.set("token", _value.extract::<String>()?);
+                }
+                else {
+                    builder.set(key.extract::<String>()?, _value.extract::<String>()?);
                 }
             }
         }
