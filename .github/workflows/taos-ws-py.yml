@@ -219,6 +219,8 @@ jobs:
           export LD_LIBRARY_PATH=$PWD/TDengine_v3/build/build/lib
           #source $VENV
           export TDENGINE_URL=localhost:6041
+          export WS_CLOUD_URL=${{ secrets.WS_CLOUD_URL }}
+          export WS_CLOUD_TOKEN=${{ secrets.WS_CLOUD_TOKEN }}
           curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
           pip3 install pytest
           pip3 install ./
