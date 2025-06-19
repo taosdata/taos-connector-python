@@ -322,6 +322,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "crossbeam"
+version = "0.8.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1137cd7e7fc0fb5d3c5a8678be38ec56e819125d8d7907411fe24ccb943faca8"
+dependencies = [
+ "crossbeam-channel",
+ "crossbeam-deque",
+ "crossbeam-epoch",
+ "crossbeam-queue",
+ "crossbeam-utils",
+]
+
+[[package]]
+name = "crossbeam-channel"
+version = "0.5.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "82b8f8f868b36967f9606790d1903570de9ceaf870a7bf9fbbd3016d636a2cb2"
+dependencies = [
+ "crossbeam-utils",
+]
+
+[[package]]
 name = "crossbeam-deque"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -336,6 +358,15 @@ name = "crossbeam-epoch"
 version = "0.9.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b82ac4a3c2ca9c3460964f020e1402edd5753411d7737aa39c3714ad1b5420e"
+dependencies = [
+ "crossbeam-utils",
+]
+
+[[package]]
+name = "crossbeam-queue"
+version = "0.3.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f58bbc28f91df819d0aa2a2c00cd19754769c2fad90579b3592b1c9ba7a3115"
 dependencies = [
  "crossbeam-utils",
 ]
@@ -1300,7 +1331,7 @@ checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 [[package]]
 name = "mdsn"
 version = "0.2.25"
-source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#b255767ca1028c9255961c4a2e0498d0ab30e07a"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#e93f352c96f37ae8354d1860e5886662408916ff"
 dependencies = [
  "itertools 0.13.0",
  "lazy_static",
@@ -1534,9 +1565,9 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "pin-project-lite"
-version = "0.2.15"
+version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "915a1e146535de9163f3987b8944ed8cf49a18bb0056bcebcdcece385cece4ff"
+checksum = "3b3cff922bd51709b605d9ead9aa71031d81447142d828eb4a6eba76fe619f9b"
 
 [[package]]
 name = "pin-utils"
@@ -2279,7 +2310,7 @@ dependencies = [
 [[package]]
 name = "taos"
 version = "0.12.4"
-source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#b255767ca1028c9255961c4a2e0498d0ab30e07a"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#e93f352c96f37ae8354d1860e5886662408916ff"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2294,7 +2325,7 @@ dependencies = [
 [[package]]
 name = "taos-error"
 version = "0.12.4"
-source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#b255767ca1028c9255961c4a2e0498d0ab30e07a"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#e93f352c96f37ae8354d1860e5886662408916ff"
 dependencies = [
  "anyhow",
  "derive_more",
@@ -2307,7 +2338,7 @@ dependencies = [
 [[package]]
 name = "taos-macros"
 version = "0.2.16"
-source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#b255767ca1028c9255961c4a2e0498d0ab30e07a"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#e93f352c96f37ae8354d1860e5886662408916ff"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2317,12 +2348,13 @@ dependencies = [
 [[package]]
 name = "taos-optin"
 version = "0.12.4"
-source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#b255767ca1028c9255961c4a2e0498d0ab30e07a"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#e93f352c96f37ae8354d1860e5886662408916ff"
 dependencies = [
  "anyhow",
  "async-trait",
  "bytes",
  "cfg-if",
+ "crossbeam",
  "derive_more",
  "dlopen2",
  "flume",
@@ -2331,6 +2363,7 @@ dependencies = [
  "lazy_static",
  "num_enum",
  "once_cell",
+ "pin-project-lite",
  "serde_json",
  "taos-macros",
  "taos-query",
@@ -2340,7 +2373,7 @@ dependencies = [
 [[package]]
 name = "taos-query"
 version = "0.12.4"
-source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#b255767ca1028c9255961c4a2e0498d0ab30e07a"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#e93f352c96f37ae8354d1860e5886662408916ff"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2381,7 +2414,7 @@ dependencies = [
 [[package]]
 name = "taos-ws"
 version = "0.12.4"
-source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#b255767ca1028c9255961c4a2e0498d0ab30e07a"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#e93f352c96f37ae8354d1860e5886662408916ff"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2408,7 +2441,7 @@ dependencies = [
 
 [[package]]
 name = "taos-ws-py"
-version = "0.5.1"
+version = "0.5.3"
 dependencies = [
  "anyhow",
  "chrono",
