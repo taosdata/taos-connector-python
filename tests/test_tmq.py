@@ -15,7 +15,7 @@ class insertThread(threading.Thread):
         conn = taos.connect()
         conn.select_db("tmq_test")
         for i in range(50):
-            sql = f"insert into tb1 values (now + {1+i}s, true,1,{i},1,1,1,1,1,1,1,1,1,'1','1','binary value_1','POINT (3.0 5.0)','9876.123456','123456789012.0987654321')"
+            sql = f"insert into tb1 values (now + {1+i}s, true,1,{i},1,1,1,1,1,1,1,1,1,'1','1','binary value_1','POINT (3.0 5.0)','9876.123456','123456789012.0987654321','xxxxxxxxxxxxxxxxxxx')"
             conn.execute(sql)
             print(sql)
             sleep(0.02)
@@ -252,7 +252,7 @@ def test_tmq_assignment():
     finally:
         consumer.unsubscribe()
         consumer.close()
-        after_ter_tmq()
+        # after_ter_tmq()
 
 
 def test_tmq_seek():

@@ -332,6 +332,8 @@ def taos_query(connection, sql):
     """
     try:
         ptr = c_char_p(sql.encode("utf-8"))
+        # if sql.lower().startswith("insert"):
+        #     raise ProgrammingError(sql, 1)
         res = c_void_p(_libtaos.taos_query(connection, ptr))
         errno = taos_errno(res)
         if errno != 0:
@@ -564,7 +566,7 @@ def taos_fetch_block_v3(result, fields=None, field_count=None, decode_binary=Tru
         if fields[i]["type"] in (FieldType.C_VARCHAR, FieldType.C_NCHAR, FieldType.C_JSON, FieldType.C_VARBINARY, FieldType.C_GEOMETRY, FieldType.C_BLOB):
             offsets = taos_get_column_data_offset(result, i, num_of_rows)
             f = convert_block_func_v3(fields[i]["type"], decode_binary=decode_binary)
-            blocks[i] = f(data, is_null, num_of_rows, offsets, precision, fields[i]["type"])
+            blocks[i] = f(data, is_null, num_of_rows, offsets, precision)
         else:
             if _can_get_is_null_by_column:
                 is_null = taos_is_null_by_column(result, num_of_rows, i)
