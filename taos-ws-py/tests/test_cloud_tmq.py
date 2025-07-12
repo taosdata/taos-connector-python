@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 import os
 import taosws
 
@@ -13,6 +12,7 @@ tdConnWsScheme = "wss"
 autoOffsetReset = "earliest"
 autoCommitState = "true"
 autoCommitIntv = "1000"
+
 
 def prepareMeta():
     conn = None
@@ -41,25 +41,29 @@ def prepareMeta():
 # ANCHOR: create_consumer
 def create_consumer():
     try:
-        consumer = taosws.Consumer(conf={
-            "protocol": tdConnWsScheme,
-            "group.id": groupId,
-            "client.id": clientId,
-            "auto.offset.reset": autoOffsetReset,
-            "td.connect.ip": url,
-            "td.connect.token": token,
-            "enable.auto.commit": autoCommitState,
-            "auto.commit.interval.ms": autoCommitIntv,
-        })
-        print(f"Create consumer successfully, host: {url}, groupId: {groupId}, clientId: {clientId}.");
-        return consumer;
+        consumer = taosws.Consumer(
+            conf={
+                "protocol": tdConnWsScheme,
+                "group.id": groupId,
+                "client.id": clientId,
+                "auto.offset.reset": autoOffsetReset,
+                "td.connect.ip": url,
+                "td.connect.token": token,
+                "enable.auto.commit": autoCommitState,
+                "auto.commit.interval.ms": autoCommitIntv,
+            }
+        )
+        print(f"Create consumer successfully, host: {url}, groupId: {groupId}, clientId: {clientId}.")
+        return consumer
     except Exception as err:
         print(
-            f"Failed to create websocket consumer, host: {url}, groupId: {groupId}, clientId: {clientId}, ErrMessage:{err}.");
+            f"Failed to create websocket consumer, host: {url}, groupId: {groupId}, clientId: {clientId}, ErrMessage:{err}."
+        )
         raise err
 
 
 # ANCHOR_END: create_consumer
+
 
 def seek_offset(consumer):
     # ANCHOR: assignment
@@ -70,7 +74,8 @@ def seek_offset(consumer):
             print(f"topic: {topic}")
             for assign in assignment.assignments():
                 print(
-                    f"vg_id: {assign.vg_id()}, offset: {assign.offset()}, begin: {assign.begin()}, end: {assign.end()}")
+                    f"vg_id: {assign.vg_id()}, offset: {assign.offset()}, begin: {assign.begin()}, end: {assign.end()}"
+                )
                 consumer.seek(topic, assign.vg_id(), assign.begin())
                 print("Assignment seek to beginning successfully.")
 
@@ -95,6 +100,7 @@ def subscribe(consumer):
         print(f"Failed to poll data, topic: {topic}, groupId: {groupId}, clientId: {clientId}, ErrMessage:{err}.")
         raise err
 
+
 def commit_offset(consumer):
     try:
         for i in range(5):
@@ -111,19 +117,23 @@ def commit_offset(consumer):
     except Exception as err:
         print(f"Failed to commit offset, topic: {topic}, groupId: {groupId}, clientId: {clientId}, ErrMessage:{err}.")
         raise err
+
+
 def unsubscribe(consumer):
     # ANCHOR: unsubscribe
     try:
         consumer.unsubscribe()
-        print("Consumer unsubscribed successfully.");
+        print("Consumer unsubscribed successfully.")
     except Exception as err:
         print(
-            f"Failed to unsubscribe consumer. topic: {topic}, groupId: {groupId}, clientId: {clientId}, ErrMessage:{err}.")
+            f"Failed to unsubscribe consumer. topic: {topic}, groupId: {groupId}, clientId: {clientId}, ErrMessage:{err}."
+        )
         raise err
     finally:
         if consumer:
             consumer.close()
-            print("Consumer closed successfully.");
+            print("Consumer closed successfully.")
+
 
 def test_cloud_tmq():
     consumer = None
@@ -136,6 +146,7 @@ def test_cloud_tmq():
     finally:
         if consumer:
             unsubscribe(consumer)
+
 
 if __name__ == "__main__":
     test_cloud_tmq()

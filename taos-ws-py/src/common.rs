@@ -18,12 +18,13 @@ pub fn to_py_datetime(dt: chrono::NaiveDateTime, py: Python) -> PyResult<PyObjec
             dt.hour() as _,
             dt.minute() as _,
             dt.second() as _,
-            dt.timestamp_subsec_micros() as _,
+            dt.and_utc().timestamp_subsec_micros() as _,
         ],
     );
 
     Ok(datetime.call(args, None)?.into_py(py))
 }
+
 // pub fn datetime_to_py(t: chrono py: Python)
 pub unsafe fn get_row_of_block_unchecked(py: Python, block: &RawBlock, index: usize) -> PyObject {
     let mut vec = Vec::new();

@@ -243,7 +243,6 @@ impl Cursor {
             let vec: Vec<_> = seq_of_parameters
                 .iter()?
                 .map(|row| -> PyResult<String> {
-                    // let params = row.extract().unwrap();
                     let row = row?;
                     if row.is_instance_of::<PyDict>()? {
                         let local = PyDict::new(py);
@@ -290,6 +289,7 @@ impl Cursor {
             None
         }))
     }
+
     /// PEP249 void method
     pub fn fetchmany(&mut self, size: Option<usize>) -> PyResult<Option<Vec<PyObject>>> {
         self.assert_block()?;
@@ -330,6 +330,7 @@ impl Cursor {
             }
         }
     }
+
     /// Fetch all rows into a sequence of tuple.
     pub fn fetchall(&mut self) -> PyResult<Option<Vec<PyObject>>> {
         self.fetchmany(Some(usize::MAX))
@@ -369,6 +370,7 @@ impl Cursor {
     pub fn fetch_all_into_dict(&mut self) -> PyResult<Option<Vec<PyObject>>> {
         self.fetchallintodict()
     }
+
     /// PEP249 void method, underline interface does not support multiple result sets.
     pub fn nextset(&self) -> PyResult<()> {
         Err(NotSupportedError::new_err(
@@ -385,6 +387,7 @@ impl Cursor {
     /// PEP249 void method
     #[getter]
     pub fn setinputsizes(&self) {}
+
     /// PEP249 void method
     #[getter]
     pub fn setoutputsizes(&self) {}

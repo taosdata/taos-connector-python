@@ -3,16 +3,16 @@ name: Test on macOS
 on:
   push:
     branches:
-      - 'main'
-      - '3.0'
+      - "main"
+      - "3.0"
   pull_request:
     branches:
-      - 'main'
-      - '3.0'
+      - "main"
+      - "3.0"
   workflow_dispatch:
     inputs:
       tdengine_branch:
-        description: 'TDengine branch'
+        description: "TDengine branch"
         required: true
         type: string
 
@@ -30,8 +30,8 @@ jobs:
         id: determine-branch
         with:
           cond: ${{ github.base_ref == 'main' }}
-          if_true: '3.3.6'
-          if_false: '3.0'
+          if_true: "main"
+          if_false: "3.0"
 
       #----------------------------------------------
       # Checkout TDengine repository
@@ -127,7 +127,6 @@ jobs:
           echo "do make_install grep libtao"
           pwd
 
-
       - name: package
         if: >
           (github.event_name == 'workflow_dispatch' && steps.cache-server-manually.outputs.cache-hit != 'true') ||
@@ -212,7 +211,7 @@ jobs:
           key: macos-poetry
 
       #----------------------------------------------
-      # install & configure poetry  
+      # install & configure poetry
       #----------------------------------------------
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -301,7 +300,7 @@ jobs:
 
       - name: Checkout Connector
         uses: actions/checkout@v4
-    
+
       - name: Cache Poetry
         id: cache-poetry
         uses: actions/cache@v4
@@ -310,7 +309,7 @@ jobs:
           key: macos-poetry
 
       #----------------------------------------------
-      # install & configure poetry  
+      # install & configure poetry
       #----------------------------------------------
       - name: Install Poetry
         uses: snok/install-poetry@v1
