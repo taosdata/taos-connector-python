@@ -1,6 +1,3 @@
-#!
-import time
-
 import taos
 import taosws
 from taosws.taosws import PySchemalessProtocol, PySchemalessPrecision

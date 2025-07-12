@@ -4,27 +4,27 @@ import datetime
 
 config = [
     {
-        'db_protocol': 'taosws',
-        'db_user': "root",
-        'db_pass': "taosdata",
-        'db_host': "localhost",
-        'db_port': 6041,
-        'db_name': "t_ws1",
+        "db_protocol": "taosws",
+        "db_user": "root",
+        "db_pass": "taosdata",
+        "db_host": "localhost",
+        "db_port": 6041,
+        "db_name": "t_ws1",
     }
 ]
 
 
 @pytest.fixture(params=config)
 def ctx(request):
-    db_protocol = request.param['db_protocol']
-    db_user = request.param['db_user']
-    db_pass = request.param['db_pass']
-    db_host = request.param['db_host']
-    db_port = request.param['db_port']
+    db_protocol = request.param["db_protocol"]
+    db_user = request.param["db_user"]
+    db_pass = request.param["db_pass"]
+    db_host = request.param["db_host"]
+    db_port = request.param["db_port"]
 
     db_url = f"{db_protocol}://{db_user}:{db_pass}@{db_host}:{db_port}"
 
-    db_name = request.param['db_name']
+    db_name = request.param["db_name"]
 
     conn = taosws.connect(db_url)
 
@@ -33,13 +33,14 @@ def ctx(request):
     conn.execute("DROP DATABASE IF EXISTS %s" % db_name)
     conn.close()
 
+
 def test_execute(ctx):
     conn, db = ctx
     ws = conn
     cur = ws.cursor()
-    res = cur.execute('show dnodes', 1)
-    print(f'res: {res}')
-    db = 'test11'
+    res = cur.execute("show dnodes", 1)
+    print(f"res: {res}")
+    db = "test11"
     cur.execute("drop database if exists {}", db)
     cur.execute("create database {}", db)
     cur.execute("use {name}", name=db)
@@ -57,14 +58,11 @@ def test_execute(ctx):
         {
             "name": "tb3",
             "t1": 3,
-        }
+        },
     ]
 
-    res = cur.execute_many(
-        "create table {name} using stb tags({t1})",
-        data
-    )
-    print(f'res: {res}')
+    res = cur.execute_many("create table {name} using stb tags({t1})", data)
+    print(f"res: {res}")
 
     ts = datetime.datetime.now().astimezone()
     data = [
@@ -76,22 +74,43 @@ def test_execute(ctx):
         "insert into {} values('{}', {}, '{}', '{}')",
         data,
     )
-    geo = bytes([0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x40])
+    geo = bytes(
+        [
+            0x01,
+            0x01,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x10,
+            0x40,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x20,
+            0x40,
+        ]
+    )
     varbinary = b"0x7661726332"
 
-    cur.execute('select * from stb')
+    cur.execute("select * from stb")
     while True:
         row = cur.fetchone()
         if row:
             # hex_string = ''.join(f'{byte:02x}' for byte in bytearray(row[4]))
             # print(hex_string)
-            print(f'row: {row}')
+            print(f"row: {row}")
             assert row[2] == geo
             assert row[3] == varbinary
         else:
             break
 
-
-    
     # assert row is not None
-

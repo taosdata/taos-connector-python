@@ -4,27 +4,27 @@ from os import unlink
 
 config = [
     {
-        'db_protocol': 'taos',
-        'db_user': "root",
-        'db_pass': "taosdata",
-        'db_host': "localhost",
-        'db_port': 6030,
-        'db_name': "test",
+        "db_protocol": "taos",
+        "db_user": "root",
+        "db_pass": "taosdata",
+        "db_host": "localhost",
+        "db_port": 6030,
+        "db_name": "test",
     }
 ]
 
 
 @pytest.fixture(params=config)
 def ctx(request):
-    db_protocol = request.param['db_protocol']
-    db_user = request.param['db_user']
-    db_pass = request.param['db_pass']
-    db_host = request.param['db_host']
-    db_port = request.param['db_port']
+    db_protocol = request.param["db_protocol"]
+    db_user = request.param["db_user"]
+    db_pass = request.param["db_pass"]
+    db_host = request.param["db_host"]
+    db_port = request.param["db_port"]
 
     db_url = f"{db_protocol}://{db_user}:{db_pass}@{db_host}:{db_port}"
 
-    db_name = request.param['db_name']
+    db_name = request.param["db_name"]
 
     conn = taos.connect(db_url)
     yield conn, db_name
