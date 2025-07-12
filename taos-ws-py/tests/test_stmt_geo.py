@@ -1,23 +1,22 @@
 import time
 import taosws
-import taos
 
 
 def before_test(db_name):
-    taos_conn = taos.connect()
-    taos_conn.execute("drop database if exists %s" % db_name)
-    taos_conn.execute("create database %s" % db_name)
-    taos_conn.select_db(db_name)
-    taos_conn.execute(
+    conn = taosws.connect()
+    conn.execute("drop database if exists %s" % db_name)
+    conn.execute("create database %s" % db_name)
+    conn.execute("use %s" % db_name)
+    conn.execute(
         "create table stb1 (ts timestamp, a int, b float, c varchar(10), geo geometry(512), vbinary varbinary(32)) tags (t1 int, t2 binary(10))"
     )
-    taos_conn.close()
+    conn.close()
 
 
 def after_test(db_name):
-    taos_conn = taos.connect()
-    taos_conn.execute("drop database if exists %s" % db_name)
-    taos_conn.close()
+    conn = taosws.connect()
+    conn.execute("drop database if exists %s" % db_name)
+    conn.close()
 
 
 def test_stmt_insert():

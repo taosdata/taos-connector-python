@@ -1,13 +1,12 @@
-import taos
 import taosws
 
 
 def pre_test():
-    conn = taos.connect()
+    conn = taosws.connect()
     conn.execute("drop topic if exists topic_1")
     conn.execute("drop database if exists tmq_test")
     conn.execute("create database if not exists tmq_test wal_retention_period 3600")
-    conn.select_db("tmq_test")
+    conn.execute("use tmq_test")
     conn.execute(
         "create table if not exists tb1 (ts timestamp, c1 int, c2 float, c3 binary(10), geo geometry(512), vbinary varbinary(32)) tags(t1 int)"
     )
@@ -24,7 +23,7 @@ def pre_test():
 
 
 def after_test():
-    conn = taos.connect()
+    conn = taosws.connect()
     conn.execute("drop topic if exists topic_1")
     conn.execute("drop database if exists tmq_test")
 
@@ -68,4 +67,3 @@ def test_tmq_assignment():
         assert assignment.assignments()[0].offset() >= 0
 
     consumer.unsubscribe()
-    # after_test()

@@ -36,7 +36,6 @@ def ctx(request):
 
 def test_query_simple(ctx):
     conn, db = ctx
-    # res = conn.query_with_req_id('show dnodes', 1)
     res = conn.query("show dnodes")
     print(f"res: {res}")
 
