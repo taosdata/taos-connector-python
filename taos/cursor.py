@@ -2,6 +2,7 @@
 from typing import Optional
 
 from taos.cinterface import *
+from taos.connection import TaosConnection
 from taos.error import *
 from taos.constants import FieldType
 
@@ -27,7 +28,12 @@ class TaosCursor(object):
             .execute*() produced (for DQL statements like SELECT) or affected
     """
 
-    def __init__(self, connection=None, decode_binary=True):
+    def __init__(self, connection: TaosConnection = None, decode_binary=True):
+        """
+        Initialize the cursor with a database connection.
+        :param connection: The database connection to use.
+        :param decode_binary: If True, decode binary data to string.
+        """
         self._description = []
         self._rowcount = -1
         self._connection = None
@@ -57,7 +63,9 @@ class TaosCursor(object):
             raise OperationalError("Invalid use of fetch iterator")
 
         if self._block_rows <= self._block_iter:
-            block, self._block_rows = taos_fetch_row(self._result, self._fields, decode_binary=self.decode_binary)
+            block, self._block_rows = taos_fetch_row(
+                self._result, self._fields, decode_binary=self.decode_binary
+            )
             if self._block_rows == 0:
                 raise StopIteration
             self._block = list(map(tuple, zip(*block)))
@@ -107,6 +115,7 @@ class TaosCursor(object):
         return True
 
     def execute(self, operation, params=None, req_id: Optional[int] = None):
+        # type: (str, dict | tuple | None, Optional[int]) -> int | c_void_p
         """Prepare and execute a database operation (query or command)."""
         if not operation:
             return None
@@ -119,8 +128,7 @@ class TaosCursor(object):
 
         stmt = operation
         if params is not None:
-            pass
-
+            stmt = stmt % (params)
         # global querySeqNum
         # querySeqNum += 1
         # localSeqNum = querySeqNum # avoid race condition
@@ -157,9 +165,9 @@ class TaosCursor(object):
                 # print(f'execute: {sql.format(**line)}')
                 affected_rows += self.execute(sql.format(**line), req_id=req_id)
             elif isinstance(line, list):
-                sql += f' {tuple(line)} '
+                sql += f" {tuple(line)} "
             elif isinstance(line, tuple):
-                sql += f' {line} '
+                sql += f" {line} "
         if flag:
             # print(f'execute_many: {sql}')
             affected_rows += self.execute(sql, req_id=req_id)
@@ -232,7 +240,9 @@ class TaosCursor(object):
         buffer = [[] for i in range(len(self._fields))]
         self._rowcount = 0
         while True:
-            block, num_of_rows = taos_fetch_row(self._result, self._fields, decode_binary=self.decode_binary)
+            block, num_of_rows = taos_fetch_row(
+                self._result, self._fields, decode_binary=self.decode_binary
+            )
             errno = taos_errno(self._result)
             if errno != 0:
                 raise ProgrammingError(taos_errstr(self._result), errno)
@@ -246,12 +256,17 @@ class TaosCursor(object):
     def fetchall(self):
         if self._result is None:
             raise OperationalError("Invalid use of fetchall")
-        fields = self._fields if self._fields is not None else taos_fetch_fields(
-            self._result)
+        fields = (
+            self._fields
+            if self._fields is not None
+            else taos_fetch_fields(self._result)
+        )
         buffer = [[] for i in range(len(fields))]
         self._rowcount = 0
         while True:
-            block, num_of_rows = taos_fetch_block(self._result, self._fields, decode_binary=self.decode_binary)
+            block, num_of_rows = taos_fetch_block(
+                self._result, self._fields, decode_binary=self.decode_binary
+            )
             errno = taos_errno(self._result)
             if errno != 0:
                 raise ProgrammingError(taos_errstr(self._result), errno)
@@ -294,7 +309,8 @@ class TaosCursor(object):
         self._description = []
         for ele in self._fields:
             self._description.append(
-                (ele["name"], ele["type"], None, None, None, None, False))
+                (ele["name"], ele["type"], None, None, None, None, False)
+            )
 
         return self._result
 
