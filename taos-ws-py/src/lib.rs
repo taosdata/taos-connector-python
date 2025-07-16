@@ -146,9 +146,37 @@ impl Connection {
         }
     }
 
-    pub fn execute(&self, sql: &str) -> PyResult<i32> {
+    #[args(py_args = "*", parameters = "**")]
+    pub fn execute(
+        &mut self,
+        operation: &PyString,
+        py_args: &PyTuple,
+        parameters: Option<&PyDict>,
+    ) -> PyResult<usize> {
+        dbg!(&operation, &py_args, &parameters);
+        let sql = Python::with_gil(|py| {
+            let sql: String = if let Some(parameters) = parameters {
+                let local = PyDict::new(py);
+                local.set_item("parameters", parameters)?;
+                local.set_item("operation", operation)?;
+                local.set_item("args", py_args)?;
+                dbg!(&operation);
+                dbg!(&parameters);
+                let sql = py.eval("operation.format(*args, **parameters)", None, Some(local))?;
+                dbg!(sql.extract::<String>()?);
+                let sql = py.eval("operation % (parameters)", None, Some(local))?;
+                dbg!(sql.extract()?)
+            } else {
+                let local = PyDict::new(py);
+                local.set_item("operation", operation)?;
+                local.set_item("args", py_args)?;
+                let sql = py.eval("operation.format(*args)", None, Some(local))?;
+                sql.extract()?
+            };
+            Ok::<_, PyErr>(sql)
+        })?;
         match self.current_cursor()?.query(sql) {
-            Ok(rs) => Ok(rs.affected_rows()),
+            Ok(rs) => Ok(rs.affected_rows() as _),
             Err(err) => Err(QueryError::new_err(err.to_string())),
         }
     }

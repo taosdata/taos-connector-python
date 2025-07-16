@@ -151,7 +151,7 @@ class TaosConnection(object):
         return TaosSubscription(sub, callback is not None)
 
     def statement(self, sql=None):
-        # type: (str | None) -> TaosStmt|None
+        # type: (str | None) -> TaosStmt
         if self._conn is None:
             return None
         stmt = taos_stmt_init(self._conn)
