@@ -4,13 +4,13 @@ on:
   push:
     branches:
       - main
-      - '3.0'
+      - "3.0"
     tags:
       - taos-ws-py-v*
   pull_request:
     branches:
       - main
-      - '3.0'
+      - "3.0"
 env:
   PYTHON_VERSION: "3.10" # to build abi3 wheels
 
@@ -26,7 +26,7 @@ jobs:
       - name: Check if file changes would trigger a rebuild
         if: "!startsWith(github.ref, 'refs/tags/taos-ws-py')"
         id: rebuild
-        uses: tj-actions/changed-files@v41
+        uses: tj-actions/changed-files@v46
         with:
           files: |
             .github/workflows/taos-ws-py.yml
@@ -49,9 +49,9 @@ jobs:
       matrix:
         target: [x86_64]
     steps:
-      - name: Install gettext  
+      - name: Install gettext
         run: |
-          brew install gettext 
+          brew install gettext
 
       - uses: actions/checkout@v4
 
@@ -68,10 +68,10 @@ jobs:
           target: x86_64
           working-directory: taos-ws-py
           args: --release --strip
-      - name: Install Homebrew  
-        run: |  
-          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"  
-      - name: Set DYLD_LIBRARY_PATH  
+      - name: Install Homebrew
+        run: |
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      - name: Set DYLD_LIBRARY_PATH
         run: |
           echo "export DYLD_LIBRARY_PATH=/usr/local/opt/gettext/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
       - name: Install built wheel - x86_64
@@ -165,27 +165,22 @@ jobs:
 
       #
       #  build TDengine and run taos-ws-py tests
-      #    
+      #
 
       - name: Determine TDengine branch
         uses: haya14busa/action-cond@v1
         id: determine-branch
         with:
           cond: ${{ github.base_ref == 'main' }}
-          if_true: '3.3.6'
-          if_false: '3.0'
+          if_true: "main"
+          if_false: "3.0"
 
       - name: Checkout tdengine
         uses: actions/checkout@v2
         with:
           repository: "taosdata/TDengine"
           path: "TDengine_v3"
-          ref:  ${{ steps.determine-branch.outputs.value }}
-
-      - name: Get CMake
-        uses: lukka/get-cmake@latest
-        with:
-          cmakeVersion: 3.31.6
+          ref: ${{ steps.determine-branch.outputs.value }}
 
       - name: Build TDengine 3.0
         run: |
@@ -225,7 +220,6 @@ jobs:
           pip3 install pytest
           pip3 install ./
           pytest ./taos-ws-py/tests/
-
 
       - name: Upload wheels linux
         uses: actions/upload-artifact@v4

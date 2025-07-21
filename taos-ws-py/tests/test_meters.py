@@ -1,5 +1,4 @@
 import taosws
-import datetime
 
 
 def test_meters():

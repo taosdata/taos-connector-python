@@ -1,3 +1,5 @@
+#![allow(unexpected_cfgs)]
+
 use std::str::FromStr;
 
 use ::taos::{sync::*, RawBlock, ResultSet};
@@ -69,11 +71,8 @@ create_exception!(
 create_exception!(taosws, ConsumerException, Error);
 
 mod common;
-
 mod consumer;
-
 mod cursor;
-
 mod field;
 
 #[pyclass]
@@ -116,6 +115,7 @@ impl Connection {
     pub fn new(_dsn: Option<&str>, _args: Option<&PyDict>) -> PyResult<Self> {
         todo!()
     }
+
     pub fn query(&self, sql: &str) -> PyResult<TaosResult> {
         match self.current_cursor()?.query(sql) {
             Ok(rs) => {
@@ -172,7 +172,6 @@ impl Connection {
     /// PEP249 commit() method, do nothing here.
     pub fn rollback(&self) {}
 
-    ///
     /// PEP249 cursor() method.
     pub fn cursor(&self) -> PyResult<Cursor> {
         Ok(Cursor::new(self.builder()?.build().map_err(|err| {
@@ -224,6 +223,7 @@ impl TaosResult {
     fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
         slf
     }
+
     fn __next__(mut slf: PyRefMut<Self>) -> PyResult<Option<PyObject>> {
         if let Some(block) = slf._block.as_ref() {
             if slf._current >= block.nrows() {
@@ -365,9 +365,7 @@ fn connect(dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Connection> {
                     Err(ConsumerException::new_err(format!("Invalid port: {port}")))?;
                 }
             }
-            _ => {
-                // addr.host.replace("localhost".to_string());
-            }
+            _ => {}
         }
 
         for (key, value) in args
@@ -385,6 +383,7 @@ fn connect(dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Connection> {
     let client = builder
         .build()
         .map_err(|err| ConnectionError::new_err(err.to_string()))?;
+
     Ok(Connection {
         _builder: Some(builder),
         _inner: Some(client),

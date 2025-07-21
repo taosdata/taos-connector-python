@@ -1,7 +1,5 @@
-#!/usr/bin/python3
 from taosws import Consumer
 import taosws
-import time
 
 
 def init_topic():
@@ -59,6 +57,6 @@ def test_comsumer():
             # consumer.commit(message)
         else:
             break
-    
+
     consumer.unsubscribe()
     consumer.close()
