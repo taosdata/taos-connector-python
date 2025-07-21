@@ -108,6 +108,7 @@ impl Consumer {
             {
                 builder.password.replace(value.extract()?);
             }
+
             if let Some(value) = args.get_item("td.connect.token").or(args.get_item("token")) {
                 builder.set("token", value.extract::<String>()?);
             }
@@ -123,11 +124,25 @@ impl Consumer {
             builder.set("enable.auto.commit", "true");
             builder.set("experimental.snapshot.enable", "false");
 
+            let skip_keys = [
+                "protocol", "driver",
+                "username", "user", "password",
+                "td.connect.websocket.scheme",
+                "td.connect.ip", "host",
+                "td.connect.port", "port",
+                "td.connect.token",
+                "td.connect.user",
+                "td.connect.pass",
+                "group.id",
+            ];
+
             // enum args and set
             for (key, value) in args.iter() {
-                if let Some(value) = args.get_item(key) {
-                    builder.set(key.extract::<String>()?, value.extract::<String>()?);
+                let key_str = key.downcast::<PyString>()?.to_str()?;
+                if skip_keys.contains(&key_str) {
+                        continue;
                 }
+                builder.set(key_str, value.extract::<String>()?);
             }
         }
         let builder = TmqBuilder::from_dsn(builder)
