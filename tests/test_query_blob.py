@@ -13,14 +13,30 @@ def test_query():
     conn.execute("create database if not exists test_query_py")
     conn.execute("use test_query_py")
     conn.execute("create table if not exists tb1 (ts timestamp, v blob) tags(jt json)")
-    n = conn.execute('insert into tn1 using tb1 tags(\'{"name":"value"}\') values(now, null) (now + 10s, "xxxxxxxxxxxxxxxxxxx") (now + 20s, "\\x7f8290")')
-    # n = conn.execute('insert into tn1 using tb1 tags(\'{"name":"value"}\') values(now + 10s, "xxxxxxxxxxxxxxxxxxx")')
+    n = conn.execute('insert into tn1 using tb1 tags(\'{"name":"value"}\') values(now, null)')
     print("inserted %d rows" % n)
     result = conn.query("select * from tb1")
     fields = result.fields
     print("fields: ", fields)
     assert fields.count == 3
 
+    results= result.fetch_all()
+    print("results: ", results)
+    n = conn.execute('insert into tn1 using tb1 tags(\'{"name":"value"}\') values(now + 10s, "xxxxxxxxxxxxxxxxxxx")')
+    print("inserted %d rows" % n)
+    result = conn.query("select * from tb1")
+    fields = result.fields
+    print("fields: ", fields)
+    assert fields.count == 3
+    results= result.fetch_all()
+    print("results: ", results)
+
+    n = conn.execute('insert into tn1 using tb1 tags(\'{"name":"value"}\') values(now + 20s, "\\x7f8290")')
+    print("inserted %d rows" % n)
+    result = conn.query("select * from tb1")
+    fields = result.fields
+    print("fields: ", fields)
+    assert fields.count == 3
     results= result.fetch_all()
     print("results: ", results)
     assert results[0][1] == None
