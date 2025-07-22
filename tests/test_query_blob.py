@@ -22,6 +22,7 @@ def test_query():
     assert fields.count == 3
 
     results= result.fetch_all()
+    print("results: ", results)
     assert results[0][1] == None
     assert results[1][1] == b"xxxxxxxxxxxxxxxxxxx"
     assert results[2][1] == b"\x7f\x82\x90"
