@@ -1,7 +1,7 @@
 import threading
 import time
 from time import sleep
-
+from decimal import Decimal
 import taos
 from taos.tmq import *
 
@@ -186,14 +186,23 @@ def test_tmq_assignment():
         "insert into t1 using stb1 tags(true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now-4s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1','binary value_1','POINT (3.0 5.0)','9876.123456','123456789012.0987654321','axxxxxxxxxxxxxxxxxxxa')"
     )
     conn.execute(
-        "insert into t2 using stb1 tags(false, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now-3s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1','binary value_1','POINT (3.0 5.0)','-9876.123456','-123456789012.0987654321','bxxxxxxxxxxxxxxxxxxxb')"
+        "insert into t2 using stb1 tags(false, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now-3s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2','binary value_1','POINT (3.0 5.0)','-9876.123456','-123456789012.0987654321','bxxxxxxxxxxxxxxxxxxxb')"
     )
     conn.execute(
-        "insert into t3 using stb1 tags(true, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, '2', '2') values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2','binary value_1','POINT (3.0 5.0)','5676.123','567890121234.5432109876','cxxxxxxxxxxxxxxxxxxxc')"
+        "insert into t3 using stb1 tags(true, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, '2', '2') values (now-2s, true,3,3,3,3,3,3,3,3,3,3,3,'3','3','binary value_1','POINT (3.0 5.0)','5676.123','567890121234.5432109876','cxxxxxxxxxxxxxxxxxxxc')"
     )
 
     consumer = Consumer({"group.id": "1", "auto.offset.reset": "earliest"})
     consumer.subscribe(["topic1"])
+
+    expected_full_data = [
+        [None, True, 1, 1, 1, 1, 1, 1, 1, 1, 1.0, 1.0, None, '1', '1', 
+            b'binary value_1', b'\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08@\x00\x00\x00\x00\x00\x00\x14@', Decimal('9876.123456'), Decimal('123456789012.0987654321'), b'axxxxxxxxxxxxxxxxxxxa'],
+        [None, True, 2, 2, 2, 2, 2, 2, 2, 2, 2.0, 2.0, None, '2', '2', 
+            b'binary value_1', b'\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08@\x00\x00\x00\x00\x00\x00\x14@', Decimal('-9876.123456'), Decimal('-123456789012.0987654321'), b'bxxxxxxxxxxxxxxxxxxxb'],
+        [None, True, 3, 3, 3, 3, 3, 3, 3, 3, 3.0, 3.0, None, '3', '3', 
+            b'binary value_1', b'\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08@\x00\x00\x00\x00\x00\x00\x14@', Decimal('5676.123'), Decimal('567890121234.5432109876'), b'cxxxxxxxxxxxxxxxxxxxc']
+    ]
 
     try:
         assignment = consumer.assignment()
@@ -207,15 +216,20 @@ def test_tmq_assignment():
             database = message.database()
             print(f"topic: {topic}, database: {database}")
 
-            for block in message:
+
+
+            for i, block in enumerate(message):
                 nrows = block.nrows()
                 ncols = block.ncols()
-                for row in block:
-                    print(row)
                 values = block.fetchall()
+                print(f"nrows: {nrows}, ncols: {ncols}, values: {values}, {i}, {expected_full_data[i]}")
+                # 调用检查函数
+                check_values(values, nrows, ncols, expected_data=expected_full_data) 
                 print(f"nrows: {nrows}, ncols: {ncols}, values: {values}")
 
         consumer.commit(message)
+
+        print("====== after insert, start check assignment")
 
         table_num = 10
         data_num = 10
@@ -226,7 +240,11 @@ def test_tmq_assignment():
                 )
 
         message = consumer.poll(5)
-        print(f"< after > insert message: {message}")
+        
+        expected_full_data = [
+            [None, True, 1, 1, 1, 1, 1, 1, 1, 1, 1.0, 1.0, None, '1', '1', 
+             b'binary value_1', b'\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08@\x00\x00\x00\x00\x00\x00\x14@', Decimal('9876.123456'), Decimal('123456789012.0987654321'), b'xxxxxxxxxxxxxxxxxxx']
+        ]
         if message:
             topic = message.topic()
             database = message.database()
@@ -235,11 +253,10 @@ def test_tmq_assignment():
             for block in message:
                 nrows = block.nrows()
                 ncols = block.ncols()
-                for row in block:
-                    print(row)
                 values = block.fetchall()
+                check_values(values, nrows, ncols, expected_full_data)  
                 print(f"nrows: {nrows}, ncols: {ncols}, values: {values}")
-
+                
             consumer.commit(message)
         consumer.commit(message)
 
@@ -253,6 +270,31 @@ def test_tmq_assignment():
         consumer.unsubscribe()
         consumer.close()
         # after_ter_tmq()
+
+def check_values(values, nrows, ncols, expected_data=None):
+    """检查消费到的数据"""
+    assert values is not None, "values should not be None"
+    assert isinstance(values, list), "values should be a list"
+    assert len(values) == nrows, f"values length {len(values)} should equal nrows {nrows}"
+    
+    if isinstance(expected_data, list):
+        print(f"Checking {len(values)} rows against expected data")
+    
+        for i, actual_row in enumerate(values):
+            index = actual_row[2] - 1
+            if index < len(expected_data):
+                expected_row = expected_data[index]
+                print(f"Checking row {i}: actual length={len(actual_row)}, expected length={len(expected_row)}")
+                assert len(actual_row) == len(expected_row), f"row {i} length mismatch: got {len(actual_row)}, expected {len(expected_row)}"
+
+                for j in range(1, len(actual_row)):  
+                    if j < len(expected_row) and expected_row[j] is not None:
+                        assert actual_row[j] == expected_row[j], \
+                            f"row {i} col {j} mismatch: expected {expected_row[j]}, got {actual_row[j]}"
+            else:
+                print(f"Warning: No expected data for row {i}")
+    
+    print(f"✅ Values validation passed: {len(values)} rows")
 
 
 def test_tmq_seek():
@@ -322,7 +364,7 @@ def test_tmq_committed_and_position():
 
     try:
         consumer.poll(1)
-        res = consumer.poll(1)
+        consumer.poll(1)
         consumer.commit()
         topic_partitions = consumer.assignment()
         committees = consumer.committed(topic_partitions)
