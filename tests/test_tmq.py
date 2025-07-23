@@ -272,7 +272,6 @@ def test_tmq_assignment():
         # after_ter_tmq()
 
 def check_values(values, nrows, ncols, expected_data=None):
-    """检查消费到的数据"""
     assert values is not None, "values should not be None"
     assert isinstance(values, list), "values should be a list"
     assert len(values) == nrows, f"values length {len(values)} should equal nrows {nrows}"
