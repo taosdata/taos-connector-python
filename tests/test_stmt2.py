@@ -118,12 +118,12 @@ def prepare(conn, dbname, stbname, ntb1, ntb2):
     conn.execute("create database if not exists %s precision 'ms' " % dbname)
     conn.select_db(dbname)
     # stable
-    sql = f"create table if not exists {dbname}.{stbname}(ts timestamp, name binary(32), sex bool, score int) tags(grade nchar(8), class int)"
+    sql = f"create table if not exists {dbname}.{stbname}(ts timestamp, name binary(32), sex bool, score int, remarks blob) tags(grade nchar(8), class int)"
     conn.execute(sql)
     # normal table
-    sql = f"create table if not exists {dbname}.{ntb1} (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128))"
+    sql = f"create table if not exists {dbname}.{ntb1} (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128), remarks blob)"
     conn.execute(sql)
-    sql = f"create table if not exists {dbname}.{ntb2} (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128))"
+    sql = f"create table if not exists {dbname}.{ntb2} (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128), remarks blob)"
     conn.execute(sql)
 
 
@@ -187,7 +187,8 @@ def insert_bind_param_normal_tables(conn, stmt2, dbname, ntb):
                 [b"Mary",       b"tom",         b"Jack",            b"Jane",            None        ],
                 [0,             3.14,           True,               0,                  1           ],
                 [98,            99.87,          60,                 100,                99          ],
-                wkbs
+                wkbs,
+                [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5"]
             ]
     ]
 
@@ -212,7 +213,8 @@ def insert_bind_param_with_table(conn, stmt2, dbname, stbname, ctb):
                 [1601481600000,1601481600004,"2024-09-19 10:00:00", "2024-09-19 10:00:01.123", datetime(2024,9,20,10,11,12,456)],
                 ["Mary",       "Tom",        "Jack",                "Jane",                    "alex"       ],
                 [0,            1,            1,                     0,                         1            ],
-                [98,           80,           60,                    100,                       99           ]
+                [98,           80,           60,                    100,                       99           ],
+                [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5"]
             ]
     ]
 
@@ -371,7 +373,8 @@ def insert_with_normal_tables(conn, stmt2, dbname, ntb):
                 [b"Mary",       b"tom",        b"Jack",                b"Jane",                   None       ],
                 [0,            3.14,         True,                     0,                         1            ],
                 [98,           99.87,           60,                    100,                       99           ],
-                wkbs
+                wkbs,
+                [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5"]
             ]
     ]
 
@@ -458,7 +461,7 @@ def test_stmt2_insert(conn):
         prepare(conn, dbname, stbname, ntb1, ntb2)
 
         ctb = 'ctb' # child table
-        stmt2 = conn.statement2(f"insert into {dbname}.{ctb} using {dbname}.{stbname} tags (?,?) values(?,?,?,?)")
+        stmt2 = conn.statement2(f"insert into {dbname}.{ctb} using {dbname}.{stbname} tags (?,?) values(?,?,?,?,?)")
         insert_bind_param_with_table(conn, stmt2, dbname, stbname, ctb)
         print("insert child table ........................... ok\n")
         stmt2.close()
@@ -480,13 +483,13 @@ def test_stmt2_insert(conn):
         # stmt2.close()
         
         # ntb1
-        stmt2 = conn.statement2(f"insert into {dbname}.{ntb1} values(?,?,?,?,?)")
+        stmt2 = conn.statement2(f"insert into {dbname}.{ntb1} values(?,?,?,?,?,?)")
         insert_with_normal_tables(conn, stmt2, dbname, ntb1)
         print("insert normal tables .......................... ok\n")
         stmt2.close()
 
         # ntb2
-        stmt2 = conn.statement2(f"insert into {dbname}.{ntb2} values(?,?,?,?,?)")
+        stmt2 = conn.statement2(f"insert into {dbname}.{ntb2} values(?,?,?,?,?,?)")
         insert_bind_param_normal_tables(conn, stmt2, dbname, ntb2)
         print("insert normal tables (bind param) ............. ok\n")
         stmt2.close()
@@ -582,12 +585,12 @@ def test_stmt2_query(conn):
         # stmt2.close()
         # print("insert bind & execute ......................... ok\n")
 
-        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.000', 'Mary2', false, 298)")
-        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.001', 'Tom2', true, 280)")
-        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.002', 'Jack2', true, 260)")
-        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.003', 'Jane2', false, 2100)")
-        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.004', 'alex2', true, 299)")
-        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.005', NULL, false, NULL)")
+        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.000', 'Mary2', false, 298, 'XXX')")
+        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.001', 'Tom2', true, 280, 'YYY')")
+        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.002', 'Jack2', true, 260, 'ZZZ')")
+        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.003', 'Jane2', false, 2100, 'WWW')")
+        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.004', 'alex2', true, 299, 'ZZZ')")
+        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.005', NULL, false, NULL, 'WWW')")
 
 
         # statement2
