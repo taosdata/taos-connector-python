@@ -1,3 +1,5 @@
+#![allow(unexpected_cfgs)]
+
 use std::str::FromStr;
 
 use ::taos::{sync::*, RawBlock, ResultSet};
@@ -69,11 +71,8 @@ create_exception!(
 create_exception!(taosws, ConsumerException, Error);
 
 mod common;
-
 mod consumer;
-
 mod cursor;
-
 mod field;
 
 #[pyclass]
@@ -116,6 +115,7 @@ impl Connection {
     pub fn new(_dsn: Option<&str>, _args: Option<&PyDict>) -> PyResult<Self> {
         todo!()
     }
+
     pub fn query(&self, sql: &str) -> PyResult<TaosResult> {
         match self.current_cursor()?.query(sql) {
             Ok(rs) => {
@@ -172,7 +172,6 @@ impl Connection {
     /// PEP249 commit() method, do nothing here.
     pub fn rollback(&self) {}
 
-    ///
     /// PEP249 cursor() method.
     pub fn cursor(&self) -> PyResult<Cursor> {
         Ok(Cursor::new(self.builder()?.build().map_err(|err| {
@@ -217,7 +216,6 @@ impl Connection {
         let stmt2 = TaosStmt2::init(self)?;
         Ok(stmt2)
     }
-
 }
 
 #[pymethods]
@@ -225,6 +223,7 @@ impl TaosResult {
     fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
         slf
     }
+
     fn __next__(mut slf: PyRefMut<Self>) -> PyResult<Option<PyObject>> {
         if let Some(block) = slf._block.as_ref() {
             if slf._current >= block.nrows() {
@@ -365,9 +364,7 @@ fn connect(dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Connection> {
                     Err(ConsumerException::new_err(format!("Invalid port: {port}")))?;
                 }
             }
-            _ => {
-                // addr.host.replace("localhost".to_string());
-            }
+            _ => {}
         }
 
         for (key, value) in args
@@ -385,6 +382,7 @@ fn connect(dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Connection> {
     let client = builder
         .build()
         .map_err(|err| ConnectionError::new_err(err.to_string()))?;
+
     Ok(Connection {
         _builder: Some(builder),
         _inner: Some(client),
@@ -537,14 +535,17 @@ impl TaosStmt2 {
         }
     }
 
-
     fn close(&self) -> PyResult<()> {
         Ok(())
     }
 }
 
 #[pyfunction]
-fn stmt2_bind_param_view(table_name: Option<&str>, tags: Option<Vec<PyTagView>>, columns: Vec<PyColumnView>) -> PyResult<PyStmt2BindParam> {
+fn stmt2_bind_param_view(
+    table_name: Option<&str>,
+    tags: Option<Vec<PyTagView>>,
+    columns: Vec<PyColumnView>,
+) -> PyResult<PyStmt2BindParam> {
     if columns.is_empty() {
         return Err(ProgrammingError::new_err("stmt2 columns cannot be empty"));
     }
@@ -553,14 +554,13 @@ fn stmt2_bind_param_view(table_name: Option<&str>, tags: Option<Vec<PyTagView>>,
 
     let tag_params = tags.map(|ts| ts.into_iter().map(|tag| tag._inner).collect::<Vec<Value>>());
 
-    let params = columns.into_iter().map(|column| column._inner).collect_vec();
-    
+    let params = columns
+        .into_iter()
+        .map(|column| column._inner)
+        .collect_vec();
+
     Ok(PyStmt2BindParam {
-        _inner: Stmt2BindParam::new(            
-            table_name_opt,  
-            tag_params,                   
-            Some(params)                 
-        ),
+        _inner: Stmt2BindParam::new(table_name_opt, tag_params, Some(params)),
     })
 }
 

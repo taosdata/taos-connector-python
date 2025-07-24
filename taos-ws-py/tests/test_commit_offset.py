@@ -40,6 +40,7 @@ def prepare(topic_name):
         # print(statement)
         cursor.execute(statement)
 
+
 def clear(topic_name):
     conn = taosws.connect("taosws://root:taosdata@localhost:6041")
     cursor = conn.cursor()
@@ -51,6 +52,7 @@ def clear(topic_name):
     for statement in statements:
         # print(statement)
         cursor.execute(statement)
+
 
 def test_commit_offset():
     topic_name = "topic_offset"
@@ -74,7 +76,7 @@ def test_commit_offset():
             print(f"vgroup: {id}, topic: {topic}, database: {database}")
 
             committed = consumer.committed(topic, id)
-            assert (committed >= 0 or committed == TSDB_CODE_TMQ_NO_COMMITTED)
+            assert committed >= 0 or committed == TSDB_CODE_TMQ_NO_COMMITTED
 
             position = consumer.position(topic, id)
             assert position >= 0

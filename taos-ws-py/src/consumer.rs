@@ -125,11 +125,16 @@ impl Consumer {
             builder.set("experimental.snapshot.enable", "false");
 
             let skip_keys = [
-                "protocol", "driver",
-                "username", "user", "password",
+                "protocol",
+                "driver",
+                "username",
+                "user",
+                "password",
                 "td.connect.websocket.scheme",
-                "td.connect.ip", "host",
-                "td.connect.port", "port",
+                "td.connect.ip",
+                "host",
+                "td.connect.port",
+                "port",
                 "td.connect.token",
                 "td.connect.user",
                 "td.connect.pass",
@@ -140,7 +145,7 @@ impl Consumer {
             for (key, value) in args.iter() {
                 let key_str = key.downcast::<PyString>()?.to_str()?;
                 if skip_keys.contains(&key_str) {
-                        continue;
+                    continue;
                 }
                 builder.set(key_str, value.extract::<String>()?);
             }
@@ -428,10 +433,10 @@ impl Assignment {
 mod tests {
     use std::collections::HashMap;
 
-    use pyo3::types::PyList;
     use pyo3::{prelude::*, types::IntoPyDict};
 
     use super::Consumer;
+
     #[test]
     fn consumer_demo() -> PyResult<()> {
         Python::with_gil(|py| {
@@ -444,7 +449,7 @@ mod tests {
             args.insert("group.id", "0");
             let args = args.into_py_dict(py);
 
-            let consumer = Consumer::new(Some(args), None)?;
+            let _consumer = Consumer::new(Some(args), None)?;
 
             Ok(())
         })
