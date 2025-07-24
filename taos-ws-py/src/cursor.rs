@@ -205,7 +205,6 @@ impl Cursor {
             let vec: Vec<_> = seq_of_parameters
                 .iter()?
                 .map(|row| -> PyResult<String> {
-                    // let params = row.extract().unwrap();
                     let row = row?;
                     if row.is_instance_of::<PyDict>()? {
                         let local = PyDict::new(py);

@@ -175,7 +175,7 @@ impl Consumer {
         Ok(topics)
     }
 
-    ///
+    /// Poll for a message with an optional timeout.
     pub fn poll(&mut self, timeout: Option<f64>) -> PyResult<Option<Message>> {
         let timeout = if let Some(timeout) = timeout {
             Timeout::Duration(Duration::from_secs_f64(timeout))

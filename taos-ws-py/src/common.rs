@@ -25,7 +25,6 @@ pub fn to_py_datetime(dt: chrono::NaiveDateTime, py: Python) -> PyResult<PyObjec
     Ok(datetime.call(args, None)?.into_py(py))
 }
 
-// pub fn datetime_to_py(t: chrono py: Python)
 pub unsafe fn get_row_of_block_unchecked(py: Python, block: &RawBlock, index: usize) -> PyObject {
     let mut vec = Vec::new();
     for i in 0..block.ncols() {
@@ -58,7 +57,7 @@ pub unsafe fn get_row_of_block_unchecked(py: Python, block: &RawBlock, index: us
             BorrowedValue::Geometry(v) => v.into_py(py),
             BorrowedValue::Decimal64(v) => v.to_string().into_py(py),
             BorrowedValue::Decimal(v) => v.to_string().into_py(py),
-            BorrowedValue::Blob(_) => todo!(),
+            BorrowedValue::Blob(v) => v.into_py(py),
             BorrowedValue::MediumBlob(_) => todo!(),
         };
         vec.push(val);
