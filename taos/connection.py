@@ -35,9 +35,6 @@ class TaosConnection(object):
         if self._charset is not None:
             self.set_option(TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_CHARSET.value, self._charset)
 
-        if self._tz is not None:
-            self.set_option(TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_TIMEZONE.value, self._tz)
-
         if self._user_app is not None:
             self.set_option(TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_USER_APP.value, self._user_app)
 
