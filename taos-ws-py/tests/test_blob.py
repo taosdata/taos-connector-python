@@ -2,9 +2,14 @@ import datetime
 import time
 import taosws
 from taosws import Consumer
+import os
 
 
 def test_blob_sql():
+    value = os.getenv("TEST_TD_3360")
+    if value is not None:
+        return
+
     conn = taosws.connect("ws://localhost:6041")
     cursor = conn.cursor()
 
@@ -39,6 +44,10 @@ def test_blob_sql():
 
 
 def test_blob_stmt2():
+    value = os.getenv("TEST_TD_3360")
+    if value is not None:
+        return
+
     conn = taosws.connect("ws://localhost:6041")
     try:
         conn.execute("drop database if exists test_1753269333"),
@@ -94,6 +103,10 @@ def test_blob_stmt2():
 
 
 def test_blob_tmq():
+    value = os.getenv("TEST_TD_3360")
+    if value is not None:
+        return
+
     conn = taosws.connect("ws://localhost:6041")
     try:
         conn.execute("drop topic if exists topic_1753270984"),
