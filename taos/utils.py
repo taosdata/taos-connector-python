@@ -195,6 +195,8 @@ def checkTypeValid(buffer_type, values):
         checkString("varbinary", values, [bytes, bytearray])
     elif buffer_type == FieldType.C_GEOMETRY:
         checkString("geometry", values, [bytes, bytearray])
+    elif buffer_type == FieldType.C_BLOB:
+        checkString("blob", values, [bytes, bytearray])    
     else:
         err = f"invalid datatype type={buffer_type} values= {values}"
         raise DataTypeAndRangeError(err)

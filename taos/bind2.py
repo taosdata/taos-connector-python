@@ -91,6 +91,8 @@ class TaosStmt2Bind(ctypes.Structure):
             self.varbinary(values)
         elif buffer_type == FieldType.C_GEOMETRY:
             self.geometry(values)
+        elif buffer_type == FieldType.C_BLOB:
+            self.blob(values)    
 
     def numeric_common(self, values, ctypes_type, buffer_null_type, buffer_value_type):
         if type(values) is not tuple and type(values) is not list:
@@ -218,6 +220,9 @@ class TaosStmt2Bind(ctypes.Structure):
         self.buffer_type = FieldType.C_GEOMETRY
         self._str_to_buffer(values, encode=False)
 
+    def blob(self, values):
+        self.buffer_type = FieldType.C_BLOB
+        self._str_to_buffer(values, encode=False)
 
 class TaosStmt2BindV(ctypes.Structure):
     _fields_ = [
