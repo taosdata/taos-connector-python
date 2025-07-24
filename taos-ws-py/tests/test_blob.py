@@ -14,14 +14,14 @@ def test_blob_sql():
     cursor = conn.cursor()
 
     try:
-        cursor.execute("drop database if exists test_1753269319"),
-        cursor.execute("create database test_1753269319"),
-        cursor.execute("use test_1753269319"),
-        cursor.execute("create table t0(ts timestamp, c1 blob)"),
-        cursor.execute("insert into t0 values(1752218982761, null)"),
-        cursor.execute("insert into t0 values(1752218982762, '')"),
-        cursor.execute("insert into t0 values(1752218982763, 'hello')"),
-        cursor.execute("insert into t0 values(1752218982764, '\\x12345678')"),
+        cursor.execute("drop database if exists test_1753269319")
+        cursor.execute("create database test_1753269319")
+        cursor.execute("use test_1753269319")
+        cursor.execute("create table t0(ts timestamp, c1 blob)")
+        cursor.execute("insert into t0 values(1752218982761, null)")
+        cursor.execute("insert into t0 values(1752218982762, '')")
+        cursor.execute("insert into t0 values(1752218982763, 'hello')")
+        cursor.execute("insert into t0 values(1752218982764, '\\x12345678')")
 
         cursor.execute("select * from t0")
         rows = cursor.fetchall()
@@ -50,10 +50,10 @@ def test_blob_stmt2():
 
     conn = taosws.connect("ws://localhost:6041")
     try:
-        conn.execute("drop database if exists test_1753269333"),
-        conn.execute("create database test_1753269333"),
-        conn.execute("use test_1753269333"),
-        conn.execute("create table t0 (ts timestamp, c1 blob)"),
+        conn.execute("drop database if exists test_1753269333")
+        conn.execute("create database test_1753269333")
+        conn.execute("use test_1753269333")
+        conn.execute("create table t0 (ts timestamp, c1 blob)")
 
         test_timestamps = [1726803356466, 1726803356467, 1726803356468, 1726803356469]
         test_blobs = [None, b"", b"hello", b"\x124Vx"]
@@ -79,9 +79,7 @@ def test_blob_stmt2():
         param = taosws.stmt2_bind_param_view(
             table_name="",
             tags=None,
-            columns=[
-                taosws.millis_timestamps_to_column([1726803356465]),
-            ],
+            columns=[taosws.millis_timestamps_to_column([1726803356465])],
         )
         stmt2.bind([param])
         stmt2.execute()
@@ -109,12 +107,12 @@ def test_blob_tmq():
 
     conn = taosws.connect("ws://localhost:6041")
     try:
-        conn.execute("drop topic if exists topic_1753270984"),
-        conn.execute("drop database if exists test_1753270984"),
-        conn.execute("create database test_1753270984"),
-        conn.execute("create topic topic_1753270984 as database test_1753270984"),
-        conn.execute("use test_1753270984"),
-        conn.execute("create table t0 (ts timestamp, c1 int, c2 blob)"),
+        conn.execute("drop topic if exists topic_1753270984")
+        conn.execute("drop database if exists test_1753270984")
+        conn.execute("create database test_1753270984")
+        conn.execute("create topic topic_1753270984 as database test_1753270984")
+        conn.execute("use test_1753270984")
+        conn.execute("create table t0 (ts timestamp, c1 int, c2 blob)")
 
         num = 100
 
