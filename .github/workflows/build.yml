@@ -3,12 +3,12 @@ name: Build
 on:
   push:
     branches:
-      - 'main'
-      - '3.0'
+      - "main"
+      - "3.0"
   pull_request:
     branches:
-      - 'main'
-      - '3.0'
+      - "main"
+      - "3.0"
 
 jobs:
   test:
@@ -16,12 +16,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        
+
       - name: Get CMake
         uses: lukka/get-cmake@latest
         with:
           cmakeVersion: 3.31.6
-          
+
       - name: Build tools
         run: |
           sudo apt-get update -y
@@ -62,7 +62,7 @@ jobs:
       #----------------------------------------------
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: | 
+        run: |
           poetry install --no-interaction --no-root
           poetry run pip install "numpy<2.0.0"
 
@@ -70,7 +70,7 @@ jobs:
       # install your root project, if required
       #----------------------------------------------
       - name: Install library
-        run: | 
+        run: |
           poetry install --no-interaction --with=test
           poetry run pip install "numpy<2.0.0"
 
@@ -85,14 +85,14 @@ jobs:
         with:
           cond: ${{ github.base_ref == 'main' }}
           if_true: "main"
-          if_false: '3.0'
+          if_false: "3.0"
 
       - name: Checkout tdengine
         uses: actions/checkout@v2
         with:
           repository: "taosdata/TDengine"
           path: "TDengine_v3"
-          ref:  ${{ steps.determine-branch.outputs.value }}
+          ref: ${{ steps.determine-branch.outputs.value }}
 
       - name: Build TDengine 3.0
         run: |
@@ -129,7 +129,7 @@ jobs:
           curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
           poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
 
-      - name: 'Upload taosd logs'
+      - name: "Upload taosd logs"
         if: failure()
         uses: actions/upload-artifact@v4
         with:
@@ -140,7 +140,7 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
-          files: ./coverage.xml          
+          files: ./coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Build Artifacts

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.8.2 - 2025-06-27
+
+### Bug Fixes:
+
+-  moify timezone param set interface (#347)
+
 ## v2.8.1 - 2025-05-22
 
 ### Features:
