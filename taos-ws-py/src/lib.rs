@@ -266,6 +266,7 @@ impl TaosResult {
                             BorrowedValue::Json(j) => std::str::from_utf8(&j).unwrap().into_py(py),
                             BorrowedValue::VarBinary(v) => v.as_ref().into_py(py),
                             BorrowedValue::Geometry(v) => v.as_ref().into_py(py),
+                            BorrowedValue::Blob(v) => v.as_ref().into_py(py),
                             _ => Option::<()>::None.into_py(py),
                         };
                         vec.push(value);
@@ -991,6 +992,18 @@ fn geometry_to_column(values: Vec<Option<Vec<u8>>>) -> PyColumnView {
     }
 }
 
+#[pyfunction]
+fn blob_to_column(values: Vec<Option<Vec<u8>>>) -> PyColumnView {
+    PyColumnView {
+        _inner: ColumnView::from_blob_bytes::<
+            Vec<u8>,
+            Option<Vec<u8>>,
+            std::vec::IntoIter<Option<Vec<u8>>>,
+            Vec<Option<Vec<u8>>>,
+        >(values),
+    }
+}
+
 #[pymodule]
 fn taosws(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     if std::env::var("RUST_LOG").is_ok() {
@@ -1051,6 +1064,7 @@ fn taosws(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(binary_to_column, m)?)?;
     m.add_function(wrap_pyfunction!(varbinary_to_column, m)?)?;
     m.add_function(wrap_pyfunction!(geometry_to_column, m)?)?;
+    m.add_function(wrap_pyfunction!(blob_to_column, m)?)?;
     m.add_function(wrap_pyfunction!(stmt2_bind_param_view, m)?)?;
 
     m.add("apilevel", API_LEVEL)?;

@@ -105,12 +105,8 @@ def test_execute(ctx):
     while True:
         row = cur.fetchone()
         if row:
-            # hex_string = ''.join(f'{byte:02x}' for byte in bytearray(row[4]))
-            # print(hex_string)
             print(f"row: {row}")
             assert row[2] == geo
             assert row[3] == varbinary
         else:
             break
-
-    # assert row is not None

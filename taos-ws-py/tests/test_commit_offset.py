@@ -37,7 +37,6 @@ def prepare(topic_name):
         "create table `table` (ts timestamp, v int)",
     ]
     for statement in statements:
-        # print(statement)
         cursor.execute(statement)
 
 
@@ -50,7 +49,6 @@ def clear(topic_name):
         f"drop database if exists {dbname}",
     ]
     for statement in statements:
-        # print(statement)
         cursor.execute(statement)
 
 

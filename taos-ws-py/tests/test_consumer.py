@@ -53,8 +53,6 @@ def test_comsumer():
                     print(row)
                 values = block.fetchall()
                 print(nrows, ncols)
-
-            # consumer.commit(message)
         else:
             break
 
