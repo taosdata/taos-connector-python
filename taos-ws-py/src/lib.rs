@@ -3,6 +3,7 @@
 use std::str::FromStr;
 
 use ::taos::{sync::*, RawBlock, ResultSet};
+use chrono_tz::Tz;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyString, PyTuple};
 use pyo3::{create_exception, exceptions::PyException};
@@ -61,13 +62,13 @@ create_exception!(taosws, NotSupportedError, DatabaseError);
 create_exception!(taosws, QueryError, DatabaseError);
 create_exception!(taosws, FetchError, DatabaseError);
 
-create_exception!(taosws, ConnectionError, Error, "Connection error"); // custom
+create_exception!(taosws, ConnectionError, Error, "Connection error");
 create_exception!(
     taosws,
     AlreadyClosedError,
     ConnectionError,
     "Connection error"
-); // custom
+);
 create_exception!(taosws, ConsumerException, Error);
 
 mod common;
@@ -79,6 +80,7 @@ mod field;
 struct Connection {
     _builder: Option<TaosBuilder>,
     _inner: Option<Taos>,
+    _tz: Option<Tz>,
 }
 
 #[pyclass]
@@ -174,9 +176,11 @@ impl Connection {
 
     /// PEP249 cursor() method.
     pub fn cursor(&self) -> PyResult<Cursor> {
-        Ok(Cursor::new(self.builder()?.build().map_err(|err| {
-            ConnectionError::new_err(err.to_string())
-        })?))
+        let taos = self
+            .builder()?
+            .build()
+            .map_err(|err| ConnectionError::new_err(err.to_string()))?;
+        Ok(Cursor::new(taos, self._tz))
     }
 
     /// schemaless data to taos
@@ -297,8 +301,9 @@ static PARAMS_STYLE: &str = "pyformat";
 #[pyfunction(args = "**")]
 fn connect(dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Connection> {
     let dsn = dsn.unwrap_or("taosws://");
-
     let mut dsn = Dsn::from_str(dsn).map_err(|err| ConnectionError::new_err(err.to_string()))?;
+
+    let mut tz = dsn.get("timezone").cloned();
 
     if let Some(args) = args {
         const NONE_TAOS_CFG: &[&str] = &[
@@ -311,19 +316,21 @@ fn connect(dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Connection> {
             "websocket",
             "native",
         ];
+
         if let Some(value) = args.get_item("user").or(args.get_item("username")) {
-            dsn.username.replace(value.to_string());
+            dsn.username = Some(value.extract::<String>()?);
         }
         if let Some(value) = args.get_item("pass").or(args.get_item("password")) {
-            dsn.password.replace(value.to_string());
+            dsn.password = Some(value.extract::<String>()?);
         }
         if let Some(value) = args.get_item("db").or(args.get_item("database")) {
-            dsn.subject.replace(value.to_string());
+            dsn.subject = Some(value.extract::<String>()?);
+        }
+        if let Some(value) = args.get_item("timezone") {
+            tz = Some(value.extract::<String>()?);
         }
 
-        let mut addr = Address::default();
-
-        if let Some(scheme) = args.get_item("websocket").or(args.get_item("ws")) {
+        if let Some(scheme) = args.get_item("ws").or(args.get_item("websocket")) {
             if scheme.is_instance_of::<pyo3::types::PyBool>()? {
                 if scheme.extract()? {
                     dsn.protocol = Some("ws".to_string());
@@ -331,51 +338,43 @@ fn connect(dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Connection> {
             } else {
                 dsn.protocol = Some(scheme.extract::<String>()?);
             }
-        } else if let Some(native) = args.get_item("native") {
-            let _ = native;
         } else if dsn.protocol.is_none() {
-            dsn.protocol.replace("ws".to_string());
+            dsn.protocol = Some("ws".to_string());
         }
 
-        let host = args
+        let mut addr = Address::default();
+        if let Some(host) = args
             .get_item("host")
             .or(args.get_item("url"))
-            .or(args.get_item("ip"));
-        let port = args.get_item("port");
-        match (host, port) {
-            (Some(host), Some(port)) => {
-                addr.host.replace(host.extract::<String>()?);
-                if port.is_instance_of::<pyo3::types::PyInt>()? {
-                    addr.port.replace(port.extract()?);
-                } else if port.is_instance_of::<PyString>()? {
-                    addr.port.replace(port.extract::<String>()?.parse()?);
-                } else {
-                    Err(ConsumerException::new_err(format!("Invalid port: {port}")))?;
-                }
-            }
-            (Some(host), None) => {
-                addr.host.replace(host.extract::<String>()?);
-            }
-            (_, Some(port)) => {
-                if port.is_instance_of::<pyo3::types::PyInt>()? {
-                    addr.port.replace(port.extract()?);
-                } else if port.is_instance_of::<PyString>()? {
-                    addr.port.replace(port.extract::<String>()?.parse()?);
-                } else {
-                    Err(ConsumerException::new_err(format!("Invalid port: {port}")))?;
-                }
-            }
-            _ => {}
-        }
-
-        for (key, value) in args
-            .into_iter()
-            .filter(|(k, _)| !NONE_TAOS_CFG.contains(&k.extract::<&str>().unwrap()))
+            .or(args.get_item("ip"))
         {
-            dsn.set(key.extract::<&str>()?, value.extract::<&str>()?);
+            addr.host = Some(host.extract::<String>()?);
+        }
+        if let Some(port) = args.get_item("port") {
+            if port.is_instance_of::<pyo3::types::PyInt>()? {
+                addr.port = Some(port.extract()?);
+            } else if port.is_instance_of::<PyString>()? {
+                addr.port = Some(port.extract::<String>()?.parse()?);
+            } else {
+                Err(ConnectionError::new_err(format!("Invalid port: {port}")))?;
+            }
         }
         dsn.addresses.push(addr);
+
+        for (key, value) in args {
+            let key = key.extract::<&str>()?;
+            if !NONE_TAOS_CFG.contains(&key) {
+                dsn.set(key, value.extract::<&str>()?);
+            }
+        }
     }
+
+    let tz = tz
+        .map(|s| {
+            s.parse::<Tz>()
+                .map_err(|_| ConnectionError::new_err(format!("Invalid timezone: {s}")))
+        })
+        .transpose()?;
 
     let builder =
         TaosBuilder::from_dsn(dsn).map_err(|err| ConnectionError::new_err(err.to_string()))?;
@@ -387,6 +386,7 @@ fn connect(dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Connection> {
     Ok(Connection {
         _builder: Some(builder),
         _inner: Some(client),
+        _tz: tz,
     })
 }
 

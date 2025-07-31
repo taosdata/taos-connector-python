@@ -308,6 +308,7 @@ impl Message {
         }
     }
 }
+
 #[pyclass]
 pub(crate) struct MessageBlock {
     block: Arc<RawBlock>,
