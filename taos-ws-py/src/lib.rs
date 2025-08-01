@@ -309,7 +309,7 @@ fn connect(dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Connection> {
     let mut tz = dsn.get("timezone").cloned();
 
     if let Some(args) = args {
-        const NONE_TAOS_CFG: &[&str] = &[
+        const SKIP_KEYS: &[&str] = &[
             "user",
             "username",
             "password",
@@ -366,7 +366,7 @@ fn connect(dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Connection> {
 
         for (key, value) in args {
             let key = key.extract::<&str>()?;
-            if !NONE_TAOS_CFG.contains(&key) {
+            if !SKIP_KEYS.contains(&key) {
                 dsn.set(key, value.extract::<&str>()?);
             }
         }

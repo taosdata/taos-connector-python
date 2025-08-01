@@ -1,8 +1,8 @@
+import time
 import taosws
+from taosws import Consumer
 
 
-# TODO: modify ip
-# TODO: modify main
 def test_cursor_timezone_default():
     conn = taosws.connect("ws://localhost:6041")
     cursor = conn.cursor()
@@ -116,4 +116,111 @@ def test_query_timezone_custom():
 
     finally:
         conn.execute("drop database test_1754027465")
+        conn.close()
+
+
+def test_tmq_timezone_default():
+    conn = taosws.connect("ws://localhost:6041")
+
+    try:
+        conn.execute("drop topic if exists topic_1754035341")
+        conn.execute("drop database if exists test_1754035341")
+        conn.execute("create database test_1754035341")
+        conn.execute("create topic topic_1754035341 as database test_1754035341")
+        conn.execute("use test_1754035341")
+        conn.execute("create table t0 (ts timestamp, c1 int)")
+        conn.execute("insert into t0 values ('2025-01-01 12:00:00', 1)")
+        conn.execute("insert into t0 values ('2025-01-02 15:30:00', 2)")
+
+        consumer = Consumer(dsn="ws://localhost:6041?group.id=10&auto.offset.reset=earliest")
+        consumer.subscribe(["topic_1754035341"])
+
+        cnt = 0
+        rows = []
+
+        while 1:
+            message = consumer.poll(timeout=5.0)
+            if message:
+                for block in message:
+                    cnt += block.nrows()
+                    for row in block:
+                        rows.append(row)
+                consumer.commit(message)
+            else:
+                break
+
+        assert cnt == 2
+
+        fmt = "%Y-%m-%d %H:%M:%S %z"
+
+        assert rows[0][0].strftime(fmt) == "2025-01-01 12:00:00 +0800"
+        assert rows[1][0].strftime(fmt) == "2025-01-02 15:30:00 +0800"
+
+        assert rows[0][1] == 1
+        assert rows[1][1] == 2
+
+        consumer.unsubscribe()
+
+    finally:
+        time.sleep(3)
+        conn.execute("drop topic topic_1754035341")
+        conn.execute("drop database test_1754035341")
+        conn.close()
+
+
+def test_tmq_timezone_custom():
+    conn = taosws.connect("ws://localhost:6041?timezone=America/New_York")
+
+    try:
+        conn.execute("drop topic if exists topic_1754036242")
+        conn.execute("drop database if exists test_1754036242")
+        conn.execute("create database test_1754036242")
+        conn.execute("create topic topic_1754036242 as database test_1754036242")
+        conn.execute("use test_1754036242")
+        conn.execute("create table t0 (ts timestamp, c1 int)")
+        conn.execute("insert into t0 values ('2025-01-01 12:00:00', 1)")
+        conn.execute("insert into t0 values ('2025-01-02 15:30:00', 2)")
+
+        consumer = Consumer(
+            conf={
+                "host": "localhost",
+                "port": 6041,
+                "td.connect.websocket.scheme": "ws",
+                "timezone": "America/New_York",
+                "group.id": "10",
+                "auto.offset.reset": "earliest",
+            },
+        )
+        consumer.subscribe(["topic_1754036242"])
+
+        cnt = 0
+        rows = []
+
+        while 1:
+            message = consumer.poll(timeout=5.0)
+            if message:
+                for block in message:
+                    cnt += block.nrows()
+                    for row in block:
+                        rows.append(row)
+                consumer.commit(message)
+            else:
+                break
+
+        assert cnt == 2
+
+        fmt = "%Y-%m-%d %H:%M:%S %z"
+
+        assert rows[0][0].strftime(fmt) == "2025-01-01 12:00:00 -0500"
+        assert rows[1][0].strftime(fmt) == "2025-01-02 15:30:00 -0500"
+
+        assert rows[0][1] == 1
+        assert rows[1][1] == 2
+
+        consumer.unsubscribe()
+
+    finally:
+        time.sleep(3)
+        conn.execute("drop topic topic_1754036242")
+        conn.execute("drop database test_1754036242")
         conn.close()
