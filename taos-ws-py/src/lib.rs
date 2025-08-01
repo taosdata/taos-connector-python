@@ -89,6 +89,7 @@ struct TaosResult {
     _block: Option<RawBlock>,
     _current: usize,
     _num_of_fields: i32,
+    _tz: Option<Tz>,
 }
 
 impl Connection {
@@ -127,6 +128,7 @@ impl Connection {
                     _block: None,
                     _current: 0,
                     _num_of_fields: cols as _,
+                    _tz: self._tz,
                 })
             }
             Err(err) => Err(QueryError::new_err(err.to_string())),
@@ -142,6 +144,7 @@ impl Connection {
                     _block: None,
                     _current: 0,
                     _num_of_fields: cols as _,
+                    _tz: self._tz,
                 })
             }
             Err(err) => Err(QueryError::new_err(err.to_string())),
@@ -212,13 +215,11 @@ impl Connection {
     }
 
     pub fn statement(&self) -> PyResult<TaosStmt> {
-        let stmt = TaosStmt::init(self)?;
-        Ok(stmt)
+        Ok(TaosStmt::init(self)?)
     }
 
     pub fn stmt2_statement(&self) -> PyResult<TaosStmt2> {
-        let stmt2 = TaosStmt2::init(self)?;
-        Ok(stmt2)
+        Ok(TaosStmt2::init(self)?)
     }
 }
 
@@ -229,21 +230,19 @@ impl TaosResult {
     }
 
     fn __next__(mut slf: PyRefMut<Self>) -> PyResult<Option<PyObject>> {
-        if let Some(block) = slf._block.as_ref() {
-            if slf._current >= block.nrows() {
-                slf._block = slf
-                    ._inner
-                    .fetch_raw_block()
-                    .map_err(|err| FetchError::new_err(err.to_string()))?;
-
-                slf._current = 0;
-            }
-        } else {
+        let need_fetch = match slf._block.as_ref() {
+            Some(block) => slf._current >= block.nrows(),
+            None => true,
+        };
+        if need_fetch {
+            slf._current = 0;
             slf._block = slf
                 ._inner
                 .fetch_raw_block()
-                .map_err(|err| FetchError::new_err(err.to_string()))?;
+                .map_err(|err| FetchError::new_err(err.to_string()))?
+                .map(|b| b.with_timezone(slf._tz));
         }
+
         Ok(Python::with_gil(|py| -> Option<PyObject> {
             if let Some(block) = slf._block.as_ref() {
                 let mut vec = Vec::new();
@@ -263,7 +262,11 @@ impl TaosResult {
                             BorrowedValue::Float(v) => v.into_py(py),
                             BorrowedValue::Double(v) => v.into_py(py),
                             BorrowedValue::Timestamp(ts) => {
-                                ts.to_datetime_with_tz().to_string().into_py(py)
+                                if let Some(tz) = slf._tz {
+                                    ts.to_datetime_with_custom_tz(&tz).to_string().into_py(py)
+                                } else {
+                                    ts.to_datetime_with_tz().to_string().into_py(py)
+                                }
                             }
                             BorrowedValue::VarChar(s) => s.into_py(py),
                             BorrowedValue::NChar(v) => v.as_ref().into_py(py),
@@ -475,6 +478,7 @@ impl TaosStmt {
 #[derive(Debug)]
 struct TaosStmt2 {
     _inner: Stmt2,
+    _tz: Option<Tz>,
 }
 
 #[pyclass]
@@ -487,10 +491,12 @@ struct PyStmt2BindParam {
 impl TaosStmt2 {
     #[new]
     fn init(conn: &Connection) -> PyResult<TaosStmt2> {
-        let stmt: Stmt2 = Stmt2::init(conn.current_cursor()?)
+        let stmt = Stmt2::init(conn.current_cursor()?)
             .map_err(|err| ConnectionError::new_err(err.to_string()))?;
-        let stmt: TaosStmt2 = TaosStmt2 { _inner: stmt };
-        return Ok(stmt);
+        Ok(TaosStmt2 {
+            _inner: stmt,
+            _tz: conn._tz,
+        })
     }
 
     fn prepare(&mut self, sql: &str) -> PyResult<()> {
@@ -530,6 +536,7 @@ impl TaosStmt2 {
                     _block: None,
                     _current: 0,
                     _num_of_fields: cols as _,
+                    _tz: self._tz,
                 })
             }
             Err(err) => Err(QueryError::new_err(err.to_string())),

@@ -3,7 +3,7 @@ import taosws
 
 # TODO: modify ip
 # TODO: modify main
-def test_query_timezone_default():
+def test_cursor_timezone_default():
     conn = taosws.connect("ws://localhost:6041")
     cursor = conn.cursor()
 
@@ -33,7 +33,7 @@ def test_query_timezone_default():
         conn.close()
 
 
-def test_query_timezone_custom():
+def test_cursor_timezone_custom():
     conn = taosws.connect("ws://localhost:6041?timezone=America/New_York")
     cursor = conn.cursor()
 
@@ -60,4 +60,60 @@ def test_query_timezone_custom():
 
     finally:
         cursor.execute("drop database test_1753952584")
+        conn.close()
+
+
+def test_query_timezone_default():
+    conn = taosws.connect("ws://localhost:6041")
+
+    try:
+        conn.execute("drop database if exists test_1754026484")
+        conn.execute("create database test_1754026484")
+        conn.execute("use test_1754026484")
+        conn.execute("create table t0 (ts timestamp, c1 int)")
+        conn.execute("insert into t0 values ('2025-01-01 12:00:00', 1)")
+        conn.execute("insert into t0 values ('2025-01-02 15:30:00', 2)"),
+
+        result = conn.query("select * from t0")
+
+        expect_results = [("2025-01-01 12:00:00 +08:00", 1), ("2025-01-02 15:30:00 +08:00", 2)]
+
+        actual_results = []
+        for row in result:
+            actual_results.append(row)
+
+        assert actual_results == expect_results
+
+    finally:
+        conn.execute("drop database test_1754026484")
+        conn.close()
+
+
+def test_query_timezone_custom():
+    conn = taosws.connect(
+        host="localhost",
+        port=6041,
+        timezone="America/New_York",
+    )
+
+    try:
+        conn.execute("drop database if exists test_1754027465")
+        conn.execute("create database test_1754027465")
+        conn.execute("use test_1754027465")
+        conn.execute("create table t0 (ts timestamp, c1 int)")
+        conn.execute("insert into t0 values ('2025-01-01 12:00:00', 1)")
+        conn.execute("insert into t0 values ('2025-01-02 15:30:00', 2)"),
+
+        result = conn.query("select * from t0")
+
+        expect_results = [("2025-01-01 12:00:00 EST", 1), ("2025-01-02 15:30:00 EST", 2)]
+
+        actual_results = []
+        for row in result:
+            actual_results.append(row)
+
+        assert actual_results == expect_results
+
+    finally:
+        conn.execute("drop database test_1754027465")
         conn.close()

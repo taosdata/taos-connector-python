@@ -55,12 +55,12 @@ impl Cursor {
             None => true,
         };
         if need_fetch {
+            self.row_in_block = 0;
             self.block = self
                 .current_result_set()?
                 .fetch_raw_block()
                 .map_err(|err| FetchError::new_err(err.to_string()))?
                 .map(|b| b.with_timezone(self.tz));
-            self.row_in_block = 0;
         }
         Ok(())
     }
