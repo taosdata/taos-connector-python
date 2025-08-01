@@ -57,7 +57,13 @@ pub fn to_py_datetime(ts: Timestamp, tz: Option<Tz>, py: Python) -> PyResult<PyO
         kwargs.set_item("tzinfo", tz)?;
         Ok(datetime.call(args, Some(kwargs))?.into_py(py))
     } else {
-        let pytz = py.import("pytz")?;
+        let pytz = match py.import("pytz") {
+            Ok(pytz) => pytz,
+            Err(_) => {
+                return Ok(datetime.call(args, None)?.into_py(py));
+            }
+        };
+
         let tz = pytz.call_method1("timezone", (tz,))?;
         let naive_dt = datetime.call(args, None)?;
         Ok(tz.call_method1("localize", (naive_dt,))?.into_py(py))
@@ -133,7 +139,7 @@ pub fn get_slice_of_block(
         (range, None)
     };
 
-    let slices: Vec<_> = range
+    let slices = range
         .into_iter()
         .map(|index| unsafe { get_row_of_block_unchecked(py, block, index) })
         .collect();
