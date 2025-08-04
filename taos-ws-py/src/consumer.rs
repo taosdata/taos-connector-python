@@ -84,6 +84,9 @@ impl Consumer {
                     Err(ConsumerException::new_err(format!("Invalid port: {port}")))?;
                 }
             }
+            if addr.host.is_none() && addr.port.is_none() {
+                addr.host = Some("localhost".to_string());
+            }
             dsn_cfg.addresses.push(addr);
 
             if let Some(value) = args
