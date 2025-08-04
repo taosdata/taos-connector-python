@@ -1,6 +1,6 @@
-use std::ops::Range;
+use std::{ops::Range, sync::OnceLock};
 
-use chrono::{Datelike, Timelike};
+use chrono::{Datelike, Local, TimeZone, Timelike};
 use chrono_tz::Tz;
 use iana_time_zone::get_timezone;
 use pyo3::{
@@ -12,69 +12,82 @@ use taos::{taos_query::common::Timestamp, BorrowedValue, RawBlock};
 use crate::ConsumerException;
 
 pub fn to_py_datetime(ts: Timestamp, tz: Option<Tz>, py: Python) -> PyResult<PyObject> {
-    let datetime = py.import("datetime")?;
-    let datetime = datetime.getattr("datetime")?;
-
-    let args = if let Some(tz) = tz {
-        let dt = ts.to_datetime_with_custom_tz(&tz);
-        PyTuple::new(
-            py,
-            [
-                dt.year() as i64,
-                dt.month() as _,
-                dt.day() as _,
-                dt.hour() as _,
-                dt.minute() as _,
-                dt.second() as _,
-                dt.timestamp_subsec_micros() as _,
-            ],
-        )
-    } else {
-        let dt = ts.to_datetime_with_tz();
-        PyTuple::new(
-            py,
-            [
-                dt.year() as i64,
-                dt.month() as _,
-                dt.day() as _,
-                dt.hour() as _,
-                dt.minute() as _,
-                dt.second() as _,
-                dt.timestamp_subsec_micros() as _,
-            ],
-        )
-    };
-
-    let tz = match tz {
-        Some(tz) => tz.name(),
-        None => get_local_timezone(),
-    };
+    let datetime_mod = py.import("datetime")?;
+    let datetime = datetime_mod.getattr("datetime")?;
 
     if let Ok(zoneinfo) = py.import("zoneinfo") {
         let zone_info = zoneinfo.getattr("ZoneInfo")?;
-        let tz = zone_info.call1((tz,))?;
+        let (args, tz) = get_datetime_args_and_tz_name(py, ts, tz);
         let kwargs = PyDict::new(py);
+        let tz = zone_info.call1((tz,))?;
         kwargs.set_item("tzinfo", tz)?;
-        Ok(datetime.call(args, Some(kwargs))?.into_py(py))
-    } else {
-        let pytz = match py.import("pytz") {
-            Ok(pytz) => pytz,
-            Err(_) => {
-                return Ok(datetime.call(args, None)?.into_py(py));
-            }
-        };
-
-        let tz = pytz.call_method1("timezone", (tz,))?;
-        let naive_dt = datetime.call(args, None)?;
-        Ok(tz.call_method1("localize", (naive_dt,))?.into_py(py))
+        return Ok(datetime.call(args, Some(kwargs))?.into_py(py));
     }
+
+    if let Ok(pytz) = py.import("pytz") {
+        let (args, tz) = get_datetime_args_and_tz_name(py, ts, tz);
+        let naive_dt = datetime.call(args, None)?;
+        let tz = pytz.call_method1("timezone", (tz,))?;
+        return Ok(tz.call_method1("localize", (naive_dt,))?.into_py(py));
+    }
+
+    static WARN: OnceLock<()> = OnceLock::new();
+    WARN.get_or_init(|| {
+        Python::with_gil(|py| {
+            let warnings = py.import("warnings").unwrap();
+            let tz = tz.map_or(get_local_timezone(), |t| t.name());
+            warnings
+                .call_method1(
+                    "warn",
+                    (format!(
+                        "zoneinfo and pytz are not available, fallback to UTC for tz '{tz}'",
+                    ),),
+                )
+                .ok();
+        });
+    });
+
+    let timezone = datetime_mod.getattr("timezone")?;
+    let utc = timezone.getattr("utc")?;
+    let args = get_datetime_args(py, ts, Tz::UTC);
+    let kwargs = PyDict::new(py);
+    kwargs.set_item("tzinfo", utc)?;
+    Ok(datetime.call(args, Some(kwargs))?.into_py(py))
 }
 
 fn get_local_timezone() -> &'static str {
-    use std::sync::OnceLock;
     static LOCAL_TZ: OnceLock<String> = OnceLock::new();
-
     LOCAL_TZ.get_or_init(|| get_timezone().unwrap_or("UTC".to_string()))
+}
+
+fn get_datetime_args_and_tz_name(
+    py: Python<'_>,
+    ts: Timestamp,
+    tz: Option<Tz>,
+) -> (&PyTuple, &'static str) {
+    if let Some(tz) = tz {
+        let args = get_datetime_args(py, ts, tz);
+        (args, tz.name())
+    } else {
+        let args = get_datetime_args(py, ts, Local);
+        (args, get_local_timezone())
+    }
+}
+
+fn get_datetime_args<Tz: TimeZone>(py: Python<'_>, ts: Timestamp, tz: Tz) -> &PyTuple {
+    let dt = tz.from_utc_datetime(&ts.to_naive_datetime());
+    PyTuple::new(
+        py,
+        [
+            dt.year() as i64,
+            dt.month() as _,
+            dt.day() as _,
+            dt.hour() as _,
+            dt.minute() as _,
+            dt.second() as _,
+            dt.timestamp_subsec_micros() as _,
+        ],
+    )
 }
 
 pub unsafe fn get_row_of_block_unchecked(py: Python, block: &RawBlock, index: usize) -> PyObject {
