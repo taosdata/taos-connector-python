@@ -31,21 +31,7 @@ pub fn to_py_datetime(ts: Timestamp, tz: Option<Tz>, py: Python) -> PyResult<PyO
         return Ok(tz.call_method1("localize", (naive_dt,))?.into_py(py));
     }
 
-    static WARN: OnceLock<()> = OnceLock::new();
-    WARN.get_or_init(|| {
-        Python::with_gil(|py| {
-            let warnings = py.import("warnings").unwrap();
-            let tz = tz.map_or(get_local_timezone(), |t| t.name());
-            warnings
-                .call_method1(
-                    "warn",
-                    (format!(
-                        "zoneinfo and pytz are not available, fallback to UTC for tz '{tz}'",
-                    ),),
-                )
-                .ok();
-        });
-    });
+    warn_missing_timezone_libs(tz);
 
     let timezone = datetime_mod.getattr("timezone")?;
     let utc = timezone.getattr("utc")?;
@@ -88,6 +74,24 @@ fn get_datetime_args<Tz: TimeZone>(py: Python<'_>, ts: Timestamp, tz: Tz) -> &Py
             dt.timestamp_subsec_micros() as _,
         ],
     )
+}
+
+fn warn_missing_timezone_libs(tz: Option<Tz>) {
+    static WARN: OnceLock<()> = OnceLock::new();
+    WARN.get_or_init(|| {
+        Python::with_gil(|py| {
+            let warnings = py.import("warnings").unwrap();
+            let tz = tz.map_or(get_local_timezone(), |t| t.name());
+            warnings
+                .call_method1(
+                    "warn",
+                    (format!(
+                        "zoneinfo and pytz are not available, fallback to UTC for tz '{tz}'",
+                    ),),
+                )
+                .ok();
+        });
+    });
 }
 
 pub unsafe fn get_row_of_block_unchecked(py: Python, block: &RawBlock, index: usize) -> PyObject {

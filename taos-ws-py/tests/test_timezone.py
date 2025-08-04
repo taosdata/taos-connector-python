@@ -13,7 +13,7 @@ def test_cursor_timezone_default():
         cursor.execute("use test_1753948987")
         cursor.execute("create table t0 (ts timestamp, c1 int)")
         cursor.execute("insert into t0 values ('2025-01-01 12:00:00', 1)")
-        cursor.execute("insert into t0 values ('2025-01-02 15:30:00', 2)"),
+        cursor.execute("insert into t0 values ('2025-01-02 15:30:00', 2)")
 
         cursor.execute("select * from t0")
         rows = cursor.fetchall()
@@ -43,7 +43,7 @@ def test_cursor_timezone_custom():
         cursor.execute("use test_1753952584")
         cursor.execute("create table t0 (ts timestamp, c1 int)")
         cursor.execute("insert into t0 values ('2025-01-01 12:00:00', 1)")
-        cursor.execute("insert into t0 values ('2025-01-02 15:30:00', 2)"),
+        cursor.execute("insert into t0 values ('2025-01-02 15:30:00', 2)")
 
         cursor.execute("select * from t0")
         rows = cursor.fetchall()
@@ -72,7 +72,7 @@ def test_query_timezone_default():
         conn.execute("use test_1754026484")
         conn.execute("create table t0 (ts timestamp, c1 int)")
         conn.execute("insert into t0 values ('2025-01-01 12:00:00', 1)")
-        conn.execute("insert into t0 values ('2025-01-02 15:30:00', 2)"),
+        conn.execute("insert into t0 values ('2025-01-02 15:30:00', 2)")
 
         result = conn.query("select * from t0")
 
@@ -102,7 +102,7 @@ def test_query_timezone_custom():
         conn.execute("use test_1754027465")
         conn.execute("create table t0 (ts timestamp, c1 int)")
         conn.execute("insert into t0 values ('2025-01-01 12:00:00', 1)")
-        conn.execute("insert into t0 values ('2025-01-02 15:30:00', 2)"),
+        conn.execute("insert into t0 values ('2025-01-02 15:30:00', 2)")
 
         result = conn.query("select * from t0")
 
