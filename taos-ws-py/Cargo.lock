@@ -2028,23 +2028,12 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.21.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd8d6c9f025a446bc4d18ad9632e69aec8f287aa84499ee335599fabd20c3fd8"
-dependencies = [
- "log",
- "ring 0.16.20",
- "rustls-webpki 0.101.6",
- "sct",
-]
-
-[[package]]
-name = "rustls"
 version = "0.23.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f1a745511c54ba6d4465e8d5dfbd81b45791756de28d4981af70d6dca128f1e"
 dependencies = [
  "aws-lc-rs",
+ "log",
  "once_cell",
  "ring 0.17.8",
  "rustls-pki-types",
@@ -2580,7 +2569,7 @@ dependencies = [
  "log",
  "pretty_env_logger",
  "pyo3",
- "rustls 0.21.7",
+ "rustls",
  "rustls-webpki 0.101.6",
  "sct",
  "serde_json",
@@ -2733,7 +2722,7 @@ version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c7bc40d0e5a97695bb96e27995cd3a08538541b0a846f65bba7a359f36700d4"
 dependencies = [
- "rustls 0.23.17",
+ "rustls",
  "rustls-pki-types",
  "tokio",
 ]
@@ -2745,7 +2734,7 @@ source = "git+https://github.com/taosdata/tokio-tungstenite.git?rev=3420353#3420
 dependencies = [
  "futures-util",
  "log",
- "rustls 0.23.17",
+ "rustls",
  "rustls-native-certs",
  "rustls-pki-types",
  "tokio",
@@ -2816,7 +2805,7 @@ dependencies = [
  "httparse",
  "log",
  "rand 0.8.5",
- "rustls 0.23.17",
+ "rustls",
  "rustls-pki-types",
  "sha1",
  "thiserror",
