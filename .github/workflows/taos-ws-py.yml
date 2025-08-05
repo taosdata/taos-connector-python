@@ -196,6 +196,9 @@ jobs:
           ls -alh /etc/taos/
           cd ../../
 
+      - name: Set timezone
+        run: sudo timedatectl set-timezone Asia/Shanghai
+
       - name: Start TDengine 3.0
         run: |
           tree TDengine_v3/build/build/

@@ -1,3 +1,4 @@
+use chrono_tz::Tz;
 use pyo3::{
     prelude::*,
     types::{PyDict, PySequence, PyString, PyTuple},
@@ -19,16 +20,18 @@ pub(crate) struct Cursor {
     result_set: Option<ResultSet>,
     block: Option<RawBlock>,
     row_in_block: usize,
+    tz: Option<Tz>,
 }
 
 impl Cursor {
-    pub fn new(taos: Taos) -> Self {
+    pub fn new(taos: Taos, tz: Option<Tz>) -> Self {
         Self {
             inner: Some(taos),
             row_count: 0,
             result_set: None,
             block: None,
             row_in_block: 0,
+            tz,
         }
     }
 
@@ -47,20 +50,17 @@ impl Cursor {
     }
 
     fn assert_block(&mut self) -> PyResult<()> {
-        if let Some(block) = self.block.as_ref() {
-            if self.row_in_block >= block.nrows() {
-                self.block = self
-                    .current_result_set()?
-                    .fetch_raw_block()
-                    .map_err(|err| FetchError::new_err(err.to_string()))?;
-                self.row_in_block = 0;
-            }
-        } else {
+        let need_fetch = match self.block.as_ref() {
+            Some(block) => self.row_in_block >= block.nrows(),
+            None => true,
+        };
+        if need_fetch {
             self.row_in_block = 0;
             self.block = self
                 .current_result_set()?
                 .fetch_raw_block()
-                .map_err(|err| FetchError::new_err(err.to_string()))?;
+                .map_err(|err| FetchError::new_err(err.to_string()))?
+                .map(|b| b.with_timezone(self.tz));
         }
         Ok(())
     }
