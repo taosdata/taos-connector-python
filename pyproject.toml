@@ -18,10 +18,11 @@ packages = [
 "taosws" = "taos.sqlalchemy:TaosWsDialect"
 
 [tool.poetry.dependencies]
-python = ">=3.6.2,<4.0"
+python = ">=3.7,<4.0"
 pytz = "*"
 iso8601 = "1.0.2"
 requests = ">=2.27.1"
+dbutils = "^3.1.1"
 
 
 [tool.poetry.dependencies.taos-ws-py]
@@ -65,6 +66,7 @@ pandas = { version = ">=2.1.0", python = ">=3.9,<4.0" }
 python-dotenv = { version = "0.20.0" }
 toml = { version = ">=0.8.0", python = ">=3.7,<4.0" }
 shapely = { version = ">=2.0.0", python = ">=3.7,<4.0" }
+DBUtils={ version = ">=3.1.1", python = ">=3.7,<4.0" }
 
 [build-system]
 requires = ["poetry-core>=1.0.5"]
