@@ -22,7 +22,7 @@ except:
 from taos._version import __version__
 
 # Globals
-threadsafety = 0
+threadsafety = 2
 """sqlalchemy will read this attribute"""
 paramstyle = "pyformat"
 """sqlalchemy will read this attribute"""
