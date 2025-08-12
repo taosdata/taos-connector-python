@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.8.4 - 2025-08-12
+
+### Features:
+
+- support dbutils/sqlalchemy connection pool (#362)
+
+### Enhancements:
+
+- ws support timezone (#361)
+
 ## v2.8.3 - 2025-07-24
 
 ### Features:
