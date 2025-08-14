@@ -248,6 +248,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "chrono-tz"
+version = "0.10.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a6139a8597ed92cf816dfb33f5dd6cf0bb93a6adc938f11039f371bc5bcd26c3"
+dependencies = [
+ "chrono",
+ "phf",
+]
+
+[[package]]
 name = "clang-sys"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1328,7 +1338,7 @@ checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 [[package]]
 name = "mdsn"
 version = "0.2.25"
-source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#ff3a3a8ef3065628c286e8460105af38d1626963"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#5d3e99ce66c959695825e96e6b17efe1e12ec482"
 dependencies = [
  "itertools 0.13.0",
  "lazy_static",
@@ -1559,6 +1569,24 @@ name = "percent-encoding"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
+
+[[package]]
+name = "phf"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "913273894cec178f401a31ec4b656318d95473527be05c0752cc41cdc32be8b7"
+dependencies = [
+ "phf_shared",
+]
+
+[[package]]
+name = "phf_shared"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "06005508882fb681fd97892ecff4b7fd0fee13ef1aa569f8695dae7ab9099981"
+dependencies = [
+ "siphasher",
+]
 
 [[package]]
 name = "pin-project-lite"
@@ -2298,6 +2326,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3a9fe34e3e7a50316060351f37187a3f546bce95496156754b601a5fa71b76e"
 
 [[package]]
+name = "siphasher"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56199f7ddabf13fe5074ce809e7d3f42b42ae711800501b5b16ea82ad029c39d"
+
+[[package]]
 name = "slab"
 version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2397,10 +2431,11 @@ dependencies = [
 [[package]]
 name = "taos"
 version = "0.12.4"
-source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#ff3a3a8ef3065628c286e8460105af38d1626963"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#5d3e99ce66c959695825e96e6b17efe1e12ec482"
 dependencies = [
  "async-trait",
  "bytes",
+ "chrono-tz",
  "futures",
  "shadow-rs",
  "taos-optin",
@@ -2412,7 +2447,7 @@ dependencies = [
 [[package]]
 name = "taos-error"
 version = "0.12.4"
-source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#ff3a3a8ef3065628c286e8460105af38d1626963"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#5d3e99ce66c959695825e96e6b17efe1e12ec482"
 dependencies = [
  "anyhow",
  "derive_more",
@@ -2425,7 +2460,7 @@ dependencies = [
 [[package]]
 name = "taos-macros"
 version = "0.2.16"
-source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#ff3a3a8ef3065628c286e8460105af38d1626963"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#5d3e99ce66c959695825e96e6b17efe1e12ec482"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2435,7 +2470,7 @@ dependencies = [
 [[package]]
 name = "taos-optin"
 version = "0.12.4"
-source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#ff3a3a8ef3065628c286e8460105af38d1626963"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#5d3e99ce66c959695825e96e6b17efe1e12ec482"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2461,7 +2496,7 @@ dependencies = [
 [[package]]
 name = "taos-query"
 version = "0.12.4"
-source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#ff3a3a8ef3065628c286e8460105af38d1626963"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#5d3e99ce66c959695825e96e6b17efe1e12ec482"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2471,6 +2506,7 @@ dependencies = [
  "byteorder",
  "bytes",
  "chrono",
+ "chrono-tz",
  "derive_builder",
  "derive_more",
  "either",
@@ -2503,13 +2539,14 @@ dependencies = [
 [[package]]
 name = "taos-ws"
 version = "0.12.4"
-source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#ff3a3a8ef3065628c286e8460105af38d1626963"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#5d3e99ce66c959695825e96e6b17efe1e12ec482"
 dependencies = [
  "anyhow",
  "async-trait",
  "byteorder",
  "bytes",
  "cfg-if",
+ "chrono-tz",
  "crossbeam",
  "dashmap",
  "faststr",
@@ -2533,7 +2570,7 @@ dependencies = [
 
 [[package]]
 name = "taos-ws-py"
-version = "0.5.4"
+version = "0.6.1"
 dependencies = [
  "anyhow",
  "chrono",
