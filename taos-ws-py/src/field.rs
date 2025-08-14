@@ -30,6 +30,7 @@ impl TaosField {
         }
     }
 }
+
 #[pymethods]
 impl TaosField {
     /// Field name.

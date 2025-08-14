@@ -1,5 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
+use chrono_tz::Tz;
 use pyo3::{
     prelude::*,
     types::{PyDict, PyList, PyString},
@@ -16,7 +17,10 @@ use crate::{
 };
 
 #[pyclass]
-pub(crate) struct Consumer(Option<taos::Consumer>);
+pub(crate) struct Consumer {
+    _inner: Option<taos::Consumer>,
+    _tz: Option<Tz>,
+}
 
 impl Drop for Consumer {
     fn drop(&mut self) {
@@ -28,12 +32,13 @@ impl Drop for Consumer {
 pub(crate) struct Message {
     _offset: Option<Offset>,
     _msg: MessageSet<Meta, Data>,
+    _tz: Option<Tz>,
 }
 
 impl Consumer {
     fn inner(&mut self) -> PyResult<&mut taos::Consumer> {
         Ok(self
-            .0
+            ._inner
             .as_mut()
             .ok_or_else(|| ConsumerException::new_err("consumer has been already closed"))?)
     }
@@ -43,16 +48,18 @@ impl Consumer {
 impl Consumer {
     #[new]
     pub fn new(conf: Option<&PyDict>, dsn: Option<&str>) -> PyResult<Self> {
-        let mut builder = Dsn::default();
-        builder.driver = "taos".to_string();
+        let mut dsn_cfg = Dsn::default();
+        dsn_cfg.driver = "taos".to_string();
+
         if let Some(value) = dsn {
-            builder = value.parse().map_err(|err| {
+            dsn_cfg = value.parse().map_err(|err| {
                 ConsumerException::new_err(format!("Parse dsn(`{value}`) error: {err}"))
             })?;
         }
-        if let Some(args) = conf {
-            let mut addr = Address::default();
 
+        let mut tz = dsn_cfg.get("timezone").cloned();
+
+        if let Some(args) = conf {
             if let Some(scheme) = args
                 .get_item("td.connect.websocket.scheme")
                 .or(args.get_item("protocol"))
@@ -61,70 +68,59 @@ impl Consumer {
                 let scheme = scheme.downcast::<PyString>().map_err(|_err| {
                     ConsumerException::new_err(format!("Invalid td.connect.websocket.scheme value type: {}, only `'ws'|'wss'` is supported", scheme.get_type().to_string()))
                 })?;
-                builder.protocol = Some(scheme.to_string())
+                dsn_cfg.protocol = Some(scheme.to_string());
             }
-            match (
-                args.get_item("td.connect.ip").or(args.get_item("host")),
-                args.get_item("td.connect.port").or(args.get_item("port")),
-            ) {
-                (Some(host), Some(port)) => {
-                    addr.host.replace(host.extract::<String>()?);
-                    if port.is_instance_of::<pyo3::types::PyInt>()? {
-                        addr.port.replace(port.extract()?);
-                    } else if port.is_instance_of::<PyString>()? {
-                        addr.port.replace(port.extract::<String>()?.parse()?);
-                    } else {
-                        Err(ConsumerException::new_err(format!("Invalid port: {port}")))?;
-                    }
-                }
-                (Some(host), None) => {
-                    addr.host.replace(host.extract::<String>()?);
-                }
-                (_, Some(port)) => {
-                    if port.is_instance_of::<pyo3::types::PyInt>()? {
-                        addr.port.replace(port.extract()?);
-                    } else if port.is_instance_of::<PyString>()? {
-                        addr.port.replace(port.extract::<String>()?.parse()?);
-                    } else {
-                        Err(ConsumerException::new_err(format!("Invalid port: {port}")))?;
-                    }
-                }
-                _ => {
-                    addr.host.replace("localhost".to_string());
+
+            let mut addr = Address::default();
+            if let Some(host) = args.get_item("td.connect.ip").or(args.get_item("host")) {
+                addr.host = Some(host.extract::<String>()?);
+            }
+            if let Some(port) = args.get_item("td.connect.port").or(args.get_item("port")) {
+                if port.is_instance_of::<pyo3::types::PyInt>()? {
+                    addr.port = Some(port.extract()?);
+                } else if port.is_instance_of::<PyString>()? {
+                    addr.port = Some(port.extract::<String>()?.parse()?);
+                } else {
+                    Err(ConsumerException::new_err(format!("Invalid port: {port}")))?;
                 }
             }
-            builder.addresses.push(addr);
+            if addr.host.is_none() && addr.port.is_none() {
+                addr.host = Some("localhost".to_string());
+            }
+            dsn_cfg.addresses.push(addr);
 
             if let Some(value) = args
                 .get_item("td.connect.user")
                 .or(args.get_item("username"))
                 .or(args.get_item("user"))
             {
-                builder.username.replace(value.extract()?);
+                dsn_cfg.username = Some(value.extract()?);
             }
             if let Some(value) = args
                 .get_item("td.connect.pass")
                 .or(args.get_item("password"))
             {
-                builder.password.replace(value.extract()?);
+                dsn_cfg.password = Some(value.extract()?);
             }
-
             if let Some(value) = args.get_item("td.connect.token").or(args.get_item("token")) {
-                builder.set("token", value.extract::<String>()?);
+                dsn_cfg.set("token", value.extract::<String>()?);
+            }
+            if let Some(value) = args.get_item("timezone") {
+                tz = Some(value.extract::<String>()?);
             }
 
             if let Some(value) = args.get_item("group.id") {
-                builder.set("group.id", value.extract::<String>()?);
+                dsn_cfg.set("group.id", value.extract::<String>()?);
             } else {
                 Err(ConsumerException::new_err(
                     "group.id must be set in configurations",
                 ))?;
             }
 
-            builder.set("enable.auto.commit", "true");
-            builder.set("experimental.snapshot.enable", "false");
+            dsn_cfg.set("enable.auto.commit", "true");
+            dsn_cfg.set("experimental.snapshot.enable", "false");
 
-            let skip_keys = [
+            const SKIP_KEYS: &[&str] = &[
                 "protocol",
                 "driver",
                 "username",
@@ -141,20 +137,30 @@ impl Consumer {
                 "group.id",
             ];
 
-            // enum args and set
-            for (key, value) in args.iter() {
-                let key_str = key.downcast::<PyString>()?.to_str()?;
-                if skip_keys.contains(&key_str) {
-                    continue;
+            for (key, value) in args {
+                let key = key.extract::<&str>()?;
+                if !SKIP_KEYS.contains(&key) {
+                    dsn_cfg.set(key, value.extract::<String>()?);
                 }
-                builder.set(key_str, value.extract::<String>()?);
             }
         }
-        let builder = TmqBuilder::from_dsn(builder)
+
+        let tz = tz
+            .map(|s| {
+                s.parse::<Tz>()
+                    .map_err(|_| ConsumerException::new_err(format!("Invalid timezone: {s}")))
+            })
+            .transpose()?;
+
+        let consumer = TmqBuilder::from_dsn(dsn_cfg)
+            .map_err(|err| ConsumerException::new_err(err.to_string()))?
+            .build()
             .map_err(|err| ConsumerException::new_err(err.to_string()))?;
-        Ok(Consumer(Some(builder.build().map_err(|err| {
-            ConsumerException::new_err(err.to_string())
-        })?)))
+
+        Ok(Consumer {
+            _inner: Some(consumer),
+            _tz: tz,
+        })
     }
 
     pub fn subscribe(&mut self, topics: &PyList) -> PyResult<()> {
@@ -164,7 +170,7 @@ impl Consumer {
     }
 
     pub fn unsubscribe(&mut self) {
-        if let Some(consumer) = self.0.take() {
+        if let Some(consumer) = self._inner.take() {
             consumer.unsubscribe();
         }
     }
@@ -191,6 +197,7 @@ impl Consumer {
             Ok(Some(Message {
                 _offset: Some(offset),
                 _msg: message,
+                _tz: self._tz,
             }))
         } else {
             Ok(None)
@@ -258,7 +265,7 @@ impl Consumer {
 
     /// Unsubscribe and close the consumer.
     pub fn close(&mut self) {
-        if let Some(consumer) = self.0.take() {
+        if let Some(consumer) = self._inner.take() {
             consumer.unsubscribe();
         }
     }
@@ -277,6 +284,7 @@ impl Message {
         println!("# get_vgroup_id is deprecated, use vgroup() instead.");
         self._offset.as_ref().unwrap().vgroup_id()
     }
+
     /// Topic name.
     pub fn topic(&self) -> &str {
         self._offset.as_ref().unwrap().topic()
@@ -290,12 +298,14 @@ impl Message {
     pub fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
         slf
     }
+
     pub fn __next__(mut slf: PyRefMut<Self>) -> PyResult<Option<MessageBlock>> {
         if let Some(data) = slf._msg.data() {
             let block = data
                 .next()
                 .transpose()
-                .map_err(|err| ConsumerException::new_err(format!("{err}")))?;
+                .map_err(|err| ConsumerException::new_err(format!("{err}")))?
+                .map(|b| b.with_timezone(slf._tz));
             if let Some(block) = block {
                 Ok(Some(MessageBlock {
                     block: Arc::new(block),
@@ -308,6 +318,7 @@ impl Message {
         }
     }
 }
+
 #[pyclass]
 pub(crate) struct MessageBlock {
     block: Arc<RawBlock>,
