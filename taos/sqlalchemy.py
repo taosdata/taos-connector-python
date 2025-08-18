@@ -591,28 +591,42 @@ class TaosWsDialect(BaseDialect):
 
     @classmethod
     def create_connect_args(self, url):
-        userpass = f"{url.username}:{url.password}" if url.username and url.password else ""
-        at = "@" if userpass else ""
+        if url.username and url.password:
+            userpass = f"{url.username}:{url.password}"
+        elif url.username:
+            userpass = f"{url.username}"
+        elif url.password:
+            userpass = f":{url.password}"
+        else:
+            userpass = ""
 
-        params = ""
-        for key, value in url.query.items():
-            if key == "hosts":
-                continue
-            params += f"{key}={value}&"
+        at = "@" if userpass else ""
 
         hosts = url.query.get("hosts")
         if hosts:
             addr = hosts
         else:
-            if url.host is not None and url.port is not None:
+            if url.host and url.port:
                 addr = f"{url.host}:{url.port}"
-            elif url.host is not None and url.port is None:
+            elif url.host:
                 addr = f"{url.host}"
-            elif url.host is None and url.port is not None:
+            elif url.port:
                 addr = f":{url.port}"
             else:
                 addr = ""
 
-        dsn = f"{url.drivername}://{userpass}{at}{addr}/{url.database}?{params}"
+        params = ""
+        for i, (key, value) in enumerate(url.query.items()):
+            if key == "hosts":
+                continue
+            params += f"{key}={value}"
+            if i != len(url.query.items()) - 1:
+                params += "&"
+
+        dsn = f"{url.drivername}://{userpass}{at}{addr}"
+        if url.database:
+            dsn += f"/{url.database}"
+        if params:
+            dsn += f"?{params}"
 
         return ([dsn], {})
