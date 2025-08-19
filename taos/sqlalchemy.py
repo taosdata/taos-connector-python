@@ -590,7 +590,7 @@ class TaosWsDialect(BaseDialect):
         return taosws
 
     @classmethod
-    def create_connect_args(self, url):
+    def create_connect_args(cls, url):
         if url.username and url.password:
             userpass = f"{url.username}:{url.password}"
         elif url.username:
