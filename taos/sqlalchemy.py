@@ -556,7 +556,7 @@ class AlchemyTaosConnection:
         database = kwargs.get("database", None)
         return taos.connect(host=host, user=user, password=password, port=int(port), database=database)
 
-# taos dialet
+# taos dialect
 class TaosDialect(BaseDialect):
     name = "taos"
     driver = "taos"
@@ -574,20 +574,59 @@ class TaosDialect(BaseDialect):
 # ---------------- taosws impl -------------
 #
 
-# ws dailet
+# ws dialect
 class TaosWsDialect(BaseDialect):
-    # set taosws
     name = "taosws"
     driver = "taosws"
 
-    # doapi
     @classmethod
     def dbapi(cls):
         import taosws
         return taosws
 
-    # import dbapi
     @classmethod
     def import_dbapi(cls):
         import taosws
         return taosws
+
+    @classmethod
+    def create_connect_args(cls, url):
+        if url.username and url.password:
+            userpass = f"{url.username}:{url.password}"
+        elif url.username:
+            userpass = f"{url.username}"
+        elif url.password:
+            userpass = f":{url.password}"
+        else:
+            userpass = ""
+
+        at = "@" if userpass else ""
+
+        hosts = url.query.get("hosts")
+        if hosts:
+            addr = hosts
+        else:
+            if url.host and url.port:
+                addr = f"{url.host}:{url.port}"
+            elif url.host:
+                addr = f"{url.host}"
+            elif url.port:
+                addr = f":{url.port}"
+            else:
+                addr = ""
+
+        params = ""
+        for i, (key, value) in enumerate(url.query.items()):
+            if key == "hosts":
+                continue
+            params += f"{key}={value}"
+            if i != len(url.query.items()) - 1:
+                params += "&"
+
+        dsn = f"{url.drivername}://{userpass}{at}{addr}"
+        if url.database:
+            dsn += f"/{url.database}"
+        if params:
+            dsn += f"?{params}"
+
+        return ([dsn], {})

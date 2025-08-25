@@ -111,6 +111,56 @@ def test_read_from_sqlalchemy_taosws():
     checkBasic(conn, inspection)
 
 
+def test_read_from_sqlalchemy_taosws_failover():
+    try:
+        import taosws
+    except ImportError:
+        print("taosws not installed, skip test_read_from_sqlalchemy_taosws_failover")
+        return
+
+    conn = taos.connect()
+    conn.execute("drop database if exists test_1755496227")
+    conn.execute("create database test_1755496227")
+
+    try:
+        urls = [
+            "taosws://",
+            "taosws://localhost",
+            "taosws://localhost:6041",
+            "taosws://localhost:6041/test_1755496227",
+            "taosws://root@localhost:6041/test_1755496227",
+            "taosws://root:@localhost:6041/test_1755496227",
+            "taosws://root:taosdata@localhost:6041/test_1755496227",
+            "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=",
+            "taosws://root:taosdata@/test_1755496227?hosts=localhost:6041",
+            "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=localhost:6041",
+            "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=localhost:6041,127.0.0.1:6041",
+            "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=localhost:6041,127.0.0.1:6041&timezone=Asia/Shanghai",
+        ]
+    
+        for url in urls:
+            engine = create_engine(url)
+            econn = engine.connect()
+            econn.close()
+
+        invalid_urls = [
+            "taosws://:6041",
+            "taosws://:taosdata@localhost:6041/test_1755496227",
+        ]
+
+        for url in invalid_urls:
+            try:
+                engine = create_engine(url)
+                econn = engine.connect()
+                econn.close()
+            except Exception as e:
+                print(f"expected error for {url}: {e}")
+
+    finally:
+        conn.execute("drop database test_1755496227")
+        conn.close()
+
+
 # taosrest
 def test_read_from_sqlalchemy_taosrest():
     if not taos.IS_V3:
@@ -131,4 +181,6 @@ if __name__ == "__main__":
     print("Test taosrest api ................................. [OK]\n")
     test_read_from_sqlalchemy_taosws()
     print("Test taosws api ................................... [OK]\n")
+    test_read_from_sqlalchemy_taosws_failover()
+    print("Test taosws failover api .......................... [OK]\n")
     
