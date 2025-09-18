@@ -2,7 +2,6 @@ use pyo3::prelude::*;
 
 use ::taos::Field;
 
-/// A column metadata description class.
 #[pyclass]
 pub(crate) struct TaosField {
     _inner: Field,
