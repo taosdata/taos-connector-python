@@ -354,7 +354,6 @@ impl MessageBlock {
     }
 }
 
-/// An iterable object of Block.
 #[pyclass]
 pub(crate) struct MessageBlockIter {
     block: Arc<RawBlock>,
