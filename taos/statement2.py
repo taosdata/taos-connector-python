@@ -117,6 +117,7 @@ def obtainSchema(statement2):
         count, fields = statement2.get_fields()
         statement2.tag_fields = []
         statement2.fields     = []
+        statement2.all_fields = fields
         for field in fields:
             if field.field_type == TAOS_FIELD_TAG:
                 statement2.tag_fields.append(field)
@@ -170,6 +171,36 @@ def createColsBind(statement2, colsTbs):
     return binds    
 
 
+def createSupperBindV(statement2, colsTbs):
+    if colsTbs == None:
+        raise StatementError("data bind params is None.")
+    bindNames = []
+    bindTags =[]
+    bindCols = []
+    tagCount = len(statement2.tag_fields)
+    colsCount = len(statement2.fields)
+    for colsTb in colsTbs:
+        colsBind = bind2.new_stmt2_binds(colsCount)
+        tagsBind = bind2.new_stmt2_binds(tagCount)
+        for i in range(colsCount):
+            field = statement2.all_fields[i]
+            if field.field_type == TAOS_FIELD_TAG:
+                values = [colsTb[i]]
+                log.debug(
+                    f"tag i = {i} type={field.type} precision={field.precision} length={field.bytes}  values = {values}  tagsTb = {colsTb[i]}\n")
+                tagsBind[i].set_value(field.type, values, field.precision)
+            elif field.field_type == TAOS_FIELD_COL:
+                values = [colsTb[i]]
+                colsBind[i].set_value(field.type, values, field.precision)
+
+            elif field.field_type == TAOS_FIELD_TBNAME:
+                bindNames.append(colsTb[i])
+
+
+        bindTags.append(tagsBind)
+        bindCols.append(colsBind)
+
+    return bindNames, bindTags, bindCols
 #
 # create bindv from list
 #
@@ -243,6 +274,7 @@ class TaosStmt2(object):
         self._decode_binary = decode_binary
         self.fields     = None
         self.tag_fields = None
+        self.all_fields = None
         self.types      = None
         self._is_insert = None
 
@@ -283,7 +315,12 @@ class TaosStmt2(object):
             raise StatementError("check consistent failed.")
 
         # bindV
-        bindv = createBindV(self, tbnames, tags, datas)
+        bindv = None
+        if self._is_insert and tbnames is None:
+            createSupperBindV(self, datas)
+        else:
+            bindv = createBindV(self, tbnames, tags, datas)
+
         if bindv == None:
             raise StatementError("create stmt2 bindV failed.")
                 
