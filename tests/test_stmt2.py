@@ -26,6 +26,7 @@ def WKB(wkt, hex = False):
 @pytest.fixture
 def conn():
     # type: () -> taos.TaosConnection
+    taos.log.setting(True, True, True, True, True, True)
     return taos.connect()
 
 
@@ -626,12 +627,51 @@ def test_stmt2_query(conn):
         conn.close()
         raise err
 
+def test_stmt2_example(conn):
+
+    try:
+        # create database
+        rows_affected: int = conn.execute(f"CREATE DATABASE IF NOT EXISTS power")
+        print(f"Create database power successfully")
+        assert rows_affected == 0
+        conn.select_db('power')
+
+        conn.execute("create table if not exists stb (ts timestamp, v int) tags(jt json)")
+        print(f"Create stable power.stb successfully")
+
+        stmt = conn.statement2("INSERT INTO stb (ts, v, jt, tbname) VALUES (?,?,?,?)")
+
+        datas   = [
+            [1626861392589, 7, '{"name":"value"}', "tb1"],
+            [1626861392590, 8, '{"name":"value2"}', "tb2"],
+            [1626861392591, 9, '{"name":"value3"}', "tb3"],
+            [1626861392592, 10, '{"name":"value4"}', "tb4"],
+            [1626861392593, 11, '{"name":"value4"}', "tb4"],
+            [1626861392584, 7, '{"name":"value"}', "tb1"],
+            [1626861392595, 8, '{"name":"value2"}', "tb2"],
+            [1626861392596, 9, '{"name":"value3"}', "tb3"],
+            [1626861392597, 10, '{"name":"value4"}', "tb4"],
+            [1626861392598, 11, '{"name":"value4"}', "tb4"]
+        ]
+
+        stmt.bind_param(None, None, datas)
+        print("bind_param done")
+        stmt.execute()
+
+        assert stmt.affected_rows == 10
+
+        result = conn.query("SELECT ts, v, jt FROM stb limit 100", req_id=1)
+        for row in result:
+            print(f"ts: {row[0]}, v: {row[1]}, jt:  {row[2]}")
+
+    except Exception as err:
+        print(f"Failed to execute json_tag_example; ErrMessage:{err}")
+    finally:
+        if conn:
+            conn.close()
 
 if __name__ == "__main__":
     print("start stmt2 test case...\n")
-
-
-    taos.log.setting(True, True, True, True, True, False)
 
     # insert
     test_stmt2_insert(taos.connect())
@@ -639,5 +679,6 @@ if __name__ == "__main__":
     # query
     test_stmt2_query(taos.connect())
 
+    test_stmt2_example(taos.connect())
     print("end stmt2 test case.\n")
 

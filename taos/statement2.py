@@ -178,20 +178,26 @@ def createSupperBindV(statement2, colsTbs):
     bindTags =[]
     bindCols = []
     tagCount = len(statement2.tag_fields)
-    colsCount = len(statement2.fields)
+    colsCount = len(statement2.all_fields)
     for colsTb in colsTbs:
         colsBind = bind2.new_stmt2_binds(colsCount)
         tagsBind = bind2.new_stmt2_binds(tagCount)
+        tagIndex = 0
+        colsIndex = 0
         for i in range(colsCount):
             field = statement2.all_fields[i]
+
+            log.debug(
+                f"index i = {i} type={field.type} precision={field.precision} length={field.bytes} tagsTb = {colsTb[i]}\n")
+            
             if field.field_type == TAOS_FIELD_TAG:
                 values = [colsTb[i]]
-                log.debug(
-                    f"tag i = {i} type={field.type} precision={field.precision} length={field.bytes}  values = {values}  tagsTb = {colsTb[i]}\n")
-                tagsBind[i].set_value(field.type, values, field.precision)
+                tagsBind[tagIndex].set_value(field.type, values, field.precision)
+                tagIndex += 1
             elif field.field_type == TAOS_FIELD_COL:
                 values = [colsTb[i]]
-                colsBind[i].set_value(field.type, values, field.precision)
+                colsBind[colsIndex].set_value(field.type, values, field.precision)
+                colsIndex += 1
 
             elif field.field_type == TAOS_FIELD_TBNAME:
                 bindNames.append(colsTb[i])
@@ -200,7 +206,7 @@ def createSupperBindV(statement2, colsTbs):
         bindTags.append(tagsBind)
         bindCols.append(colsBind)
 
-    return bindNames, bindTags, bindCols
+    return bind2.new_bindv(len(bindNames), bindNames, bindTags, bindCols)
 #
 # create bindv from list
 #
@@ -313,11 +319,12 @@ class TaosStmt2(object):
         # check consistent
         if checkConsistent(tbnames, tags, datas) == False:
             raise StatementError("check consistent failed.")
-
+        
         # bindV
         bindv = None
-        if self._is_insert and tbnames is None:
-            createSupperBindV(self, datas)
+        if self._is_insert and tbnames is None and tags is None:
+            log.debug("insert with supper bind mode.\n")
+            bindv = createSupperBindV(self, datas)
         else:
             bindv = createBindV(self, tbnames, tags, datas)
 
