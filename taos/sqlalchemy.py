@@ -2,6 +2,7 @@ import sys
 from sqlalchemy import types as sqltypes
 from sqlalchemy.engine import default, reflection
 from sqlalchemy import text
+from sqlalchemy.sql.elements import TextClause
 from sqlalchemy import sql
 
 TYPES_MAP = {
@@ -424,6 +425,13 @@ class BaseDialect(default.DefaultDialect):
         cursor = connection.execute(text("select server_version()"))
         return cursor.fetchone()
 
+    def do_execute(self, cursor, statement, parameters, context=None):
+        return cursor.execute(statement, parameters)
+
+    def do_executemany(self, cursor, statement, parameters, context=None):
+        print(f"do_executemany: {statement} ; parameters: {parameters}")
+        return cursor.execute(statement, parameters)
+
     @reflection.cache
     def has_schema(self, connection, schema):
         return schema in self.get_schema_names(connection)
@@ -536,6 +544,14 @@ class BaseDialect(default.DefaultDialect):
         #print(f"call function {sys._getframe().f_code.co_name} type: {type_} ...\n")
         return TYPES_MAP.get(type_, sqltypes.UserDefinedType)
 
+    def get_sql_string(sql):
+        """将输入转换为原始 SQL 字符串（兼容普通字符串和 text() 对象）"""
+        if isinstance(sql, TextClause):
+            return sql.text  # 从 text() 对象中提取
+        elif isinstance(sql, str):
+            return sql  # 本身就是字符串
+        else:
+            raise TypeError("输入必须是字符串或 text() 包装的对象")
 
 #
 # ---------------- taos impl -------------
@@ -560,7 +576,7 @@ class AlchemyTaosConnection:
 class TaosDialect(BaseDialect):
     name = "taos"
     driver = "taos"
-
+    supports_statement_cache = True
     @classmethod
     def dbapi(cls):
         return AlchemyTaosConnection()

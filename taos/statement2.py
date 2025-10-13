@@ -207,6 +207,50 @@ def createSupperBindV(statement2, colsTbs):
         bindCols.append(colsBind)
 
     return bind2.new_bindv(len(bindNames), bindNames, bindTags, bindCols)
+
+def createQueryBindV(statement2, datas):
+    if statement2._stmt2 is None:
+        raise StatementError("stmt2 object is null.")
+
+    # create bindv
+    ret = utils.detectListNone(datas)
+    if ret == utils.ALL_NONE or ret == utils.HAVE_NONE:
+        raise StatementError("params datas some is None, some is not None, this is error.")
+    
+    types = []
+    queryArray = []
+    # tables columns data
+    for colsTb in datas:
+        n = len(colsTb)
+        for i in range(n):
+            value = colsTb[i]
+            if isinstance(value, (list, tuple, set)):
+                value = value[0]
+            else:
+                queryArray.append([value])
+
+            if isinstance(value, int):
+                if value > 0 :
+                    types.append(FieldType.C_BIGINT_UNSIGNED)
+                else:
+                    types.append(FieldType.C_BIGINT)
+            elif isinstance(value, float):
+                types.append(FieldType.C_DOUBLE)
+            elif isinstance(value, str):
+                types.append(FieldType.C_BINARY)
+            elif isinstance(value, bool):
+                types.append(FieldType.C_BOOL)
+            else:
+                raise StatementError(f"data type not support, only support int/float/str/bool type, but got {type(value)}")
+            
+            print(f"createQueryBindV colsTb={colsTb[i]} {type(colsTb[i])}")
+            
+    if len(queryArray) > 0: 
+        datas = [queryArray]  
+
+    statement2.set_columns_type(types)
+    return createBindV(statement2, None, None, datas)
+
 #
 # create bindv from list
 #
@@ -214,6 +258,8 @@ def createBindV(statement2, tbnames, tags, datas):
 
     if tbnames == None and tags == None and datas == None:
         raise StatementError("all bind params is None.")
+    
+    print(f"createQueryBindV datas={datas}")
 
     # count
     count  = -1
@@ -263,10 +309,8 @@ def createBindV(statement2, tbnames, tags, datas):
                 raise StatementError(err)
 
     # create
+    print(f"createBindV count={count} bindNames={bindNames} bindTags={bindTags} bindDatas={bindDatas}")
     return bind2.new_bindv(count, bindNames, bindTags, bindDatas)
-
-
-
 
 #
 # -------------- stmt2 object --------------
@@ -325,6 +369,8 @@ class TaosStmt2(object):
         if self._is_insert and tbnames is None and tags is None:
             log.debug("insert with supper bind mode.\n")
             bindv = createSupperBindV(self, datas)
+        elif self._is_insert == False:
+            bindv = createQueryBindV(self, datas)
         else:
             bindv = createBindV(self, tbnames, tags, datas)
 

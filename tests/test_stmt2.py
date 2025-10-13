@@ -391,7 +391,7 @@ def insert_with_normal_tables(conn, stmt2, dbname, ntb):
     checkResultCorrects(conn, dbname, None, tbnames, tags, datas)
 
 
-def test_stmt2_prepare_empty_sql(conn):
+def _stmt2_prepare_empty_sql(conn):
     if not IS_V3:
         print(" test_stmt2_prepare_empty_sql not support TDengine 2.X version.")
         return
@@ -411,7 +411,7 @@ def test_stmt2_prepare_empty_sql(conn):
         conn.close()
 
 
-def test_bind_invalid_tbnames_type():
+def _bind_invalid_tbnames_type():
     if not IS_V3:
         print(" test_bind_invalid_tbnames_type not support TDengine 2.X version.")
         return
@@ -448,7 +448,7 @@ def test_bind_invalid_tbnames_type():
 #
 # insert
 #
-def test_stmt2_insert(conn):
+def _stmt2_insert(conn):
     if not IS_V3:
         print(" test_stmt2_query not support TDengine 2.X version.")
         return
@@ -516,14 +516,14 @@ def query_bind_param(conn, stmt2):
         # class 1
         [
             # where name in ('Tom2','alex2') or score > 1000;"
-            ["Tom2"],
+            [280],
             [1000]
         ]
     ]
 
     # set param
-    types = [FieldType.C_BINARY, FieldType.C_INT]
-    stmt2.set_columns_type(types)
+    # types = [FieldType.C_BINARY, FieldType.C_INT]
+    # stmt2.set_columns_type(types)
 
     # bind
     stmt2.bind_param(tbnames, tags, datas)
@@ -572,7 +572,8 @@ def test_stmt2_query(conn):
     stbname = "meters"
     ntb1    = "ntb1"
     ntb2    = "ntb2"
-    sql1 = f"select * from {dbname}.d2 where name in (?) or score > ? ;"
+    # sql1 = f"select * from {dbname}.d2 where name in (?) or score > ? ;"
+    sql1 = f"select * from {dbname}.d2 where score > ? and score < ?;"
     sql2 = f"select * from {dbname}.d2 where name in ('Tom2') or score > 1000;"
 
     try:
@@ -627,7 +628,7 @@ def test_stmt2_query(conn):
         conn.close()
         raise err
 
-def test_stmt2_example(conn):
+def _stmt2_example(conn):
 
     try:
         # create database

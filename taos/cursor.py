@@ -34,6 +34,8 @@ class TaosCursor(object):
         self._result = None
         self._fields = None
         self._block = None
+        self._stmt = None
+        self._bind_sql = ""
         self._block_rows = -1
         self._block_iter = 0
         self._affected_rows = 0
@@ -100,16 +102,26 @@ class TaosCursor(object):
         """Close the cursor."""
         if self._connection is None:
             return False
-
+        if self._stmt is not None:
+            self._stmt.close()
+            self._stmt = None
         self._reset_result()
         self._connection = None
+        self._bind_sql = ""
 
         return True
-
+    
     def execute(self, operation, params=None, req_id: Optional[int] = None):
-        """Prepare and execute a database operation (query or command)."""
         if not operation:
             return None
+        print(f"execute: {operation} with params: {params}")
+        if params is not None and isinstance(params, (dict, list, tuple)) and len(params) > 0:
+            return self._execute_stmt(operation, params)
+        else:
+            return self._execute_sql(operation, req_id=req_id)
+
+    def _execute_stmt(self, operation, params):
+        """Prepare and execute a database operation (query or command)."""
 
         if not self._connection:
             # TODO : change the exception raised here
@@ -117,18 +129,45 @@ class TaosCursor(object):
 
         self._reset_result()
 
-        stmt = operation
-        if params is not None:
-            pass
+        if self._stmt is None or self._bind_sql != operation:
+            if self._stmt is not None:
+                self._stmt.close()
+                self._stmt = None
+
+            self._stmt = self._connection.statement2(operation)
+            print(f"bind sql: {operation}, params: {params}")
+            if self._stmt is None:
+                raise OperationalError("Failed to initialize statement")
+        
+        self._stmt.bind_param(None, None, params)
+        self._stmt.execute()
+        if self._stmt.is_insert():
+            self._affected_rows = self._stmt.affected_rows
+            self._rowcount = self._affected_rows
+            return self._affected_rows
+        else:
+            self._result = self._stmt.result()
+            return self._result
+
+    def _execute_sql(self, operation, req_id: Optional[int] = None):
+        """Prepare and execute a database operation (query or command)."""
+
+        if not self._connection:
+            # TODO : change the exception raised here
+            raise ProgrammingError("Cursor is not connected")
+
+        self._reset_result()
+
+        sql = operation
 
         # global querySeqNum
         # querySeqNum += 1
         # localSeqNum = querySeqNum # avoid race condition
         # print("   >> Exec Query ({}): {}".format(localSeqNum, str(stmt)))
         if req_id is None:
-            self._result = taos_query(self._connection._conn, stmt)
+            self._result = taos_query(self._connection._conn, sql)
         else:
-            self._result = taos_query_with_reqid(self._connection._conn, stmt, req_id)
+            self._result = taos_query_with_reqid(self._connection._conn, sql, req_id)
         # print("   << Query ({}) Exec Done".format(localSeqNum))
         if self._logfile:
             with open(self._logfile, "a", encoding="utf-8") as logfile:
@@ -142,7 +181,7 @@ class TaosCursor(object):
         else:
             self._fields = taos_fetch_fields(self._result)
             return self._handle_result()
-
+        
     def execute_many(self, operation, data_list, req_id: Optional[int] = None):
         """
         Prepare a database operation (query or command) and then execute it against all parameter sequences or mappings
@@ -300,3 +339,4 @@ class TaosCursor(object):
 
     def __del__(self):
         self.close()
+        

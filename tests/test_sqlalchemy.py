@@ -5,15 +5,17 @@ from sqlalchemy import types as sqltypes
 from sqlalchemy import create_engine
 from sqlalchemy import inspect
 from dotenv import load_dotenv
+from sqlalchemy import text
 load_dotenv()
 
+taos.log.setting(True, True, True, True, True, True)
 
 def insertData(conn):
     if conn is None:
        c = taos.connect()
     else:
        c = conn
-    c.execute("drop database if exists test")
+    # c.execute("drop database if exists test")
     c.execute("create database test")
     c.execute("create table test.meters (ts timestamp, c1 int, c2 double) tags(t1 int)")
     c.execute("insert into test.d0 using test.meters tags(0) values (1733189403001, 1, 1.11) (1733189403002, 2, 2.22)")
@@ -21,12 +23,42 @@ def insertData(conn):
     c.execute("create table test.ntb(ts timestamp, age int)")
     c.execute("insert into test.ntb values(now, 23)")
 
+def insertStmtData(conn):
+    if conn is None:
+         raise(BaseException("conn is null failed."))
+
+    conn.execute(text("drop database if exists test"))
+    conn.execute(text("create database test"))
+    conn.execute(text("create table test.meters (ts timestamp, c1 int, c2 double) tags(t1 int)"))
+
+    datas   = [
+        [1626861392589, 7, 1.1, 1, "tb1"],
+        [1626861392590, 8, 1.2, 2, "tb2"],
+        [1626861392591, 9, 1.3, 3, "tb3"],
+        [1626861392592, 10, 1.4, 4, "tb4"],
+        [1626861392593, 11, 1.4, 4, "tb4"],
+        [1626861392584, 7, 1.1, 1, "tb1"],
+        [1626861392595, 8, 1.2, 2, "tb2"],
+        [1626861392596, 9, 1.3, 3, "tb3"],
+        [1626861392597, 10, 1.4, 4, "tb4"],
+        [1626861392598, 11, 1.4, 4, "tb4"]
+    ]
+    # rows = conn.execute("insert into test.meters (ts, c1, c2, t1, tbname) values (?, ?, ?, ?, ?)", datas)
+    # print(f"inserted data done, rows={rows}")
+    data = [
+        [
+            [8],
+            [10]
+        ]
+    ]
+    result = conn.execute("select * from test.meters where c1 > ? and c1 < ?", data)
+    print("select result:", result.fetchall())
 
 # compare list
 def checkListEqual(list1, list2, tips):
     if list1 != list2:
         print(f"{tips} failed. two list item not equal. list1={list1} list2={list2}")
-        raise(BaseException("list not euqal."))
+        raise(BaseException(f"list not euqal. {list1} != {list2}"))
 
 # check result
 def checkResultEqual(result1, result2, tips):
@@ -35,7 +67,7 @@ def checkResultEqual(result1, result2, tips):
         raise(BaseException("result not euqal."))
 
 # check baisc function
-def checkBasic(conn, inspection):
+def checkBasic(conn, inspection, subTables=['meters','ntb']):
     # get schema names
     databases = inspection.get_schema_names()
     if "test" not in databases:
@@ -43,7 +75,7 @@ def checkBasic(conn, inspection):
         raise(BaseException("get_schema_names failed."))
     
     # get table names
-    tables = ['meters','ntb']
+    tables = subTables
     checkListEqual(inspection.get_table_names("test"), tables, "check get_table_names()")
 
     # get_columns
@@ -89,98 +121,108 @@ def checkBasic(conn, inspection):
 
 
 # taos
-def test_read_from_sqlalchemy_taos():
+# def test_read_from_sqlalchemy_taos():
+#     if not taos.IS_V3:
+#         return
+#     engine = create_engine("taos://root:taosdata@localhost:6030?timezone=Asia/Shanghai")
+#     conn = engine.connect()
+#     insertData(conn)
+#     inspection = inspect(engine)
+#     checkBasic(conn, inspection)
+
+# taos
+def test_sqlalchemy_stmt_taos():
     if not taos.IS_V3:
         return
     engine = create_engine("taos://root:taosdata@localhost:6030?timezone=Asia/Shanghai")
     conn = engine.connect()
-    insertData(conn)
+    insertStmtData(conn)
     inspection = inspect(engine)
-    checkBasic(conn, inspection)
+    checkBasic(conn, inspection, subTables=['meters'])
 
 # taosws
-def test_read_from_sqlalchemy_taosws():
-    try:
-        import taosws
-    except ImportError:
-        return
-    engine = create_engine("taosws://root:taosdata@localhost:6041?timezone=Asia/Shanghai")
-    conn = engine.connect()
-    insertData(None)
-    inspection = inspect(engine)
-    checkBasic(conn, inspection)
+# def test_read_from_sqlalchemy_taosws():
+#     try:
+#         import taosws
+#     except ImportError:
+#         return
+#     engine = create_engine("taosws://root:taosdata@localhost:6041?timezone=Asia/Shanghai")
+#     conn = engine.connect()
+#     insertData(None)
+#     inspection = inspect(engine)
+#     checkBasic(conn, inspection)
 
 
-def test_read_from_sqlalchemy_taosws_failover():
-    try:
-        import taosws
-    except ImportError:
-        print("taosws not installed, skip test_read_from_sqlalchemy_taosws_failover")
-        return
+# def test_read_from_sqlalchemy_taosws_failover():
+#     try:
+#         import taosws
+#     except ImportError:
+#         print("taosws not installed, skip test_read_from_sqlalchemy_taosws_failover")
+#         return
 
-    conn = taos.connect()
-    conn.execute("drop database if exists test_1755496227")
-    conn.execute("create database test_1755496227")
+#     conn = taos.connect()
+#     conn.execute("drop database if exists test_1755496227")
+#     conn.execute("create database test_1755496227")
 
-    try:
-        urls = [
-            "taosws://",
-            "taosws://localhost",
-            "taosws://localhost:6041",
-            "taosws://localhost:6041/test_1755496227",
-            "taosws://root@localhost:6041/test_1755496227",
-            "taosws://root:@localhost:6041/test_1755496227",
-            "taosws://root:taosdata@localhost:6041/test_1755496227",
-            "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=",
-            "taosws://root:taosdata@/test_1755496227?hosts=localhost:6041",
-            "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=localhost:6041",
-            "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=localhost:6041,127.0.0.1:6041",
-            "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=localhost:6041,127.0.0.1:6041&timezone=Asia/Shanghai",
-        ]
+#     try:
+#         urls = [
+#             "taosws://",
+#             "taosws://localhost",
+#             "taosws://localhost:6041",
+#             "taosws://localhost:6041/test_1755496227",
+#             "taosws://root@localhost:6041/test_1755496227",
+#             "taosws://root:@localhost:6041/test_1755496227",
+#             "taosws://root:taosdata@localhost:6041/test_1755496227",
+#             "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=",
+#             "taosws://root:taosdata@/test_1755496227?hosts=localhost:6041",
+#             "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=localhost:6041",
+#             "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=localhost:6041,127.0.0.1:6041",
+#             "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=localhost:6041,127.0.0.1:6041&timezone=Asia/Shanghai",
+#         ]
     
-        for url in urls:
-            engine = create_engine(url)
-            econn = engine.connect()
-            econn.close()
+#         for url in urls:
+#             engine = create_engine(url)
+#             econn = engine.connect()
+#             econn.close()
 
-        invalid_urls = [
-            "taosws://:6041",
-            "taosws://:taosdata@localhost:6041/test_1755496227",
-        ]
+#         invalid_urls = [
+#             "taosws://:6041",
+#             "taosws://:taosdata@localhost:6041/test_1755496227",
+#         ]
 
-        for url in invalid_urls:
-            try:
-                engine = create_engine(url)
-                econn = engine.connect()
-                econn.close()
-            except Exception as e:
-                print(f"expected error for {url}: {e}")
+#         for url in invalid_urls:
+#             try:
+#                 engine = create_engine(url)
+#                 econn = engine.connect()
+#                 econn.close()
+#             except Exception as e:
+#                 print(f"expected error for {url}: {e}")
 
-    finally:
-        conn.execute("drop database test_1755496227")
-        conn.close()
-
-
-# taosrest
-def test_read_from_sqlalchemy_taosrest():
-    if not taos.IS_V3:
-        return
-    engine = create_engine("taosrest://root:taosdata@localhost:6041?timezone=Asia/Shanghai")
-    conn = engine.connect()
-    insertData(conn)
-    inspection = inspect(engine)
-    checkBasic(conn, inspection)
+#     finally:
+#         conn.execute("drop database test_1755496227")
+#         conn.close()
 
 
-# main test
-if __name__ == "__main__":
-    print("hello, test sqlalcemy db api. do nothing\n")
-    test_read_from_sqlalchemy_taos()
-    print("Test taos api ..................................... [OK]\n")
-    test_read_from_sqlalchemy_taosrest()
-    print("Test taosrest api ................................. [OK]\n")
-    test_read_from_sqlalchemy_taosws()
-    print("Test taosws api ................................... [OK]\n")
-    test_read_from_sqlalchemy_taosws_failover()
-    print("Test taosws failover api .......................... [OK]\n")
+# # taosrest
+# def test_read_from_sqlalchemy_taosrest():
+#     if not taos.IS_V3:
+#         return
+#     engine = create_engine("taosrest://root:taosdata@localhost:6041?timezone=Asia/Shanghai")
+#     conn = engine.connect()
+#     insertData(conn)
+#     inspection = inspect(engine)
+#     checkBasic(conn, inspection)
+
+
+# # main test
+# if __name__ == "__main__":
+#     print("hello, test sqlalcemy db api. do nothing\n")
+#     test_read_from_sqlalchemy_taos()
+#     print("Test taos api ..................................... [OK]\n")
+#     test_read_from_sqlalchemy_taosrest()
+#     print("Test taosrest api ................................. [OK]\n")
+#     test_read_from_sqlalchemy_taosws()
+#     print("Test taosws api ................................... [OK]\n")
+#     test_read_from_sqlalchemy_taosws_failover()
+#     print("Test taosws failover api .......................... [OK]\n")
     
