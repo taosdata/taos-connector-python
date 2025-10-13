@@ -32,6 +32,7 @@ class TaosCursor(object):
         self._rowcount = -1
         self._connection = None
         self._result = None
+        self._stmt_result = None
         self._fields = None
         self._block = None
         self._stmt = None
@@ -111,10 +112,16 @@ class TaosCursor(object):
 
         return True
     
+    def keys(self):
+        """Return the list of column names"""
+        print("keys called")
+        return None
+
     def execute(self, operation, params=None, req_id: Optional[int] = None):
         if not operation:
             return None
         print(f"execute: {operation} with params: {params}")
+        self._reset_result()
         if params is not None and isinstance(params, (dict, list, tuple)) and len(params) > 0:
             return self._execute_stmt(operation, params)
         else:
@@ -126,8 +133,6 @@ class TaosCursor(object):
         if not self._connection:
             # TODO : change the exception raised here
             raise ProgrammingError("Cursor is not connected")
-
-        self._reset_result()
 
         if self._stmt is None or self._bind_sql != operation:
             if self._stmt is not None:
@@ -146,8 +151,13 @@ class TaosCursor(object):
             self._rowcount = self._affected_rows
             return self._affected_rows
         else:
-            self._result = self._stmt.result()
-            return self._result
+            self._stmt_result = self._stmt.result()
+            # for row in self._result:
+            #     print(f" fetch row: {row}")
+            
+            self._fields = self._stmt_result.fields
+            self._handle_result()
+            return self._stmt_result
 
     def _execute_sql(self, operation, req_id: Optional[int] = None):
         """Prepare and execute a database operation (query or command)."""
@@ -155,8 +165,6 @@ class TaosCursor(object):
         if not self._connection:
             # TODO : change the exception raised here
             raise ProgrammingError("Cursor is not connected")
-
-        self._reset_result()
 
         sql = operation
 
@@ -206,10 +214,16 @@ class TaosCursor(object):
 
     def fetchone(self):
         """Fetch the next row of a query result set, returning a single sequence, or None when no more data is available."""
-        pass
+        try:
+            if self._stmt_result is not None:
+                return self._stmt_result.next()
+            else:
+                return self._taos_next()
+        except StopIteration:
+                return None
 
     def fetchmany(self):
-        pass
+        print("fetchmany called")
 
     def istype(self, col, dataType):
         if dataType.upper() == "BOOL":
@@ -283,6 +297,13 @@ class TaosCursor(object):
         return list(map(tuple, zip(*buffer)))
 
     def fetchall(self):
+        if self._stmt_result is not None:
+            return self._stmt_result.fetch_all()
+        else:
+            return self._fetchall_sql()
+
+    def _fetchall_sql(self):
+        print("fetchall called")
         if self._result is None:
             raise OperationalError("Invalid use of fetchall")
         fields = self._fields if self._fields is not None else taos_fetch_fields(

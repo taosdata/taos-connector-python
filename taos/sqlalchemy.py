@@ -426,11 +426,14 @@ class BaseDialect(default.DefaultDialect):
         return cursor.fetchone()
 
     def do_execute(self, cursor, statement, parameters, context=None):
-        return cursor.execute(statement, parameters)
+        print(f"do_execute: {statement} ; parameters: {parameters}")
+        cursor.execute(statement, parameters)
+        return cursor
 
     def do_executemany(self, cursor, statement, parameters, context=None):
         print(f"do_executemany: {statement} ; parameters: {parameters}")
-        return cursor.execute(statement, parameters)
+        cursor.execute(statement, parameters)
+        return cursor
 
     @reflection.cache
     def has_schema(self, connection, schema):

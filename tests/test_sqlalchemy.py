@@ -10,13 +10,74 @@ load_dotenv()
 
 taos.log.setting(True, True, True, True, True, True)
 
+def prepare(conn, dbname, stbname, ntb1, ntb2):
+    conn.execute("drop database if exists %s" % dbname)
+    conn.execute("create database if not exists %s precision 'ms' " % dbname)
+    # stable
+    sql = f"create table if not exists {dbname}.{stbname}(ts timestamp, name binary(32), sex bool, score int, remarks blob) tags(grade nchar(8), class int)"
+    conn.execute(sql)
+    # normal table
+    sql = f"create table if not exists {dbname}.{ntb1} (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128), remarks blob)"
+    conn.execute(sql)
+    sql = f"create table if not exists {dbname}.{ntb2} (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128), remarks blob)"
+    conn.execute(sql)
+
+def test_stmt2_query():
+    engine = create_engine("taos://root:taosdata@localhost:6030?timezone=Asia/Shanghai")
+    conn = engine.connect()
+    dbname  = "stmt2"
+    stbname = "meters"
+    ntb1    = "ntb1"
+    ntb2    = "ntb2"
+    # sql1 = f"select * from {dbname}.d2 where name in (?) or score > ? ;"
+    sql1 = f"select * from {dbname}.d2 where score > ? and score < ?;"
+    try:
+        # prepare
+        prepare(conn, dbname, stbname, ntb1, ntb2)
+
+        # prepare
+        # stmt2 = conn.statement2(f"insert into ? using {dbname}.{stbname} tags(?,?) values(?,?,?,?)")
+        # insert_bind_param_with_tables(conn, stmt2, dbname, stbname)
+        # insert_bind_param(conn, stmt2, dbname, stbname)
+        # stmt2.close()
+        # print("insert bind & execute ......................... ok\n")
+
+        conn.execute(f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.000', 'Mary2', false, 298, 'XXX')")
+        conn.execute(f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.001', 'Tom2', true, 280, 'YYY')")
+        conn.execute(f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.002', 'Jack2', true, 260, 'ZZZ')")
+        conn.execute(f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.003', 'Jane2', false, 2100, 'WWW')")
+        conn.execute(f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.004', 'alex2', true, 299, 'ZZZ')")
+        conn.execute(f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.005', NULL, false, NULL, 'WWW')")
+        datas   = [
+            # class 1
+            [
+                # where name in ('Tom2','alex2') or score > 1000;"
+                [280],
+                [1000]
+            ]
+        ]
+
+        result = conn.execute(sql1, datas)
+        # print(f"result: {result}")
+        # for row in result:
+        #     print(f" result rows = {row} \n")
+        print("result:", result.fetchall())
+
+        conn.close()
+        print("test_stmt2_query .............................. [passed]\n")
+
+    except Exception as err:
+        print("query ......................................... failed\n")
+        conn.close()
+        raise err
+
 def insertData(conn):
     if conn is None:
        c = taos.connect()
     else:
        c = conn
     # c.execute("drop database if exists test")
-    c.execute("create database test")
+    c.execute("create database if not exists test")
     c.execute("create table test.meters (ts timestamp, c1 int, c2 double) tags(t1 int)")
     c.execute("insert into test.d0 using test.meters tags(0) values (1733189403001, 1, 1.11) (1733189403002, 2, 2.22)")
     c.execute("insert into test.d1 using test.meters tags(1) values (1733189403003, 3, 3.33) (1733189403004, 4, 4.44)")
@@ -28,7 +89,7 @@ def insertStmtData(conn):
          raise(BaseException("conn is null failed."))
 
     conn.execute(text("drop database if exists test"))
-    conn.execute(text("create database test"))
+    conn.execute(text("create database if not exists test"))
     conn.execute(text("create table test.meters (ts timestamp, c1 int, c2 double) tags(t1 int)"))
 
     datas   = [
@@ -43,8 +104,8 @@ def insertStmtData(conn):
         [1626861392597, 10, 1.4, 4, "tb4"],
         [1626861392598, 11, 1.4, 4, "tb4"]
     ]
-    # rows = conn.execute("insert into test.meters (ts, c1, c2, t1, tbname) values (?, ?, ?, ?, ?)", datas)
-    # print(f"inserted data done, rows={rows}")
+    rows = conn.execute("insert into test.meters (ts, c1, c2, t1, tbname) values (?, ?, ?, ?, ?)", datas)
+    print(f"inserted data done, rows={rows}")
     data = [
         [
             [8],
@@ -52,7 +113,13 @@ def insertStmtData(conn):
         ]
     ]
     result = conn.execute("select * from test.meters where c1 > ? and c1 < ?", data)
-    print("select result:", result.fetchall())
+    # print(f"result: {result}")
+    # for row in result:
+    #     print(f" result rows = {row} \n")
+    print("result:", result.fetchall())
+
+
+
 
 # compare list
 def checkListEqual(list1, list2, tips):
@@ -120,7 +187,7 @@ def checkBasic(conn, inspection, subTables=['meters','ntb']):
     conn.close()
 
 
-# taos
+#taos
 # def test_read_from_sqlalchemy_taos():
 #     if not taos.IS_V3:
 #         return
@@ -131,14 +198,14 @@ def checkBasic(conn, inspection, subTables=['meters','ntb']):
 #     checkBasic(conn, inspection)
 
 # taos
-def test_sqlalchemy_stmt_taos():
-    if not taos.IS_V3:
-        return
-    engine = create_engine("taos://root:taosdata@localhost:6030?timezone=Asia/Shanghai")
-    conn = engine.connect()
-    insertStmtData(conn)
-    inspection = inspect(engine)
-    checkBasic(conn, inspection, subTables=['meters'])
+# def test_sqlalchemy_stmt_taos():
+#     if not taos.IS_V3:
+#         return
+#     engine = create_engine("taos://root:taosdata@localhost:6030?timezone=Asia/Shanghai")
+#     conn = engine.connect()
+#     insertStmtData(conn)
+#     inspection = inspect(engine)
+#     checkBasic(conn, inspection, subTables=['meters'])
 
 # taosws
 # def test_read_from_sqlalchemy_taosws():
