@@ -426,12 +426,10 @@ class BaseDialect(default.DefaultDialect):
         return cursor.fetchone()
 
     def do_execute(self, cursor, statement, parameters, context=None):
-        print(f"do_execute: {statement} ; parameters: {parameters}")
         cursor.execute(statement, parameters)
         return cursor
 
     def do_executemany(self, cursor, statement, parameters, context=None):
-        print(f"do_executemany: {statement} ; parameters: {parameters}")
         cursor.execute(statement, parameters)
         return cursor
 
@@ -546,15 +544,6 @@ class BaseDialect(default.DefaultDialect):
     def _resolve_type(self, type_):
         #print(f"call function {sys._getframe().f_code.co_name} type: {type_} ...\n")
         return TYPES_MAP.get(type_, sqltypes.UserDefinedType)
-
-    def get_sql_string(sql):
-        """将输入转换为原始 SQL 字符串（兼容普通字符串和 text() 对象）"""
-        if isinstance(sql, TextClause):
-            return sql.text  # 从 text() 对象中提取
-        elif isinstance(sql, str):
-            return sql  # 本身就是字符串
-        else:
-            raise TypeError("输入必须是字符串或 text() 包装的对象")
 
 #
 # ---------------- taos impl -------------

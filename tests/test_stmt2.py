@@ -391,7 +391,7 @@ def insert_with_normal_tables(conn, stmt2, dbname, ntb):
     checkResultCorrects(conn, dbname, None, tbnames, tags, datas)
 
 
-def _stmt2_prepare_empty_sql(conn):
+def stmt2_prepare_empty_sql(conn):
     if not IS_V3:
         print(" test_stmt2_prepare_empty_sql not support TDengine 2.X version.")
         return
@@ -411,7 +411,7 @@ def _stmt2_prepare_empty_sql(conn):
         conn.close()
 
 
-def _bind_invalid_tbnames_type():
+def bind_invalid_tbnames_type():
     if not IS_V3:
         print(" test_bind_invalid_tbnames_type not support TDengine 2.X version.")
         return
@@ -448,7 +448,7 @@ def _bind_invalid_tbnames_type():
 #
 # insert
 #
-def _stmt2_insert(conn):
+def stmt2_insert(conn):
     if not IS_V3:
         print(" test_stmt2_query not support TDengine 2.X version.")
         return
@@ -628,7 +628,7 @@ def test_stmt2_query(conn):
         conn.close()
         raise err
 
-def _stmt2_example(conn):
+def stmt2_example(conn):
 
     try:
         # create database

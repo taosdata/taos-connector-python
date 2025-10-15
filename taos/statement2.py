@@ -243,7 +243,7 @@ def createQueryBindV(statement2, datas):
             else:
                 raise StatementError(f"data type not support, only support int/float/str/bool type, but got {type(value)}")
             
-            print(f"createQueryBindV colsTb={colsTb[i]} {type(colsTb[i])}")
+            log.debug(f"createQueryBindV colsTb={colsTb[i]} {type(colsTb[i])}")
             
     if len(queryArray) > 0: 
         datas = [queryArray]  
@@ -259,7 +259,7 @@ def createBindV(statement2, tbnames, tags, datas):
     if tbnames == None and tags == None and datas == None:
         raise StatementError("all bind params is None.")
     
-    print(f"createQueryBindV datas={datas}")
+    log.debug(f"createQueryBindV datas={datas}")
 
     # count
     count  = -1
@@ -309,7 +309,7 @@ def createBindV(statement2, tbnames, tags, datas):
                 raise StatementError(err)
 
     # create
-    print(f"createBindV count={count} bindNames={bindNames} bindTags={bindTags} bindDatas={bindDatas}")
+    log.debug(f"createBindV count={count} bindNames={bindNames} bindTags={bindTags} bindDatas={bindDatas}")
     return bind2.new_bindv(count, bindNames, bindTags, bindDatas)
 
 #

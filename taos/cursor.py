@@ -4,7 +4,7 @@ from typing import Optional
 from taos.cinterface import *
 from taos.error import *
 from taos.constants import FieldType
-
+from taos import log
 
 class TaosCursor(object):
     """Database cursor which is used to manage the context of a fetch operation.
@@ -119,7 +119,7 @@ class TaosCursor(object):
     def execute(self, operation, params=None, req_id: Optional[int] = None):
         if not operation:
             return None
-        print(f"execute: {operation} with params: {params}")
+        log.debug(f"execute: {operation} with params: {params}")
         self._reset_result()
         if params is not None and isinstance(params, (dict, list, tuple)) and len(params) > 0:
             return self._execute_stmt(operation, params)
@@ -146,7 +146,7 @@ class TaosCursor(object):
                 self._stmt = None
 
             self._stmt = self._connection.statement2(operation)
-            print(f"bind sql: {operation}, params: {params}")
+            log.debug(f"bind sql: {operation}, params: {params}")
             if self._stmt is None:
                 raise OperationalError("Failed to initialize statement")
         
@@ -226,7 +226,7 @@ class TaosCursor(object):
                 return None
 
     def fetchmany(self):
-        print("fetchmany called")
+        pass
 
     def istype(self, col, dataType):
         if dataType.upper() == "BOOL":
@@ -306,7 +306,6 @@ class TaosCursor(object):
             return self._fetchall_sql()
 
     def _fetchall_sql(self):
-        print("fetchall called")
         if self._result is None:
             raise OperationalError("Invalid use of fetchall")
         fields = self._fields if self._fields is not None else taos_fetch_fields(
