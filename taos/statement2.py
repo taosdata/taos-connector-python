@@ -228,8 +228,10 @@ def createQueryBindV(statement2, datas):
                 value = value[0]
             else:
                 queryArray.append([value])
-
-            if isinstance(value, int):
+            print(f"type(value): {type(value)}")
+            if isinstance(value, bool):
+                types.append(FieldType.C_BOOL)
+            elif isinstance(value, int):
                 if value > 0 :
                     types.append(FieldType.C_BIGINT_UNSIGNED)
                 else:
@@ -238,8 +240,6 @@ def createQueryBindV(statement2, datas):
                 types.append(FieldType.C_DOUBLE)
             elif isinstance(value, str):
                 types.append(FieldType.C_BINARY)
-            elif isinstance(value, bool):
-                types.append(FieldType.C_BOOL)
             else:
                 raise StatementError(f"data type not support, only support int/float/str/bool type, but got {type(value)}")
             

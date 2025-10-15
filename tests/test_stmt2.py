@@ -517,7 +517,8 @@ def query_bind_param(conn, stmt2):
         [
             # where name in ('Tom2','alex2') or score > 1000;"
             ["Tom2"],
-            [1000]
+            [200],
+            [True]
         ]
     ]
 
@@ -572,8 +573,8 @@ def test_stmt2_query(conn):
     stbname = "meters"
     ntb1    = "ntb1"
     ntb2    = "ntb2"
-    sql1 = f"select * from {dbname}.d2 where name in (?) or score > ? ;"
-    sql2 = f"select * from {dbname}.d2 where name in ('Tom2') or score > 1000;"
+    sql1 = f"select * from {dbname}.d2 where name in (?) and score > ? and sex = ?;"
+    sql2 = f"select * from {dbname}.d2 where name in ('Tom2') and score > 100 and sex = true;"
 
     try:
         # prepare
@@ -590,8 +591,8 @@ def test_stmt2_query(conn):
         conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.001', 'Tom2', true, 280, 'YYY')")
         conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.002', 'Jack2', true, 260, 'ZZZ')")
         conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.003', 'Jane2', false, 2100, 'WWW')")
-        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.004', 'alex2', true, 299, 'ZZZ')")
-        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.005', NULL, false, NULL, 'WWW')")
+        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.004', 'Tom2', true, 299, 'ZZZ')")
+        conn.execute(f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.005', 'Tom2', false, NULL, 'WWW')")
 
 
         # statement2
