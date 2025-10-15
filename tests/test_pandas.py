@@ -20,6 +20,9 @@ def test_insert_test_data():
     c.execute("create database test")
     c.execute("create table test.tb (ts timestamp, c1 int, c2 double)")
     c.execute("insert into test.tb values (now, -100, -200.3) (now+10s, -101, -340.2423424)")
+    c.execute("insert into test.tb values (now, -100, -200.3) (now+20s, 101, 1.2423424)")
+    c.execute("insert into test.tb values (now, -100, -200.3) (now+30s, 102, 2.2423424)")
+    c.execute("insert into test.tb values (now, -100, -200.3) (now+40s, 103, 3.2423424)")
 
 
 def test_pandas_read_from_rest_connection():
@@ -50,6 +53,12 @@ def test_pandas_read_from_sqlalchemy_taos():
     assert isinstance(df.ts[0], datetime)
     assert df.shape == (2, 3)
 
+def test_pandas_read_from_sqlalchemy_stmt():
+    engine = create_engine("taos://root:taosdata@localhost:6030?timezone=Asia/Shanghai")
+    conn = engine.connect()
+    result = conn.execute(text("select * from test.tb where c1 > :c1 AND c2 > :c2"), {"c1": 100, "c2": 0})
+    df = pandas.DataFrame(result.fetchall(), columns=result.keys())
+    print(df)
 
 def teardown_module(module):
     conn = taos.connect()

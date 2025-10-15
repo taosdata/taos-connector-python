@@ -114,7 +114,6 @@ class TaosCursor(object):
     
     def keys(self):
         """Return the list of column names"""
-        print("keys called")
         return None
 
     def execute(self, operation, params=None, req_id: Optional[int] = None):
@@ -133,6 +132,13 @@ class TaosCursor(object):
         if not self._connection:
             # TODO : change the exception raised here
             raise ProgrammingError("Cursor is not connected")
+          
+        if isinstance(params, dict):
+            bindParams = []
+            for k, v in params.items():
+                operation = operation.replace(f"%({k})s", "?")
+                bindParams.append([v])
+            params = [bindParams]
 
         if self._stmt is None or self._bind_sql != operation:
             if self._stmt is not None:
@@ -151,10 +157,7 @@ class TaosCursor(object):
             self._rowcount = self._affected_rows
             return self._affected_rows
         else:
-            self._stmt_result = self._stmt.result()
-            # for row in self._result:
-            #     print(f" fetch row: {row}")
-            
+            self._stmt_result = self._stmt.result()            
             self._fields = self._stmt_result.fields
             self._handle_result()
             return self._stmt_result
