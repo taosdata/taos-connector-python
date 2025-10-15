@@ -430,7 +430,7 @@ class BaseDialect(default.DefaultDialect):
         return cursor
 
     def do_executemany(self, cursor, statement, parameters, context=None):
-        cursor.execute(statement, parameters)
+        cursor.executemany(statement, parameters)
         return cursor
 
     @reflection.cache

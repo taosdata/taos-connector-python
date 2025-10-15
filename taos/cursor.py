@@ -114,7 +114,11 @@ class TaosCursor(object):
     
     def keys(self):
         """Return the list of column names"""
-        return None
+        if self._fields:
+            return self._fields
+        elif self._stmt_result and self._stmt_result.fields:
+            return self._stmt_result.fields
+        return []
 
     def execute(self, operation, params=None, req_id: Optional[int] = None):
         if not operation:
@@ -193,6 +197,17 @@ class TaosCursor(object):
             self._fields = taos_fetch_fields(self._result)
             return self._handle_result()
         
+    def executemany(self, operation, data_list):
+        """
+        Prepare a database operation (query or command) and then execute it against all parameter sequences or mappings
+        found in the sequence seq_of_parameters.
+        """
+        if not operation or not data_list or len(data_list) == 0:
+            return None
+        
+        self._reset_result()
+        return self._execute_stmt(operation, data_list)
+            
     def execute_many(self, operation, data_list, req_id: Optional[int] = None):
         """
         Prepare a database operation (query or command) and then execute it against all parameter sequences or mappings

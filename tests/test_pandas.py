@@ -58,7 +58,8 @@ def test_pandas_read_from_sqlalchemy_stmt():
     conn = engine.connect()
     result = conn.execute(text("select * from test.tb where c1 > :c1 AND c2 > :c2"), {"c1": 100, "c2": 0})
     df = pandas.DataFrame(result.fetchall(), columns=result.keys())
-    print(df)
+    assert df.shape[0] == 3
+    assert sorted(df['c1'].tolist()) == [101, 102, 103]
 
 def teardown_module(module):
     conn = taos.connect()

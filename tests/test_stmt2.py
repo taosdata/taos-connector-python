@@ -391,7 +391,7 @@ def insert_with_normal_tables(conn, stmt2, dbname, ntb):
     checkResultCorrects(conn, dbname, None, tbnames, tags, datas)
 
 
-def stmt2_prepare_empty_sql(conn):
+def test_stmt2_prepare_empty_sql(conn):
     if not IS_V3:
         print(" test_stmt2_prepare_empty_sql not support TDengine 2.X version.")
         return
@@ -516,7 +516,7 @@ def query_bind_param(conn, stmt2):
         # class 1
         [
             # where name in ('Tom2','alex2') or score > 1000;"
-            [280],
+            ["Tom2"],
             [1000]
         ]
     ]
@@ -572,8 +572,7 @@ def test_stmt2_query(conn):
     stbname = "meters"
     ntb1    = "ntb1"
     ntb2    = "ntb2"
-    # sql1 = f"select * from {dbname}.d2 where name in (?) or score > ? ;"
-    sql1 = f"select * from {dbname}.d2 where score > ? and score < ?;"
+    sql1 = f"select * from {dbname}.d2 where name in (?) or score > ? ;"
     sql2 = f"select * from {dbname}.d2 where name in ('Tom2') or score > 1000;"
 
     try:

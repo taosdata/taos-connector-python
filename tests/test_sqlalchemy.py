@@ -76,7 +76,7 @@ def insertData(conn):
        c = taos.connect()
     else:
        c = conn
-    # c.execute("drop database if exists test")
+    c.execute("drop database if exists test")
     c.execute("create database if not exists test")
     c.execute("create table test.meters (ts timestamp, c1 int, c2 double) tags(t1 int)")
     c.execute("insert into test.d0 using test.meters tags(0) values (1733189403001, 1, 1.11) (1733189403002, 2, 2.22)")
