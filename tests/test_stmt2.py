@@ -147,7 +147,8 @@ def insert_bind_param(conn, stmt2, dbname, stbname):
             [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004,1601481600005],
             ["Mary",       "Tom",        "Jack",       "Jane",       "alex"       ,None           ],
             [0,            1,            1,            0,            1            ,None         ],
-            [98,           80,           60,           100,          99           ,None         ]
+            [98,           80,           60,           100,          99           ,None         ],
+            [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5", None]
         ],
         # class 2
         [
@@ -155,7 +156,8 @@ def insert_bind_param(conn, stmt2, dbname, stbname):
             [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004,1601481600005],
             ["Mary2",      "Tom2",       "Jack2",       "Jane2",     "alex2"      ,None         ],
             [0,            1,            1,             0,           1            ,0            ],
-            [298,          280,          260,           2100,        299          ,None         ]
+            [298,          280,          260,           2100,        299          ,None         ],
+            [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5", None]
         ],
         # class 3
         [
@@ -163,7 +165,8 @@ def insert_bind_param(conn, stmt2, dbname, stbname):
             [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004,1601481600005],
             ["Mary3",      "Tom3",       "Jack3",       "Jane3",     "alex3"       ,"Mark"      ],
             [0,            1,            1,             0,           1             ,None        ],
-            [398,          380,          360,           3100,        399           ,None        ]
+            [398,          380,          360,           3100,        399           ,None        ],
+            [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5", None]
         ]
     ]
 
@@ -244,7 +247,8 @@ def insert_bind_param_with_tables(conn, stmt2, dbname, stbname):
                 [1601481600000,1601481600004,"2024-09-19 10:00:00", "2024-09-19 10:00:01.123", datetime(2024,9,20,10,11,12,456)],
                 ["Mary",       "Tom",        "Jack",                "Jane",                    "alex"       ],
                 [0,            1,            1,                     0,                         1            ],
-                [98,           80,           60,                    100,                       99           ]
+                [98,           80,           60,                    100,                       99           ],
+                [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5"]
             ],
             # table 2
             [
@@ -252,7 +256,8 @@ def insert_bind_param_with_tables(conn, stmt2, dbname, stbname):
                 [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004],
                 ["Mary2",      "Tom2",       "Jack2",       "Jane2",     "alex2"       ],
                 [0,            1,            1,             0,           1             ],
-                [298,          280,          260,           2100,        299           ]
+                [298,          280,          260,           2100,        299           ],
+                [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5"]
             ],
             # table 3
             [
@@ -260,7 +265,8 @@ def insert_bind_param_with_tables(conn, stmt2, dbname, stbname):
                 [1601481600000,1601481600001,1601481600002,1601481600003,1601481600004],
                 ["Mary3",      "Tom3",       "Jack3",       "Jane3",     "alex3"       ],
                 [0,            1,            1,             0,           1             ],
-                [398,          380,          360,           3100,        399           ]
+                [398,          380,          360,           3100,        399           ],
+                [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5"]
             ]
     ]
 
@@ -411,7 +417,7 @@ def test_stmt2_prepare_empty_sql(conn):
         conn.close()
 
 
-def bind_invalid_tbnames_type():
+def test_bind_invalid_tbnames_type():
     if not IS_V3:
         print(" test_bind_invalid_tbnames_type not support TDengine 2.X version.")
         return
@@ -448,7 +454,7 @@ def bind_invalid_tbnames_type():
 #
 # insert
 #
-def stmt2_insert(conn):
+def test_stmt2_insert(conn):
     if not IS_V3:
         print(" test_stmt2_query not support TDengine 2.X version.")
         return
@@ -467,21 +473,21 @@ def stmt2_insert(conn):
         print("insert child table ........................... ok\n")
         stmt2.close()
 
-        # # prepare
-        # stmt2 = conn.statement2(f"insert into ? using {dbname}.{stbname} tags(?,?) values(?,?,?,?)")
-        # print("insert prepare sql ............................ ok\n")
-        #
-        # # insert with table
-        # insert_bind_param_with_tables(conn, stmt2, dbname, stbname)
-        # print("insert bind with tables ....................... ok\n")
-        # check_input_invalid_param(conn, stmt2, dbname, stbname)
-        # print("check input invalid params .................... ok\n")
-        #
+        # prepare
+        stmt2 = conn.statement2(f"insert into ? using {dbname}.{stbname} tags(?,?) values(?,?,?,?,?)")
+        print("insert prepare sql ............................ ok\n")
+        
+        # insert with table
+        insert_bind_param_with_tables(conn, stmt2, dbname, stbname)
+        print("insert bind with tables ....................... ok\n")
+        check_input_invalid_param(conn, stmt2, dbname, stbname)
+        print("check input invalid params .................... ok\n")
+        
         # # insert with split args
-        # insert_bind_param(conn, stmt2, dbname, stbname)
-        # print("insert bind ................................... ok\n")
-        # print("insert execute ................................ ok\n")
-        # stmt2.close()
+        insert_bind_param(conn, stmt2, dbname, stbname)
+        print("insert bind ................................... ok\n")
+        print("insert execute ................................ ok\n")
+        stmt2.close()
         
         # ntb1
         stmt2 = conn.statement2(f"insert into {dbname}.{ntb1} values(?,?,?,?,?,?)")
