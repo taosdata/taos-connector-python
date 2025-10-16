@@ -554,7 +554,7 @@ import taos
 # Alchemy connect
 #
 class AlchemyTaosConnection:
-    paramstyle = "pyformat"
+    paramstyle = "qmark"
     # connect
     def connect(self, **kwargs):
         host = kwargs.get("host", "localhost")

@@ -127,14 +127,15 @@ def insertStmtSqlalchemyData(conn):
     conn.execute(text("create table test.meters (ts timestamp, c1 int, c2 double) tags(t1 int)"))
 
     data = [
-        {'ts': 1626861392589, 'c1': 1.0, 'c2': 2.0, 't1': 'tag1', 'tbname': 'tb1'},
-        {'ts': 1626861392590, 'c1': 1.5, 'c2': 2.5, 't1': 'tag2', 'tbname': 'tb2'},
-        {'ts': 1626861392591, 'c1': 2.0, 'c2': 3.0, 't1': 'tag3', 'tbname': 'tb3'}
+        {'ts': 1626861392589, 'c1': 1, 'c2': 2.0, 't1': 1, 'tbname': 'tb1'},
+        {'ts': 1626861392590, 'c1': 2, 'c2': 2.5, 't1': 2, 'tbname': 'tb2'},
+        {'ts': 1626861392591, 'c1': 3, 'c2': 3.0, 't1': 3, 'tbname': 'tb3'}
     ]	
+
     sql = text("INSERT INTO test.meters (ts, c1, c2, t1, tbname) VALUES (:ts, :c1, :c2, :t1, :tbname)")
     rows = conn.execute(sql, data)
     print(f"inserted data done, rows={rows}")
-    result = conn.execute("select * from test.meters where ts > :start_time and ts < :end_time", {"start_time": 1626861392589, "end_time": 1626861392598})
+    result = conn.execute(text("select * from test.meters where ts > :start and ts < :end"), {'start': 1626861392589, 'end': 1626861392598})
     print(f"result: {result}")
     for row in result:
         print(f" result rows = {row} \n")

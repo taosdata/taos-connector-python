@@ -135,11 +135,10 @@ class TaosCursor(object):
         if isinstance(params, dict):
             bindParams = []
             for k, v in params.items():
-                operation = operation.replace(f":{k}", "?")
-                operation = operation.replace(f"%({k})s", "?")
-                bindParams.append([v])
+                bindParams.append([v])   
             return operation, [bindParams]
-
+        elif not isinstance(params[0], (list, tuple)):
+            params = [[item] for item in params]
         return operation, params
 
     def _execute_stmt(self, operation, params):
@@ -149,13 +148,6 @@ class TaosCursor(object):
             # TODO : change the exception raised here
             raise ProgrammingError("Cursor is not connected")
           
-        if isinstance(params, dict):
-            bindParams = []
-            for k, v in params.items():
-                operation = operation.replace(f"%({k})s", "?")
-                bindParams.append([v])
-            params = [bindParams]
-
         if self._stmt is None or self._bind_sql != operation:
             if self._stmt is not None:
                 self._stmt.close()

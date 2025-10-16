@@ -24,7 +24,7 @@ from taos._version import __version__
 # Globals
 threadsafety = 2
 """sqlalchemy will read this attribute"""
-paramstyle = "pyformat"
+paramstyle = "qmark"
 """sqlalchemy will read this attribute"""
 
 __all__ = [
