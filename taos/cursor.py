@@ -126,9 +126,21 @@ class TaosCursor(object):
         log.debug(f"execute: {operation} with params: {params}")
         self._reset_result()
         if params is not None and isinstance(params, (dict, list, tuple)) and len(params) > 0:
+            operation, params = self._handle_bind_sql(operation, params)
             return self._execute_stmt(operation, params)
         else:
             return self._execute_sql(operation, req_id=req_id)
+        
+    def _handle_bind_sql(self, operation, params):
+        if isinstance(params, dict):
+            bindParams = []
+            for k, v in params.items():
+                operation = operation.replace(f":{k}", "?")
+                operation = operation.replace(f"%({k})s", "?")
+                bindParams.append([v])
+            return operation, [bindParams]
+
+        return operation, params
 
     def _execute_stmt(self, operation, params):
         """Prepare and execute a database operation (query or command)."""
@@ -206,6 +218,12 @@ class TaosCursor(object):
             return None
         
         self._reset_result()
+
+        operation, _ = self._handle_bind_sql(operation, data_list[0])
+        if isinstance(data_list[0], dict):
+            key_order = list(data_list[0].keys())
+            return [[item[key] for key in key_order] for item in data_list]
+        
         return self._execute_stmt(operation, data_list)
             
     def execute_many(self, operation, data_list, req_id: Optional[int] = None):

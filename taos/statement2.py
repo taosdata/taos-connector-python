@@ -228,7 +228,6 @@ def createQueryBindV(statement2, datas):
                 value = value[0]
             else:
                 queryArray.append([value])
-            print(f"type(value): {type(value)}")
             if isinstance(value, bool):
                 types.append(FieldType.C_BOOL)
             elif isinstance(value, int):
