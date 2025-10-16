@@ -5,20 +5,18 @@ from taos.result import TaosResult
 from taos import bind2
 from taos import log
 from taos import utils
-from taos.precision import PrecisionEnum, PrecisionError
-from typing import Optional
-
-
+from taos.precision import PrecisionEnum
 
 _taos_async_fn_t = ctypes.CFUNCTYPE(None, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int)
+
 
 #
 # bind data with table
 #
 class BindTable(object):
     def __init__(self, name, tags):
-        self.name  = name
-        self.tags  = tags
+        self.name = name
+        self.tags = tags
         self.datas = []
 
     # add column data
@@ -41,7 +39,8 @@ def taos_stmt2_async_exec(userdata, result_set, error_code):
 
 
 class TaosStmt2Option:
-    def __init__(self, reqid: int=None, single_stb_insert: bool=False, single_table_bind_once: bool=False, **kwargs):
+    def __init__(self, reqid: int = None, single_stb_insert: bool = False, single_table_bind_once: bool = False,
+                 **kwargs):
         self._impl = TaosStmt2OptionImpl()
         if reqid is None:
             reqid = utils.gen_req_id()
@@ -101,6 +100,7 @@ class TaosStmt2Option:
     def get_impl(self):
         return self._impl
 
+
 #
 #    ------------- global fun define -------------
 #
@@ -109,6 +109,7 @@ def checkConsistent(tbnames, tags, datas):
     # todo
     return True
 
+
 def obtainSchema(statement2):
     if statement2._stmt2 is None:
         raise StatementError("stmt2 object is null.")
@@ -116,7 +117,7 @@ def obtainSchema(statement2):
     try:
         count, fields = statement2.get_fields()
         statement2.tag_fields = []
-        statement2.fields     = []
+        statement2.fields = []
         statement2.all_fields = fields
         for field in fields:
             if field.field_type == TAOS_FIELD_TAG:
@@ -138,6 +139,7 @@ def getField(statement2, index, isTag):
     else:
         return statement2.fields[index]
 
+
 # create stmt2Bind list from tags
 def createTagsBind(statement2, tagsTbs):
     binds = []
@@ -149,11 +151,13 @@ def createTagsBind(statement2, tagsTbs):
         for i in range(n):
             field = getField(statement2, i, True)
             values = [tagsTb[i]]
-            log.debug(f"tag i = {i} type={field.type} precision={field.precision} length={field.bytes}  values = {values}  tagsTb = {tagsTb}\n")
+            log.debug(
+                f"tag i = {i} type={field.type} precision={field.precision} length={field.bytes}  values = {values}  tagsTb = {tagsTb}\n")
             bindsTb[i].set_value(field.type, values, field.precision)
         binds.append(bindsTb)
 
-    return binds    
+    return binds
+
 
 # create stmt2Bind list from columns
 def createColsBind(statement2, colsTbs):
@@ -168,14 +172,14 @@ def createColsBind(statement2, colsTbs):
             bindsTb[i].set_value(field.type, colsTb[i], field.precision)
         binds.append(bindsTb)
 
-    return binds    
+    return binds
 
 
 def createSupperBindV(statement2, colsTbs):
     if colsTbs == None:
         raise StatementError("data bind params is None.")
     bindNames = []
-    bindTags =[]
+    bindTags = []
     bindCols = []
     tagCount = len(statement2.tag_fields)
     colsCount = len(statement2.all_fields)
@@ -189,7 +193,7 @@ def createSupperBindV(statement2, colsTbs):
 
             log.debug(
                 f"index i = {i} type={field.type} precision={field.precision} length={field.bytes} tagsTb = {colsTb[i]}\n")
-            
+
             if field.field_type == TAOS_FIELD_TAG:
                 values = [colsTb[i]]
                 tagsBind[tagIndex].set_value(field.type, values, field.precision)
@@ -202,11 +206,11 @@ def createSupperBindV(statement2, colsTbs):
             elif field.field_type == TAOS_FIELD_TBNAME:
                 bindNames.append(colsTb[i])
 
-
         bindTags.append(tagsBind)
         bindCols.append(colsBind)
 
     return bind2.new_bindv(len(bindNames), bindNames, bindTags, bindCols)
+
 
 def createQueryBindV(statement2, datas):
     if statement2._stmt2 is None:
@@ -216,7 +220,7 @@ def createQueryBindV(statement2, datas):
     ret = utils.detectListNone(datas)
     if ret == utils.ALL_NONE or ret == utils.HAVE_NONE:
         raise StatementError("params datas some is None, some is not None, this is error.")
-    
+
     types = []
     queryArray = []
     # tables columns data
@@ -231,7 +235,7 @@ def createQueryBindV(statement2, datas):
             if isinstance(value, bool):
                 types.append(FieldType.C_BOOL)
             elif isinstance(value, int):
-                if value > 0 :
+                if value > 0:
                     types.append(FieldType.C_BIGINT_UNSIGNED)
                 else:
                     types.append(FieldType.C_BIGINT)
@@ -240,30 +244,31 @@ def createQueryBindV(statement2, datas):
             elif isinstance(value, str):
                 types.append(FieldType.C_BINARY)
             else:
-                raise StatementError(f"data type not support, only support int/float/str/bool type, but got {type(value)}")
-            
+                raise StatementError(
+                    f"data type not support, only support int/float/str/bool type, but got {type(value)}")
+
             log.debug(f"createQueryBindV colsTb={colsTb[i]} {type(colsTb[i])}")
-            
-    if len(queryArray) > 0: 
-        datas = [queryArray]  
+
+    if len(queryArray) > 0:
+        datas = [queryArray]
 
     statement2.set_columns_type(types)
     return createBindV(statement2, None, None, datas)
+
 
 #
 # create bindv from list
 #
 def createBindV(statement2, tbnames, tags, datas):
-
     if tbnames == None and tags == None and datas == None:
         raise StatementError("all bind params is None.")
-    
+
     log.debug(f"createQueryBindV datas={datas}")
 
     # count
-    count  = -1
+    count = -1
     ret = utils.detectListNone(tbnames)
-    if ret   == utils.ALL_NONE:
+    if ret == utils.ALL_NONE:
         bindNames = None
     elif ret == utils.HAVE_NONE:
         raise StatementError("params tbnames some is None, some is not None, this is error.")
@@ -272,12 +277,12 @@ def createBindV(statement2, tbnames, tags, datas):
         if type(tbnames) not in [list, tuple]:
             raise StatementError(f"tbnames type error, expected list or tuple type but got {type(tbnames)}.")
 
-        bindNames = tbnames 
+        bindNames = tbnames
         count = len(tbnames)
 
     # tags
     ret = utils.detectListNone(tags)
-    if ret   == utils.ALL_NONE:
+    if ret == utils.ALL_NONE:
         bindTags = None
     elif ret == utils.HAVE_NONE:
         raise StatementError("params tags some is None, some is not None, this is error.")
@@ -293,7 +298,7 @@ def createBindV(statement2, tbnames, tags, datas):
 
     # datas
     ret = utils.detectListNone(datas)
-    if ret   == utils.ALL_NONE:
+    if ret == utils.ALL_NONE:
         bindDatas = None
     elif ret == utils.HAVE_NONE:
         raise StatementError("params datas some is None, some is not None, this is error.")
@@ -311,6 +316,7 @@ def createBindV(statement2, tbnames, tags, datas):
     log.debug(f"createBindV count={count} bindNames={bindNames} bindTags={bindTags} bindDatas={bindDatas}")
     return bind2.new_bindv(count, bindNames, bindTags, bindDatas)
 
+
 #
 # -------------- stmt2 object --------------
 #
@@ -321,10 +327,10 @@ class TaosStmt2(object):
     def __init__(self, stmt2, decode_binary=True):
         self._stmt2 = stmt2
         self._decode_binary = decode_binary
-        self.fields     = None
+        self.fields = None
         self.tag_fields = None
         self.all_fields = None
-        self.types      = None
+        self.types = None
         self._is_insert = None
 
     def prepare(self, sql):
@@ -340,7 +346,7 @@ class TaosStmt2(object):
         if len(sql) == 0:
             raise StatementError("sql is empty.")
 
-        self.fields     = None
+        self.fields = None
         self.tag_fields = None
         self._is_insert = None
 
@@ -354,7 +360,7 @@ class TaosStmt2(object):
     def bind_param(self, tbnames, tags, datas):
         if self._stmt2 is None:
             raise StatementError(ErrMsg.STMT2_NULL)
-        
+
         log.debug(f"bind_param tbnames  = {tbnames} \n")
         log.debug(f"bind_param tags     = {tags}    \n")
         log.debug(f"bind_param datasTbs = {datas}   \n")
@@ -362,7 +368,7 @@ class TaosStmt2(object):
         # check consistent
         if checkConsistent(tbnames, tags, datas) == False:
             raise StatementError("check consistent failed.")
-        
+
         # bindV
         bindv = None
         if self._is_insert and tbnames is None and tags is None:
@@ -375,7 +381,7 @@ class TaosStmt2(object):
 
         if bindv == None:
             raise StatementError("create stmt2 bindV failed.")
-                
+
         # call engine
         taos_stmt2_bind_param(self._stmt2, bindv.get_address(), -1)
 
@@ -394,7 +400,6 @@ class TaosStmt2(object):
         # call bind
         self.bind_param(tbnames, tagsTbs, datasTbs)
 
-
     def execute(self) -> int:
         if self._stmt2 is None:
             raise StatementError("stmt2 object is null.")
@@ -411,8 +416,8 @@ class TaosStmt2(object):
 
     def close(self):
         if self._stmt2 is None:
-            return 
-        
+            return
+
         taos_stmt2_close(self._stmt2)
         self._stmt2 = None
 
@@ -434,9 +439,9 @@ class TaosStmt2(object):
     def error(self):
         if self._stmt2 is None:
             raise StatementError("stmt2 object is null.")
-        
+
         return taos_stmt2_error(self._stmt2)
-    
+
     #
     # if query must set columns type (not engine interface),
     #  type is define class FieldType in constants.py

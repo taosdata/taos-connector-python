@@ -1,10 +1,11 @@
 # encoding:UTF-8
 from typing import Optional
 
-from taos.cinterface import *
-from taos.error import *
-from taos.constants import FieldType
 from taos import log
+from taos.cinterface import *
+from taos.constants import FieldType
+from taos.error import *
+
 
 class TaosCursor(object):
     """Database cursor which is used to manage the context of a fetch operation.
@@ -111,7 +112,7 @@ class TaosCursor(object):
         self._bind_sql = ""
 
         return True
-    
+
     def keys(self):
         """Return the list of column names"""
         if self._fields:
@@ -130,12 +131,12 @@ class TaosCursor(object):
             return self._execute_stmt(operation, params)
         else:
             return self._execute_sql(operation, req_id=req_id)
-        
+
     def _handle_bind_sql(self, operation, params):
         if isinstance(params, dict):
             bindParams = []
             for k, v in params.items():
-                bindParams.append([v])   
+                bindParams.append([v])
             return operation, [bindParams]
         elif not isinstance(params[0], (list, tuple)):
             params = [[item] for item in params]
@@ -147,7 +148,7 @@ class TaosCursor(object):
         if not self._connection:
             # TODO : change the exception raised here
             raise ProgrammingError("Cursor is not connected")
-          
+
         if self._stmt is None or self._bind_sql != operation:
             if self._stmt is not None:
                 self._stmt.close()
@@ -157,7 +158,7 @@ class TaosCursor(object):
             log.debug(f"bind sql: {operation}, params: {params}")
             if self._stmt is None:
                 raise OperationalError("Failed to initialize statement")
-        
+
         self._stmt.bind_param(None, None, params)
         self._stmt.execute()
         if self._stmt.is_insert():
@@ -165,7 +166,7 @@ class TaosCursor(object):
             self._rowcount = self._affected_rows
             return self._affected_rows
         else:
-            self._stmt_result = self._stmt.result()            
+            self._stmt_result = self._stmt.result()
             self._fields = self._stmt_result.fields
             self._handle_result()
             return self._stmt_result
@@ -200,7 +201,7 @@ class TaosCursor(object):
         else:
             self._fields = taos_fetch_fields(self._result)
             return self._handle_result()
-        
+
     def executemany(self, operation, data_list):
         """
         Prepare a database operation (query or command) and then execute it against all parameter sequences or mappings
@@ -208,16 +209,16 @@ class TaosCursor(object):
         """
         if not operation or not data_list or len(data_list) == 0:
             return None
-        
+
         self._reset_result()
 
         operation, _ = self._handle_bind_sql(operation, data_list[0])
         if isinstance(data_list[0], dict):
             key_order = list(data_list[0].keys())
             return [[item[key] for key in key_order] for item in data_list]
-        
+
         return self._execute_stmt(operation, data_list)
-            
+
     def execute_many(self, operation, data_list, req_id: Optional[int] = None):
         """
         Prepare a database operation (query or command) and then execute it against all parameter sequences or mappings
@@ -248,7 +249,7 @@ class TaosCursor(object):
             else:
                 return self._taos_next()
         except StopIteration:
-                return None
+            return None
 
     def fetchmany(self):
         pass
@@ -387,4 +388,3 @@ class TaosCursor(object):
 
     def __del__(self):
         self.close()
-        

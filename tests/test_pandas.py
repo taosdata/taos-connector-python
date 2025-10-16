@@ -1,13 +1,11 @@
-import os
+from datetime import datetime
 
 import pandas
-from taos.cinterface import IS_V3
-import taosrest
-import taos
-from sqlalchemy import create_engine, text
-from datetime import datetime
 from dotenv import load_dotenv
-from decorators import check_env
+from sqlalchemy import create_engine, text
+
+import taos
+import taosrest
 from utils import tear_down_database
 
 load_dotenv()
@@ -53,6 +51,7 @@ def test_pandas_read_from_sqlalchemy_taos():
     assert isinstance(df.ts[0], datetime)
     assert df.shape == (2, 3)
 
+
 def test_pandas_read_from_sqlalchemy_stmt():
     engine = create_engine("taos://root:taosdata@localhost:6030?timezone=Asia/Shanghai")
     conn = engine.connect()
@@ -60,6 +59,7 @@ def test_pandas_read_from_sqlalchemy_stmt():
     df = pandas.DataFrame(result.fetchall(), columns=result.keys())
     assert df.shape[0] == 3
     assert sorted(df['c1'].tolist()) == [101, 102, 103]
+
 
 def teardown_module(module):
     conn = taos.connect()

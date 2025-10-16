@@ -1,28 +1,26 @@
-import sys
+from sqlalchemy import sql
+from sqlalchemy import text
 from sqlalchemy import types as sqltypes
 from sqlalchemy.engine import default, reflection
-from sqlalchemy import text
-from sqlalchemy.sql.elements import TextClause
-from sqlalchemy import sql
 
 TYPES_MAP = {
-    "BOOL"             : sqltypes.Boolean,
-    "TIMESTAMP"        : sqltypes.DATETIME,
-    "INT"              : sqltypes.Integer,
-    "INT UNSIGNED"     : sqltypes.Integer,
-    "BIGINT"           : sqltypes.BigInteger,
-    "BIGINT UNSIGNED"  : sqltypes.BigInteger,
-    "FLOAT"            : sqltypes.FLOAT,
-    "DOUBLE"           : sqltypes.FLOAT,
-    "TINYINT"          : sqltypes.SmallInteger,
-    "TINYINT UNSIGNED" : sqltypes.SmallInteger,
-    "SMALLINT"         : sqltypes.SmallInteger,
+    "BOOL": sqltypes.Boolean,
+    "TIMESTAMP": sqltypes.DATETIME,
+    "INT": sqltypes.Integer,
+    "INT UNSIGNED": sqltypes.Integer,
+    "BIGINT": sqltypes.BigInteger,
+    "BIGINT UNSIGNED": sqltypes.BigInteger,
+    "FLOAT": sqltypes.FLOAT,
+    "DOUBLE": sqltypes.FLOAT,
+    "TINYINT": sqltypes.SmallInteger,
+    "TINYINT UNSIGNED": sqltypes.SmallInteger,
+    "SMALLINT": sqltypes.SmallInteger,
     "SMALLINT UNSIGNED": sqltypes.SmallInteger,
-    "BINARY"           : sqltypes.String,
-    "VARCHAR"          : sqltypes.String,
-    "VARBINARY"        : sqltypes.String,
-    "NCHAR"            : sqltypes.Unicode,
-    "JSON"             : sqltypes.JSON,
+    "BINARY": sqltypes.String,
+    "VARCHAR": sqltypes.String,
+    "VARBINARY": sqltypes.String,
+    "NCHAR": sqltypes.Unicode,
+    "JSON": sqltypes.JSON,
 }
 
 # TDengine reserved words
@@ -384,6 +382,7 @@ if __name__ == "__main__":
 
 '''
 
+
 #
 # identifier for TDengine
 #
@@ -404,19 +403,20 @@ class TDengineIdentifierPreparer(sql.compiler.IdentifierPreparer):
         """Unilaterally identifier-quote any number of strings."""
         return tuple([self.quote_identifier(i) for i in ids if i is not None])
 
+
 #
 #  base class for dialect
 #
 class BaseDialect(default.DefaultDialect):
     supports_native_boolean = True
     implicit_returning = True
-    #supports_statement_cache = True
+    # supports_statement_cache = True
 
     # set back-quote and time grain keywords
     preparer = TDengineIdentifierPreparer
 
     def is_sys_db(self, dbname):
-        return dbname.lower() in [ "information_schema", "performance_schema"]
+        return dbname.lower() in ["information_schema", "performance_schema"]
 
     def do_rollback(self, connection):
         pass
@@ -455,7 +455,7 @@ class BaseDialect(default.DefaultDialect):
             cursor = connection.execute(sql)
             columns = []
             for row in cursor.fetchall():
-                #print(row)
+                # print(row)
                 column = dict()
                 column["name"] = row[0]
                 column["type"] = self._resolve_type(row[1])
@@ -465,7 +465,7 @@ class BaseDialect(default.DefaultDialect):
             return []
 
     @reflection.cache
-    def get_pk_constraint(self, connection, table_name, schema=None, **kw):        
+    def get_pk_constraint(self, connection, table_name, schema=None, **kw):
         columns = self.get_columns(connection, table_name, schema)
         return {"constrained_columns": [columns[0]["name"]], "name": None}
 
@@ -506,7 +506,7 @@ class BaseDialect(default.DefaultDialect):
             return names
         except:
             return []
-    
+
     # get table names
     @reflection.cache
     def get_table_names(self, connection, schema=None, **kw):
@@ -532,29 +532,32 @@ class BaseDialect(default.DefaultDialect):
         if schema is None:
             return []
         # sql        
-        sql =  f"show `{schema}`.views"
+        sql = f"show `{schema}`.views"
         # execute
         try:
-            
+
             cursor = connection.execute(sql)
-            return [row[0] for row in cursor.fetchall() ]
+            return [row[0] for row in cursor.fetchall()]
         except:
             return []
 
     def _resolve_type(self, type_):
-        #print(f"call function {sys._getframe().f_code.co_name} type: {type_} ...\n")
+        # print(f"call function {sys._getframe().f_code.co_name} type: {type_} ...\n")
         return TYPES_MAP.get(type_, sqltypes.UserDefinedType)
+
 
 #
 # ---------------- taos impl -------------
 #
 import taos
 
+
 #
 # Alchemy connect
 #
 class AlchemyTaosConnection:
     paramstyle = "qmark"
+
     # connect
     def connect(self, **kwargs):
         host = kwargs.get("host", "localhost")
@@ -564,11 +567,13 @@ class AlchemyTaosConnection:
         database = kwargs.get("database", None)
         return taos.connect(host=host, user=user, password=password, port=int(port), database=database)
 
+
 # taos dialect
 class TaosDialect(BaseDialect):
     name = "taos"
     driver = "taos"
     supports_statement_cache = True
+
     @classmethod
     def dbapi(cls):
         return AlchemyTaosConnection()
