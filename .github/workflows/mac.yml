@@ -337,7 +337,10 @@ jobs:
       #----------------------------------------------
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root
+        run: |
+          poetry install --no-interaction --no-root
+          poetry run pip install --upgrade "pytest>=8.0.0" "pluggy>=1.0.0"
+        
 
       #----------------------------------------------
       # install your root project, if required
