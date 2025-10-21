@@ -2,6 +2,7 @@ from sqlalchemy import sql
 from sqlalchemy import text
 from sqlalchemy import types as sqltypes
 from sqlalchemy.engine import default, reflection
+from sqlalchemy.sql import compiler
 
 TYPES_MAP = {
     "BOOL": sqltypes.Boolean,
@@ -383,6 +384,43 @@ if __name__ == "__main__":
 '''
 
 
+class TDengineCompiler(compiler.SQLCompiler):
+    """TDengine SQL compiler with simplified output format"""
+
+    def visit_create_table(self, create, **kw):
+        """Custom CREATE TABLE statement format"""
+        table = create.element
+        preparer = self.preparer
+
+        # Build basic CREATE TABLE statement
+        text = "CREATE TABLE " + preparer.format_table(table)
+
+        # Build column definitions
+        create_column_spec = self.get_column_specification
+        columns = []
+        for column in table.columns:
+            column_spec = self.create_column_specification(column)
+            columns.append(column_spec)
+
+        # Use compact format
+        text += " (" + ", ".join(columns) + ")"
+
+        return text
+
+    def create_column_specification(self, column, **kwargs):
+        """Create column definition with simplified format"""
+        spec = self.preparer.format_column(column)
+        spec += " " + self.dialect.type_compiler.process(column.type)
+        return spec
+
+
+class TDengineDDLCompiler(compiler.DDLCompiler):
+
+    def visit_create_table(self, create, **kw):
+        """Simplified CREATE TABLE format"""
+        return super().visit_create_table(create, **kw).replace('\n\t', ' ').replace('\n', ' ')
+
+
 #
 # identifier for TDengine
 #
@@ -405,14 +443,14 @@ class TDengineIdentifierPreparer(sql.compiler.IdentifierPreparer):
 
 
 #
-#  base class for dialect
+# base class for dialect
 #
 class BaseDialect(default.DefaultDialect):
     supports_native_boolean = True
     implicit_returning = True
     # supports_statement_cache = True
 
-    # set back-quote and time grain keywords
+    # Set back-quote identifier preparer for TDengine keywords
     preparer = TDengineIdentifierPreparer
 
     def is_sys_db(self, dbname):
@@ -426,7 +464,10 @@ class BaseDialect(default.DefaultDialect):
         return cursor.fetchone()
 
     def do_execute(self, cursor, statement, parameters, context=None):
-        cursor.execute(statement, parameters)
+        if parameters is None or len(parameters) == 0:
+            cursor.execute(statement, parameters)
+        else:
+            cursor.execute(statement, [parameters])
         return cursor
 
     def do_executemany(self, cursor, statement, parameters, context=None):
@@ -434,15 +475,15 @@ class BaseDialect(default.DefaultDialect):
         return cursor
 
     @reflection.cache
-    def has_schema(self, connection, schema):
+    def has_schema(self, connection, schema, **kw):
         return schema in self.get_schema_names(connection)
 
-    # has table
+    # Check if table exists
     @reflection.cache
-    def has_table(self, connection, table_name, schema=None):
+    def has_table(self, connection, table_name, schema=None, **kw):
         return table_name in self.get_table_names(connection, schema)
 
-    # get column
+    # Get column information
     @reflection.cache
     def get_columns(self, connection, table_name, schema=None, **kw):
         sysdb = False
@@ -450,9 +491,9 @@ class BaseDialect(default.DefaultDialect):
             sql = f"describe {table_name}"
         else:
             sql = f"describe {schema}.{table_name}"
-            sysdb = self.is_sys_db(schema)
+            # sysdb = self.is_sys_db(schema)
         try:
-            cursor = connection.execute(sql)
+            cursor = connection.execute(text(sql))
             columns = []
             for row in cursor.fetchall():
                 # print(row)
@@ -471,10 +512,10 @@ class BaseDialect(default.DefaultDialect):
 
     @reflection.cache
     def get_foreign_keys(self, connection, table_name, schema=None, **kw):
-        # no foreign key is supported by TDengine
+        # No foreign key is supported by TDengine
         return []
 
-    # get indexs
+    # Get indexes information
     @reflection.cache
     def get_indexes(self, connection, table_name, schema=None, **kw):
         sql = (
@@ -483,7 +524,7 @@ class BaseDialect(default.DefaultDialect):
             f"AND table_name = '{table_name}'"
         )
         try:
-            cursor = connection.execute(sql)
+            cursor = connection.execute(text(sql))
             rows = cursor.fetchall()
             indexes = []
             for row in rows:
@@ -493,10 +534,10 @@ class BaseDialect(default.DefaultDialect):
         except:
             return []
 
-    # get database name
+    # Get database names
     @reflection.cache
     def get_schema_names(self, connection, **kw):
-        sql = "show databases"
+        sql = text("SHOW DATABASES")
         try:
             cursor = connection.execute(sql)
             names = []
@@ -507,20 +548,22 @@ class BaseDialect(default.DefaultDialect):
         except:
             return []
 
-    # get table names
+    # Get table names
     @reflection.cache
     def get_table_names(self, connection, schema=None, **kw):
         if schema is None:
-            return []
-        # sql
-        sqls = [
-            f"show `{schema}`.stables",
-            f"show normal `{schema}`.tables"]
-        # execute
+            sqls = [
+                f"show stables",
+                f"show normal tables"]
+        else:
+            sqls = [
+                f"show `{schema}`.stables",
+                f"show normal `{schema}`.tables"]
+        # Execute queries
         try:
             names = []
             for sql in sqls:
-                cursor = connection.execute(sql)
+                cursor = connection.execute(text(sql))
                 for row in cursor.fetchall():
                     names.append(row[0])
             return names
@@ -531,12 +574,12 @@ class BaseDialect(default.DefaultDialect):
     def get_view_names(self, connection, schema=None, **kw):
         if schema is None:
             return []
-        # sql        
+        # SQL query for views       
         sql = f"show `{schema}`.views"
-        # execute
+        # Execute query
         try:
 
-            cursor = connection.execute(sql)
+            cursor = connection.execute(text(sql))
             return [row[0] for row in cursor.fetchall()]
         except:
             return []
@@ -547,47 +590,33 @@ class BaseDialect(default.DefaultDialect):
 
 
 #
-# ---------------- taos impl -------------
+# ---------------- TDengine native connector implementation -------------
 #
 import taos
 
 
-#
-# Alchemy connect
-#
-class AlchemyTaosConnection:
-    paramstyle = "qmark"
-
-    # connect
-    def connect(self, **kwargs):
-        host = kwargs.get("host", "localhost")
-        port = kwargs.get("port", "6030")
-        user = kwargs.get("username", "root")
-        password = kwargs.get("password", "taosdata")
-        database = kwargs.get("database", None)
-        return taos.connect(host=host, user=user, password=password, port=int(port), database=database)
-
-
-# taos dialect
+# TDengine native dialect
 class TaosDialect(BaseDialect):
     name = "taos"
     driver = "taos"
     supports_statement_cache = True
+    statement_compiler = TDengineCompiler
+    ddl_compiler = TDengineDDLCompiler
 
     @classmethod
     def dbapi(cls):
-        return AlchemyTaosConnection()
+        return taos
 
     @classmethod
     def import_dbapi(cls):
-        return AlchemyTaosConnection()
+        return taos
 
 
 #
-# ---------------- taosws impl -------------
+# ---------------- TDengine WebSocket connector implementation -------------
 #
 
-# ws dialect
+# WebSocket dialect
 class TaosWsDialect(BaseDialect):
     name = "taosws"
     driver = "taosws"

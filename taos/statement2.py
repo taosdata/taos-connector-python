@@ -11,7 +11,7 @@ _taos_async_fn_t = ctypes.CFUNCTYPE(None, ctypes.c_void_p, ctypes.c_void_p, ctyp
 
 
 #
-# bind data with table
+# Bind data with table
 #
 class BindTable(object):
     def __init__(self, name, tags):
@@ -19,8 +19,8 @@ class BindTable(object):
         self.tags = tags
         self.datas = []
 
-    # add column data
     def add_col_data(self, data):
+        """Add column data to the table"""
         self.datas.append(data)
 
 
@@ -111,6 +111,7 @@ def checkConsistent(tbnames, tags, datas):
 
 
 def obtainSchema(statement2):
+    """Obtain schema information from statement2 object"""
     if statement2._stmt2 is None:
         raise StatementError("stmt2 object is null.")
 
@@ -119,11 +120,14 @@ def obtainSchema(statement2):
         statement2.tag_fields = []
         statement2.fields = []
         statement2.all_fields = fields
+        statement2.is_tbname = False
         for field in fields:
             if field.field_type == TAOS_FIELD_TAG:
                 statement2.tag_fields.append(field)
             elif field.field_type == TAOS_FIELD_COL:
                 statement2.fields.append(field)
+            elif field.field_type == TAOS_FIELD_TBNAME:
+                statement2.is_tbname = True
         log.debug(f"obtain schema tag fields = {statement2.tag_fields}")
         log.debug(f"obtain schema fields     = {statement2.fields}")
     except Exception as err:
@@ -134,104 +138,106 @@ def obtainSchema(statement2):
 
 
 def getField(statement2, index, isTag):
+    """Get field information by index and type"""
     if isTag:
         return statement2.tag_fields[index]
     else:
         return statement2.fields[index]
 
 
-# create stmt2Bind list from tags
-def createTagsBind(statement2, tagsTbs):
+def createTagsBind(statement2, tags_tables):
+    """Create stmt2Bind list from tags"""
     binds = []
-    # tables tags
-    for tagsTb in tagsTbs:
-        # table
-        n = len(tagsTb)
-        bindsTb = bind2.new_stmt2_binds(n)
+    # Process tables tags
+    for tags_table in tags_tables:
+        # Process single table
+        n = len(tags_table)
+        binds_table = bind2.new_stmt2_binds(n)
         for i in range(n):
             field = getField(statement2, i, True)
-            values = [tagsTb[i]]
+            values = [tags_table[i]]
             log.debug(
-                f"tag i = {i} type={field.type} precision={field.precision} length={field.bytes}  values = {values}  tagsTb = {tagsTb}\n")
-            bindsTb[i].set_value(field.type, values, field.precision)
-        binds.append(bindsTb)
+                f"tag i = {i} type={field.type} precision={field.precision} length={field.bytes} values = {values} tags_table = {tags_table}\n")
+            binds_table[i].set_value(field.type, values, field.precision)
+        binds.append(binds_table)
 
     return binds
 
 
-# create stmt2Bind list from columns
-def createColsBind(statement2, colsTbs):
+def createColsBind(statement2, cols_tables):
+    """Create stmt2Bind list from columns"""
     binds = []
-    # tables columns data
-    for colsTb in colsTbs:
-        # table
-        n = len(colsTb)
-        bindsTb = bind2.new_stmt2_binds(n)
+    # Process tables columns data
+    for cols_table in cols_tables:
+        # Process single table
+        n = len(cols_table)
+        binds_table = bind2.new_stmt2_binds(n)
         for i in range(n):
             field = getField(statement2, i, isTag=False)
-            bindsTb[i].set_value(field.type, colsTb[i], field.precision)
-        binds.append(bindsTb)
+            binds_table[i].set_value(field.type, cols_table[i], field.precision)
+        binds.append(binds_table)
 
     return binds
 
 
-def createSupperBindV(statement2, colsTbs):
-    if colsTbs == None:
+def createSuperBindV(statement2, cols_tables):
+    """Create super table bind for automatic table name and tag binding"""
+    if cols_tables is None:
         raise StatementError("data bind params is None.")
-    bindNames = []
-    bindTags = []
-    bindCols = []
-    tagCount = len(statement2.tag_fields)
-    colsCount = len(statement2.all_fields)
-    for colsTb in colsTbs:
-        colsBind = bind2.new_stmt2_binds(colsCount)
-        tagsBind = bind2.new_stmt2_binds(tagCount)
-        tagIndex = 0
-        colsIndex = 0
-        for i in range(colsCount):
+    bind_names = []
+    bind_tags = []
+    bind_cols = []
+    tag_count = len(statement2.tag_fields)
+    cols_count = len(statement2.all_fields)
+    for cols_table in cols_tables:
+        cols_bind = bind2.new_stmt2_binds(cols_count)
+        tags_bind = bind2.new_stmt2_binds(tag_count)
+        tag_index = 0
+        cols_index = 0
+        for i in range(cols_count):
             field = statement2.all_fields[i]
 
             log.debug(
-                f"index i = {i} type={field.type} precision={field.precision} length={field.bytes} tagsTb = {colsTb[i]}\n")
+                f"index i = {i} type={field.type} precision={field.precision} length={field.bytes} cols_table = {cols_table[i]}\n")
 
             if field.field_type == TAOS_FIELD_TAG:
-                values = [colsTb[i]]
-                tagsBind[tagIndex].set_value(field.type, values, field.precision)
-                tagIndex += 1
+                values = [cols_table[i]]
+                tags_bind[tag_index].set_value(field.type, values, field.precision)
+                tag_index += 1
             elif field.field_type == TAOS_FIELD_COL:
-                values = [colsTb[i]]
-                colsBind[colsIndex].set_value(field.type, values, field.precision)
-                colsIndex += 1
-
+                values = [cols_table[i]]
+                cols_bind[cols_index].set_value(field.type, values, field.precision)
+                cols_index += 1
             elif field.field_type == TAOS_FIELD_TBNAME:
-                bindNames.append(colsTb[i])
+                bind_names.append(cols_table[i])
 
-        bindTags.append(tagsBind)
-        bindCols.append(colsBind)
+        bind_tags.append(tags_bind)
+        bind_cols.append(cols_bind)
 
-    return bind2.new_bindv(len(bindNames), bindNames, bindTags, bindCols)
+    return bind2.new_bindv(len(bind_names), bind_names, bind_tags, bind_cols)
 
 
 def createQueryBindV(statement2, datas):
+    """Create bind for query operations"""
     if statement2._stmt2 is None:
         raise StatementError("stmt2 object is null.")
 
-    # create bindv
+    # Create bindv
     ret = utils.detectListNone(datas)
     if ret == utils.ALL_NONE or ret == utils.HAVE_NONE:
         raise StatementError("params datas some is None, some is not None, this is error.")
 
     types = []
-    queryArray = []
-    # tables columns data
-    for colsTb in datas:
-        n = len(colsTb)
+    query_array = []
+    # Process tables columns data
+    for cols_table in datas:
+        n = len(cols_table)
         for i in range(n):
-            value = colsTb[i]
+            value = cols_table[i]
             if isinstance(value, (list, tuple, set)):
                 value = value[0]
             else:
-                queryArray.append([value])
+                query_array.append([value])
             if isinstance(value, bool):
                 types.append(FieldType.C_BOOL)
             elif isinstance(value, int):
@@ -247,29 +253,30 @@ def createQueryBindV(statement2, datas):
                 raise StatementError(
                     f"data type not support, only support int/float/str/bool type, but got {type(value)}")
 
-            log.debug(f"createQueryBindV colsTb={colsTb[i]} {type(colsTb[i])}")
+            log.debug(f"createQueryBindV cols_table={cols_table[i]} {type(cols_table[i])}")
 
-    if len(queryArray) > 0:
-        datas = [queryArray]
+    if len(query_array) > 0:
+        datas = [query_array]
 
     statement2.set_columns_type(types)
     return createBindV(statement2, None, None, datas)
 
 
 #
-# create bindv from list
+# Create bindv from list
 #
 def createBindV(statement2, tbnames, tags, datas):
-    if tbnames == None and tags == None and datas == None:
+    """Create bind vector from table names, tags, and data"""
+    if tbnames is None and tags is None and datas is None:
         raise StatementError("all bind params is None.")
 
-    log.debug(f"createQueryBindV datas={datas}")
+    log.debug(f"createBindV datas={datas}")
 
-    # count
+    # Count validation
     count = -1
     ret = utils.detectListNone(tbnames)
     if ret == utils.ALL_NONE:
-        bindNames = None
+        bind_names = None
     elif ret == utils.HAVE_NONE:
         raise StatementError("params tbnames some is None, some is not None, this is error.")
     else:
@@ -277,18 +284,18 @@ def createBindV(statement2, tbnames, tags, datas):
         if type(tbnames) not in [list, tuple]:
             raise StatementError(f"tbnames type error, expected list or tuple type but got {type(tbnames)}.")
 
-        bindNames = tbnames
+        bind_names = tbnames
         count = len(tbnames)
 
-    # tags
+    # Process tags
     ret = utils.detectListNone(tags)
     if ret == utils.ALL_NONE:
-        bindTags = None
+        bind_tags = None
     elif ret == utils.HAVE_NONE:
         raise StatementError("params tags some is None, some is not None, this is error.")
     else:
         # not found none
-        bindTags = createTagsBind(statement2, tags)
+        bind_tags = createTagsBind(statement2, tags)
         if count == -1:
             count = len(tags)
         else:
@@ -296,15 +303,15 @@ def createBindV(statement2, tbnames, tags, datas):
                 err = f"tags count is inconsistent. require count={count} real={len(tags)}"
                 raise StatementError(err)
 
-    # datas
+    # Process datas
     ret = utils.detectListNone(datas)
     if ret == utils.ALL_NONE:
-        bindDatas = None
+        bind_datas = None
     elif ret == utils.HAVE_NONE:
         raise StatementError("params datas some is None, some is not None, this is error.")
     else:
         # not found none
-        bindDatas = createColsBind(statement2, datas)
+        bind_datas = createColsBind(statement2, datas)
         if count == -1:
             count = len(datas)
         else:
@@ -312,17 +319,17 @@ def createBindV(statement2, tbnames, tags, datas):
                 err = f"datas count is inconsistent. require count={count} real={len(datas)}"
                 raise StatementError(err)
 
-    # create
-    log.debug(f"createBindV count={count} bindNames={bindNames} bindTags={bindTags} bindDatas={bindDatas}")
-    return bind2.new_bindv(count, bindNames, bindTags, bindDatas)
+    # Create bind vector
+    log.debug(f"createBindV count={count} bind_names={bind_names} bind_tags={bind_tags} bind_datas={bind_datas}")
+    return bind2.new_bindv(count, bind_names, bind_tags, bind_datas)
 
 
 #
-# -------------- stmt2 object --------------
+# STMT2 object implementation
 #
 
 class TaosStmt2(object):
-    """TDengine STMT2 interface"""
+    """TDengine STMT2 interface for prepared statements"""
 
     def __init__(self, stmt2, decode_binary=True):
         self._stmt2 = stmt2
@@ -330,8 +337,10 @@ class TaosStmt2(object):
         self.fields = None
         self.tag_fields = None
         self.all_fields = None
+        self.is_tbname = False
         self.types = None
         self._is_insert = None
+        self._affected_rows = 0
 
     def prepare(self, sql):
         if self._stmt2 is None:
@@ -349,6 +358,7 @@ class TaosStmt2(object):
         self.fields = None
         self.tag_fields = None
         self._is_insert = None
+        self.is_tbname = False
 
         taos_stmt2_prepare(self._stmt2, sql)
 
@@ -371,43 +381,44 @@ class TaosStmt2(object):
 
         # bindV
         bindv = None
-        if self._is_insert and tbnames is None and tags is None:
-            log.debug("insert with supper bind mode.\n")
-            bindv = createSupperBindV(self, datas)
+        if self._is_insert and self.is_tbname and tbnames is None and tags is None:
+            log.debug("insert with super bind mode.\n")
+            bindv = createSuperBindV(self, datas)
         elif self._is_insert == False:
             bindv = createQueryBindV(self, datas)
         else:
             bindv = createBindV(self, tbnames, tags, datas)
 
-        if bindv == None:
+        if bindv is None:
             raise StatementError("create stmt2 bindV failed.")
 
-        # call engine
+        # Call engine
         taos_stmt2_bind_param(self._stmt2, bindv.get_address(), -1)
 
-    # with table bind
     def bind_param_with_tables(self, tables):
-
+        """Bind parameters using table objects"""
         tbnames = []
-        tagsTbs = []
-        datasTbs = []
+        tags_tables = []
+        datas_tables = []
 
         for table in tables:
             tbnames.append(table.name)
-            tagsTbs.append(table.tags)
-            datasTbs.append(table.datas)
+            tags_tables.append(table.tags)
+            datas_tables.append(table.datas)
 
-        # call bind
-        self.bind_param(tbnames, tagsTbs, datasTbs)
+        # Call bind
+        self.bind_param(tbnames, tags_tables, datas_tables)
 
     def execute(self) -> int:
+        """Execute the prepared statement"""
         if self._stmt2 is None:
             raise StatementError("stmt2 object is null.")
-        #
+        
         self._affected_rows = taos_stmt2_exec(self._stmt2)
         return self._affected_rows
 
     def result(self):
+        """Get result from the executed statement"""
         if self._stmt2 is None:
             raise StatementError("stmt2 object is null.")
 
@@ -415,6 +426,7 @@ class TaosStmt2(object):
         return TaosResult(result, close_after=False, decode_binary=self._decode_binary)
 
     def close(self):
+        """Close the statement and release resources"""
         if self._stmt2 is None:
             return
 
@@ -422,6 +434,7 @@ class TaosStmt2(object):
         self._stmt2 = None
 
     def is_insert(self):
+        """Check if the statement is an INSERT statement"""
         if self._stmt2 is None:
             raise StatementError("stmt2 object is null.")
 
@@ -431,25 +444,28 @@ class TaosStmt2(object):
         return self._is_insert
 
     def get_fields(self):
+        """Get field information from the statement"""
         if self._stmt2 is None:
             raise StatementError("stmt2 object is null.")
 
         return taos_stmt2_get_fields(self._stmt2)
 
     def error(self):
+        """Get error information from the statement"""
         if self._stmt2 is None:
             raise StatementError("stmt2 object is null.")
 
         return taos_stmt2_error(self._stmt2)
 
-    #
-    # if query must set columns type (not engine interface),
-    #  type is define class FieldType in constants.py
-    #
     def set_columns_type(self, types):
+        """Set columns type for query operations
+        
+        If query must set columns type (not engine interface),
+        type is defined in class FieldType in constants.py
+        """
         self.fields = []
-        for type in types:
-            item = TaosFieldAllCls(None, type, PrecisionEnum.Milliseconds, None, None, TAOS_FIELD_COL)
+        for field_type in types:
+            item = TaosFieldAllCls(None, field_type, PrecisionEnum.Milliseconds, None, None, TAOS_FIELD_COL)
             self.fields.append(item)
 
     def __del__(self):

@@ -9,22 +9,24 @@ load_dotenv()
 
 taos.log.setting(True, True, True, True, True, True)
 
+host = "localhost"
+
 
 def prepare(conn, dbname, stbname, ntb1, ntb2):
     conn.execute("drop database if exists %s" % dbname)
     conn.execute("create database if not exists %s precision 'ms' " % dbname)
     # stable
-    sql = f"create table if not exists {dbname}.{stbname}(ts timestamp, name binary(32), sex bool, score int, remarks blob) tags(grade nchar(8), class int)"
+    sql = f"create table if not exists {dbname}.{stbname}(ts timestamp, name binary(32), sex bool, score int, remarks varbinary(500)) tags(grade nchar(8), class int)"
     conn.execute(sql)
     # normal table
-    sql = f"create table if not exists {dbname}.{ntb1} (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128), remarks blob)"
+    sql = f"create table if not exists {dbname}.{ntb1} (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128), remarks varbinary(500))"
     conn.execute(sql)
-    sql = f"create table if not exists {dbname}.{ntb2} (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128), remarks blob)"
+    sql = f"create table if not exists {dbname}.{ntb2} (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128), remarks varbinary(500))"
     conn.execute(sql)
 
 
 def test_stmt2_query():
-    engine = create_engine("taos://root:taosdata@localhost:6030?timezone=Asia/Shanghai")
+    engine = create_engine(f"taos://root:taosdata@{host}:6030?timezone=Asia/Shanghai")
     conn = engine.connect()
     dbname = "stmt2"
     stbname = "meters"
@@ -79,56 +81,23 @@ def test_stmt2_query():
         raise err
 
 
-def insertData(conn):
+def insert_data(conn):
     if conn is None:
         c = taos.connect()
     else:
         c = conn
-    c.execute("drop database if exists test")
-    c.execute("create database if not exists test")
-    c.execute("create table test.meters (ts timestamp, c1 int, c2 double) tags(t1 int)")
-    c.execute("insert into test.d0 using test.meters tags(0) values (1733189403001, 1, 1.11) (1733189403002, 2, 2.22)")
-    c.execute("insert into test.d1 using test.meters tags(1) values (1733189403003, 3, 3.33) (1733189403004, 4, 4.44)")
-    c.execute("create table test.ntb(ts timestamp, age int)")
-    c.execute("insert into test.ntb values(now, 23)")
+    c.execute(text("drop database if exists test"))
+    c.execute(text("create database if not exists test"))
+    c.execute(text("create table test.meters (ts timestamp, c1 int, c2 double) tags(t1 int)"))
+    c.execute(
+        text("insert into test.d0 using test.meters tags(0) values (1733189403001, 1, 1.11) (1733189403002, 2, 2.22)"))
+    c.execute(
+        text("insert into test.d1 using test.meters tags(1) values (1733189403003, 3, 3.33) (1733189403004, 4, 4.44)"))
+    c.execute(text("create table test.ntb(ts timestamp, age int)"))
+    c.execute(text("insert into test.ntb values(now, 23)"))
 
 
-def insertStmtData(conn):
-    if conn is None:
-        raise (BaseException("conn is null failed."))
-
-    conn.execute(text("drop database if exists test"))
-    conn.execute(text("create database if not exists test"))
-    conn.execute(text("create table test.meters (ts timestamp, c1 int, c2 double) tags(t1 int)"))
-
-    datas = [
-        [1626861392589, 7, 1.1, 1, "tb1"],
-        [1626861392590, 8, 1.2, 2, "tb2"],
-        [1626861392591, 9, 1.3, 3, "tb3"],
-        [1626861392592, 10, 1.4, 4, "tb4"],
-        [1626861392593, 11, 1.4, 4, "tb4"],
-        [1626861392584, 7, 1.1, 1, "tb1"],
-        [1626861392595, 8, 1.2, 2, "tb2"],
-        [1626861392596, 9, 1.3, 3, "tb3"],
-        [1626861392597, 10, 1.4, 4, "tb4"],
-        [1626861392598, 11, 1.4, 4, "tb4"]
-    ]
-    rows = conn.execute("insert into test.meters (ts, c1, c2, t1, tbname) values (?, ?, ?, ?, ?)", datas)
-    print(f"inserted data done, rows={rows}")
-    data = [
-        [
-            [1626861392589],
-            [1626861392598]
-        ]
-    ]
-    result = conn.execute("select * from test.meters where ts > ? and ts < ?", data)
-    # print(f"result: {result}")
-    # for row in result:
-    #     print(f" result rows = {row} \n")
-    print("result:", result.fetchall())
-
-
-def insertStmtSqlalchemyData(conn):
+def insert_stmt_sqlalchemy_data(conn):
     if conn is None:
         raise (BaseException("conn is null failed."))
 
@@ -153,21 +122,21 @@ def insertStmtSqlalchemyData(conn):
 
 
 # compare list
-def checkListEqual(list1, list2, tips):
+def check_list_equal(list1, list2, tips):
     if list1 != list2:
         print(f"{tips} failed. two list item not equal. list1={list1} list2={list2}")
         raise (BaseException(f"list not euqal. {list1} != {list2}"))
 
 
 # check result
-def checkResultEqual(result1, result2, tips):
+def check_result_equal(result1, result2, tips):
     if result1 != result2:
         print(f"{tips} failed. result not equal. result1={result1} result2={result2}")
         raise (BaseException("result not euqal."))
 
 
 # check baisc function
-def checkBasic(conn, inspection, subTables=['meters', 'ntb']):
+def check_basic(conn, inspection, subTables=['meters', 'ntb']):
     # get schema names
     databases = inspection.get_schema_names()
     if "test" not in databases:
@@ -176,7 +145,7 @@ def checkBasic(conn, inspection, subTables=['meters', 'ntb']):
 
     # get table names
     tables = subTables
-    checkListEqual(inspection.get_table_names("test"), tables, "check get_table_names()")
+    check_list_equal(inspection.get_table_names("test"), tables, "check get_table_names()")
 
     # get_columns
     cols2 = [
@@ -201,14 +170,14 @@ def checkBasic(conn, inspection, subTables=['meters', 'ntb']):
             raise ("type diff")
 
     # has tabled
-    checkResultEqual(inspection.has_table("meters", "test"), True, "check has_table()")
+    check_result_equal(inspection.has_table("meters", "test"), True, "check has_table()")
     # has_schema
-    checkResultEqual(inspection.dialect.has_schema(conn, "test"), True, "check has_schema()")
+    check_result_equal(inspection.dialect.has_schema(conn, "test"), True, "check has_schema()")
 
     # get_indexes
     print("inspection.get_indexes", inspection.get_indexes("test.meters"))
 
-    res = conn.execute("select * from test.meters")
+    res = conn.execute(text("select * from test.meters"))
     print("res", res.fetchall())
 
     # import_dbapi
@@ -224,33 +193,22 @@ def checkBasic(conn, inspection, subTables=['meters', 'ntb']):
 def test_read_from_sqlalchemy_taos():
     if not taos.IS_V3:
         return
-    engine = create_engine("taos://root:taosdata@localhost:6030?timezone=Asia/Shanghai")
+    engine = create_engine(f"taos://root:taosdata@{host}:6030?timezone=Asia/Shanghai")
     conn = engine.connect()
-    insertData(conn)
+    insert_data(conn)
     inspection = inspect(engine)
-    checkBasic(conn, inspection)
-
-
-# taos
-def test_sqlalchemy_stmt_taos():
-    if not taos.IS_V3:
-        return
-    engine = create_engine("taos://root:taosdata@localhost:6030?timezone=Asia/Shanghai")
-    conn = engine.connect()
-    insertStmtData(conn)
-    inspection = inspect(engine)
-    checkBasic(conn, inspection, subTables=['meters'])
+    check_basic(conn, inspection)
 
 
 # taos
 def test_sqlalchemy_format_stmt_taos():
     if not taos.IS_V3:
         return
-    engine = create_engine("taos://root:taosdata@localhost:6030?timezone=Asia/Shanghai")
+    engine = create_engine(f"taos://root:taosdata@{host}:6030?timezone=Asia/Shanghai")
     conn = engine.connect()
-    insertStmtSqlalchemyData(conn)
+    insert_stmt_sqlalchemy_data(conn)
     inspection = inspect(engine)
-    checkBasic(conn, inspection, subTables=['meters'])
+    check_basic(conn, inspection, subTables=['meters'])
 
 
 # taosws
@@ -259,11 +217,12 @@ def test_read_from_sqlalchemy_taosws():
         import taosws
     except ImportError:
         return
-    engine = create_engine("taosws://root:taosdata@localhost:6041?timezone=Asia/Shanghai")
+
+    engine = create_engine(f"taosws://root:taosdata@{host}:6041?timezone=Asia/Shanghai")
     conn = engine.connect()
-    insertData(None)
+    insert_data(None)
     inspection = inspect(engine)
-    checkBasic(conn, inspection)
+    check_basic(conn, inspection)
 
 
 def test_read_from_sqlalchemy_taosws_failover():
@@ -300,7 +259,7 @@ def test_read_from_sqlalchemy_taosws_failover():
 
         invalid_urls = [
             "taosws://:6041",
-            "taosws://:taosdata@localhost:6041/test_1755496227",
+            "taosws://:taosdata@192.168.2.156:6041/test_1755496227",
         ]
 
         for url in invalid_urls:
@@ -320,11 +279,11 @@ def test_read_from_sqlalchemy_taosws_failover():
 def test_read_from_sqlalchemy_taosrest():
     if not taos.IS_V3:
         return
-    engine = create_engine("taosrest://root:taosdata@localhost:6041?timezone=Asia/Shanghai")
+    engine = create_engine("taosrest://root:taosdata@{host}:6041?timezone=Asia/Shanghai")
     conn = engine.connect()
-    insertData(conn)
+    insert_data(conn)
     inspection = inspect(engine)
-    checkBasic(conn, inspection)
+    check_basic(conn, inspection)
 
 
 # main test

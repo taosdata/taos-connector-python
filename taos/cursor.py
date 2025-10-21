@@ -127,20 +127,9 @@ class TaosCursor(object):
         log.debug(f"execute: {operation} with params: {params}")
         self._reset_result()
         if params is not None and isinstance(params, (dict, list, tuple)) and len(params) > 0:
-            operation, params = self._handle_bind_sql(operation, params)
             return self._execute_stmt(operation, params)
         else:
             return self._execute_sql(operation, req_id=req_id)
-
-    def _handle_bind_sql(self, operation, params):
-        if isinstance(params, dict):
-            bindParams = []
-            for k, v in params.items():
-                bindParams.append([v])
-            return operation, [bindParams]
-        elif not isinstance(params[0], (list, tuple)):
-            params = [[item] for item in params]
-        return operation, params
 
     def _execute_stmt(self, operation, params):
         """Prepare and execute a database operation (query or command)."""
@@ -155,6 +144,7 @@ class TaosCursor(object):
                 self._stmt = None
 
             self._stmt = self._connection.statement2(operation)
+            self._bind_sql = operation
             log.debug(f"bind sql: {operation}, params: {params}")
             if self._stmt is None:
                 raise OperationalError("Failed to initialize statement")
@@ -175,15 +165,10 @@ class TaosCursor(object):
         """Prepare and execute a database operation (query or command)."""
 
         if not self._connection:
-            # TODO : change the exception raised here
             raise ProgrammingError("Cursor is not connected")
 
         sql = operation
 
-        # global querySeqNum
-        # querySeqNum += 1
-        # localSeqNum = querySeqNum # avoid race condition
-        # print("   >> Exec Query ({}): {}".format(localSeqNum, str(stmt)))
         if req_id is None:
             self._result = taos_query(self._connection._conn, sql)
         else:
@@ -212,12 +197,12 @@ class TaosCursor(object):
 
         self._reset_result()
 
-        operation, _ = self._handle_bind_sql(operation, data_list[0])
-        if isinstance(data_list[0], dict):
-            key_order = list(data_list[0].keys())
-            return [[item[key] for key in key_order] for item in data_list]
-
-        return self._execute_stmt(operation, data_list)
+        self._stmt = self._connection.statement2(operation)
+        columns = data_list
+        if not self._stmt.is_tbname:
+            if isinstance(data_list[0], (list, tuple, set)):
+                columns = [[list(col) for col in zip(*data_list)]]
+        return self._execute_stmt(operation, columns)
 
     def execute_many(self, operation, data_list, req_id: Optional[int] = None):
         """
@@ -230,14 +215,12 @@ class TaosCursor(object):
         for line in data_list:
             if isinstance(line, dict):
                 flag = False
-                # print(f'execute: {sql.format(**line)}')
                 affected_rows += self.execute(sql.format(**line), req_id=req_id)
             elif isinstance(line, list):
                 sql += f' {tuple(line)} '
             elif isinstance(line, tuple):
                 sql += f' {line} '
         if flag:
-            # print(f'execute_many: {sql}')
             affected_rows += self.execute(sql, req_id=req_id)
         return affected_rows
 
@@ -251,8 +234,56 @@ class TaosCursor(object):
         except StopIteration:
             return None
 
-    def fetchmany(self):
-        pass
+    def fetchmany(self, size: int = None):
+        """Fetch the next set of rows of a query result, returning a sequence of sequences."""
+        if self._result is None or self._fields is None:
+            raise OperationalError("Invalid use of fetch iterator")
+        if size is None:
+            return self.fetchall()
+
+        if size <= 0:
+            raise ValueError("size must be greater than 0")
+
+        data = []
+        count = 0
+
+        try:
+            while count < size:
+                # If current block is exhausted, fetch new data block
+                if self._block_iter >= self._block_rows:
+                    block, self._block_rows = taos_fetch_block(
+                        self._result,
+                        self._fields,
+                        decode_binary=self.decode_binary
+                    )
+
+                    # If no more data available, break the loop
+                    if self._block_rows == 0:
+                        break
+
+                    self._block = list(map(tuple, zip(*block)))
+                    self._block_iter = 0
+
+                # Calculate how many rows can be taken from current block
+                remaining_in_block = self._block_rows - self._block_iter
+                needed = size - count
+                rows_to_take = min(remaining_in_block, needed)
+
+                # Get data from current block
+                end_index = self._block_iter + rows_to_take
+                data.extend(self._block[self._block_iter:end_index])
+
+                # Update counters
+                self._block_iter += rows_to_take
+                count += rows_to_take
+
+        except Exception as e:
+            errno = taos_errno(self._result)
+            if errno != 0:
+                raise ProgrammingError(taos_errstr(self._result), errno)
+            raise e
+
+        return data
 
     def istype(self, col, dataType):
         if dataType.upper() == "BOOL":
@@ -361,7 +392,7 @@ class TaosCursor(object):
     def setinputsize(self, sizes):
         pass
 
-    def setutputsize(self, size, column=None):
+    def setoutputsize(self, size, column=None):
         pass
 
     def _reset_result(self):
