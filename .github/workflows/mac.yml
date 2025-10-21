@@ -338,6 +338,8 @@ jobs:
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
+          export GEOS_CONFIG=$(brew --prefix geos)/bin/geos-config
+          export GEOS_DIR=$(brew --prefix geos)
           poetry install --no-interaction --no-root
           poetry run pip install --upgrade --force-reinstall "pytest>=8.4.2" "pluggy>=1.5.0"
         
@@ -347,6 +349,8 @@ jobs:
       #----------------------------------------------
       - name: Install library
         run: | 
+          export GEOS_CONFIG=$(brew --prefix geos)/bin/geos-config
+          export GEOS_DIR=$(brew --prefix geos)
           poetry install --no-interaction
           poetry run pip install --upgrade "pytest>=8.4.0" "pluggy>=1.5.0"
 
