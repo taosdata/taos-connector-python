@@ -22,7 +22,7 @@ python = ">=3.7,<4.0"
 pytz = "*"
 iso8601 = "1.0.2"
 requests = ">=2.27.1"
-typing-extensions = ">=4.6.0"
+typing-extensions = ">=4.8.0"
 
 
 [tool.poetry.dependencies.taos-ws-py]
