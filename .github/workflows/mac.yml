@@ -162,10 +162,10 @@ jobs:
     runs-on: macos-latest
     needs: build-tdengine
     steps:
-      - name: Set up Python 3.13
+      - name: Set up Python 3.12
         uses: actions/setup-python@v4
         with:
-          python-version: '3.13'
+          python-version: '3.12'
 
       - name: get cache server by pr
         if: github.event_name == 'pull_request'
@@ -345,8 +345,8 @@ jobs:
         run: |
           export GEOS_CONFIG=$(brew --prefix geos)/bin/geos-config
           export GEOS_DIR=$(brew --prefix geos)
+          poetry env use python3.12
           poetry install --no-interaction --no-root
-          poetry run pip install --upgrade --force-reinstall "pytest>=8.4.2" "pluggy>=1.5.0"
         
 
       #----------------------------------------------
@@ -356,8 +356,8 @@ jobs:
         run: | 
           export GEOS_CONFIG=$(brew --prefix geos)/bin/geos-config
           export GEOS_DIR=$(brew --prefix geos)
+          poetry env use python3.12
           poetry install --no-interaction
-          poetry run pip install --upgrade "pytest>=8.4.0" "pluggy>=1.5.0"
 
       - name: Copy taos.cfg
         run: |
