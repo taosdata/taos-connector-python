@@ -162,6 +162,11 @@ jobs:
     runs-on: macos-latest
     needs: build-tdengine
     steps:
+      - name: Set up Python 3.13  # 明确设置 Python 版本
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
       - name: get cache server by pr
         if: github.event_name == 'pull_request'
         id: get-cache-server-pr
