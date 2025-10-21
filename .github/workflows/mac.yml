@@ -193,7 +193,10 @@ jobs:
             ${{ runner.os }}-build-${{ inputs.tdengine_branch }}-
 
       - name: prepare install
-        run: brew install geos
+        run: |
+          brew install geos
+          echo "GEOS_CONFIG=$(brew --prefix geos)/bin/geos-config" >> $GITHUB_ENV
+          echo "GEOS_DIR=$(brew --prefix geos)" >> $GITHUB_ENV
 
       - name: install TDengine
         run: |
