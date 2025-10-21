@@ -25,10 +25,10 @@ def test_insert_test_data():
     c.execute("create database test")
     c.execute("create table test.meters (ts timestamp, c1 int, c2 double) tags(t1 int)")
     c.execute("create table test.tb (ts timestamp, c1 int, c2 double)")
-    c.execute("insert into test.tb values (now, -100, -200.3) (now+10s, -101, -340.2423424)")
-    c.execute("insert into test.tb values (now, -100, -200.3) (now+20s, 101, 1.2423424)")
-    c.execute("insert into test.tb values (now, -100, -200.3) (now+30s, 102, 2.2423424)")
-    c.execute("insert into test.tb values (now, -100, -200.3) (now+40s, 103, 3.2423424)")
+    c.execute("insert into test.tb values (now+1s, -100, -200.3) (now+10s, -101, -340.2423424)")
+    c.execute("insert into test.tb values (now+2s, -100, -200.3) (now+20s, 101, 1.2423424)")
+    c.execute("insert into test.tb values (now+3s, -100, -200.3) (now+30s, 102, 2.2423424)")
+    c.execute("insert into test.tb values (now+4s, -100, -200.3) (now+40s, 103, 3.2423424)")
 
 
 def test_pandas_read_from_rest_connection():
