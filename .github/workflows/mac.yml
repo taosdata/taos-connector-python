@@ -339,7 +339,7 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
           poetry install --no-interaction --no-root
-          poetry run pip install --upgrade "pytest>=8.4.0" "pluggy>=1.0.0"
+          poetry run pip install --upgrade "pytest>=8.4.0" "pluggy>=1.5.0"
         
 
       #----------------------------------------------
