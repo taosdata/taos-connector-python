@@ -13,16 +13,16 @@ host = "localhost"
 
 
 def prepare(conn, dbname, stbname, ntb1, ntb2):
-    conn.execute("drop database if exists %s" % dbname)
-    conn.execute("create database if not exists %s precision 'ms' " % dbname)
+    conn.execute(text("drop database if exists %s" % dbname))
+    conn.execute(text("create database if not exists %s precision 'ms' " % dbname))
     # stable
     sql = f"create table if not exists {dbname}.{stbname}(ts timestamp, name binary(32), sex bool, score int, remarks varbinary(500)) tags(grade nchar(8), class int)"
-    conn.execute(sql)
+    conn.execute(text(sql))
     # normal table
     sql = f"create table if not exists {dbname}.{ntb1} (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128), remarks varbinary(500))"
-    conn.execute(sql)
+    conn.execute(text(sql))
     sql = f"create table if not exists {dbname}.{ntb2} (ts timestamp, name varbinary(32), sex bool, score float, geo geometry(128), remarks varbinary(500))"
-    conn.execute(sql)
+    conn.execute(text(sql))
 
 
 def test_stmt2_query():
@@ -33,7 +33,7 @@ def test_stmt2_query():
     ntb1 = "ntb1"
     ntb2 = "ntb2"
     # sql1 = f"select * from {dbname}.d2 where name in (?) or score > ? ;"
-    sql1 = f"select * from {dbname}.d2 where score > ? and score < ?;"
+    sql1 = f"select * from {dbname}.d2 where score > :mixscore and score < :mixscore;"
     try:
         # prepare
         prepare(conn, dbname, stbname, ntb1, ntb2)
@@ -45,18 +45,18 @@ def test_stmt2_query():
         # stmt2.close()
         # print("insert bind & execute ......................... ok\n")
 
-        conn.execute(
-            f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.000', 'Mary2', false, 298, 'XXX')")
-        conn.execute(
-            f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.001', 'Tom2', true, 280, 'YYY')")
-        conn.execute(
-            f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.002', 'Jack2', true, 260, 'ZZZ')")
-        conn.execute(
-            f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.003', 'Jane2', false, 2100, 'WWW')")
-        conn.execute(
-            f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.004', 'alex2', true, 299, 'ZZZ')")
-        conn.execute(
-            f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.005', NULL, false, NULL, 'WWW')")
+        conn.execute(text(
+            f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.000', 'Mary2', false, 298, 'XXX')"))
+        conn.execute(text(
+            f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.001', 'Tom2', true, 280, 'YYY')"))
+        conn.execute(text(
+            f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.002', 'Jack2', true, 260, 'ZZZ')"))
+        conn.execute(text(
+            f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.003', 'Jane2', false, 2100, 'WWW')"))
+        conn.execute(text(
+            f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.004', 'alex2', true, 299, 'ZZZ')"))
+        conn.execute(text(
+            f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.005', NULL, false, NULL, 'WWW')"))
         datas = [
             # class 1
             [
@@ -66,7 +66,7 @@ def test_stmt2_query():
             ]
         ]
 
-        result = conn.execute(sql1, datas)
+        result = conn.execute(text(sql1),  {'mixscore': 280, 'maxscore': 1000})
         # print(f"result: {result}")
         # for row in result:
         #     print(f" result rows = {row} \n")
@@ -239,17 +239,17 @@ def test_read_from_sqlalchemy_taosws_failover():
     try:
         urls = [
             "taosws://",
-            "taosws://localhost",
-            "taosws://localhost:6041",
-            "taosws://localhost:6041/test_1755496227",
-            "taosws://root@localhost:6041/test_1755496227",
-            "taosws://root:@localhost:6041/test_1755496227",
-            "taosws://root:taosdata@localhost:6041/test_1755496227",
-            "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=",
-            "taosws://root:taosdata@/test_1755496227?hosts=localhost:6041",
-            "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=localhost:6041",
-            "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=localhost:6041,127.0.0.1:6041",
-            "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=localhost:6041,127.0.0.1:6041&timezone=Asia/Shanghai",
+            "taosws://192.168.1.98",
+            "taosws://192.168.1.98:6041",
+            "taosws://192.168.1.98:6041/test_1755496227",
+            "taosws://root@192.168.1.98:6041/test_1755496227",
+            "taosws://root:@192.168.1.98:6041/test_1755496227",
+            "taosws://root:taosdata@192.168.1.98:6041/test_1755496227",
+            "taosws://root:taosdata@192.168.1.98:6041/test_1755496227?hosts=",
+            "taosws://root:taosdata@/test_1755496227?hosts=192.168.1.98:6041",
+            "taosws://root:taosdata@192.168.1.98:6041/test_1755496227?hosts=192.168.1.98:6041",
+            "taosws://root:taosdata@192.168.1.98:6041/test_1755496227?hosts=192.168.1.98:6041,127.0.0.1:6041",
+            "taosws://root:taosdata@192.168.1.98:6041/test_1755496227?hosts=192.168.1.98:6041,127.0.0.1:6041&timezone=Asia/Shanghai",
         ]
 
         for url in urls:
@@ -259,7 +259,7 @@ def test_read_from_sqlalchemy_taosws_failover():
 
         invalid_urls = [
             "taosws://:6041",
-            "taosws://:taosdata@192.168.2.156:6041/test_1755496227",
+            "taosws://:taosdata@=192.168.1.98:6041/test_1755496227",
         ]
 
         for url in invalid_urls:
@@ -279,7 +279,7 @@ def test_read_from_sqlalchemy_taosws_failover():
 def test_read_from_sqlalchemy_taosrest():
     if not taos.IS_V3:
         return
-    engine = create_engine("taosrest://root:taosdata@{host}:6041?timezone=Asia/Shanghai")
+    engine = create_engine(f"taosrest://root:taosdata@{host}:6041?timezone=Asia/Shanghai")
     conn = engine.connect()
     insert_data(conn)
     inspection = inspect(engine)

@@ -11,7 +11,7 @@ from utils import tear_down_database
 
 load_dotenv()
 
-host = "192.168.1.98"
+host = "localhost"
 port = 6030
 
 
@@ -74,8 +74,7 @@ def test_pandas_read_from_sqlalchemy_stmt():
 
 def test_pandas_tosql():
     """Test writing data to TDengine using pandas DataFrame.to_sql() method and verify the results"""
-    test_insert_test_data()
-    engine = create_engine(f"taos://root:taosdata@{host}:6030?timezone=Asia/Shanghai")
+    engine = create_engine(f"taos://root:taosdata@{host}:6030/test?timezone=Asia/Shanghai")
 
     # Prepare test data
     data = {
@@ -163,8 +162,7 @@ def test_pandas_tosql():
 
 
 def test_pandas_read_sql_table():
-    test_insert_test_data()
-    engine = create_engine(f"taos://root:taosdata@{host}:6030?timezone=Asia/Shanghai")
+    engine = create_engine(f"taos://root:taosdata@{host}:6030/test?timezone=Asia/Shanghai")
     chunk_size = 1
     chunks = pandas.read_sql_table(
         table_name='tb',
@@ -195,7 +193,7 @@ def test_pandas_read_sql_table():
 def test_pandas_tosql_simple_verification():
     """Simplified version: demonstrate several common methods to verify pandas to_sql write results"""
     test_insert_test_data()
-    engine = create_engine(f"taos://root:taosdata@{host}:6030?timezone=Asia/Shanghai")
+    engine = create_engine(f"taos://root:taosdata@{host}:6030/test?timezone=Asia/Shanghai")
 
     # Prepare test data
     test_data = pandas.DataFrame({
