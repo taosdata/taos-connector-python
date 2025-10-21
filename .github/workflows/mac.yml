@@ -339,14 +339,16 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
           poetry install --no-interaction --no-root
-          poetry run pip install --upgrade "pytest>=8.4.2" "pluggy>=1.5.0"
+          poetry run pip install --upgrade --force-reinstall "pytest>=8.4.2" "pluggy>=1.5.0"
         
 
       #----------------------------------------------
       # install your root project, if required
       #----------------------------------------------
       - name: Install library
-        run: poetry install --no-interaction
+        run: | 
+          poetry install --no-interaction
+          poetry run pip install --upgrade "pytest>=8.4.0" "pluggy>=1.5.0"
 
       - name: Copy taos.cfg
         run: |
