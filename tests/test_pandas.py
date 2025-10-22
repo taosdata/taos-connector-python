@@ -73,7 +73,6 @@ def test_pandas_read_from_sqlalchemy_stmt():
 
 
 def test_pandas_tosql():
-    test_insert_test_data()
     """Test writing data to TDengine using pandas DataFrame.to_sql() method and verify the results"""
     engine = create_engine(f"taos://root:taosdata@{host}:6030/test?timezone=Asia/Shanghai")
 
@@ -114,6 +113,7 @@ def test_pandas_tosql():
         expected_new_rows = len(df)
         actual_new_rows = count_after - count_before
         assert actual_new_rows == expected_new_rows, f"Expected to insert {expected_new_rows} rows, actually inserted {actual_new_rows} rows"
+        assert rows_affected == expected_new_rows, f"Expected to insert {expected_new_rows} rows, affected {rows_affected} rows"
 
         # 6. Read and verify the inserted specific data
         query_result = conn.execute(text("SELECT * FROM tb1 WHERE c1 IN (7, 8, 9) ORDER BY ts"))
@@ -153,12 +153,6 @@ def test_pandas_tosql():
         print(f"Inserted data:\n{result_df}")
 
     finally:
-        # 9. Clean up test data
-        try:
-            conn.execute(text("DELETE FROM tb1 WHERE c1 IN (7, 8, 9)"))
-            print("Test data cleanup completed")
-        except Exception as e:
-            print(f"Error during test data cleanup: {e}")
         conn.close()
 
 
@@ -193,7 +187,6 @@ def test_pandas_read_sql_table():
 
 def test_pandas_tosql_simple_verification():
     """Simplified version: demonstrate several common methods to verify pandas to_sql write results"""
-    test_insert_test_data()
     engine = create_engine(f"taos://root:taosdata@{host}:6030/test?timezone=Asia/Shanghai")
 
     # Prepare test data

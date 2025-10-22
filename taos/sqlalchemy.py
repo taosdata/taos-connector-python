@@ -468,6 +468,7 @@ class BaseDialect(default.DefaultDialect):
             cursor.execute(statement, parameters)
         else:
             cursor.execute(statement, [parameters])
+
         return cursor
 
     def do_executemany(self, cursor, statement, parameters, context=None):

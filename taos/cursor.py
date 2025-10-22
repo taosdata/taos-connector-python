@@ -397,7 +397,6 @@ class TaosCursor(object):
     def _reset_result(self):
         """Reset the result to unused version."""
         self._description = []
-        self._rowcount = -1
         if self._result is not None:
             taos_free_result(self._result)
         self._result = None
