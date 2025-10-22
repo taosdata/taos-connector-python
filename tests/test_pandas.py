@@ -66,10 +66,16 @@ def test_pandas_read_from_sqlalchemy_taos():
 def test_pandas_read_from_sqlalchemy_stmt():
     engine = create_engine(f"taos://root:taosdata@{host}:6030?timezone=Asia/Shanghai")
     conn = engine.connect()
-    result = conn.execute(text("select * from test.tb where c1 > :c1 AND c2 > :c2"), {"c1": 100, "c2": 0})
-    df = pandas.DataFrame(result.fetchall(), columns=result.keys())
+    sql = text("SELECT * FROM test.tb WHERE c1 > :c1 AND c2 > :c2")
+    df = pandas.read_sql(
+        sql=sql,
+        con=conn,
+        params={"c1": 100, "c2": 0}  # 实际参数值（根据需求修改）
+    )
     assert df.shape[0] == 3
     assert sorted(df['c1'].tolist()) == [101, 102, 103]
+    print(df)
+
 
 def test_pandas_tosql_auto_create_table():
     # Super table must exist using this method

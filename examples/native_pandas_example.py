@@ -14,17 +14,6 @@ def connect():
 def pandas_to_sql_example(conn):
     """Test writing data to TDengine using pandas DataFrame.to_sql() method and verify the results"""
     from sqlalchemy.types import Integer, Float, TIMESTAMP, String
-    # Prepare test data
-    data = {
-        "ts": [1626861392589, 1626861392590, 1626861392591],
-        "current": [11.5, 12.3, 13.7],
-        "voltage": [220, 230, 240],
-        "phase": [1.0, 1.1, 1.2],
-        "location": ["california.losangeles", "california.sandiego", "california.sanfrancisco"],
-        "groupid": [2, 2, 3],
-        "tbname": ["california", "sandiego", "xxxx"]
-    }
-    df = pandas.DataFrame(data)
 
     try:
         conn.execute(text("CREATE DATABASE IF NOT EXISTS power"))
@@ -60,7 +49,12 @@ def pandas_to_sql_example(conn):
 def pandas_read_sql_example(conn):
     """Test reading data from TDengine using pandas read_sql() method"""
     try:
-        sql_df = pandas.read_sql(text("SELECT * FROM power.meters"), conn, parse_dates=["ts"], chunksize=1000)
+        sql = text("SELECT * FROM power.meters WHERE current > :current AND phase > :phase")
+        sql_df = pandas.read_sql(
+            sql=sql,
+            con=conn,
+            params={"current": 10, "phase": 1}
+        )
         print(sql_df.head(3))
         print("Read data from TDengine successfully.")
     except Exception as err:
