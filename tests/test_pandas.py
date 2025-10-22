@@ -3,7 +3,7 @@ from datetime import datetime
 import pandas
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
-from sqlalchemy.types import Integer, Float, TIMESTAMP
+from sqlalchemy.types import Integer, Float, TIMESTAMP, String
 
 import taos
 import taosrest
@@ -23,7 +23,7 @@ def test_insert_test_data():
     c = conn.cursor()
     c.execute("drop database if exists test")
     c.execute("create database test")
-    c.execute("create table test.meters (ts timestamp, c1 int, c2 double) tags(t1 int)")
+    c.execute("CREATE STABLE IF NOT EXISTS test.meters (ts TIMESTAMP, current FLOAT, voltage INT, phase FLOAT) TAGS (location BINARY(64), groupId INT)")
     c.execute("create table test.tb (ts timestamp, c1 int, c2 double)")
     c.execute("insert into test.tb values (now+1s, -100, -200.3) (now+10s, -101, -340.2423424)")
     c.execute("insert into test.tb values (now+2s, -100, -200.3) (now+20s, 101, 1.2423424)")
@@ -71,6 +71,29 @@ def test_pandas_read_from_sqlalchemy_stmt():
     assert df.shape[0] == 3
     assert sorted(df['c1'].tolist()) == [101, 102, 103]
 
+def test_pandas_tosql_auto_create_table():
+    # Super table must exist using this method
+    data = {
+        "ts": [1626861392589, 1626861392590, 1626861392591],
+        "current": [11.5, 12.3, 13.7],
+        "voltage": [220, 230, 240],
+        "phase": [1.0, 1.1, 1.2],
+        "location": ["california.losangeles", "california.sandiego", "california.sanfrancisco"],
+        "groupid": [2, 2, 3],
+        "tbname": ["california", "sandiego", "xxxx"]
+    }
+    df = pandas.DataFrame(data)
+    engine = create_engine(f"taos://root:taosdata@{host}:6030/test?timezone=Asia/Shanghai")
+    rows_affected = df.to_sql("meters", engine.connect(), if_exists="append", index=False,
+                              dtype={
+                                  "ts": TIMESTAMP,  # TDengine timestamp type
+                                  "current": Float,  # TDengine integer type
+                                  "voltage": Integer,  # TDengine float type
+                                  "phase": Float,
+                                  "location": String,
+                                  "groupid": Integer,
+                              })
+    assert rows_affected == 3, f"Expected to insert 3 rows, affected {rows_affected} rows"
 
 def test_pandas_tosql():
     """Test writing data to TDengine using pandas DataFrame.to_sql() method and verify the results"""
