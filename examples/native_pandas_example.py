@@ -92,7 +92,6 @@ def pandas_read_sql_table_example(conn):
         for i, chunk in enumerate(table_df):
             for index, row in chunk.iterrows():
                 total_rows += 1
-                # 打印所有字段的值
                 print(f"行号: {total_rows}")
                 print(f"时间戳(ts): {index}")
                 print(f"电流(c1): {row['current']}")
