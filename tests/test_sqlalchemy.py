@@ -33,7 +33,7 @@ def test_stmt2_query():
     ntb1 = "ntb1"
     ntb2 = "ntb2"
     # sql1 = f"select * from {dbname}.d2 where name in (?) or score > ? ;"
-    sql1 = f"select * from {dbname}.d2 where score > :mixscore and score < :mixscore;"
+    sql1 = f"select * from {dbname}.d2 where score > :minscore and score < :maxscore;"
     try:
         # prepare
         prepare(conn, dbname, stbname, ntb1, ntb2)
@@ -57,16 +57,9 @@ def test_stmt2_query():
             f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.004', 'alex2', true, 299, 'ZZZ')"))
         conn.execute(text(
             f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.005', NULL, false, NULL, 'WWW')"))
-        datas = [
-            # class 1
-            [
-                # where name in ('Tom2','alex2') or score > 1000;"
-                [280],
-                [1000]
-            ]
-        ]
 
-        result = conn.execute(text(sql1),  {'mixscore': 280, 'maxscore': 1000})
+
+        result = conn.execute(text(sql1),  {'minscore': 280, 'maxscore': 1000})
         # print(f"result: {result}")
         # for row in result:
         #     print(f" result rows = {row} \n")
@@ -239,17 +232,17 @@ def test_read_from_sqlalchemy_taosws_failover():
     try:
         urls = [
             "taosws://",
-            "taosws://192.168.1.98",
-            "taosws://192.168.1.98:6041",
-            "taosws://192.168.1.98:6041/test_1755496227",
-            "taosws://root@192.168.1.98:6041/test_1755496227",
-            "taosws://root:@192.168.1.98:6041/test_1755496227",
-            "taosws://root:taosdata@192.168.1.98:6041/test_1755496227",
-            "taosws://root:taosdata@192.168.1.98:6041/test_1755496227?hosts=",
-            "taosws://root:taosdata@/test_1755496227?hosts=192.168.1.98:6041",
-            "taosws://root:taosdata@192.168.1.98:6041/test_1755496227?hosts=192.168.1.98:6041",
-            "taosws://root:taosdata@192.168.1.98:6041/test_1755496227?hosts=192.168.1.98:6041,127.0.0.1:6041",
-            "taosws://root:taosdata@192.168.1.98:6041/test_1755496227?hosts=192.168.1.98:6041,127.0.0.1:6041&timezone=Asia/Shanghai",
+            "taosws://localhost",
+            "taosws://localhost:6041",
+            "taosws://localhost:6041/test_1755496227",
+            "taosws://root@localhost:6041/test_1755496227",
+            "taosws://root:@localhost:6041/test_1755496227",
+            "taosws://root:taosdata@localhost:6041/test_1755496227",
+            "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=",
+            "taosws://root:taosdata@/test_1755496227?hosts=localhost:6041",
+            "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=localhost:6041",
+            "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=localhost:6041,127.0.0.1:6041",
+            "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=localhost:6041,127.0.0.1:6041&timezone=Asia/Shanghai",
         ]
 
         for url in urls:
@@ -259,7 +252,7 @@ def test_read_from_sqlalchemy_taosws_failover():
 
         invalid_urls = [
             "taosws://:6041",
-            "taosws://:taosdata@=192.168.1.98:6041/test_1755496227",
+            "taosws://:taosdata@=localhost:6041/test_1755496227",
         ]
 
         for url in invalid_urls:

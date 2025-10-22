@@ -131,7 +131,7 @@ class TaosCursor(object):
         else:
             return self._execute_sql(operation, req_id=req_id)
 
-    def _execute_stmt(self, operation, params):
+    def _execute_stmt(self, operation, params, is_convert=False):
         """Prepare and execute a database operation (query or command)."""
 
         if not self._connection:
@@ -148,6 +148,10 @@ class TaosCursor(object):
             log.debug(f"bind sql: {operation}, params: {params}")
             if self._stmt is None:
                 raise OperationalError("Failed to initialize statement")
+            # Here we handle the data format of unbound super tables called by SQLAlchemy
+            if is_convert and not self._stmt.is_tbname:
+                if isinstance(params[0], (list, tuple, set)):
+                    params = [[list(col) for col in zip(*params)]]
 
         self._stmt.bind_param(None, None, params)
         self._stmt.execute()
@@ -197,12 +201,7 @@ class TaosCursor(object):
 
         self._reset_result()
 
-        self._stmt = self._connection.statement2(operation)
-        columns = data_list
-        if not self._stmt.is_tbname:
-            if isinstance(data_list[0], (list, tuple, set)):
-                columns = [[list(col) for col in zip(*data_list)]]
-        return self._execute_stmt(operation, columns)
+        return self._execute_stmt(operation, data_list, True)
 
     def execute_many(self, operation, data_list, req_id: Optional[int] = None):
         """

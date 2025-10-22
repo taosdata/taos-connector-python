@@ -73,6 +73,7 @@ def test_pandas_read_from_sqlalchemy_stmt():
 
 
 def test_pandas_tosql():
+    test_insert_test_data()
     """Test writing data to TDengine using pandas DataFrame.to_sql() method and verify the results"""
     engine = create_engine(f"taos://root:taosdata@{host}:6030/test?timezone=Asia/Shanghai")
 

@@ -524,7 +524,7 @@ def query_bind_param(conn, stmt2):
         [
             # where name in ('Tom2','alex2') or score > 1000;"
             ["Tom2"],
-            [200],
+            [100],
             [True]
         ]
     ]
