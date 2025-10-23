@@ -86,6 +86,7 @@ def pandas_read_sql_table_example(conn):
         total_rows = 0
 
         for i, chunk in enumerate(table_df):
+            print(f"Chunk {i}:")
             for index, row in chunk.iterrows():
                 total_rows += 1
                 print(f"行号: {total_rows}")

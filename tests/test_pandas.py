@@ -11,7 +11,7 @@ from utils import tear_down_database
 
 load_dotenv()
 
-host = "localhost"
+host = "192.168.1.98"
 port = 6030
 
 
@@ -186,6 +186,7 @@ def test_pandas_tosql():
 
 
 def test_pandas_read_sql_table():
+    test_insert_test_data()
     engine = create_engine(f"taos://root:taosdata@{host}:6030/test?timezone=Asia/Shanghai")
     chunk_size = 1
     chunks = pandas.read_sql_table(
@@ -204,10 +205,15 @@ def test_pandas_read_sql_table():
     total_rows = 0
     data = []
     for i, chunk in enumerate(chunks):
-        for idx, value in chunk['c1'].items():
+        print(f"Chunk {i}:")
+        for index, row in chunk.iterrows():
             total_rows += 1
-            print(f"row={total_rows}, value={value}")
-            data.append(value)
+            print(f"Row {total_rows}:")
+            print(f"  Timestamp (index): {index}")
+            print(f"  Column c1: {row['c1']}")
+            print(f"  Column c2: {row['c2']}")
+            print("---")
+            data.append(row['c1'])
 
     assert sorted(data) == [-101, -100, -100, -100, -100, 101, 102, 103]
     print(f"Total processed {total_rows} rows of data")
