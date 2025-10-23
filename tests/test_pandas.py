@@ -11,7 +11,7 @@ from utils import tear_down_database
 
 load_dotenv()
 
-host = "192.168.1.98"
+host = "localhost"
 port = 6030
 
 
