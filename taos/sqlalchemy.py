@@ -5,6 +5,7 @@ from sqlalchemy.engine import default, reflection
 from sqlalchemy.sql import compiler
 
 TYPES_MAP = {
+    "BOOL"             : sqltypes.Boolean,
     "TIMESTAMP"        : sqltypes.DATETIME,
     "INT"              : sqltypes.Integer,
     "INT UNSIGNED"     : sqltypes.Integer,
