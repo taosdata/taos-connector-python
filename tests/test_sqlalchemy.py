@@ -38,13 +38,6 @@ def test_stmt2_query():
         # prepare
         prepare(conn, dbname, stbname, ntb1, ntb2)
 
-        # prepare
-        # stmt2 = conn.statement2(f"insert into ? using {dbname}.{stbname} tags(?,?) values(?,?,?,?)")
-        # insert_bind_param_with_tables(conn, stmt2, dbname, stbname)
-        # insert_bind_param(conn, stmt2, dbname, stbname)
-        # stmt2.close()
-        # print("insert bind & execute ......................... ok\n")
-
         conn.execute(text(
             f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.000', 'Mary2', false, 298, 'XXX')"))
         conn.execute(text(
@@ -58,21 +51,20 @@ def test_stmt2_query():
         conn.execute(text(
             f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.005', NULL, false, NULL, 'WWW')"))
 
+        result = conn.execute(text(sql1), {'minscore': 280, 'maxscore': 1000})
+        count = 0
+        for row in result:
+            count += 1
+            assert 280 < row[3] < 1000
 
-        result = conn.execute(text(sql1),  {'minscore': 280, 'maxscore': 1000})
-        # print(f"result: {result}")
-        # for row in result:
-        #     print(f" result rows = {row} \n")
-        print("result:", result.fetchall())
-
-        conn.close()
+        assert count == 2
         print("test_stmt2_query .............................. [passed]\n")
 
     except Exception as err:
         print("query ......................................... failed\n")
-        conn.close()
         raise err
-
+    finally:
+        conn.close()
 
 def insert_data(conn):
     if conn is None:
