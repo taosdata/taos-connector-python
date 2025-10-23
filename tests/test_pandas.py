@@ -201,7 +201,6 @@ def test_pandas_read_sql_table():
         ],
     )
 
-    # 处理每个数据块
     total_rows = 0
     data = []
     for i, chunk in enumerate(chunks):

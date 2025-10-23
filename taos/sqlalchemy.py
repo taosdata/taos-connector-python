@@ -5,23 +5,23 @@ from sqlalchemy.engine import default, reflection
 from sqlalchemy.sql import compiler
 
 TYPES_MAP = {
-    "BOOL": sqltypes.Boolean,
-    "TIMESTAMP": sqltypes.DATETIME,
-    "INT": sqltypes.Integer,
-    "INT UNSIGNED": sqltypes.Integer,
-    "BIGINT": sqltypes.BigInteger,
-    "BIGINT UNSIGNED": sqltypes.BigInteger,
-    "FLOAT": sqltypes.FLOAT,
-    "DOUBLE": sqltypes.FLOAT,
-    "TINYINT": sqltypes.SmallInteger,
-    "TINYINT UNSIGNED": sqltypes.SmallInteger,
-    "SMALLINT": sqltypes.SmallInteger,
+    "TIMESTAMP"        : sqltypes.DATETIME,
+    "INT"              : sqltypes.Integer,
+    "INT UNSIGNED"     : sqltypes.Integer,
+    "BIGINT"           : sqltypes.BigInteger,
+    "BIGINT UNSIGNED"  : sqltypes.BigInteger,
+    "FLOAT"            : sqltypes.FLOAT,
+    "DOUBLE"           : sqltypes.FLOAT,
+    "TINYINT"          : sqltypes.SmallInteger,
+    "TINYINT UNSIGNED" : sqltypes.SmallInteger,
+    "SMALLINT"         : sqltypes.SmallInteger,
     "SMALLINT UNSIGNED": sqltypes.SmallInteger,
-    "BINARY": sqltypes.String,
-    "VARCHAR": sqltypes.String,
-    "VARBINARY": sqltypes.String,
-    "NCHAR": sqltypes.Unicode,
-    "JSON": sqltypes.JSON,
+    "BINARY"           : sqltypes.String,
+    "VARCHAR"          : sqltypes.String,
+    "VARBINARY"        : sqltypes.String,
+    "NCHAR"            : sqltypes.Unicode,
+    "JSON"             : sqltypes.JSON,
+    "BINARY"           : sqltypes.BLOB
 }
 
 # TDengine reserved words
