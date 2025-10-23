@@ -22,7 +22,7 @@ TYPES_MAP = {
     "VARBINARY"        : sqltypes.BINARY,
     "NCHAR"            : sqltypes.Unicode,
     "JSON"             : sqltypes.JSON,
-    "BINARY"           : sqltypes.BLOB,
+    "BLOB"             : sqltypes.BLOB,
     "GEOMETRY"         : sqltypes.BINARY
 }
 
