@@ -19,10 +19,11 @@ TYPES_MAP = {
     "SMALLINT UNSIGNED": sqltypes.SmallInteger,
     "BINARY"           : sqltypes.String,
     "VARCHAR"          : sqltypes.String,
-    "VARBINARY"        : sqltypes.String,
+    "VARBINARY"        : sqltypes.BINARY,
     "NCHAR"            : sqltypes.Unicode,
     "JSON"             : sqltypes.JSON,
-    "BINARY"           : sqltypes.BLOB
+    "BINARY"           : sqltypes.BLOB,
+    "GEOMETRY"         : sqltypes.BINARY
 }
 
 # TDengine reserved words
