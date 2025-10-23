@@ -1,4 +1,6 @@
 # ANCHOR: connect
+from datetime import datetime
+
 import pandas
 from sqlalchemy import create_engine, text
 
@@ -22,7 +24,7 @@ def pandas_to_sql_example(conn):
         conn.execute(text("Use power"))
 
         data = {
-            "ts": [1626861392589, 1626861392590, 1626861392591],
+            "ts": [1729653691000, "2024-09-19 10:00:00", datetime(2024, 9, 20, 10, 11, 12, 456)],
             "current": [11.5, 12.3, 13.7],
             "voltage": [220, 230, 240],
             "phase": [1.0, 1.1, 1.2],
