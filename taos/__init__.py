@@ -1,18 +1,17 @@
 # encoding:UTF-8
+from taos.bind import *
+from taos.bind2 import *
 from taos.connection import TaosConnection
-
+from taos.cursor import *
 # For some reason, the following is needed for VS Code (through PyLance) to
 # recognize that "error" is a valid module of the "taos" package.
 from taos.error import *
-from taos.bind import *
-from taos.bind2 import *
 from taos.field import *
-from taos.cursor import *
 from taos.result import *
+from taos.schemaless import *
 from taos.statement import *
 from taos.statement2 import *
 from taos.subscription import *
-from taos.schemaless import *
 
 try:
     from taos.sqlalchemy import *
@@ -24,7 +23,7 @@ from taos._version import __version__
 # Globals
 threadsafety = 2
 """sqlalchemy will read this attribute"""
-paramstyle = "pyformat"
+paramstyle = "qmark"
 """sqlalchemy will read this attribute"""
 
 __all__ = [

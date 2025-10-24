@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "taospy"
-version = "2.8.5"
+version = "2.8.6"
 description = "The official TDengine Python connector"
 authors = ["Taosdata Inc. <support@taosdata.com>"]
 license = "MIT"
@@ -18,10 +18,11 @@ packages = [
 "taosws" = "taos.sqlalchemy:TaosWsDialect"
 
 [tool.poetry.dependencies]
-python = ">=3.6.2,<4.0"
+python = ">=3.7,<4.0"
 pytz = "*"
 iso8601 = "1.0.2"
 requests = ">=2.27.1"
+typing-extensions = ">=4.2.0,<4.15.0"
 
 
 [tool.poetry.dependencies.taos-ws-py]
@@ -43,7 +44,7 @@ pytest = [
 pytest-cov = "^4.0.0"
 mypy = { version = "^0.910", python = "^3.6" }
 black = [{ version = ">=21.0", python = ">=3.6.2,<4.0" }]
-sqlalchemy = { version = "^1.4", python = ">=3.6,<4.0" }
+sqlalchemy = { version = "^2.0.0", python = ">=3.7,<4.0" }
 pandas = { version = ">=2.1.0", python = ">=3.9,<4.0" }
 python-dotenv = { version = "0.20.0" }
 toml = { version = ">=0.8.0", python = ">=3.7,<4.0" }
@@ -60,7 +61,7 @@ pytest = [
 pytest-cov = "^4.0.0"
 mypy = { version = "^0.910", python = "^3.6" }
 black = [{ version = ">=21.0", python = ">=3.6.2,<4.0" }]
-sqlalchemy = { version = "^1.4", python = ">=3.6,<4.0" }
+sqlalchemy = { version = "^2.0.0", python = ">=3.7,<4.0" }
 pandas = { version = ">=2.1.0", python = ">=3.9,<4.0" }
 python-dotenv = { version = "0.20.0" }
 toml = { version = ">=0.8.0", python = ">=3.7,<4.0" }
