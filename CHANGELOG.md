@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.8.6 - 2025-10-27
+
+### Features:
+
+-  support sqlalchemy stmt query (#368)
+
+### Bug Fixes:
+
+-  fix memleak (#367)
+
 ## v2.8.5 - 2025-08-25
 
 ### Features:
