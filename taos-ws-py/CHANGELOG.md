@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Conventional Changelog](https://www.conventionalcommits.org/en/v1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.6.3 - 2025-11-07
+
+### Enhancements:
+
+- Support configuring the response timeout for WebSocket connections (excluding data subscription) via the `read_timeout` connection parameter.
+
 ## v0.6.2 - 2025-09-18
 
 ### Bug Fixes:
