@@ -16,24 +16,27 @@ error_msgs = {
     401: "authorization error",
     404: "api not found",
     500: "internal error",
-    503: "system resources is not sufficient. It is may be caused by a huge query."
+    503: "system resources is not sufficient. It is may be caused by a huge query.",
 }
 
 
 class RestClient:
     """
-     A wrapper for TDengine REST API.
-     For detailed info about TDengine REST API refer https://docs.tdengine.com/reference/rest-api/
+    A wrapper for TDengine REST API.
+    For detailed info about TDengine REST API refer https://docs.tdengine.com/reference/rest-api/
     """
 
-    def __init__(self, url: str,
-                 token: str = None,
-                 database: str = None,
-                 user: str = "root",
-                 password: str = "taosdata",
-                 timeout: int = None,
-                 convert_timestamp: bool = True,
-                 timezone: Union[str, datetime.tzinfo] = None):
+    def __init__(
+        self,
+        url: str,
+        token: str = None,
+        database: str = None,
+        user: str = "root",
+        password: str = "taosdata",
+        timeout: int = None,
+        convert_timestamp: bool = True,
+        timezone: Union[str, datetime.tzinfo] = None,
+    ):
         """
         Create a RestClient object.
 
@@ -53,7 +56,7 @@ class RestClient:
             When the timezone is None, system timezone will be used and the returned datetime object will be offset-naive (no tzinfo), otherwise the returned datetime will be offset-aware(with tzinfo)
         """
         # determine schema://host:post
-        self._url = url.strip('/')
+        self._url = url.strip("/")
         if not self._url.startswith("http://") and not self._url.startswith("https://"):
             self._url = "http://" + self._url
         # timeout
@@ -72,12 +75,10 @@ class RestClient:
                 self._sql_url = f"{self._url}/rest/sql/{database}"
 
             original_str = f"{user}:{password}"
-            original_bytes = original_str.encode('utf-8')
+            original_bytes = original_str.encode("utf-8")
             encoded_bytes = base64.b64encode(original_bytes)
-            auth = encoded_bytes.decode('utf-8')
-            self._headers = {
-                "Authorization": "Basic " + auth
-            }
+            auth = encoded_bytes.decode("utf-8")
+            self._headers = {"Authorization": "Basic " + auth}
 
         self._convert_timestamp = convert_timestamp
 
@@ -101,19 +102,14 @@ class RestClient:
         q : SQL statement to execute. Can't be USE statement since REST api is stateless.
         req_id : request id, optional
         """
-        #print(f"execute rest sql = {q}\n")
+        # print(f"execute rest sql = {q}\n")
         data = q.encode("utf8")
         if req_id:
             url = f"{self._sql_url}?req_id={req_id}"
         else:
             url = self._sql_url
 
-        r = requests.post(
-            url,
-            data=data,
-            headers=self._headers,
-            timeout=self._timeout
-        )
+        r = requests.post(url, data=data, headers=self._headers, timeout=self._timeout)
 
         if not r.ok:
             raise HTTPError(r.status_code, error_msgs.get(r.status_code, "unknown error"))

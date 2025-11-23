@@ -11,6 +11,7 @@ import taos
 #
 import taos.sqlalchemy
 import taosrest
+
 # rest connect
 class AlchemyRestConnection:
     threadsafety = 0
@@ -26,14 +27,15 @@ class AlchemyRestConnection:
         token = kwargs["token"] if "token" in kwargs else None
 
         if not host:
-            host = 'localhost'
-        if host == 'localhost' and not port:
+            host = "localhost"
+        if host == "localhost" and not port:
             port = 6041
 
         url = f"http://{host}"
         if port:
-            url += f':{port}'
+            url += f":{port}"
         return taosrest.connect(url=url, user=user, password=password, database=database, token=token)
+
 
 # rest dialect
 class TaosRestDialect(taos.sqlalchemy.BaseDialect):
@@ -47,4 +49,3 @@ class TaosRestDialect(taos.sqlalchemy.BaseDialect):
     @classmethod
     def import_dbapi(cls):
         return AlchemyRestConnection()
-

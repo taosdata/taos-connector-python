@@ -1,0 +1,34 @@
+# 运行测试用例
+export LD_LIBRARY_PATH=/home/guozhenwei/project/c/TDengine/debug/build/lib
+export TDENGINE_URL=localhost:6041
+export TDENGINE_DRIVER=websocket
+
+poetry run pytest --cov=taos --cov=taosrest tests
+
+# 运行指定测试用例
+poetry run pytest tests/test_sqlalchemy.py::test_read_from_sqlalchemy_taosws
+
+native test:
+- test_ctaos.py core
+- tests/test_sqlalchemy.py failed 1
+
+1 failed, 1 core, 135 passed
+
+ws test:
+- tests/test_cinterface.py failed 4
+- tests/test_connect_args.py failed 1
+- test_ctaos.py core
+- tests/test_decode_binary.py core
+- tests/test_dbutils_conntect_pool.py failed 1
+- tests/test_lines.py failed 1
+- tests/test_native_cursor.py failed 1
+- tests/test_native_many.py failed 1
+- tests/test_pandas.py failed 7
+- tests/test_query.py failed 1
+- tests/test_sqlalchemy.py failed 4
+- tests/test_sqlalchemy_conntect_pool.py failed 1
+- tests/test_stmt.py core
+- tests/test_stmt2.py failed 1
+- tests/test_stmtV3.py core
+
+27 failed, 4 core, 100 passed

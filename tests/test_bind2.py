@@ -56,18 +56,31 @@ def test_new_stmt2_binds():
     bind.set_value(FieldType.C_BINARY, ["涛思数据", None, "a long string with 中文字符"])
     bind.set_value(FieldType.C_NCHAR, ["涛思数据", None, "a long string with 中文字符"])
     bind.set_value(FieldType.C_JSON, ["{'hello': 'world'}"])
-    bind.set_value(FieldType.C_VARBINARY, [bytearray([0x01, 0x02, 0x03, 0x04]), bytearray([0x01, 0x02, 0x03, 0x04]), bytearray([0x01, 0x02, 0x03, 0x04])])
-    bind.set_value(FieldType.C_GEOMETRY, [
-        bytearray([0x00, 0x00, 0x59, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x59, 0x40]),
-        bytearray([0x01, 00, 0x00, 0x00, 0x00, 0x00, 0x59, 0x40]),
-        bytearray([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x59, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x59, 0x40]),
-    ])
+    bind.set_value(
+        FieldType.C_VARBINARY,
+        [
+            bytearray([0x01, 0x02, 0x03, 0x04]),
+            bytearray([0x01, 0x02, 0x03, 0x04]),
+            bytearray([0x01, 0x02, 0x03, 0x04]),
+        ],
+    )
+    bind.set_value(
+        FieldType.C_GEOMETRY,
+        [
+            bytearray([0x00, 0x00, 0x59, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x59, 0x40]),
+            bytearray([0x01, 00, 0x00, 0x00, 0x00, 0x00, 0x59, 0x40]),
+            bytearray(
+                [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x59, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x59, 0x40]
+            ),
+        ],
+    )
     bind.set_value(FieldType.C_TIMESTAMP, [1626861392589, 1626861392590, 1626861392591])
     bind.set_value(FieldType.C_TINYINT_UNSIGNED, [1, 100, None])
     bind.set_value(FieldType.C_SMALLINT_UNSIGNED, [2, 200, None])
     bind.set_value(FieldType.C_INT_UNSIGNED, [3, 300, None])
     bind.set_value(FieldType.C_BIGINT_UNSIGNED, [4, 400, None])
     print("pass test_new_stmt2_binds")
+
 
 def test_new_stmt_bind():
     bind = taos.TaosBind()
@@ -109,7 +122,8 @@ def test_new_stmt_bind():
     bind.timestamp(None)
     bind.json(None)
 
-    print("pass test_new_stmt_binds")    
+    print("pass test_new_stmt_binds")
+
 
 def test_new_bindv():
     if not taos.IS_V3:
@@ -117,11 +131,7 @@ def test_new_bindv():
     #
     # prepare data
     tbanmes = ["d1", "d2", "d3"]
-    tags = [
-        ["grade1", 1],
-        ["grade1", 2],
-        ["grade1", 3]
-    ]
+    tags = [["grade1", 1], ["grade1", 2], ["grade1", 3]]
     datas = [
         # class 1
         [
@@ -129,25 +139,24 @@ def test_new_bindv():
             [1601481600000, 1601481600001, 1601481600002, 1601481600003, 1601481600004],
             ["Mary", "Tom", "Jack", "Jane", "alex"],
             [0, 1, 1, 0, 1],
-            [98, 80, 60, 100, 99]
+            [98, 80, 60, 100, 99],
         ],
-            # class 2
+        # class 2
         [
             # student
             [1601481600000, 1601481600001, 1601481600002, 1601481600003, 1601481600004],
             ["Mary2", "Tom2", "Jack2", "Jane2", "alex2"],
             [0, 1, 1, 0, 1],
-            [298, 280, 260, 2100, 299]
+            [298, 280, 260, 2100, 299],
         ],
-            # class 3
+        # class 3
         [
             # student
             [1601481600000, 1601481600001, 1601481600002, 1601481600003, 1601481600004],
             ["Mary3", "Tom3", "Jack3", "Jane3", "alex3"],
             [0, 1, 1, 0, 1],
-            [398, 380, 360, 3100, 399]
-
-        ]
+            [398, 380, 360, 3100, 399],
+        ],
     ]
 
     cnt_tbls = 3

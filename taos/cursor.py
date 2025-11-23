@@ -216,9 +216,9 @@ class TaosCursor(object):
                 flag = False
                 affected_rows += self.execute(sql.format(**line), req_id=req_id)
             elif isinstance(line, list):
-                sql += f' {tuple(line)} '
+                sql += f" {tuple(line)} "
             elif isinstance(line, tuple):
-                sql += f' {line} '
+                sql += f" {line} "
         if flag:
             affected_rows += self.execute(sql, req_id=req_id)
         return affected_rows
@@ -251,9 +251,7 @@ class TaosCursor(object):
                 # If current block is exhausted, fetch new data block
                 if self._block_iter >= self._block_rows:
                     block, self._block_rows = taos_fetch_block(
-                        self._result,
-                        self._fields,
-                        decode_binary=self.decode_binary
+                        self._result, self._fields, decode_binary=self.decode_binary
                     )
 
                     # If no more data available, break the loop
@@ -270,7 +268,7 @@ class TaosCursor(object):
 
                 # Get data from current block
                 end_index = self._block_iter + rows_to_take
-                data.extend(self._block[self._block_iter:end_index])
+                data.extend(self._block[self._block_iter : end_index])
 
                 # Update counters
                 self._block_iter += rows_to_take
@@ -364,8 +362,7 @@ class TaosCursor(object):
     def _fetchall_sql(self):
         if self._result is None:
             raise OperationalError("Invalid use of fetchall")
-        fields = self._fields if self._fields is not None else taos_fetch_fields(
-            self._result)
+        fields = self._fields if self._fields is not None else taos_fetch_fields(self._result)
         buffer = [[] for i in range(len(fields))]
         self._rowcount = 0
         while True:
@@ -410,8 +407,7 @@ class TaosCursor(object):
         """Handle the return result from query."""
         self._description = []
         for ele in self._fields:
-            self._description.append(
-                (ele["name"], ele["type"], None, None, None, None, False))
+            self._description.append((ele["name"], ele["type"], None, None, None, None, False))
 
         return self._result
 
