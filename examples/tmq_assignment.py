@@ -12,9 +12,11 @@ def prepare():
     conn.execute("create database if not exists tmq_assignment_demo_db wal_retention_period 3600")
     conn.select_db("tmq_assignment_demo_db")
     conn.execute(
-        "create table if not exists tmq_assignment_demo_table (ts timestamp, c1 int, c2 float, c3 binary(10)) tags(t1 int)")
+        "create table if not exists tmq_assignment_demo_table (ts timestamp, c1 int, c2 float, c3 binary(10)) tags(t1 int)"
+    )
     conn.execute(
-        "create topic if not exists tmq_assignment_demo_topic as select ts, c1, c2, c3 from tmq_assignment_demo_table")
+        "create topic if not exists tmq_assignment_demo_topic as select ts, c1, c2, c3 from tmq_assignment_demo_table"
+    )
     conn.execute("insert into d0 using tmq_assignment_demo_table tags (0) values (now-2s, 1, 1.0, 'tmq test')")
     conn.execute("insert into d0 using tmq_assignment_demo_table tags (0) values (now-1s, 2, 2.0, 'tmq test')")
     conn.execute("insert into d0 using tmq_assignment_demo_table tags (0) values (now, 3, 3.0, 'tmq test')")
@@ -58,13 +60,15 @@ def taos_get_assignment_and_seek_demo():
 
 def taosws_get_assignment_and_seek_demo():
     prepare()
-    consumer = taosws.Consumer(conf={
-        "td.connect.websocket.scheme": "ws",
-        # should disable snapshot,
-        # otherwise it will cause invalid params error
-        "experimental.snapshot.enable": "false",
-        "group.id": "0",
-    })
+    consumer = taosws.Consumer(
+        conf={
+            "td.connect.websocket.scheme": "ws",
+            # should disable snapshot,
+            # otherwise it will cause invalid params error
+            "experimental.snapshot.enable": "false",
+            "group.id": "0",
+        }
+    )
     consumer.subscribe(["tmq_assignment_demo_topic"])
 
     # get topic assignment

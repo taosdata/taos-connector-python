@@ -165,7 +165,7 @@ jobs:
       - name: Set up Python 3.12
         uses: actions/setup-python@v4
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: get cache server by pr
         if: github.event_name == 'pull_request'
@@ -347,13 +347,12 @@ jobs:
           export GEOS_DIR=$(brew --prefix geos)
           poetry env use python3.12
           poetry install --no-interaction --no-root
-        
 
       #----------------------------------------------
       # install your root project, if required
       #----------------------------------------------
       - name: Install library
-        run: | 
+        run: |
           export GEOS_CONFIG=$(brew --prefix geos)/bin/geos-config
           export GEOS_DIR=$(brew --prefix geos)
           poetry env use python3.12

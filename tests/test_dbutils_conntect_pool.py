@@ -12,7 +12,7 @@ def init_native_pool():
         host="localhost",
         port=6030,
         user="root",
-        password="taosdata"
+        password="taosdata",
     )
 
 

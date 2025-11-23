@@ -40,16 +40,7 @@ class TaosRestConnection:
     Implement [PEP 249 Connection API](https://peps.python.org/pep-0249/#connection-objects)
     """
 
-    default_configs = {
-        'url',
-        'token',
-        'user',
-        'password',
-        'database',
-        'timeout',
-        'convert_timestamp',
-        'timezone'
-    }
+    default_configs = {"url", "token", "user", "password", "database", "timeout", "convert_timestamp", "timezone"}
 
     def __init__(self, **kwargs):
         """
@@ -78,7 +69,7 @@ class TaosRestConnection:
         """
         for key in kwargs:
             if key not in self.default_configs:
-                raise ConnectError('Unrecognized configs: %s' % key)
+                raise ConnectError("Unrecognized configs: %s" % key)
 
         self._url = kwargs.get("url", "http://localhost:6041")
         self._token = kwargs.get("token")

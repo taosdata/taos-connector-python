@@ -1,5 +1,6 @@
 class SmlPrecision:
     """Schemaless timestamp precision constants"""
+
     NOT_CONFIGURED = 0  # C.TSDB_SML_TIMESTAMP_NOT_CONFIGURED
     HOURS = 1
     MINUTES = 2
@@ -11,6 +12,7 @@ class SmlPrecision:
 
 class SmlProtocol:
     """Schemaless protocol constants"""
+
     UNKNOWN_PROTOCOL = 0
     LINE_PROTOCOL = 1
     TELNET_PROTOCOL = 2

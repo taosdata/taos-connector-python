@@ -53,7 +53,7 @@ class ConsumerThread(threading.Thread):
         while True:
             print(f"i={i} consumer.poll(6s) ... \n")
             res = self.consumer.poll(6)
-            i += 1 
+            i += 1
             if not res:
                 # throw except
                 assert i < 10
@@ -76,12 +76,12 @@ def pre_test_tmq(precision: str):
         precision_str = "precision '{}'".format(precision)
     else:
         precision_str = ""
-    
+
     sql = f"create database if not exists tmq_test {precision_str} wal_retention_period 3600"
     conn.execute(sql)
 
     conn.select_db("tmq_test")
-    sql = '''
+    sql = """
         create stable if not exists stb1 (
             ts timestamp,
             c1 bool,
@@ -119,7 +119,7 @@ def pre_test_tmq(precision: str):
             t13 varchar(8),
             t14 nchar(8)
         )
-    '''
+    """
 
     conn.execute(sql)
 
@@ -138,6 +138,7 @@ def after_ter_tmq():
         conn.execute("drop database if exists tmq_test")
     except Exception:
         pass
+
 
 #
 # test precison
@@ -196,12 +197,72 @@ def test_tmq_assignment():
     consumer.subscribe(["topic1"])
 
     expected_full_data = [
-        [None, True, 1, 1, 1, 1, 1, 1, 1, 1, 1.0, 1.0, None, '1', '1', 
-            b'binary value_1', b'\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08@\x00\x00\x00\x00\x00\x00\x14@', Decimal('9876.123456'), Decimal('123456789012.0987654321'), b'axxxxxxxxxxxxxxxxxxxa'],
-        [None, True, 2, 2, 2, 2, 2, 2, 2, 2, 2.0, 2.0, None, '2', '2', 
-            b'binary value_1', b'\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08@\x00\x00\x00\x00\x00\x00\x14@', Decimal('-9876.123456'), Decimal('-123456789012.0987654321'), b'bxxxxxxxxxxxxxxxxxxxb'],
-        [None, True, 3, 3, 3, 3, 3, 3, 3, 3, 3.0, 3.0, None, '3', '3', 
-            b'binary value_1', b'\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08@\x00\x00\x00\x00\x00\x00\x14@', Decimal('5676.123'), Decimal('567890121234.5432109876'), b'cxxxxxxxxxxxxxxxxxxxc']
+        [
+            None,
+            True,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1.0,
+            1.0,
+            None,
+            "1",
+            "1",
+            b"binary value_1",
+            b"\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08@\x00\x00\x00\x00\x00\x00\x14@",
+            Decimal("9876.123456"),
+            Decimal("123456789012.0987654321"),
+            b"axxxxxxxxxxxxxxxxxxxa",
+        ],
+        [
+            None,
+            True,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2.0,
+            2.0,
+            None,
+            "2",
+            "2",
+            b"binary value_1",
+            b"\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08@\x00\x00\x00\x00\x00\x00\x14@",
+            Decimal("-9876.123456"),
+            Decimal("-123456789012.0987654321"),
+            b"bxxxxxxxxxxxxxxxxxxxb",
+        ],
+        [
+            None,
+            True,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3.0,
+            3.0,
+            None,
+            "3",
+            "3",
+            b"binary value_1",
+            b"\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08@\x00\x00\x00\x00\x00\x00\x14@",
+            Decimal("5676.123"),
+            Decimal("567890121234.5432109876"),
+            b"cxxxxxxxxxxxxxxxxxxxc",
+        ],
     ]
 
     try:
@@ -216,15 +277,13 @@ def test_tmq_assignment():
             database = message.database()
             print(f"topic: {topic}, database: {database}")
 
-
-
             for i, block in enumerate(message):
                 nrows = block.nrows()
                 ncols = block.ncols()
                 values = block.fetchall()
                 print(f"nrows: {nrows}, ncols: {ncols}, values: {values}, {i}, {expected_full_data[i]}")
                 # 调用检查函数
-                check_values(values, nrows, ncols, expected_data=expected_full_data) 
+                check_values(values, nrows, ncols, expected_data=expected_full_data)
                 print(f"nrows: {nrows}, ncols: {ncols}, values: {values}")
 
         consumer.commit(message)
@@ -240,10 +299,30 @@ def test_tmq_assignment():
                 )
 
         message = consumer.poll(5)
-        
+
         expected_full_data = [
-            [None, True, 1, 1, 1, 1, 1, 1, 1, 1, 1.0, 1.0, None, '1', '1', 
-             b'binary value_1', b'\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08@\x00\x00\x00\x00\x00\x00\x14@', Decimal('9876.123456'), Decimal('123456789012.0987654321'), b'xxxxxxxxxxxxxxxxxxx']
+            [
+                None,
+                True,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1.0,
+                1.0,
+                None,
+                "1",
+                "1",
+                b"binary value_1",
+                b"\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08@\x00\x00\x00\x00\x00\x00\x14@",
+                Decimal("9876.123456"),
+                Decimal("123456789012.0987654321"),
+                b"xxxxxxxxxxxxxxxxxxx",
+            ]
         ]
         if message:
             topic = message.topic()
@@ -254,9 +333,9 @@ def test_tmq_assignment():
                 nrows = block.nrows()
                 ncols = block.ncols()
                 values = block.fetchall()
-                check_values(values, nrows, ncols, expected_full_data)  
+                check_values(values, nrows, ncols, expected_full_data)
                 print(f"nrows: {nrows}, ncols: {ncols}, values: {values}")
-                
+
             consumer.commit(message)
         consumer.commit(message)
 
@@ -271,28 +350,32 @@ def test_tmq_assignment():
         consumer.close()
         # after_ter_tmq()
 
+
 def check_values(values, nrows, ncols, expected_data=None):
     assert values is not None, "values should not be None"
     assert isinstance(values, list), "values should be a list"
     assert len(values) == nrows, f"values length {len(values)} should equal nrows {nrows}"
-    
+
     if isinstance(expected_data, list):
         print(f"Checking {len(values)} rows against expected data")
-    
+
         for i, actual_row in enumerate(values):
             index = actual_row[2] - 1
             if index < len(expected_data):
                 expected_row = expected_data[index]
                 print(f"Checking row {i}: actual length={len(actual_row)}, expected length={len(expected_row)}")
-                assert len(actual_row) == len(expected_row), f"row {i} length mismatch: got {len(actual_row)}, expected {len(expected_row)}"
+                assert len(actual_row) == len(
+                    expected_row
+                ), f"row {i} length mismatch: got {len(actual_row)}, expected {len(expected_row)}"
 
-                for j in range(1, len(actual_row)):  
+                for j in range(1, len(actual_row)):
                     if j < len(expected_row) and expected_row[j] is not None:
-                        assert actual_row[j] == expected_row[j], \
-                            f"row {i} col {j} mismatch: expected {expected_row[j]}, got {actual_row[j]}"
+                        assert (
+                            actual_row[j] == expected_row[j]
+                        ), f"row {i} col {j} mismatch: expected {expected_row[j]}, got {actual_row[j]}"
             else:
                 print(f"Warning: No expected data for row {i}")
-    
+
     print(f"✅ Values validation passed: {len(values)} rows")
 
 
@@ -302,17 +385,25 @@ def test_tmq_seek():
     pre_test_tmq("")
     conn = taos.connect()
     conn.select_db("tmq_test")
-    conn.execute("insert into tb1 values (now-4s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1','binary value_1','POINT (3.0 5.0)','9876.123456','123456789012.0987654321','xxxxxxxxxxxxxxxxxxx')")
-    conn.execute("insert into tb1 values (now-3s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1','binary value_1','POINT (3.0 5.0)','9876.123456','123456789012.0987654321','xxxxxxxxxxxxxxxxxxx')")
-    conn.execute("insert into tb1 values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2','binary value_1','POINT (3.0 5.0)','9876.123456','123456789012.0987654321','xxxxxxxxxxxxxxxxxxx')")
-    conn.execute("insert into tb1 values (now-1s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2','binary value_1','POINT (3.0 5.0)','9876.123456','123456789012.0987654321','xxxxxxxxxxxxxxxxxxx')")
+    conn.execute(
+        "insert into tb1 values (now-4s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1','binary value_1','POINT (3.0 5.0)','9876.123456','123456789012.0987654321','xxxxxxxxxxxxxxxxxxx')"
+    )
+    conn.execute(
+        "insert into tb1 values (now-3s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1','binary value_1','POINT (3.0 5.0)','9876.123456','123456789012.0987654321','xxxxxxxxxxxxxxxxxxx')"
+    )
+    conn.execute(
+        "insert into tb1 values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2','binary value_1','POINT (3.0 5.0)','9876.123456','123456789012.0987654321','xxxxxxxxxxxxxxxxxxx')"
+    )
+    conn.execute(
+        "insert into tb1 values (now-1s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2','binary value_1','POINT (3.0 5.0)','9876.123456','123456789012.0987654321','xxxxxxxxxxxxxxxxxxx')"
+    )
 
     conf = {
-        "group.id": "1", 
+        "group.id": "1",
         "auto.offset.reset": "earliest",
-         # 3.3.6.0 support
+        # 3.3.6.0 support
         "fetch.max.wait.ms": "3000",
-        "min.poll.rows": "128"
+        "min.poll.rows": "128",
     }
     consumer = Consumer(conf)
     consumer.subscribe(["topic1"])
@@ -353,10 +444,18 @@ def test_tmq_committed_and_position():
 
     conn = taos.connect()
     conn.select_db("tmq_test")
-    conn.execute("insert into tb1 values (now-4s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1','binary value_1','POINT (3.0 5.0)','9876.123456','123456789012.0987654321','xxxxxxxxxxxxxxxxxxx')")
-    conn.execute("insert into tb1 values (now-3s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1','binary value_1','POINT (3.0 5.0)','9876.123456','123456789012.0987654321','xxxxxxxxxxxxxxxxxxx')")
-    conn.execute("insert into tb1 values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2','binary value_1','POINT (3.0 5.0)','9876.123456','123456789012.0987654321','xxxxxxxxxxxxxxxxxxx')")
-    conn.execute("insert into tb1 values (now-1s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2','binary value_1','POINT (3.0 5.0)','9876.123456','123456789012.0987654321','xxxxxxxxxxxxxxxxxxx')")
+    conn.execute(
+        "insert into tb1 values (now-4s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1','binary value_1','POINT (3.0 5.0)','9876.123456','123456789012.0987654321','xxxxxxxxxxxxxxxxxxx')"
+    )
+    conn.execute(
+        "insert into tb1 values (now-3s, true,1,1,1,1,1,1,1,1,1,1,1,'1','1','binary value_1','POINT (3.0 5.0)','9876.123456','123456789012.0987654321','xxxxxxxxxxxxxxxxxxx')"
+    )
+    conn.execute(
+        "insert into tb1 values (now-2s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2','binary value_1','POINT (3.0 5.0)','9876.123456','123456789012.0987654321','xxxxxxxxxxxxxxxxxxx')"
+    )
+    conn.execute(
+        "insert into tb1 values (now-1s, true,2,2,2,2,2,2,2,2,2,2,2,'2','2','binary value_1','POINT (3.0 5.0)','9876.123456','123456789012.0987654321','xxxxxxxxxxxxxxxxxxx')"
+    )
 
     consumer = Consumer({"group.id": "1"})
     consumer.subscribe(["topic1"])
@@ -376,6 +475,7 @@ def test_tmq_committed_and_position():
         consumer.close()
         after_ter_tmq()
 
+
 if __name__ == "__main__":
     print("call tst_tmp.py nothing do.\n")
-    #test_consumer_with_precision()
+    # test_consumer_with_precision()

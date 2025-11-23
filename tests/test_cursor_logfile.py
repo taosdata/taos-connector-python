@@ -15,8 +15,12 @@ def test_logfile():
     cursor.execute("DROP DATABASE IF EXISTS test")
     cursor.execute("CREATE DATABASE test")
     cursor.execute("USE test")
-    cursor.execute("CREATE STABLE weather(ts TIMESTAMP, temperature FLOAT, city NCHAR(100), country BINARY(100), town VARBINARY(100)) TAGS (location INT)")
-    cursor.execute(f"INSERT INTO t1 USING weather TAGS(1) VALUES (now, 23.5, 'tianjin', 'china', 'wuqing') (now+100a, 23.5, 'tianjin', 'china', 'wuqing')")
+    cursor.execute(
+        "CREATE STABLE weather(ts TIMESTAMP, temperature FLOAT, city NCHAR(100), country BINARY(100), town VARBINARY(100)) TAGS (location INT)"
+    )
+    cursor.execute(
+        f"INSERT INTO t1 USING weather TAGS(1) VALUES (now, 23.5, 'tianjin', 'china', 'wuqing') (now+100a, 23.5, 'tianjin', 'china', 'wuqing')"
+    )
     assert cursor.rowcount == 2
     cursor.execute("SELECT tbname, ts, temperature, city, country, town, location FROM weather LIMIT 1")
     # rowcount can only get correct value after fetching all data

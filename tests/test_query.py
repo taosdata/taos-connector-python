@@ -56,9 +56,15 @@ def test_query_decimal():
     conn.execute("drop database if exists test_query_py")
     conn.execute("create database if not exists test_query_py")
     conn.execute("use test_query_py")
-    conn.execute("create table if not exists tb1 (ts timestamp, v int, dec64 decimal(10,6), dec128 decimal(24,10)) tags(jt json)")
-    n = conn.execute('insert into tn1 using tb1 tags(\'{"name":"value"}\') values(now, null, null, null) (now + 10s, 1, "9876.123456", "123456789012.0987654321")')
-    n = conn.execute('insert into tn1 using tb1 tags(\'{"name":"value"}\') values(now, null, null, null) (now + 10s, 1, "-9876.123456", "-123456789012.0987654321")')
+    conn.execute(
+        "create table if not exists tb1 (ts timestamp, v int, dec64 decimal(10,6), dec128 decimal(24,10)) tags(jt json)"
+    )
+    n = conn.execute(
+        'insert into tn1 using tb1 tags(\'{"name":"value"}\') values(now, null, null, null) (now + 10s, 1, "9876.123456", "123456789012.0987654321")'
+    )
+    n = conn.execute(
+        'insert into tn1 using tb1 tags(\'{"name":"value"}\') values(now, null, null, null) (now + 10s, 1, "-9876.123456", "-123456789012.0987654321")'
+    )
     print("inserted %d rows" % n)
     result = conn.query("select * from tb1")
     fields = result.fields
@@ -82,7 +88,6 @@ def test_query_decimal():
         if dec128 is not None:
             assert str(dec128) in ["123456789012.0987654321", "-123456789012.0987654321"]
         #
-
 
     for row in result.rows_iter():
         print(row)

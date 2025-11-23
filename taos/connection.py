@@ -31,7 +31,7 @@ class TaosConnection(object):
         self._init_config(**kwargs)
         self._chandle = CTaosInterface(self._config, self._tz)
         self._conn = self._chandle.connect(self._host, self._user, self._password, self._database, self._port)
-        
+
         if self._charset is not None:
             self.set_option(TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_CHARSET.value, self._charset)
 
@@ -39,14 +39,13 @@ class TaosConnection(object):
             self.set_option(TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_USER_APP.value, self._user_app)
 
         if self._user_ip is not None:
-            self.set_option(TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_USER_IP.value, self._user_ip) 
+            self.set_option(TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_USER_IP.value, self._user_ip)
 
         if self._bi_mode is not None:
             if self._bi_mode:
                 self.set_mode(TSDB_CONNECTIONS_MODE.TSDB_CONNECTIONS_MODE_BI.value, 1)
             else:
                 self.set_mode(TSDB_CONNECTIONS_MODE.TSDB_CONNECTIONS_MODE_BI.value, 0)
-                
 
     def _init_config(self, **kwargs):
         # host
@@ -81,16 +80,16 @@ class TaosConnection(object):
             self.decode_binary = kwargs["decode_binary"]
 
         if "charset" in kwargs:
-            self._charset = kwargs["charset"]  
+            self._charset = kwargs["charset"]
 
         if "user_app" in kwargs:
-            self._user_app = kwargs["user_app"] 
+            self._user_app = kwargs["user_app"]
 
         if "user_ip" in kwargs:
-            self._user_ip = kwargs["user_ip"] 
+            self._user_ip = kwargs["user_ip"]
 
         if "bi_mode" in kwargs:
-            self._bi_mode = kwargs["bi_mode"]                     
+            self._bi_mode = kwargs["bi_mode"]
 
     def close(self):
         """Close current connection."""
@@ -136,9 +135,15 @@ class TaosConnection(object):
         else:
             taos_query_a_with_reqid(self._conn, sql, callback, param, req_id)
 
-    def subscribe(self, restart: bool, topic: str, sql: str, interval: int,
-                  callback: Optional[subscribe_callback_type] = None,
-                  param: Optional[c_void_p] = None) -> Optional[TaosSubscription]:
+    def subscribe(
+        self,
+        restart: bool,
+        topic: str,
+        sql: str,
+        interval: int,
+        callback: Optional[subscribe_callback_type] = None,
+        param: Optional[c_void_p] = None,
+    ) -> Optional[TaosSubscription]:
 
         """Create a subscription."""
         if self._conn is None:
@@ -178,12 +183,12 @@ class TaosConnection(object):
         taos_load_table_info(self._conn, tables)
 
     def schemaless_insert(
-            self,
-            lines: List[str],
-            protocol: SmlProtocol,
-            precision: SmlPrecision,
-            req_id: Optional[int] = None,
-            ttl: Optional[int] = None,
+        self,
+        lines: List[str],
+        protocol: SmlProtocol,
+        precision: SmlPrecision,
+        req_id: Optional[int] = None,
+        ttl: Optional[int] = None,
     ) -> int:
         """
         1.Line protocol and schemaless support
@@ -278,12 +283,12 @@ class TaosConnection(object):
                 pass
 
     def schemaless_insert_raw(
-            self,
-            lines: str,
-            protocol: SmlProtocol,
-            precision: SmlPrecision,
-            req_id: Optional[int] = None,
-            ttl: Optional[int] = None,
+        self,
+        lines: str,
+        protocol: SmlProtocol,
+        precision: SmlPrecision,
+        req_id: Optional[int] = None,
+        ttl: Optional[int] = None,
     ) -> int:
         """
         1.Line protocol and schemaless support

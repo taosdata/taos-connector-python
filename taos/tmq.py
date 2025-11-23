@@ -8,8 +8,7 @@ TMQ_RES_METADATA = 3
 
 
 class MessageBlock:
-
-    def __init__(self, block=None, fields=None, row_count=0, col_count=0, table=''):
+    def __init__(self, block=None, fields=None, row_count=0, col_count=0, table=""):
         # type (list[tuple], TaosField, int, int, str)
         self._block = block
         self._fields = fields
@@ -57,7 +56,6 @@ class MessageBlock:
 
 
 class Message:
-
     def __init__(self, msg: c_void_p = None, error=None, decode_binary=True):
         self._error = error
         if not msg:
@@ -125,7 +123,13 @@ class Message:
 
                 block_data = ctypes.cast(block, ctypes.POINTER(ctypes.c_void_p))[i]
                 if fields[i]["type"] in (
-                        FieldType.C_VARCHAR, FieldType.C_NCHAR, FieldType.C_JSON, FieldType.C_VARBINARY, FieldType.C_GEOMETRY, FieldType.C_BLOB):
+                    FieldType.C_VARCHAR,
+                    FieldType.C_NCHAR,
+                    FieldType.C_JSON,
+                    FieldType.C_VARBINARY,
+                    FieldType.C_GEOMETRY,
+                    FieldType.C_BLOB,
+                ):
                     f = convert_block_func_v3(fields[i]["type"], self.decode_binary)
                     offsets = taos_get_column_data_offset(self.msg, i, num_rows)
                     blocks[i] = f(block_data, [], num_rows, offsets, precision)
@@ -135,8 +139,14 @@ class Message:
                     blocks[i] = f(block_data, is_null, num_rows, [], precision)
 
             message_blocks.append(
-                MessageBlock(block=blocks, fields=fields, row_count=num_rows, col_count=field_count,
-                             table=tmq_get_table_name(self.msg)))
+                MessageBlock(
+                    block=blocks,
+                    fields=fields,
+                    row_count=num_rows,
+                    col_count=field_count,
+                    table=tmq_get_table_name(self.msg),
+                )
+            )
         return message_blocks
 
     def offset(self):
@@ -157,7 +167,6 @@ class Message:
 
 
 class TopicPartition:
-
     def __init__(self, topic, partition, offset, begin=0, end=0):
         self.topic = topic  # type: str
         self.partition = partition  # type: int
@@ -171,8 +180,8 @@ class TopicPartition:
 
 class Consumer:
     def __init__(self, configs):
-        if 'group.id' not in configs:
-            raise TmqError('missing group.id in consumer config setting')
+        if "group.id" not in configs:
+            raise TmqError("missing group.id in consumer config setting")
 
         self._tmq = None
         self._subscribed = False
@@ -238,7 +247,7 @@ class Consumer:
         """
         mill_timeout = int(timeout * 1000)
         if not self._subscribed:
-            raise TmqError(msg='unsubscribe topic')
+            raise TmqError(msg="unsubscribe topic")
 
         msg = tmq_consumer_poll(self._tmq, wait_time=mill_timeout)
         if msg:
@@ -258,8 +267,14 @@ class Consumer:
             assignments = tmq_get_topic_assignment(self._tmq, topic)
             for assignment in assignments:
                 topic_partitions.append(
-                    TopicPartition(topic=topic, partition=assignment[0], offset=assignment[1], begin=assignment[2],
-                                   end=assignment[3]))
+                    TopicPartition(
+                        topic=topic,
+                        partition=assignment[0],
+                        offset=assignment[1],
+                        begin=assignment[2],
+                        end=assignment[3],
+                    )
+                )
         return topic_partitions
 
     def seek(self, partition):
@@ -292,14 +307,14 @@ class Consumer:
         """
         if message:
             if not isinstance(message, Message):
-                raise TmqError(msg='Invalid message type')
+                raise TmqError(msg="Invalid message type")
             tmq_commit_sync(self._tmq, message.msg)
             return
 
         if offsets and isinstance(offsets, list):
             for offset in offsets:
                 if not isinstance(offset, TopicPartition):
-                    raise TmqError(msg='Invalid offset type')
+                    raise TmqError(msg="Invalid offset type")
                 tmq_commit_offset_sync(self._tmq, offset.topic, offset.partition, offset.offset)
             return
 
@@ -316,7 +331,7 @@ class Consumer:
         """
         for partition in partitions:
             if not isinstance(partition, TopicPartition):
-                raise TmqError(msg='Invalid partition type')
+                raise TmqError(msg="Invalid partition type")
             offset = tmq_committed(self._tmq, partition.topic, partition.partition)
             partition.offset = offset
 
@@ -333,7 +348,7 @@ class Consumer:
         """
         for partition in partitions:
             if not isinstance(partition, TopicPartition):
-                raise TmqError(msg='Invalid partition type')
+                raise TmqError(msg="Invalid partition type")
             offset = tmq_position(self._tmq, partition.topic, partition.partition)
             partition.offset = offset
 
@@ -353,7 +368,7 @@ class Consumer:
 
     def __next__(self):
         if not self._tmq:
-            raise StopIteration('Tmq consumer is closed')
+            raise StopIteration("Tmq consumer is closed")
         return next(self._sync_next())
 
     def __iter__(self):

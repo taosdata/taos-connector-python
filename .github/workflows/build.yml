@@ -14,6 +14,12 @@ jobs:
   test:
     runs-on: ubuntu-22.04
     steps:
+      - name: Set up Rust
+        id: setup-rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.90.0
+
       - name: Checkout
         uses: actions/checkout@v3
 
@@ -79,13 +85,19 @@ jobs:
         with:
           cmakeVersion: 3.31.6
 
+      # - name: Set up Rust
+      #   id: setup-rust
+      #   uses: dtolnay/rust-toolchain@stable
+      #   with:
+      #     toolchain: 1.90.0
+
       - name: Determine TDengine branch
         uses: haya14busa/action-cond@v1
         id: determine-branch
         with:
           cond: ${{ github.base_ref == 'main' }}
-          if_true: "main"
-          if_false: "3.0"
+          if_true: "feat/TD-38480-3.0"
+          if_false: "feat/TD-38480-3.0"
 
       - name: Checkout tdengine
         uses: actions/checkout@v2
@@ -102,7 +114,7 @@ jobs:
           rm build -rf
           mkdir build
           cd build
-          cmake ../ -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false
+          cmake ../ -DWEBSOCKET=true -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false
           make -j14
           sudo make install
           ls -alh /etc/taos/
@@ -126,6 +138,7 @@ jobs:
           export LD_LIBRARY_PATH=$PWD/TDengine_v3/build/build/lib
           #source $VENV
           export TDENGINE_URL=localhost:6041
+          export TDENGINE_DRIVER=websocket
           curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
           poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
 

@@ -3,6 +3,7 @@ from taos.bind import *
 from taos.bind2 import *
 from taos.connection import TaosConnection
 from taos.cursor import *
+
 # For some reason, the following is needed for VS Code (through PyLance) to
 # recognize that "error" is a valid module of the "taos" package.
 from taos.error import *

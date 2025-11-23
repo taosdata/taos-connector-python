@@ -3,6 +3,7 @@ import math
 from datetime import datetime
 
 import pytest
+
 # geometry support
 from shapely.wkb import dumps
 from shapely.wkt import loads as wkt_loads
@@ -134,11 +135,7 @@ def insert_bind_param(conn, stmt2, dbname, stbname):
     #
     tbnames = ["d1", "d2", "d3"]
 
-    tags = [
-        ["grade1", 1],
-        ["grade1", None],
-        [None, 3]
-    ]
+    tags = [["grade1", 1], ["grade1", None], [None, 3]]
     datas = [
         # class 1
         [
@@ -147,7 +144,7 @@ def insert_bind_param(conn, stmt2, dbname, stbname):
             ["Mary", "Tom", "Jack", "Jane", "alex", None],
             [0, 1, 1, 0, 1, None],
             [98, 80, 60, 100, 99, None],
-            [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5", None]
+            [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5", None],
         ],
         # class 2
         [
@@ -156,7 +153,7 @@ def insert_bind_param(conn, stmt2, dbname, stbname):
             ["Mary2", "Tom2", "Jack2", "Jane2", "alex2", None],
             [0, 1, 1, 0, 1, 0],
             [298, 280, 260, 2100, 299, None],
-            [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5", None]
+            [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5", None],
         ],
         # class 3
         [
@@ -165,8 +162,8 @@ def insert_bind_param(conn, stmt2, dbname, stbname):
             ["Mary3", "Tom3", "Jack3", "Jane3", "alex3", "Mark"],
             [0, 1, 1, 0, 1, None],
             [398, 380, 360, 3100, 399, None],
-            [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5", None]
-        ]
+            [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5", None],
+        ],
     ]
 
     stmt2.bind_param(tbnames, tags, datas)
@@ -186,13 +183,18 @@ def insert_bind_param_normal_tables(conn, stmt2, dbname, ntb):
         # table 1
         [
             # student
-            [1601481600000, 1601481600004, "2024-09-19 10:00:00", "2024-09-19 10:00:01.123",
-             datetime(2024, 9, 20, 10, 11, 12, 456)],
+            [
+                1601481600000,
+                1601481600004,
+                "2024-09-19 10:00:00",
+                "2024-09-19 10:00:01.123",
+                datetime(2024, 9, 20, 10, 11, 12, 456),
+            ],
             [b"Mary", b"tom", b"Jack", b"Jane", None],
             [0, 3.14, True, 0, 1],
             [98, 99.87, 60, 100, 99],
             wkbs,
-            [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5"]
+            [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5"],
         ]
     ]
 
@@ -205,21 +207,24 @@ def insert_bind_param_normal_tables(conn, stmt2, dbname, ntb):
 
 def insert_bind_param_with_table(conn, stmt2, dbname, stbname, ctb):
     tbnames = None
-    tags = [
-        ["grade2", 1]
-    ]
+    tags = [["grade2", 1]]
 
     # prepare data
     datas = [
         # table 1
         [
             # student
-            [1601481600000, 1601481600004, "2024-09-19 10:00:00", "2024-09-19 10:00:01.123",
-             datetime(2024, 9, 20, 10, 11, 12, 456)],
+            [
+                1601481600000,
+                1601481600004,
+                "2024-09-19 10:00:00",
+                "2024-09-19 10:00:01.123",
+                datetime(2024, 9, 20, 10, 11, 12, 456),
+            ],
             ["Mary", "Tom", "Jack", "Jane", "alex"],
             [0, 1, 1, 0, 1],
             [98, 80, 60, 100, 99],
-            [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5"]
+            [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5"],
         ]
     ]
 
@@ -233,23 +238,24 @@ def insert_bind_param_with_table(conn, stmt2, dbname, stbname, ctb):
 # insert with single table (performance is lower)
 def insert_bind_param_with_tables(conn, stmt2, dbname, stbname):
     tbnames = ["t1", "t2", "t3"]
-    tags = [
-        ["grade2", 1],
-        ["grade2", 2],
-        ["grade2", 3]
-    ]
+    tags = [["grade2", 1], ["grade2", 2], ["grade2", 3]]
 
     # prepare data
     datas = [
         # table 1
         [
             # student
-            [1601481600000, 1601481600004, "2024-09-19 10:00:00", "2024-09-19 10:00:01.123",
-             datetime(2024, 9, 20, 10, 11, 12, 456)],
+            [
+                1601481600000,
+                1601481600004,
+                "2024-09-19 10:00:00",
+                "2024-09-19 10:00:01.123",
+                datetime(2024, 9, 20, 10, 11, 12, 456),
+            ],
             ["Mary", "Tom", "Jack", "Jane", "alex"],
             [0, 1, 1, 0, 1],
             [98, 80, 60, 100, 99],
-            [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5"]
+            [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5"],
         ],
         # table 2
         [
@@ -258,7 +264,7 @@ def insert_bind_param_with_tables(conn, stmt2, dbname, stbname):
             ["Mary2", "Tom2", "Jack2", "Jane2", "alex2"],
             [0, 1, 1, 0, 1],
             [298, 280, 260, 2100, 299],
-            [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5"]
+            [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5"],
         ],
         # table 3
         [
@@ -267,8 +273,8 @@ def insert_bind_param_with_tables(conn, stmt2, dbname, stbname):
             ["Mary3", "Tom3", "Jack3", "Jane3", "alex3"],
             [0, 1, 1, 0, 1],
             [398, 380, 360, 3100, 399],
-            [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5"]
-        ]
+            [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5"],
+        ],
     ]
 
     table0 = BindTable(tbnames[0], tags[0])
@@ -317,22 +323,23 @@ def do_check_invalid(stmt2, tbnames, tags, datas):
 
 def check_input_invalid_param(conn, stmt2, dbname, stbname):
     tbnames = ["t1", "t2", "t3"]
-    tags = [
-        ["grade2", 1],
-        ["grade2", 2],
-        ["grade2", 3]
-    ]
+    tags = [["grade2", 1], ["grade2", 2], ["grade2", 3]]
 
     # prepare data
     datas = [
         # table 1
         [
             # student
-            [1601481600000, 1601481600004, "2024-09-19 10:00:00", "2024-09-19 10:00:01.123",
-             datetime(2024, 9, 20, 10, 11, 12, 456)],
+            [
+                1601481600000,
+                1601481600004,
+                "2024-09-19 10:00:00",
+                "2024-09-19 10:00:01.123",
+                datetime(2024, 9, 20, 10, 11, 12, 456),
+            ],
             ["Mary", "Tom", "Jack", "Jane", "alex"],
             [0, 1, 1, 0, 1],
-            [98, 80, 60, 100, 99]
+            [98, 80, 60, 100, 99],
         ],
         # table 2
         [
@@ -340,7 +347,7 @@ def check_input_invalid_param(conn, stmt2, dbname, stbname):
             [1601481600000, 1601481600001, 1601481600002, 1601481600003, 1601481600004],
             ["Mary2", "Tom2", "Jack2", "Jane2", "alex2"],
             [0, 1, 1, 0, 1],
-            [298, 280, 260, 2100, 299]
+            [298, 280, 260, 2100, 299],
         ],
         # table 3
         [
@@ -348,8 +355,8 @@ def check_input_invalid_param(conn, stmt2, dbname, stbname):
             [1601481600000, 1601481600001, 1601481600002, 1601481600003, 1601481600004],
             ["Mary3", "Tom3", "Jack3", "Jane3", "alex3"],
             [0, 1, 1, 0, 1],
-            [398, 380, 360, 3100, 399]
-        ]
+            [398, 380, 360, 3100, 399],
+        ],
     ]
 
     # some tags is none
@@ -376,13 +383,18 @@ def insert_with_normal_tables(conn, stmt2, dbname, ntb):
         # table 1
         [
             # student
-            [1601481600000, 1601481600004, "2024-09-19 10:00:00", "2024-09-19 10:00:01.123",
-             datetime(2024, 9, 20, 10, 11, 12, 456)],
+            [
+                1601481600000,
+                1601481600004,
+                "2024-09-19 10:00:00",
+                "2024-09-19 10:00:01.123",
+                datetime(2024, 9, 20, 10, 11, 12, 456),
+            ],
             [b"Mary", b"tom", b"Jack", b"Jane", None],
             [0, 3.14, True, 0, 1],
             [98, 99.87, 60, 100, 99],
             wkbs,
-            [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5"]
+            [b"binary value_1", b"binary value_2", b"binary value_3", b"binary value_4", b"binary value_5"],
         ]
     ]
 
@@ -406,7 +418,7 @@ def test_stmt2_prepare_empty_sql(conn):
     try:
         # prepare
         stmt2 = conn.statement2()
-        stmt2.prepare(sql='')
+        stmt2.prepare(sql="")
 
         # should not run here
         conn.close()
@@ -468,7 +480,7 @@ def test_stmt2_insert(conn):
     try:
         prepare(conn, dbname, stbname, ntb1, ntb2)
 
-        ctb = 'ctb'  # child table
+        ctb = "ctb"  # child table
         stmt2 = conn.statement2(f"insert into {dbname}.{ctb} using {dbname}.{stbname} tags (?,?) values(?,?,?,?,?)")
         insert_bind_param_with_table(conn, stmt2, dbname, stbname, ctb)
         print("insert child table ........................... ok\n")
@@ -525,7 +537,7 @@ def query_bind_param(conn, stmt2):
             # where name in ('Tom2','alex2') or score > 1000;"
             ["Tom2"],
             [100],
-            [True]
+            [True],
         ]
     ]
 
@@ -596,17 +608,23 @@ def test_stmt2_query(conn):
         # print("insert bind & execute ......................... ok\n")
 
         conn.execute(
-            f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.000', 'Mary2', false, 298, 'XXX')")
+            f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.000', 'Mary2', false, 298, 'XXX')"
+        )
         conn.execute(
-            f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.001', 'Tom2', true, 280, 'YYY')")
+            f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.001', 'Tom2', true, 280, 'YYY')"
+        )
         conn.execute(
-            f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.002', 'Jack2', true, 260, 'ZZZ')")
+            f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.002', 'Jack2', true, 260, 'ZZZ')"
+        )
         conn.execute(
-            f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.003', 'Jane2', false, 2100, 'WWW')")
+            f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.003', 'Jane2', false, 2100, 'WWW')"
+        )
         conn.execute(
-            f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.004', 'Tom2', true, 299, 'ZZZ')")
+            f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.004', 'Tom2', true, 299, 'ZZZ')"
+        )
         conn.execute(
-            f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.005', 'Tom2', false, NULL, 'WWW')")
+            f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.005', 'Tom2', false, NULL, 'WWW')"
+        )
 
         # statement2
         stmt2 = conn.statement2(sql1)
@@ -646,7 +664,7 @@ def test_stmt2_example(conn):
         rows_affected: int = conn.execute(f"CREATE DATABASE IF NOT EXISTS power")
         print(f"Create database power successfully")
         assert rows_affected == 0
-        conn.select_db('power')
+        conn.select_db("power")
 
         conn.execute("create table if not exists stb (ts timestamp, v int) tags(jt json)")
         print(f"Create stable power.stb successfully")
@@ -663,7 +681,7 @@ def test_stmt2_example(conn):
             [1626861392595, 8, '{"name":"value2"}', "tb2"],
             [1626861392596, 9, '{"name":"value3"}', "tb3"],
             [1626861392597, 10, '{"name":"value4"}', "tb4"],
-            [1626861392598, 11, '{"name":"value4"}', "tb4"]
+            [1626861392598, 11, '{"name":"value4"}', "tb4"],
         ]
 
         stmt.bind_param(None, None, datas)

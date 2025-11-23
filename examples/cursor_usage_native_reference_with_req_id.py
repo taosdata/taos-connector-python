@@ -11,7 +11,9 @@ cursor.execute("CREATE STABLE weather(ts TIMESTAMP, temperature FLOAT) TAGS (loc
 for i in range(1000):
     location = str(i % 10)
     tb = "t" + location
-    cursor.execute(f"INSERT INTO {tb} USING weather TAGS({location}) VALUES (now+{i}a, 23.5) (now+{i + 1}a, 23.5)", req_id=5+i)
+    cursor.execute(
+        f"INSERT INTO {tb} USING weather TAGS({location}) VALUES (now+{i}a, 23.5) (now+{i + 1}a, 23.5)", req_id=5 + i
+    )
 
 cursor.execute("SELECT count(*) FROM weather", req_id=1005)
 data = cursor.fetchall()

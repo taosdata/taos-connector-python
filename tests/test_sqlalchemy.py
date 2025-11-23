@@ -38,20 +38,38 @@ def test_stmt2_query():
         # prepare
         prepare(conn, dbname, stbname, ntb1, ntb2)
 
-        conn.execute(text(
-            f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.000', 'Mary2', false, 298, 'XXX')"))
-        conn.execute(text(
-            f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.001', 'Tom2', true, 280, 'YYY')"))
-        conn.execute(text(
-            f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.002', 'Jack2', true, 260, 'ZZZ')"))
-        conn.execute(text(
-            f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.003', 'Jane2', false, 2100, 'WWW')"))
-        conn.execute(text(
-            f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.004', 'alex2', true, 299, 'ZZZ')"))
-        conn.execute(text(
-            f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.005', NULL, false, NULL, 'WWW')"))
+        conn.execute(
+            text(
+                f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.000', 'Mary2', false, 298, 'XXX')"
+            )
+        )
+        conn.execute(
+            text(
+                f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.001', 'Tom2', true, 280, 'YYY')"
+            )
+        )
+        conn.execute(
+            text(
+                f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.002', 'Jack2', true, 260, 'ZZZ')"
+            )
+        )
+        conn.execute(
+            text(
+                f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.003', 'Jane2', false, 2100, 'WWW')"
+            )
+        )
+        conn.execute(
+            text(
+                f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.004', 'alex2', true, 299, 'ZZZ')"
+            )
+        )
+        conn.execute(
+            text(
+                f"insert into {dbname}.d2 using {dbname}.{stbname} tags('grade1', 2) values('2020-10-01 00:00:00.005', NULL, false, NULL, 'WWW')"
+            )
+        )
 
-        result = conn.execute(text(sql1), {'minscore': 280, 'maxscore': 1000})
+        result = conn.execute(text(sql1), {"minscore": 280, "maxscore": 1000})
         count = 0
         for row in result:
             count += 1
@@ -66,6 +84,7 @@ def test_stmt2_query():
     finally:
         conn.close()
 
+
 def insert_data(conn):
     if conn is None:
         c = taos.connect()
@@ -75,9 +94,11 @@ def insert_data(conn):
     c.execute(text("create database if not exists test"))
     c.execute(text("create table test.meters (ts timestamp, c1 int, c2 double) tags(t1 int)"))
     c.execute(
-        text("insert into test.d0 using test.meters tags(0) values (1733189403001, 1, 1.11) (1733189403002, 2, 2.22)"))
+        text("insert into test.d0 using test.meters tags(0) values (1733189403001, 1, 1.11) (1733189403002, 2, 2.22)")
+    )
     c.execute(
-        text("insert into test.d1 using test.meters tags(1) values (1733189403003, 3, 3.33) (1733189403004, 4, 4.44)"))
+        text("insert into test.d1 using test.meters tags(1) values (1733189403003, 3, 3.33) (1733189403004, 4, 4.44)")
+    )
     c.execute(text("create table test.ntb(ts timestamp, age int)"))
     c.execute(text("insert into test.ntb values(now, 23)"))
 
@@ -91,16 +112,18 @@ def insert_stmt_sqlalchemy_data(conn):
     conn.execute(text("create table test.meters (ts timestamp, c1 int, c2 double) tags(t1 int)"))
 
     data = [
-        {'ts': 1626861392589, 'c1': 1, 'c2': 2.0, 't1': 1, 'tbname': 'tb1'},
-        {'ts': 1626861392590, 'c1': 2, 'c2': 2.5, 't1': 2, 'tbname': 'tb2'},
-        {'ts': 1626861392591, 'c1': 3, 'c2': 3.0, 't1': 3, 'tbname': 'tb3'}
+        {"ts": 1626861392589, "c1": 1, "c2": 2.0, "t1": 1, "tbname": "tb1"},
+        {"ts": 1626861392590, "c1": 2, "c2": 2.5, "t1": 2, "tbname": "tb2"},
+        {"ts": 1626861392591, "c1": 3, "c2": 3.0, "t1": 3, "tbname": "tb3"},
     ]
 
     sql = text("INSERT INTO test.meters (ts, c1, c2, t1, tbname) VALUES (:ts, :c1, :c2, :t1, :tbname)")
     rows = conn.execute(sql, data)
     print(f"inserted data done, rows={rows}")
-    result = conn.execute(text("select * from test.meters where ts > :start and ts < :end"),
-                          {'start': 1626861392589, 'end': 1626861392598})
+    result = conn.execute(
+        text("select * from test.meters where ts > :start and ts < :end"),
+        {"start": 1626861392589, "end": 1626861392598},
+    )
     print(f"result: {result}")
     for row in result:
         print(f" result rows = {row} \n")
@@ -121,7 +144,7 @@ def check_result_equal(result1, result2, tips):
 
 
 # check baisc function
-def check_basic(conn, inspection, subTables=['meters', 'ntb']):
+def check_basic(conn, inspection, subTables=["meters", "ntb"]):
     # get schema names
     databases = inspection.get_schema_names()
     if "test" not in databases:
@@ -134,17 +157,17 @@ def check_basic(conn, inspection, subTables=['meters', 'ntb']):
 
     # get_columns
     cols2 = [
-        {'name': 'ts', 'type': inspection.dialect._resolve_type("TIMESTAMP")},
-        {'name': 'c1', 'type': inspection.dialect._resolve_type("INT")},
-        {'name': 'c2', 'type': inspection.dialect._resolve_type("DOUBLE")},
-        {'name': 't1', 'type': inspection.dialect._resolve_type("INT")}
+        {"name": "ts", "type": inspection.dialect._resolve_type("TIMESTAMP")},
+        {"name": "c1", "type": inspection.dialect._resolve_type("INT")},
+        {"name": "c2", "type": inspection.dialect._resolve_type("DOUBLE")},
+        {"name": "t1", "type": inspection.dialect._resolve_type("INT")},
     ]
     cols1 = inspection.get_columns("meters", "test")
     for i in range(len(cols1)):
-        cname1 = cols1[i]['name']
-        ctype1 = cols1[i]['type']
-        cname2 = cols2[i]['name']
-        ctype2 = cols2[i]['type']
+        cname1 = cols1[i]["name"]
+        ctype1 = cols1[i]["type"]
+        cname2 = cols2[i]["name"]
+        ctype2 = cols2[i]["type"]
 
         if cname1 != cname2:
             print(f"two name diff, name1={cname1} name2={cname2}")
@@ -193,7 +216,7 @@ def test_sqlalchemy_format_stmt_taos():
     conn = engine.connect()
     insert_stmt_sqlalchemy_data(conn)
     inspection = inspect(engine)
-    check_basic(conn, inspection, subTables=['meters'])
+    check_basic(conn, inspection, subTables=["meters"])
 
 
 # taosws

@@ -109,7 +109,17 @@ else:
     )
 
     # use _v3s TaosField overwrite _v2s here, dont change import order
-    from taos.field_v3 import CONVERT_FUNC_BLOCK_v3, TaosFields, TaosFieldEs, TaosField, TaosFieldE, TAOS_FIELD_T, TaosFieldAll, TaosFieldAllCls, convert_block_func_v3
+    from taos.field_v3 import (
+        CONVERT_FUNC_BLOCK_v3,
+        TaosFields,
+        TaosFieldEs,
+        TaosField,
+        TaosFieldE,
+        TAOS_FIELD_T,
+        TaosFieldAll,
+        TaosFieldAllCls,
+        convert_block_func_v3,
+    )
     from taos.constants import FieldType
 
     IS_V3 = True
@@ -156,12 +166,15 @@ def taos_options(option, value):
     _value = c_char_p(value.encode("utf-8"))
     _libtaos.taos_options(option, _value)
 
+
 def taos_options_connection(connection, option, value):
     _value = c_char_p(value.encode("utf-8"))
     _libtaos.taos_options_connection(connection, option, _value)
 
+
 def taos_set_conn_mode(connection, mode, value):
     _libtaos.taos_set_conn_mode(connection, mode, value)
+
 
 def taos_init():
     # type: () -> None
@@ -499,6 +512,7 @@ _libtaos.taos_is_null.argtypes = ctypes.c_void_p, c_int, c_int
 def taos_is_null(result, row, col):
     return _libtaos.taos_is_null(result, row, col)
 
+
 _can_get_is_null_by_column = True
 try:
     _libtaos.taos_is_null_by_column.restype = c_int
@@ -507,6 +521,7 @@ except Exception as err:
     _can_get_is_null_by_column = False
     _UNSUPPORTED["taos_is_null_by_column"] = err
 
+
 def taos_is_null_by_column(result, row, col):
     pRow = pointer(c_int(row))
     is_nulls = (c_bool * row)()
@@ -514,6 +529,7 @@ def taos_is_null_by_column(result, row, col):
     if errno != 0:
         raise InternalError(errno=errno, msg=taos_errstr(result))
     return is_nulls
+
 
 _libtaos.taos_fetch_block.restype = c_int
 _libtaos.taos_fetch_block.argtypes = c_void_p, c_void_p
@@ -559,7 +575,14 @@ def taos_fetch_block_v3(result, fields=None, field_count=None, decode_binary=Tru
             raise DatabaseError("Invalid data type returned from database")
         offsets = []
         is_null = []
-        if fields[i]["type"] in (FieldType.C_VARCHAR, FieldType.C_NCHAR, FieldType.C_JSON, FieldType.C_VARBINARY, FieldType.C_GEOMETRY, FieldType.C_BLOB):
+        if fields[i]["type"] in (
+            FieldType.C_VARCHAR,
+            FieldType.C_NCHAR,
+            FieldType.C_JSON,
+            FieldType.C_VARBINARY,
+            FieldType.C_GEOMETRY,
+            FieldType.C_BLOB,
+        ):
             offsets = taos_get_column_data_offset(result, i, num_of_rows)
             f = convert_block_func_v3(fields[i]["type"], decode_binary=decode_binary)
             blocks[i] = f(data, is_null, num_of_rows, offsets, precision)
@@ -674,6 +697,7 @@ try:
     _libtaos.taos_fetch_fields_e.argstype = (c_void_p,)
 except Exception as err:
     _UNSUPPORTED["taos_fetch_fields_e"] = err
+
 
 def taos_fetch_fields_e_raw(result):
     # type: (c_void_p) -> c_void_p
@@ -1199,7 +1223,7 @@ def taos_stmt2_bind_param(stmt, bindv, col_idx):
 # int taos_stmt2_exec(TAOS_STMT2 *stmt, int *affected_rows);
 try:
     _libtaos.taos_stmt2_exec.restype = c_int
-    _libtaos.taos_stmt2_exec.argstype = (c_void_p,ctypes.POINTER(ctypes.c_int))
+    _libtaos.taos_stmt2_exec.argstype = (c_void_p, ctypes.POINTER(ctypes.c_int))
 except Exception as err:
     _UNSUPPORTED["taos_stmt2_exec"] = err
 
@@ -1246,7 +1270,7 @@ def taos_stmt2_close(stmt):
 # int taos_stmt2_is_insert(TAOS_STMT2 *stmt, int *insert);
 try:
     _libtaos.taos_stmt2_is_insert.restype = c_int
-    _libtaos.taos_stmt2_is_insert.argstype = (c_void_p,ctypes.POINTER(ctypes.c_int))
+    _libtaos.taos_stmt2_is_insert.argstype = (c_void_p, ctypes.POINTER(ctypes.c_int))
 except Exception as err:
     _UNSUPPORTED["taos_stmt2_is_insert"] = err
 
@@ -1265,29 +1289,31 @@ def taos_stmt2_is_insert(stmt):
         error_msg = taos_stmt2_error(stmt)
         raise StatementError(msg=error_msg, errno=res)
     #
-    return is_insert.value !=0
+    return is_insert.value != 0
 
 
 # int taos_stmt2_get_fields(TAOS_STMT2 *stmt, int *count, TAOS_FIELD_E **fields);
 try:
     _libtaos.taos_stmt2_get_fields.restype = c_int
-    _libtaos.taos_stmt2_get_fields.argstype = (c_void_p,c_int,ctypes.POINTER(ctypes.c_int),ctypes.c_void_p)
+    _libtaos.taos_stmt2_get_fields.argstype = (c_void_p, c_int, ctypes.POINTER(ctypes.c_int), ctypes.c_void_p)
 except Exception as err:
     _UNSUPPORTED["taos_stmt2_get_fields"] = err
 
 
 # void taos_stmt2_free_fields(TAOS_STMT2 *stmt, TAOS_FIELD_E *fields);
 try:
-    _libtaos.taos_stmt2_free_fields.argstype = (c_void_p,c_int,ctypes.c_void_p)
+    _libtaos.taos_stmt2_free_fields.argstype = (c_void_p, c_int, ctypes.c_void_p)
 except Exception as err:
     _UNSUPPORTED["taos_stmt2_free_fields"] = err
 
-# define field_type 
-TAOS_FIELD_COL    = 1 
-TAOS_FIELD_TAG    = 2
-TAOS_FIELD_QUERY  = 3
+# define field_type
+TAOS_FIELD_COL = 1
+TAOS_FIELD_TAG = 2
+TAOS_FIELD_QUERY = 3
 TAOS_FIELD_TBNAME = 4
-# get fields 
+
+
+# get fields
 def taos_stmt2_get_fields(stmt):
     # type: (ctypes.c_void_p) -> Tuple[int, List[TaosFieldAll]]
     """
@@ -1313,12 +1339,12 @@ def taos_stmt2_get_fields(stmt):
     for i in range(count.value):
         field_c: TaosFieldAll = fields_ptr[i]
         field_py = TaosFieldAllCls(
-            name       = field_c.name,
-            type       = field_c.type,
-            precision  = field_c.precision,
-            scale      = field_c.scale,
-            bytes_     = field_c.bytes,
-            field_type = field_c.field_type
+            name=field_c.name,
+            type=field_c.type,
+            precision=field_c.precision,
+            scale=field_c.scale,
+            bytes_=field_c.bytes,
+            field_type=field_c.field_type,
         )
         fields.append(field_py)
 
@@ -1348,8 +1374,6 @@ def taos_stmt2_result(stmt):
         raise StatementError(msg=error_msg, errno=-1)
     #
     return res
-
-
 
 
 ############################################ stmt2 end ############################################
@@ -2312,4 +2336,3 @@ class CTaosInterface(object):
         """
 
         return taos_connect(host, user, password, db, port)
-

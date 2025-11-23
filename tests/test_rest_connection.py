@@ -244,6 +244,7 @@ def test_tzinfo_timezone_with_req_id():
         # [datetime.datetime(2022, 7, 26, 13, 56, 58, 746000,
         # tzinfo=datetime.timezone(datetime.timedelta(seconds=28800), 'CST')), -100, -200.3]
 
+
 def test_wrong_token():
     try:
         conn = taosrest.connect(url="https://gw.us-east.azure.cloud.tdengine.com", token="wrong_token")
@@ -252,9 +253,13 @@ def test_wrong_token():
         print(e)
         assert e.status_code == 401
 
+
 def test_token():
-    conn = taosrest.connect(url="https://gw.us-west-2.aws.cloud.tdengine.com", token="f158c322e165e82156f50ba4aa0f3e01081b38d7")
+    conn = taosrest.connect(
+        url="https://gw.us-west-2.aws.cloud.tdengine.com", token="f158c322e165e82156f50ba4aa0f3e01081b38d7"
+    )
     print(conn.server_info)
+
 
 @check_env
 def test_user():
@@ -266,14 +271,16 @@ def test_user():
         print(f"Failed to create user: {e}")
         assert e.errno == 0x0350
 
+
 @check_env
 def test_special_characters():
     try:
         url = os.environ["TDENGINE_URL"]
-        user1 = taosrest.connect(url=url, user='test_user', password='Ab1!@#$%^&*()-_+=[]{}')
+        user1 = taosrest.connect(url=url, user="test_user", password="Ab1!@#$%^&*()-_+=[]{}")
         print("conn server info: %s" % user1.server_info)
     except ConnectError as e:
         print(e)
+
 
 def teardown_module(module):
     url = os.environ["TDENGINE_URL"]

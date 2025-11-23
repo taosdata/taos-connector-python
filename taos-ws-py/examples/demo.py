@@ -1,4 +1,5 @@
 import taosws
+
 conn = taosws.connect("ws://localhost:6041")
 
 conn.execute("create database if not exists connwspy")

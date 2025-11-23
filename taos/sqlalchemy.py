@@ -5,25 +5,25 @@ from sqlalchemy.engine import default, reflection
 from sqlalchemy.sql import compiler
 
 TYPES_MAP = {
-    "BOOL"             : sqltypes.Boolean,
-    "TIMESTAMP"        : sqltypes.DATETIME,
-    "INT"              : sqltypes.Integer,
-    "INT UNSIGNED"     : sqltypes.Integer,
-    "BIGINT"           : sqltypes.BigInteger,
-    "BIGINT UNSIGNED"  : sqltypes.BigInteger,
-    "FLOAT"            : sqltypes.FLOAT,
-    "DOUBLE"           : sqltypes.FLOAT,
-    "TINYINT"          : sqltypes.SmallInteger,
-    "TINYINT UNSIGNED" : sqltypes.SmallInteger,
-    "SMALLINT"         : sqltypes.SmallInteger,
+    "BOOL": sqltypes.Boolean,
+    "TIMESTAMP": sqltypes.DATETIME,
+    "INT": sqltypes.Integer,
+    "INT UNSIGNED": sqltypes.Integer,
+    "BIGINT": sqltypes.BigInteger,
+    "BIGINT UNSIGNED": sqltypes.BigInteger,
+    "FLOAT": sqltypes.FLOAT,
+    "DOUBLE": sqltypes.FLOAT,
+    "TINYINT": sqltypes.SmallInteger,
+    "TINYINT UNSIGNED": sqltypes.SmallInteger,
+    "SMALLINT": sqltypes.SmallInteger,
     "SMALLINT UNSIGNED": sqltypes.SmallInteger,
-    "BINARY"           : sqltypes.String,
-    "VARCHAR"          : sqltypes.String,
-    "VARBINARY"        : sqltypes.BINARY,
-    "NCHAR"            : sqltypes.Unicode,
-    "JSON"             : sqltypes.JSON,
-    "BLOB"             : sqltypes.BLOB,
-    "GEOMETRY"         : sqltypes.BINARY
+    "BINARY": sqltypes.String,
+    "VARCHAR": sqltypes.String,
+    "VARBINARY": sqltypes.BINARY,
+    "NCHAR": sqltypes.Unicode,
+    "JSON": sqltypes.JSON,
+    "BLOB": sqltypes.BLOB,
+    "GEOMETRY": sqltypes.BINARY,
 }
 
 # TDengine reserved words
@@ -348,11 +348,11 @@ RESERVED_WORDS_TDENGINE = {
     "keep_time_offset",
     "arbgroups",
     "is_import",
-    "force_window_close"
+    "force_window_close",
 }
 
 # backup generator function
-'''
+"""
 generator from TDengine/source/libs/parse/src/parTokenizer.c -> keywordTable
 
 import sys
@@ -383,7 +383,7 @@ def readKeyWord(filename):
 if __name__ == "__main__":
     readKeyWord("./keyword.txt")
 
-'''
+"""
 
 
 class TDengineCompiler(compiler.SQLCompiler):
@@ -417,10 +417,9 @@ class TDengineCompiler(compiler.SQLCompiler):
 
 
 class TDengineDDLCompiler(compiler.DDLCompiler):
-
     def visit_create_table(self, create, **kw):
         """Simplified CREATE TABLE format"""
-        return super().visit_create_table(create, **kw).replace('\n\t', ' ').replace('\n', ' ')
+        return super().visit_create_table(create, **kw).replace("\n\t", " ").replace("\n", " ")
 
 
 #
@@ -435,9 +434,7 @@ class TDengineIdentifierPreparer(sql.compiler.IdentifierPreparer):
         else:
             quote = '"'
 
-        super(TDengineIdentifierPreparer, self).__init__(
-            dialect, initial_quote=quote, escape_quote=quote
-        )
+        super(TDengineIdentifierPreparer, self).__init__(dialect, initial_quote=quote, escape_quote=quote)
 
     def _quote_free_identifiers(self, *ids):
         """Unilaterally identifier-quote any number of strings."""
@@ -555,13 +552,9 @@ class BaseDialect(default.DefaultDialect):
     @reflection.cache
     def get_table_names(self, connection, schema=None, **kw):
         if schema is None:
-            sqls = [
-                f"show stables",
-                f"show normal tables"]
+            sqls = [f"show stables", f"show normal tables"]
         else:
-            sqls = [
-                f"show `{schema}`.stables",
-                f"show normal `{schema}`.tables"]
+            sqls = [f"show `{schema}`.stables", f"show normal `{schema}`.tables"]
         # Execute queries
         try:
             names = []
@@ -577,7 +570,7 @@ class BaseDialect(default.DefaultDialect):
     def get_view_names(self, connection, schema=None, **kw):
         if schema is None:
             return []
-        # SQL query for views       
+        # SQL query for views
         sql = f"show `{schema}`.views"
         # Execute query
         try:
@@ -627,11 +620,13 @@ class TaosWsDialect(BaseDialect):
     @classmethod
     def dbapi(cls):
         import taosws
+
         return taosws
 
     @classmethod
     def import_dbapi(cls):
         import taosws
+
         return taosws
 
     @classmethod

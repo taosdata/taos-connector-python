@@ -19,7 +19,7 @@ def gen_req_id():
     global tUUIDHashId
     global tUUIDSerialNo
     if tUUIDHashId == 0:
-        uid = str(uuid.uuid4()).encode('utf-8')
+        uid = str(uuid.uuid4()).encode("utf-8")
         tUUIDHashId = murmurhash3_32(uid, len(uid))
 
     while True:
@@ -40,8 +40,8 @@ def murmurhash3_32(key, length):
     data = key
     nblocks = length >> 2
     h1 = 0x12345678
-    c1 = 0xcc9e2d51
-    c2 = 0x1b873593
+    c1 = 0xCC9E2D51
+    c2 = 0x1B873593
     blocks = data
     for i in range(-nblocks, 0):
         k1 = blocks[i]
@@ -50,8 +50,8 @@ def murmurhash3_32(key, length):
         k1 *= c2
         h1 ^= k1
         h1 = rotl32(h1, 13)
-        h1 = h1 * 5 + 0xe6546b64
-    tail = data[nblocks * 4:]
+        h1 = h1 * 5 + 0xE6546B64
+    tail = data[nblocks * 4 :]
     k1 = 0
     # print('length', length, length & 3)
     if length & 3 == 3:
@@ -75,9 +75,9 @@ def rotl32(x, r):
 
 def fmix32(h):
     h ^= h >> 16
-    h *= 0x85ebca6b
+    h *= 0x85EBCA6B
     h ^= h >> 13
-    h *= 0xc2b2ae35
+    h *= 0xC2B2AE35
     h ^= h >> 16
     return h
 
@@ -85,30 +85,34 @@ def fmix32(h):
 def get_pid():
     return os.getpid()
 
+
 #
 # detect list contian none count
 #
-ALL_NONE     = 0  # all list item is none
-HAVE_NONE    = 1  # list item some is none, some is not none
-NOFOUND_NONE = 2  # all list item no found none 
+ALL_NONE = 0  # all list item is none
+HAVE_NONE = 1  # list item some is none, some is not none
+NOFOUND_NONE = 2  # all list item no found none
+
+
 def detectListNone(items):
     if items is None:
         return ALL_NONE
     # loop
-    n0 = 0 # none count
-    n1 = 0 # not noen count
+    n0 = 0  # none count
+    n1 = 0  # not noen count
     for item in items:
         if item is None:
             n0 += 1
         else:
             n1 += 1
-    
-    # return 
+
+    # return
     if n0 == 0:
         return NOFOUND_NONE
     if n1 == 0:
         return ALL_NONE
     return HAVE_NONE
+
 
 def checkString(label, values, types):
     for value in values:
@@ -119,9 +123,10 @@ def checkString(label, values, types):
             err = f"{label} type bind not support type = {type(value)}"
             raise DataTypeAndRangeError(err)
         # check length should do for engine
-        #if length is not None and len(value) + 2 > length:
+        # if length is not None and len(value) + 2 > length:
         #    err = f"{label} type value:{value} length exceeds the max length {length}"
         #    raise DataTypeAndRangeError(err)
+
 
 def checkNumber(label, values, types, min, max):
     for value in values:
@@ -134,7 +139,7 @@ def checkNumber(label, values, types, min, max):
         # range
         if value < min or value > max:
             err = f"{label} type value:{value} exceeds the indicated range [{min}, {max}]"
-            raise DataTypeAndRangeError(err)            
+            raise DataTypeAndRangeError(err)
 
 
 def checkTypeValid(buffer_type, values):
@@ -148,8 +153,8 @@ def checkTypeValid(buffer_type, values):
                 raise DataTypeAndRangeError(err)
             elif type(value) is int:
                 # check range (same bigint)
-                min = -2**63
-                max = 2**63-1
+                min = -(2**63)
+                max = 2**63 - 1
                 if value < min or value > max:
                     err = f"timestamp type value:{value} exceeds the indicated range [{min}, {max}]"
                     raise DataTypeAndRangeError(err)
@@ -162,41 +167,41 @@ def checkTypeValid(buffer_type, values):
                 err = f"bool type bind not support type = {type(value)}"
                 raise DataTypeAndRangeError(err)
     elif buffer_type == FieldType.C_TINYINT:
-        checkNumber("tinyint", values, [int, float], -128,   127)
+        checkNumber("tinyint", values, [int, float], -128, 127)
     elif buffer_type == FieldType.C_SMALLINT:
         checkNumber("smallint", values, [int, float], -32768, 32767)
     elif buffer_type == FieldType.C_INT:
-        checkNumber("int", values, [int, float],    -2**31, 2**31-1)
+        checkNumber("int", values, [int, float], -(2**31), 2**31 - 1)
     elif buffer_type == FieldType.C_BIGINT:
-        checkNumber("bigint", values, [int, float], -2**63, 2**63-1)
+        checkNumber("bigint", values, [int, float], -(2**63), 2**63 - 1)
     elif buffer_type == FieldType.C_FLOAT:
-        checkNumber("float", values, [int, float], -3.4E38, 3.4E38)
+        checkNumber("float", values, [int, float], -3.4e38, 3.4e38)
     elif buffer_type == FieldType.C_DOUBLE:
-        checkNumber("double", values, [int, float], -1.7E308, 1.7E308)
+        checkNumber("double", values, [int, float], -1.7e308, 1.7e308)
     # unsigned
     elif buffer_type == FieldType.C_TINYINT_UNSIGNED:
         checkNumber("unsigned tinyint", values, [int, float], 0, 255)
     elif buffer_type == FieldType.C_SMALLINT_UNSIGNED:
         checkNumber("unsigned smallint", values, [int, float], 0, 65535)
     elif buffer_type == FieldType.C_INT_UNSIGNED:
-        checkNumber("unsigned int", values, [int, float], 0, 2**32-1)
+        checkNumber("unsigned int", values, [int, float], 0, 2**32 - 1)
     elif buffer_type == FieldType.C_BIGINT_UNSIGNED:
-        checkNumber("unsigned bigint", values, [int, float], 0, 2**64-1)
-    # str            
+        checkNumber("unsigned bigint", values, [int, float], 0, 2**64 - 1)
+    # str
     elif buffer_type == FieldType.C_VARCHAR:
         checkString("varchar", values, [str])
     elif buffer_type == FieldType.C_BINARY:
-        checkString("binary",  values, [str])
+        checkString("binary", values, [str])
     elif buffer_type == FieldType.C_NCHAR:
-        checkString("nchar",   values, [str])
+        checkString("nchar", values, [str])
     elif buffer_type == FieldType.C_JSON:
-        checkString("json",    values, [str])
+        checkString("json", values, [str])
     elif buffer_type == FieldType.C_VARBINARY:
         checkString("varbinary", values, [bytes, bytearray])
     elif buffer_type == FieldType.C_GEOMETRY:
         checkString("geometry", values, [bytes, bytearray])
     elif buffer_type == FieldType.C_BLOB:
-        checkString("blob", values, [bytes, bytearray])    
+        checkString("blob", values, [bytes, bytearray])
     else:
         err = f"invalid datatype type={buffer_type} values= {values}"
         raise DataTypeAndRangeError(err)

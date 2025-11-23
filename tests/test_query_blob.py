@@ -20,7 +20,7 @@ def test_query():
     print("fields: ", fields)
     assert fields.count == 3
 
-    results= result.fetch_all()
+    results = result.fetch_all()
     print("results: ", results)
     n = conn.execute('insert into tn1 using tb1 tags(\'{"name":"value"}\') values(now + 10s, "xxxxxxxxxxxxxxxxxxx")')
     print("inserted %d rows" % n)
@@ -28,7 +28,7 @@ def test_query():
     fields = result.fields
     print("fields: ", fields)
     assert fields.count == 3
-    results= result.fetch_all()
+    results = result.fetch_all()
     print("results: ", results)
 
     n = conn.execute('insert into tn1 using tb1 tags(\'{"name":"value"}\') values(now + 20s, "\\x7f8290")')
@@ -37,17 +37,18 @@ def test_query():
     fields = result.fields
     print("fields: ", fields)
     assert fields.count == 3
-    results= result.fetch_all()
+    results = result.fetch_all()
     print("results: ", results)
     assert results[0][1] == None
     assert results[1][1] == b"xxxxxxxxxxxxxxxxxxx"
     assert results[2][1] == b"\x7f\x82\x90"
     assert len(results) == 3
-    
+
     result.close()
     db_name = "test_query_py"
     tear_down_database(conn, db_name)
     conn.close()
+
 
 if __name__ == "__main__":
     test_query()

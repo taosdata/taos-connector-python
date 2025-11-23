@@ -18,7 +18,7 @@ def init_tmq_env(db, topic):
     conn.execute("insert into tb3 values (now, 3, 3.0, 'tmq test')")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # init env
     init_tmq_env("tmq_test", "tmq_test_topic")
     consumer = Consumer(
