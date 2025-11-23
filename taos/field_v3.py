@@ -9,6 +9,7 @@ _RTYPE_SIZE = ctypes.sizeof(_RTYPE)
 _BLOB_RTYPE = ctypes.c_uint32
 _BLOB_RTYPE_SIZE = ctypes.sizeof(_BLOB_RTYPE)
 
+
 def _crow_binary_to_python_block_v3(data, is_null, num_of_rows, offsets, precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C binary row to python row."""
     assert offsets is not None
@@ -50,6 +51,7 @@ def _crow_varbinary_to_python_block_v3(data, is_null, num_of_rows, offsets, prec
             res.append(chars)
     return res
 
+
 def _crow_blob_to_python_block_v3(data, is_null, num_of_rows, offsets, precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C varbinary row to python row."""
     assert offsets is not None
@@ -62,6 +64,7 @@ def _crow_blob_to_python_block_v3(data, is_null, num_of_rows, offsets, precision
             chars = (ctypes.c_char * rbyte).from_address(data + offsets[i] + _BLOB_RTYPE_SIZE).raw
             res.append(chars)
     return res
+
 
 def convert_block_func_v3(field_type: FieldType, decode_binary=True):
     """Get convert block func."""
@@ -157,11 +160,23 @@ class TaosFieldE(ctypes.Structure):
 
     def __dict__(self):
         """Construct dict."""
-        return {"name": self.name, "type": self.type, "precision": self.precision, "scale": self.scale, "bytes": self.length}
+        return {
+            "name": self.name,
+            "type": self.type,
+            "precision": self.precision,
+            "scale": self.scale,
+            "bytes": self.length,
+        }
 
     def __str__(self):
         """Construct str."""
-        return "{name: %s, type: %d, precision: %d, scale: %d, bytes: %d}" % (self.name, self.type, self.precision, self.scale, self.length)
+        return "{name: %s, type: %d, precision: %d, scale: %d, bytes: %d}" % (
+            self.name,
+            self.type,
+            self.precision,
+            self.scale,
+            self.length,
+        )
 
     def __getitem__(self, item):
         """Get attr."""
@@ -287,6 +302,8 @@ class TaosFieldEs(object):
 
 
 TAOS_FIELD_T = ctypes.c_int
+
+
 class TaosFieldAll(ctypes.Structure):
     _fields_ = [
         ("_name", ctypes.c_char * 65),
@@ -294,7 +311,7 @@ class TaosFieldAll(ctypes.Structure):
         ("_precision", ctypes.c_uint8),
         ("_scale", ctypes.c_uint8),
         ("_bytes", ctypes.c_int32),
-        ("_field_type", ctypes.c_uint8)
+        ("_field_type", ctypes.c_uint8),
     ]
 
     @property
@@ -328,11 +345,25 @@ class TaosFieldAll(ctypes.Structure):
 
     def __dict__(self):
         """Construct dict."""
-        return {"name": self.name, "type": self.type, "precision": self.precision, "scale": self.scale, "bytes": self.length, "field_type": self.field_type}
+        return {
+            "name": self.name,
+            "type": self.type,
+            "precision": self.precision,
+            "scale": self.scale,
+            "bytes": self.length,
+            "field_type": self.field_type,
+        }
 
     def __str__(self):
         """Construct str."""
-        return "{name: %s, type: %d, precision: %d, scale: %d, bytes: %d field_type:%d}" % (self.name, self.type, self.precision, self.scale, self.length, self.field_type)
+        return "{name: %s, type: %d, precision: %d, scale: %d, bytes: %d field_type:%d}" % (
+            self.name,
+            self.type,
+            self.precision,
+            self.scale,
+            self.length,
+            self.field_type,
+        )
 
     def __getitem__(self, item):
         """Get attr."""
@@ -341,13 +372,12 @@ class TaosFieldAll(ctypes.Structure):
 
 class TaosFieldAllCls:
     def __init__(self, name, type, precision, scale, bytes_, field_type):
-        self.name       = name
-        self.type       = type
-        self.precision  = precision
-        self.scale      = scale
-        self.bytes      = bytes_
+        self.name = name
+        self.type = type
+        self.precision = precision
+        self.scale = scale
+        self.bytes = bytes_
         self.field_type = field_type
 
     def __repr__(self):
-        return f"TaosFieldAllCls(name=\"{self.name}\", type={self.type}, precision={self.precision}, scale={self.scale}, bytes={self.bytes}, field_type={self.field_type})"
-
+        return f'TaosFieldAllCls(name="{self.name}", type={self.type}, precision={self.precision}, scale={self.scale}, bytes={self.bytes}, field_type={self.field_type})'

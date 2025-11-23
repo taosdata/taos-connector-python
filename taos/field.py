@@ -108,7 +108,7 @@ def _crow_smallint_to_python(data, is_null, num_of_rows, nbytes=None, precision=
 
 
 def _crow_smallint_unsigned_to_python(
-        data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN
+    data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN
 ):
     """Function to convert C unsigned smallint row to python row."""
     return [
@@ -169,8 +169,7 @@ def _crow_decimal_to_python(data, is_null, num_of_rows, nbytes=None, precision=0
     """Function to convert C Decimal row to python row."""
     ptr = ctypes.cast(data, ctypes.POINTER(ctypes.c_char * 64))
     return [
-        None if is_null[i] else Decimal(cast(ptr[i], c_char_p).value.decode("utf-8"))
-        for i in range(abs(num_of_rows))
+        None if is_null[i] else Decimal(cast(ptr[i], c_char_p).value.decode("utf-8")) for i in range(abs(num_of_rows))
     ]
 
 
@@ -249,6 +248,7 @@ def _crow_varbinary_to_python_block(data, is_null, num_of_rows, nbytes=None, pre
             buffer[:rbyte] = chars[0][:rbyte]
             res.append(cast(buffer, c_char_p).value)
     return res
+
 
 def _crow_blob_to_python_block(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
     """Function to convert C binary row to python row."""

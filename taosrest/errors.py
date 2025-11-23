@@ -1,12 +1,12 @@
 class Error(Exception):
-    def __init__(self, msg=None, errno=0xffff, status=''):
+    def __init__(self, msg=None, errno=0xFFFF, status=""):
         self.msg = msg
         self.errno = errno
         self.status = status
-        if self.status != '':
+        if self.status != "":
             self._full_msg = "[%s]: %s" % (self.status, self.msg)
         else:
-            self._full_msg = "[0x%04x]: %s" % (self.errno & 0xffff, self.msg)
+            self._full_msg = "[0x%04x]: %s" % (self.errno & 0xFFFF, self.msg)
 
     def __str__(self):
         return self._full_msg
@@ -14,6 +14,7 @@ class Error(Exception):
 
 class ExecutionError(Error):
     """Run sql error"""
+
     pass
 
 
@@ -31,6 +32,7 @@ class HTTPError(Exception):
 
 class ConnectError(Error):
     """Exception raised for connection failed"""
+
     pass
 
 

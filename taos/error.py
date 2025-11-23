@@ -2,16 +2,17 @@
 """Python exceptions
 """
 
-class ErrMsg :
-    STMT2_NULL           = "stmt2 object is null"
+
+class ErrMsg:
+    STMT2_NULL = "stmt2 object is null"
     STMT2_COUNT_NOTMATCH = "count is not match"
 
 
 class Error(Exception):
-    def __init__(self, msg=None, errno=0xffff):
+    def __init__(self, msg=None, errno=0xFFFF):
         self.msg = msg
         self.errno = errno
-        self._full_msg = "[0x%04x]: %s" % (self.errno & 0xffff, self.msg)
+        self._full_msg = "[0x%04x]: %s" % (self.errno & 0xFFFF, self.msg)
 
     def __str__(self):
         return self._full_msg
@@ -37,6 +38,7 @@ class DatabaseError(Error):
 
 class ConnectionError(Error):
     """Exception raised for connection failed"""
+
     pass
 
 
@@ -91,7 +93,7 @@ class ResultError(DatabaseError):
 class SchemalessError(DatabaseError):
     """taos_schemaless_insert errors."""
 
-    def __init__(self, msg=None, errno=0xffff, affected_rows=0):
+    def __init__(self, msg=None, errno=0xFFFF, affected_rows=0):
         DatabaseError.__init__(self, msg, errno)
         self.affected_rows = affected_rows
 
@@ -114,8 +116,8 @@ class TmqError(DatabaseError):
 
     pass
 
+
 class DataTypeAndRangeError(Error):
     """Exception raise in check value datatype and range error API"""
 
     pass
-    

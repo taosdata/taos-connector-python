@@ -2,25 +2,25 @@ import taosws
 import datetime
 
 env = {
-    'db_protocol': 'taosws',
-    'db_user': "root",
-    'db_pass': "taosdata",
-    'db_host': "localhost",
-    'db_port': 6041,
-    'db_name': "t_ws",
+    "db_protocol": "taosws",
+    "db_user": "root",
+    "db_pass": "taosdata",
+    "db_host": "localhost",
+    "db_port": 6041,
+    "db_name": "t_ws",
 }
 
 
 def make_context(config):
-    db_protocol = config['db_protocol']
-    db_user = config['db_user']
-    db_pass = config['db_pass']
-    db_host = config['db_host']
-    db_port = config['db_port']
+    db_protocol = config["db_protocol"]
+    db_user = config["db_user"]
+    db_pass = config["db_pass"]
+    db_host = config["db_host"]
+    db_port = config["db_port"]
 
     db_url = f"{db_protocol}://{db_user}:{db_pass}@{db_host}:{db_port}"
 
-    db_name = config['db_name']
+    db_name = config["db_name"]
 
     conn = taosws.connect(db_url)
 
@@ -29,8 +29,8 @@ def make_context(config):
 
 def execute():
     conn, db = make_context(env)
-    res = conn.execute('show dnodes')
-    print(f'res: {res}')
+    res = conn.execute("show dnodes")
+    print(f"res: {res}")
     conn.execute(f"drop database if exists {db}")
     conn.execute(f"create database {db}")
     conn.execute(f"use {db}")
@@ -48,14 +48,14 @@ def execute():
         {
             "name": "tb3",
             "t1": 3,
-        }
+        },
     ]
 
     for d in data:
         res = conn.execute(
             f"create table {d.get('name')} using stb tags({d.get('t1')})",
         )
-        print(f'res: {res}')
+        print(f"res: {res}")
 
     ts = datetime.datetime.now().astimezone()
     data = [
@@ -68,12 +68,12 @@ def execute():
         res = conn.execute(
             f"insert into {d[0]} values('{d[1]}', {d[2]})",
         )
-        print(f'res: {res}')
+        print(f"res: {res}")
 
     row = conn.execute("select * from stb")
-    print(f'row: {row}')
+    print(f"row: {row}")
     conn.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     execute()

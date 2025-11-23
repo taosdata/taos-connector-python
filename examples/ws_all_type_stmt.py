@@ -7,33 +7,26 @@ port = 6041
 def json_tag_example():
     conn = None
     try:
-        conn = taosws.connect(host=host,
-                              port=port,
-                              user="root",
-                              password="taosdata")
+        conn = taosws.connect(host=host, port=port, user="root", password="taosdata")
         # create database
         rows_affected: int = conn.execute(f"CREATE DATABASE IF NOT EXISTS example_json_tag")
         print(f"Create database power successfully")
         assert rows_affected == 0
 
         rows_affected = conn.execute(
-            "create table if not exists example_json_tag.stb (ts timestamp, v int) tags(jt json)")
-        print(f"Create stable example_json_tag.stb successfully");
+            "create table if not exists example_json_tag.stb (ts timestamp, v int) tags(jt json)"
+        )
+        print(f"Create stable example_json_tag.stb successfully")
         assert rows_affected == 0
 
         conn.execute("use example_json_tag")
 
         stmt = conn.statement()
         stmt.prepare("INSERT INTO ? using stb tags(?) VALUES (?,?)")
-        stmt.set_tbname('tb1')
-        stmt.set_tags([
-            taosws.json_to_tag('{"name":"value"}')
-        ])
+        stmt.set_tbname("tb1")
+        stmt.set_tags([taosws.json_to_tag('{"name":"value"}')])
 
-        stmt.bind_param([
-            taosws.millis_timestamps_to_column([1686844800000]),
-            taosws.ints_to_column([1])
-        ])
+        stmt.bind_param([taosws.millis_timestamps_to_column([1686844800000]), taosws.ints_to_column([1])])
 
         stmt.add_batch()
         rows = stmt.execute()
@@ -54,10 +47,7 @@ def json_tag_example():
 def all_type_example():
     conn = None
     try:
-        conn = taosws.connect(host=host,
-                              port=port,
-                              user="root",
-                              password="taosdata")
+        conn = taosws.connect(host=host, port=port, user="root", password="taosdata")
         cursor = conn.cursor()
         # create database
         rows_affected: int = cursor.execute(f"CREATE DATABASE IF NOT EXISTS all_type_example")
@@ -73,15 +63,9 @@ def all_type_example():
             "binary_col BINARY(100)",
             "nchar_col NCHAR(100)",
             "varbinary_col VARBINARY(100)",
-            "geometry_col GEOMETRY(100)"
+            "geometry_col GEOMETRY(100)",
         ]
-        tags = [
-            "int_tag INT",
-            "double_tag DOUBLE",
-            "bool_tag BOOL",
-            "binary_tag BINARY(100)",
-            "nchar_tag NCHAR(100)"
-        ]
+        tags = ["int_tag INT", "double_tag DOUBLE", "bool_tag BOOL", "binary_tag BINARY(100)", "nchar_tag NCHAR(100)"]
 
         str_cols = ",".join(cols)
         str_tags = ",".join(tags)
@@ -91,32 +75,58 @@ def all_type_example():
 
         varbinary = bytes([0x01, 0x02, 0x03, 0x04])
 
-        geometry = bytearray([0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                              0x00, 0x00, 0x00, 0x59, 0x40, 0x00, 0x00, 0x00,
-                              0x00, 0x00, 0x00, 0x59, 0x40])
+        geometry = bytearray(
+            [
+                0x01,
+                0x01,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x59,
+                0x40,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x59,
+                0x40,
+            ]
+        )
 
         stmt = conn.statement()
         stmt.prepare("INSERT INTO ? using stb tags(?,?,?,?,?) VALUES (?,?,?,?,?,?,?,?)")
-        stmt.set_tbname('tb1')
+        stmt.set_tbname("tb1")
 
-        stmt.set_tags([
-            taosws.int_to_tag(1),
-            taosws.double_to_tag(1.1),
-            taosws.bool_to_tag(True),
-            taosws.varchar_to_tag("hello"),
-            taosws.nchar_to_tag("stmt")
-        ])
+        stmt.set_tags(
+            [
+                taosws.int_to_tag(1),
+                taosws.double_to_tag(1.1),
+                taosws.bool_to_tag(True),
+                taosws.varchar_to_tag("hello"),
+                taosws.nchar_to_tag("stmt"),
+            ]
+        )
 
-        stmt.bind_param([
-            taosws.millis_timestamps_to_column([1686844800000]),
-            taosws.ints_to_column([1]),
-            taosws.doubles_to_column([1.1]),
-            taosws.bools_to_column([True]),
-            taosws.varchar_to_column(["hello"]),
-            taosws.nchar_to_column(["stmt"]),
-            taosws.varbinary_to_column([b"0x7661726332"]),
-            taosws.geometry_to_column([geometry])
-        ])
+        stmt.bind_param(
+            [
+                taosws.millis_timestamps_to_column([1686844800000]),
+                taosws.ints_to_column([1]),
+                taosws.doubles_to_column([1.1]),
+                taosws.bools_to_column([True]),
+                taosws.varchar_to_column(["hello"]),
+                taosws.nchar_to_column(["stmt"]),
+                taosws.varbinary_to_column([b"0x7661726332"]),
+                taosws.geometry_to_column([geometry]),
+            ]
+        )
 
         stmt.add_batch()
         rows = stmt.execute()

@@ -6,6 +6,7 @@ from datetime import datetime
 import taos
 import pytest
 
+
 def test_stmt_insert():
     # type: (TaosConnection) -> None
     if not IS_V3:
@@ -44,10 +45,33 @@ def test_stmt_insert():
         params[15].timestamp(1626861392589, PrecisionEnum.Milliseconds)
 
         string_data = "Hello, world!"
-        byte_array = bytearray(string_data, 'utf-8')
+        byte_array = bytearray(string_data, "utf-8")
         params[16].varbinary(byte_array)
-        binary_list = bytearray([0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                       0x00, 0x00, 0x00, 0x59, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x59, 0x40])
+        binary_list = bytearray(
+            [
+                0x01,
+                0x01,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x59,
+                0x40,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x59,
+                0x40,
+            ]
+        )
         params[17].geometry(binary_list)
 
         stmt.bind_param(params)
@@ -121,11 +145,34 @@ def test_stmt_insert_multi():
         params[15].timestamp([None, None, 1626861392591])
 
         string_data = "Hello, world!"
-        byte_array = bytearray(string_data, 'utf-8')
+        byte_array = bytearray(string_data, "utf-8")
         params[16].varbinary([None, byte_array, None])
 
-        binary_list = bytearray([0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                       0x00, 0x00, 0x00, 0x59, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x59, 0x40])
+        binary_list = bytearray(
+            [
+                0x01,
+                0x01,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x59,
+                0x40,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x59,
+                0x40,
+            ]
+        )
         params[17].geometry([None, binary_list, None])
 
         stmt.bind_param_batch(params)
@@ -186,10 +233,33 @@ def test_stmt_set_tbname_tag():
         tags[15].timestamp(1626861392589, PrecisionEnum.Milliseconds)
 
         string_data = "Hello, world!"
-        byte_array = bytearray(string_data, 'utf-8')
+        byte_array = bytearray(string_data, "utf-8")
         tags[16].varbinary(byte_array)
-        binary_list = bytearray([0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                       0x00, 0x00, 0x00, 0x59, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x59, 0x40])
+        binary_list = bytearray(
+            [
+                0x01,
+                0x01,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x59,
+                0x40,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x59,
+                0x40,
+            ]
+        )
         tags[17].geometry(binary_list)
 
         stmt.set_tbname_tags("tb1", tags)

@@ -31,6 +31,7 @@ def test_taos_get_client_info():
     assert info is not None
     print("pass test_taos_connect_auth")
 
+
 def test_taos_connect_auth():
     if not taos.IS_V3:
         return
@@ -172,17 +173,20 @@ def test_parsing_decimal():
     conn = taos_connect(**cfg)
     execute_sql(conn, "drop database if exists testdec")
     execute_sql(conn, "create database if not exists testdec")
-    execute_sql(conn, "create table if not exists testdec.test(ts timestamp, dec64 decimal(10,6), dec128 decimal(24,10)) tags (note nchar(20))")
+    execute_sql(
+        conn,
+        "create table if not exists testdec.test(ts timestamp, dec64 decimal(10,6), dec128 decimal(24,10)) tags (note nchar(20))",
+    )
     execute_sql(conn, "create table testdec.d0 using testdec.test(note) tags('test')")
     execute_sql(conn, "insert into testdec.d0 values(now(), '9876.123456', '123456789012.0987654321')")
     execute_sql(conn, "insert into testdec.d0 values(now()+1s, '-6789.654321', '-123456789012.0987654321')")
 
-    def parsing_block(block, col_index = 0):
+    def parsing_block(block, col_index=0):
         data = ctypes.cast(block, ctypes.POINTER(ctypes.c_void_p))[col_index]
         ptr = ctypes.cast(data, ctypes.POINTER(ctypes.c_char * 64))
         return ptr
 
-    def check_decimal(res, values, block_type = True):
+    def check_decimal(res, values, block_type=True):
         if block_type:
             block, num_rows = taos_fetch_block_raw(res)
         else:
@@ -206,16 +210,18 @@ def test_parsing_decimal():
         taos_free_result(res)
 
     # taos_fetch_block_raw
-    check_decimal_block(conn, "select dec64 from testdec.test", ['9876.123456', '-6789.654321'])
-    check_decimal_block(conn, "select dec128 from testdec.test", ['123456789012.0987654321', '-123456789012.0987654321'])
+    check_decimal_block(conn, "select dec64 from testdec.test", ["9876.123456", "-6789.654321"])
+    check_decimal_block(
+        conn, "select dec128 from testdec.test", ["123456789012.0987654321", "-123456789012.0987654321"]
+    )
 
     # taos_fetch_row_raw
-    check_decimal_row(conn, "select dec64 from testdec.test", ['9876.123456', '-6789.654321'])
-    check_decimal_row(conn, "select dec128 from testdec.test", ['123456789012.0987654321', '-123456789012.0987654321'])
+    check_decimal_row(conn, "select dec64 from testdec.test", ["9876.123456", "-6789.654321"])
+    check_decimal_row(conn, "select dec128 from testdec.test", ["123456789012.0987654321", "-123456789012.0987654321"])
 
     # fetch fields e
     res = taos_query(conn, "select dec64, dec128 from testdec.test")
-    fields : TaosFieldEs = taos_fetch_fields_e(res)
+    fields: TaosFieldEs = taos_fetch_fields_e(res)
     print("count: %d" % fields.count)
     for field in fields:
         print(field)
@@ -230,12 +236,15 @@ def test_parsing_decimal():
 
 ############################################ stmt2 begin ############################################
 
+
 def execute_sql(conn, sql):
     res = taos_query(conn, sql)
     taos_free_result(res)
 
 
 global_reqid = 0
+
+
 def test_taos_stmt2_option_default_reqid():
     if not taos.IS_V3:
         return
@@ -308,6 +317,7 @@ def test_taos_stmt2_bind_without_prepare():
         return
 
     from taos.bind2 import TaosStmt2Bind, new_stmt2_binds, new_bindv
+
     conn = taos_connect(**cfg)
     option = None
     stmt2 = taos_stmt2_init(conn, option)
@@ -317,9 +327,7 @@ def test_taos_stmt2_bind_without_prepare():
 
     # prepare data
     tbanmes = ["d1"]
-    tags = [
-        ["grade1", 1]
-    ]
+    tags = [["grade1", 1]]
     datas = [
         # class 1
         [
@@ -327,7 +335,7 @@ def test_taos_stmt2_bind_without_prepare():
             [1601481600000, 1601481600001, 1601481600002, 1601481600003, 1601481600004],
             ["Mary", "Tom", "Jack", "Jane", "alex"],
             [0, 1, 1, 0, 1],
-            [98, 80, 60, 100, 99]
+            [98, 80, 60, 100, 99],
         ],
     ]
 
@@ -371,7 +379,6 @@ def test_taos_stmt2_bind_without_prepare():
     print("pass test_taos_stmt2_bind_without_prepare")
 
 
-
 def test_taos_stmt2_insert():
     if not taos.IS_V3:
         return
@@ -396,11 +403,7 @@ def test_taos_stmt2_insert():
 
     # prepare data
     tbanmes = ["d1", "d2", "d3"]
-    tags = [
-        ["grade1", 1],
-        ["grade1", 2],
-        ["grade1", 3]
-    ]
+    tags = [["grade1", 1], ["grade1", 2], ["grade1", 3]]
     datas = [
         # class 1
         [
@@ -408,25 +411,24 @@ def test_taos_stmt2_insert():
             [1601481600000, 1601481600001, 1601481600002, 1601481600003, 1601481600004],
             ["Mary", "Tom", "Jack", "Jane", "alex"],
             [0, 1, 1, 0, 1],
-            [98, 80, 60, 100, 99]
+            [98, 80, 60, 100, 99],
         ],
-            # class 2
+        # class 2
         [
             # student
             [1601481600000, 1601481600001, 1601481600002, 1601481600003, 1601481600004],
             ["Mary2", "Tom2", "Jack2", "Jane2", "alex2"],
             [0, 1, 1, 0, 1],
-            [298, 280, 260, 2100, 299]
+            [298, 280, 260, 2100, 299],
         ],
-            # class 3
+        # class 3
         [
             # student
             [1601481600000, 1601481600001, 1601481600002, 1601481600003, 1601481600004],
             ["Mary3", "Tom3", "Jack3", "Jane3", "alex3"],
             [0, 1, 1, 0, 1],
-            [398, 380, 360, 3100, 399]
-
-        ]
+            [398, 380, 360, 3100, 399],
+        ],
     ]
 
     cnt_tbls = 3
@@ -495,11 +497,7 @@ def test_taos_stmt2_get_fields():
 
     # prepare data
     tbanmes = ["d1", "d2", "d3"]
-    tags = [
-        ["grade1", 1],
-        ["grade1", 2],
-        ["grade1", 3]
-    ]
+    tags = [["grade1", 1], ["grade1", 2], ["grade1", 3]]
     datas = [
         # class 1
         [
@@ -507,25 +505,24 @@ def test_taos_stmt2_get_fields():
             [1601481600000, 1601481600001, 1601481600002, 1601481600003, 1601481600004],
             ["Mary", "Tom", "Jack", "Jane", "alex"],
             [0, 1, 1, 0, 1],
-            [98, 80, 60, 100, 99]
+            [98, 80, 60, 100, 99],
         ],
-            # class 2
+        # class 2
         [
             # student
             [1601481600000, 1601481600001, 1601481600002, 1601481600003, 1601481600004],
             ["Mary2", "Tom2", "Jack2", "Jane2", "alex2"],
             [0, 1, 1, 0, 1],
-            [298, 280, 260, 2100, 299]
+            [298, 280, 260, 2100, 299],
         ],
-            # class 3
+        # class 3
         [
             # student
             [1601481600000, 1601481600001, 1601481600002, 1601481600003, 1601481600004],
             ["Mary3", "Tom3", "Jack3", "Jane3", "alex3"],
             [0, 1, 1, 0, 1],
-            [398, 380, 360, 3100, 399]
-
-        ]
+            [398, 380, 360, 3100, 399],
+        ],
     ]
 
     cnt_tbls = 3
@@ -563,13 +560,13 @@ def test_taos_stmt2_get_fields():
 
     # check
     check_fields = [
-        TaosFieldAllCls("tbname", 8, 0, 0, 271, 4),          
-        TaosFieldAllCls("grade", 8, 0, 0, 26, 2),          
-        TaosFieldAllCls("class", 4, 0, 0, 4, 2),          
-        TaosFieldAllCls("ts",    9, 0, 0, 8, 1),          
-        TaosFieldAllCls("name",  8, 0, 0, 34, 1),     
-        TaosFieldAllCls("sex",   1, 0, 0, 1, 1),     
-        TaosFieldAllCls("score", 4, 0, 0, 4, 1)
+        TaosFieldAllCls("tbname", 8, 0, 0, 271, 4),
+        TaosFieldAllCls("grade", 8, 0, 0, 26, 2),
+        TaosFieldAllCls("class", 4, 0, 0, 4, 2),
+        TaosFieldAllCls("ts", 9, 0, 0, 8, 1),
+        TaosFieldAllCls("name", 8, 0, 0, 34, 1),
+        TaosFieldAllCls("sex", 1, 0, 0, 1, 1),
+        TaosFieldAllCls("score", 4, 0, 0, 4, 1),
     ]
     count, fields = taos_stmt2_get_fields(stmt2)
     print("count: %d, fields: %s" % (count, fields))
@@ -606,23 +603,57 @@ def test_taos_stmt2_query():
     sql = f"create table if not exists {stbname}(ts timestamp, name binary(32), sex bool, score int) tags(grade binary(24), class int)"
     execute_sql(conn, sql)
 
-    execute_sql(conn, f"insert into d1 using {stbname} tags('grade1', 1) values('2020-10-01 00:00:00.000', 'Mary', false, 98)")
-    execute_sql(conn, f"insert into d1 using {stbname} tags('grade1', 1) values('2020-10-01 00:00:00.001', 'Tom', true, 80)")
-    execute_sql(conn, f"insert into d1 using {stbname} tags('grade1', 1) values('2020-10-01 00:00:00.002', 'Jack', true, 60)")
-    execute_sql(conn, f"insert into d1 using {stbname} tags('grade1', 1) values('2020-10-01 00:00:00.003', 'Jane', false, 100)")
-    execute_sql(conn, f"insert into d1 using {stbname} tags('grade1', 1) values('2020-10-01 00:00:00.004', 'alex', true, 99)")
+    execute_sql(
+        conn, f"insert into d1 using {stbname} tags('grade1', 1) values('2020-10-01 00:00:00.000', 'Mary', false, 98)"
+    )
+    execute_sql(
+        conn, f"insert into d1 using {stbname} tags('grade1', 1) values('2020-10-01 00:00:00.001', 'Tom', true, 80)"
+    )
+    execute_sql(
+        conn, f"insert into d1 using {stbname} tags('grade1', 1) values('2020-10-01 00:00:00.002', 'Jack', true, 60)"
+    )
+    execute_sql(
+        conn, f"insert into d1 using {stbname} tags('grade1', 1) values('2020-10-01 00:00:00.003', 'Jane', false, 100)"
+    )
+    execute_sql(
+        conn, f"insert into d1 using {stbname} tags('grade1', 1) values('2020-10-01 00:00:00.004', 'alex', true, 99)"
+    )
 
-    execute_sql(conn, f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.000', 'Mary2', false, 298)")
-    execute_sql(conn, f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.001', 'Tom2', true, 280)")
-    execute_sql(conn, f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.002', 'Jack2', true, 260)")
-    execute_sql(conn, f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.003', 'Jane2', false, 2100)")
-    execute_sql(conn, f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.004', 'alex2', true, 299)")
+    execute_sql(
+        conn,
+        f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.000', 'Mary2', false, 298)",
+    )
+    execute_sql(
+        conn, f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.001', 'Tom2', true, 280)"
+    )
+    execute_sql(
+        conn, f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.002', 'Jack2', true, 260)"
+    )
+    execute_sql(
+        conn,
+        f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.003', 'Jane2', false, 2100)",
+    )
+    execute_sql(
+        conn, f"insert into d2 using {stbname} tags('grade1', 2) values('2020-10-01 00:00:00.004', 'alex2', true, 299)"
+    )
 
-    execute_sql(conn, f"insert into d3 using {stbname} tags('grade1', 3) values('2020-10-01 00:00:00.000', 'Mary3', false, 398)")
-    execute_sql(conn, f"insert into d3 using {stbname} tags('grade1', 3) values('2020-10-01 00:00:00.001', 'Tom3', true, 380)")
-    execute_sql(conn, f"insert into d3 using {stbname} tags('grade1', 3) values('2020-10-01 00:00:00.002', 'Jack3', true, 360)")
-    execute_sql(conn, f"insert into d3 using {stbname} tags('grade1', 3) values('2020-10-01 00:00:00.003', 'Jane3', false, 3100)")
-    execute_sql(conn, f"insert into d3 using {stbname} tags('grade1', 3) values('2020-10-01 00:00:00.004', 'alex3', true, 399)")
+    execute_sql(
+        conn,
+        f"insert into d3 using {stbname} tags('grade1', 3) values('2020-10-01 00:00:00.000', 'Mary3', false, 398)",
+    )
+    execute_sql(
+        conn, f"insert into d3 using {stbname} tags('grade1', 3) values('2020-10-01 00:00:00.001', 'Tom3', true, 380)"
+    )
+    execute_sql(
+        conn, f"insert into d3 using {stbname} tags('grade1', 3) values('2020-10-01 00:00:00.002', 'Jack3', true, 360)"
+    )
+    execute_sql(
+        conn,
+        f"insert into d3 using {stbname} tags('grade1', 3) values('2020-10-01 00:00:00.003', 'Jane3', false, 3100)",
+    )
+    execute_sql(
+        conn, f"insert into d3 using {stbname} tags('grade1', 3) values('2020-10-01 00:00:00.004', 'alex3', true, 399)"
+    )
 
     sql = f"select * from {stbname} where name = ? and score = ?"
 
@@ -636,7 +667,7 @@ def test_taos_stmt2_query():
         [
             # student
             ["Mary"],
-            [98]
+            [98],
         ]
     ]
 
@@ -685,7 +716,6 @@ def test_taos_stmt2_query():
     taos_close(conn)
 
     print("pass test_taos_stmt2_query")
-
 
 
 ############################################ stmt2 end ############################################

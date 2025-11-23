@@ -30,7 +30,7 @@ class TaosStmt2OptionImpl(ctypes.Structure):
         ("singleStbInsert", ctypes.c_bool),
         ("singleTableBindOnce", ctypes.c_bool),
         ("asyncExecFn", _taos_async_fn_t),
-        ("userdata", ctypes.c_void_p)
+        ("userdata", ctypes.c_void_p),
     ]
 
 
@@ -39,8 +39,9 @@ def taos_stmt2_async_exec(userdata, result_set, error_code):
 
 
 class TaosStmt2Option:
-    def __init__(self, reqid: int = None, single_stb_insert: bool = False, single_table_bind_once: bool = False,
-                 **kwargs):
+    def __init__(
+        self, reqid: int = None, single_stb_insert: bool = False, single_table_bind_once: bool = False, **kwargs
+    ):
         self._impl = TaosStmt2OptionImpl()
         if reqid is None:
             reqid = utils.gen_req_id()
@@ -51,7 +52,7 @@ class TaosStmt2Option:
         self.reqid = reqid
         self.single_stb_insert = single_stb_insert
         self.single_table_bind_once = single_table_bind_once
-        self.is_async = kwargs.get('is_async', False)
+        self.is_async = kwargs.get("is_async", False)
         self.async_exec_fn = taos_stmt2_async_exec if self.is_async else _taos_async_fn_t()
         self.userdata = ctypes.c_void_p(None)
 
@@ -105,6 +106,7 @@ class TaosStmt2Option:
 #    ------------- global fun define -------------
 #
 
+
 def checkConsistent(tbnames, tags, datas):
     # todo
     return True
@@ -157,7 +159,8 @@ def createTagsBind(statement2, tags_tables):
             field = getField(statement2, i, True)
             values = [tags_table[i]]
             log.debug(
-                f"tag i = {i} type={field.type} precision={field.precision} length={field.bytes} values = {values} tags_table = {tags_table}\n")
+                f"tag i = {i} type={field.type} precision={field.precision} length={field.bytes} values = {values} tags_table = {tags_table}\n"
+            )
             binds_table[i].set_value(field.type, values, field.precision)
         binds.append(binds_table)
 
@@ -198,7 +201,8 @@ def createSuperBindV(statement2, cols_tables):
             field = statement2.all_fields[i]
 
             log.debug(
-                f"index i = {i} type={field.type} precision={field.precision} length={field.bytes} cols_table = {cols_table[i]}\n")
+                f"index i = {i} type={field.type} precision={field.precision} length={field.bytes} cols_table = {cols_table[i]}\n"
+            )
 
             if field.field_type == TAOS_FIELD_TAG:
                 values = [cols_table[i]]
@@ -251,7 +255,8 @@ def createQueryBindV(statement2, datas):
                 types.append(FieldType.C_BINARY)
             else:
                 raise StatementError(
-                    f"data type not support, only support int/float/str/bool type, but got {type(value)}")
+                    f"data type not support, only support int/float/str/bool type, but got {type(value)}"
+                )
 
             log.debug(f"createQueryBindV cols_table={cols_table[i]} {type(cols_table[i])}")
 
@@ -327,6 +332,7 @@ def createBindV(statement2, tbnames, tags, datas):
 #
 # STMT2 object implementation
 #
+
 
 class TaosStmt2(object):
     """TDengine STMT2 interface for prepared statements"""
@@ -413,7 +419,7 @@ class TaosStmt2(object):
         """Execute the prepared statement"""
         if self._stmt2 is None:
             raise StatementError("stmt2 object is null.")
-        
+
         self._affected_rows = taos_stmt2_exec(self._stmt2)
         return self._affected_rows
 
@@ -459,7 +465,7 @@ class TaosStmt2(object):
 
     def set_columns_type(self, types):
         """Set columns type for query operations
-        
+
         If query must set columns type (not engine interface),
         type is defined in class FieldType in constants.py
         """

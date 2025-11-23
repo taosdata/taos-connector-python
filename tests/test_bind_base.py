@@ -40,7 +40,10 @@ def check_timestamp(dt_str, dt, seconds_diff):
     except:
         pass
     # int
-    assert datetime_to_timestamp(seconds_diff, taos.PrecisionEnum.Milliseconds).value == ctypes.c_int64(seconds_diff).value
+    assert (
+        datetime_to_timestamp(seconds_diff, taos.PrecisionEnum.Milliseconds).value
+        == ctypes.c_int64(seconds_diff).value
+    )
     # str
     assert datetime_to_timestamp(dt_str, taos.PrecisionEnum.Milliseconds).value == seconds_diff * 10**3
     assert datetime_to_timestamp(dt_str, taos.PrecisionEnum.Microseconds).value == seconds_diff * 10**6
@@ -50,7 +53,10 @@ def check_timestamp(dt_str, dt, seconds_diff):
     except:
         pass
     # c_int64
-    assert datetime_to_timestamp(ctypes.c_int64(seconds_diff), taos.PrecisionEnum.Milliseconds).value == ctypes.c_int64(seconds_diff).value
+    assert (
+        datetime_to_timestamp(ctypes.c_int64(seconds_diff), taos.PrecisionEnum.Milliseconds).value
+        == ctypes.c_int64(seconds_diff).value
+    )
     # other
     assert datetime_to_timestamp(list(), taos.PrecisionEnum.Milliseconds) == FieldType.C_BIGINT_NULL
 
@@ -78,10 +84,11 @@ def test_datetime_to_timestamp_set_timezone():
         return
     #
     import pytz
+
     dt_str = "2020-01-01 00:00:00"
     dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
     # set timezone
-    west_eight_zone = pytz.timezone('America/Los_Angeles')
+    west_eight_zone = pytz.timezone("America/Los_Angeles")
     taos.field.set_tz(west_eight_zone)
     seconds_diff = 1577865180
     check_timestamp(dt_str, dt, seconds_diff)

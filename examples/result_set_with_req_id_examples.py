@@ -9,7 +9,9 @@ conn.execute("CREATE STABLE weather(ts TIMESTAMP, temperature FLOAT) TAGS (locat
 for i in range(2000):
     location = str(i % 10)
     tb = "t" + location
-    conn.execute(f"INSERT INTO {tb} USING weather TAGS({location}) VALUES (now+{i}a, 23.5) (now+{i + 1}a, 23.5)", req_id=4+i)
+    conn.execute(
+        f"INSERT INTO {tb} USING weather TAGS({location}) VALUES (now+{i}a, 23.5) (now+{i + 1}a, 23.5)", req_id=4 + i
+    )
 
 result: taos.TaosResult = conn.query("SELECT * FROM weather", req_id=2004)
 

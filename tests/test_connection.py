@@ -26,5 +26,3 @@ def test_stmt2_invalid_conn():
     stmt2 = conn.statement2()
     assert stmt2 is None
     print("pass test_stmt2_invalid_conn")
-
-
