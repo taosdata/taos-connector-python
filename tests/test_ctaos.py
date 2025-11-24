@@ -9,6 +9,7 @@ from taos.utils import gen_req_id
 def conn():
     return CTaosInterface().connect()
 
+
 def test_fetch_row(conn, caplog):
     dbname = "pytest_ctaos_simple"
     try:
@@ -34,7 +35,7 @@ def test_fetch_row(conn, caplog):
         fields = taos_fetch_fields(res)
         for field in fields:
             print(field)
-            
+
         row, num = taos_fetch_row(res, fields)
         print(row)
         taos_free_result(res)
@@ -42,7 +43,8 @@ def test_fetch_row(conn, caplog):
         taos_close(conn)
     except Exception as err:
         taos_query(conn, "drop database if exists " + dbname)
-        raise err   
+        raise err
+
 
 def test_simple(conn, caplog):
     dbname = "pytest_ctaos_simple"
@@ -52,8 +54,8 @@ def test_simple(conn, caplog):
 
         taos_select_db(conn, dbname)
 
-#  cursor.execute("CREATE STABLE weather(ts TIMESTAMP, temperature FLOAT, city NCHAR(100), country BINARY(100), town VARBINARY(100)) TAGS (location INT)")
-#     cursor.execute(f"INSERT INTO t1 USING weather TAGS(1) VALUES (now, 23.5, 'tianjin', 'china', 'wuqing') (now+100a, 23.5, 'tianjin', 'china', 'wuqing')")
+        #  cursor.execute("CREATE STABLE weather(ts TIMESTAMP, temperature FLOAT, city NCHAR(100), country BINARY(100), town VARBINARY(100)) TAGS (location INT)")
+        #     cursor.execute(f"INSERT INTO t1 USING weather TAGS(1) VALUES (now, 23.5, 'tianjin', 'china', 'wuqing') (now+100a, 23.5, 'tianjin', 'china', 'wuqing')")
         res = taos_query(
             conn,
             "create table if not exists log(ts timestamp, c_level tinyint, content binary(100), ipaddr binary(134), city NCHAR(100), town VARBINARY(100))",
@@ -214,9 +216,9 @@ def test_stmt(conn, caplog):
 
         results = [
             "1626861392589 NULL 2 3 4 5 6 7 8 9 10.1 10.11 hello stmt",
-            "1626861392589 NULL 2 3 4 5 6 7 8 9 10.100000 10.110000 hello stmt"
+            "1626861392589 NULL 2 3 4 5 6 7 8 9 10.100000 10.110000 hello stmt",
         ]
-        assert (rowstr in results)
+        assert rowstr in results
     except Exception as err:
         taos_query(conn, "drop database if exists " + dbname)
         raise err
@@ -302,9 +304,9 @@ def test_stmt_with_req_id(conn, caplog):
 
         results = [
             "1626861392589 NULL 2 3 4 5 6 7 8 9 10.1 10.11 hello stmt",
-            "1626861392589 NULL 2 3 4 5 6 7 8 9 10.100000 10.110000 hello stmt"
+            "1626861392589 NULL 2 3 4 5 6 7 8 9 10.100000 10.110000 hello stmt",
         ]
-        assert (rowstr in results)
+        assert rowstr in results
     except InterfaceError as err:
         print(err)
     except Exception as err:

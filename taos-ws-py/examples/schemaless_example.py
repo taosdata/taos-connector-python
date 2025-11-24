@@ -10,7 +10,7 @@ def schemaless_insert():
     taos_conn.execute("drop database if exists test")
     taos_conn.execute("create database if not exists test")
 
-    conn = taosws.connect('taosws://root:taosdata@localhost:6041/test')
+    conn = taosws.connect("taosws://root:taosdata@localhost:6041/test")
     line_data = [
         "measurement,host=host1 field1=2i,field2=2.0 1577837300000",
         "measurement,host=host1 field1=2i,field2=2.0 1577837400000",
@@ -32,23 +32,29 @@ def schemaless_insert():
         "meters.voltage 1648432611250 217 location=California.LosAngeles group=3",
     ]
 
-    conn.schemaless_insert(lines=line_data,
-                           protocol=PySchemalessProtocol.Line,
-                           precision=PySchemalessPrecision.Millisecond,
-                           ttl=0,
-                           req_id=123)
-    conn.schemaless_insert(lines=json_data,
-                           protocol=PySchemalessProtocol.Json,
-                           precision=PySchemalessPrecision.Millisecond,
-                           ttl=0,
-                           req_id=123)
-    conn.schemaless_insert(lines=telnet_data,
-                           protocol=PySchemalessProtocol.Telnet,
-                           precision=PySchemalessPrecision.Millisecond,
-                           ttl=0,
-                           req_id=123)
+    conn.schemaless_insert(
+        lines=line_data,
+        protocol=PySchemalessProtocol.Line,
+        precision=PySchemalessPrecision.Millisecond,
+        ttl=0,
+        req_id=123,
+    )
+    conn.schemaless_insert(
+        lines=json_data,
+        protocol=PySchemalessProtocol.Json,
+        precision=PySchemalessPrecision.Millisecond,
+        ttl=0,
+        req_id=123,
+    )
+    conn.schemaless_insert(
+        lines=telnet_data,
+        protocol=PySchemalessProtocol.Telnet,
+        precision=PySchemalessPrecision.Millisecond,
+        ttl=0,
+        req_id=123,
+    )
     conn.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     schemaless_insert()

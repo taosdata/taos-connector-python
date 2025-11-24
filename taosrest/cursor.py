@@ -20,7 +20,7 @@ class TaosRestCursor:
 
     @property
     def rowcount(self):
-        """ the number of rows that the last .execute*() produced (for DQL statements like SELECT) or affected (for DML statements like UPDATE or INSERT)."""
+        """the number of rows that the last .execute*() produced (for DQL statements like SELECT) or affected (for DML statements like UPDATE or INSERT)."""
         return self._rowcount
 
     @property
@@ -58,7 +58,7 @@ class TaosRestCursor:
             with open(self._logfile, "a", encoding="utf-8") as logfile:
                 logfile.write(f"{operation};\n")
 
-        if self._response["column_meta"][0][0] == 'affected_rows':
+        if self._response["column_meta"][0][0] == "affected_rows":
             # for INSERT
             self._description = self._response["column_meta"]
             self._affected_rows = self._response["data"][0][0]

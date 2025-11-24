@@ -9,6 +9,7 @@ from taos.precision import PrecisionEnum, PrecisionError
 
 from taos.field import get_tz
 
+
 def parse_datetime_to_utc_timestamp(dt) -> int:
     if isinstance(dt, str):
         dt_naive = datetime.fromisoformat(dt)

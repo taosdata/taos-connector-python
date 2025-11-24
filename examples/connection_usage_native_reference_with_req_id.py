@@ -8,7 +8,9 @@ conn.execute("CREATE DATABASE test", req_id=2)
 # change database. same as execute "USE db"
 conn.select_db("test")
 conn.execute("CREATE STABLE weather(ts TIMESTAMP, temperature FLOAT) TAGS (location INT)", req_id=3)
-affected_row = conn.execute("INSERT INTO t1 USING weather TAGS(1) VALUES (now, 23.5) (now+1m, 23.5) (now+2m, 24.4)", req_id=4)
+affected_row = conn.execute(
+    "INSERT INTO t1 USING weather TAGS(1) VALUES (now, 23.5) (now+1m, 23.5) (now+2m, 24.4)", req_id=4
+)
 print("affected_row", affected_row)
 # output:
 # affected_row 3

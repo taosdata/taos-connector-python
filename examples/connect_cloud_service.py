@@ -3,8 +3,7 @@ import os
 
 
 def connect_to_cloud_use_token(url, token):
-    conn = taosrest.connect(url=url,
-                            token=token)
+    conn = taosrest.connect(url=url, token=token)
 
     print(conn.server_info)
     cursor = conn.cursor()
@@ -17,7 +16,7 @@ def connect_to_cloud_use_token(url, token):
     print(rows)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     url = os.environ["TDENGINE_CLOUD_URL"]
     token = os.environ["TDENGINE_CLOUD_TOKEN"]
     connect_to_cloud_use_token(url, token)

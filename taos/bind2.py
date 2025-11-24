@@ -14,8 +14,8 @@ from taos.field import get_tz
 from taos.bind_base import datetime_to_timestamp
 
 
-IS_NULL_TYPE_FALSE  = 0
-IS_NULL_TYPE_TRUE   = 1
+IS_NULL_TYPE_FALSE = 0
+IS_NULL_TYPE_TRUE = 1
 IS_NULL_TYPE_IGNORE = 2
 
 
@@ -28,6 +28,7 @@ class IgnoreUpdateType:
 
 
 IGNORE = IgnoreUpdateType()
+
 
 def get_is_null_type(value) -> int:
     if value == IGNORE:
@@ -44,14 +45,13 @@ class TaosStmt2Bind(ctypes.Structure):
         ("buffer", ctypes.c_void_p),
         ("length", ctypes.POINTER(ctypes.c_int32)),
         ("is_null", ctypes.c_char_p),
-        ("num", ctypes.c_int)
+        ("num", ctypes.c_int),
     ]
-
 
     #
     # set bind value with field type
     #
-    def set_value(self, buffer_type, values, precision = PrecisionEnum.Milliseconds):
+    def set_value(self, buffer_type, values, precision=PrecisionEnum.Milliseconds):
         log.debug(f"set_value type={buffer_type} precision={precision} values={values}\n")
         if values is not None:
             utils.checkTypeValid(buffer_type, values)
@@ -92,7 +92,7 @@ class TaosStmt2Bind(ctypes.Structure):
         elif buffer_type == FieldType.C_GEOMETRY:
             self.geometry(values)
         elif buffer_type == FieldType.C_BLOB:
-            self.blob(values)    
+            self.blob(values)
 
     def numeric_common(self, values, ctypes_type, buffer_null_type, buffer_value_type):
         if type(values) is not tuple and type(values) is not list:
@@ -106,7 +106,9 @@ class TaosStmt2Bind(ctypes.Structure):
             try:
                 buffer = buffer_type(*values)
             except:
-                buffer = buffer_type(*[buffer_null_type if is_null[idx] > 0 else value for idx, value in enumerate(values)])
+                buffer = buffer_type(
+                    *[buffer_null_type if is_null[idx] > 0 else value for idx, value in enumerate(values)]
+                )
 
         self.buffer = cast(buffer, c_void_p)
         self.buffer_type = buffer_value_type
@@ -119,7 +121,7 @@ class TaosStmt2Bind(ctypes.Structure):
             if type(values[i]) is float:
                 values[i] = 0 if values[i] == 0 else 1
 
-        #print(f"after values={values}")
+        # print(f"after values={values}")
         self.numeric_common(values, c_int8, FieldType.C_BOOL_NULL, FieldType.C_BOOL)
 
     def tinyint(self, values):
@@ -149,7 +151,9 @@ class TaosStmt2Bind(ctypes.Structure):
             buffer = cast(values, c_void_p)
         except:
             buffer_type = c_int64 * len(values)
-            buffer = buffer_type(*[datetime_to_timestamp(value, precision, is_null[idx]) for idx, value in enumerate(values)])
+            buffer = buffer_type(
+                *[datetime_to_timestamp(value, precision, is_null[idx]) for idx, value in enumerate(values)]
+            )
 
         self.buffer = cast(buffer, c_void_p)
         self.buffer_type = FieldType.C_TIMESTAMP
@@ -224,20 +228,21 @@ class TaosStmt2Bind(ctypes.Structure):
         self.buffer_type = FieldType.C_BLOB
         self._str_to_buffer(values, encode=False)
 
+
 class TaosStmt2BindV(ctypes.Structure):
     _fields_ = [
         ("count", ctypes.c_int),
         ("tbnames", ctypes.POINTER(ctypes.c_char_p)),
         ("tags", ctypes.POINTER(ctypes.POINTER(TaosStmt2Bind))),
-        ("bind_cols", ctypes.POINTER(ctypes.POINTER(TaosStmt2Bind)))
+        ("bind_cols", ctypes.POINTER(ctypes.POINTER(TaosStmt2Bind))),
     ]
 
     def init(
-            self,
-            count: int,
-            tbnames,    # List[str],
-            tags,       # Optional[List[Array[TaosStmt2Bind]]],
-            bind_cols   # Optional[List[Array[TaosStmt2Bind]]]
+        self,
+        count: int,
+        tbnames,  # List[str],
+        tags,  # Optional[List[Array[TaosStmt2Bind]]],
+        bind_cols,  # Optional[List[Array[TaosStmt2Bind]]]
     ):
         self.count = count
         if tbnames is not None:
@@ -281,16 +286,15 @@ class TaosStmt2BindV(ctypes.Structure):
         return c_void_p(ctypes.addressof(self))
 
 
-
-def new_stmt2_binds(size: int) : # -> Array[TaosStmt2Bind]:
+def new_stmt2_binds(size: int):  # -> Array[TaosStmt2Bind]:
     return (TaosStmt2Bind * size)()
 
 
 def new_bindv(
-        count: int,
-        tbnames,    # Optional[List[str]]
-        tags,       # Optional[List[Array[TaosStmt2Bind]]],
-        bind_cols   # Optional[List[Array[TaosStmt2Bind]]]
+    count: int,
+    tbnames,  # Optional[List[str]]
+    tags,  # Optional[List[Array[TaosStmt2Bind]]],
+    bind_cols,  # Optional[List[Array[TaosStmt2Bind]]]
 ) -> TaosStmt2BindV:
     bindv = TaosStmt2BindV()
     bindv.init(count, tbnames, tags, bind_cols)

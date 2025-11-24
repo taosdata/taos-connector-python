@@ -49,10 +49,11 @@ class Counter(Structure):
 def test_query(conn):
     # type: (TaosConnection) -> None
 
-    conn.execute('create database if not exists power')
+    conn.execute("create database if not exists power")
     conn.execute(
-        'CREATE STABLE if not exists power.meters (ts TIMESTAMP, current FLOAT, voltage INT, phase FLOAT) '
-        'TAGS (location BINARY(64), groupId INT)')
+        "CREATE STABLE if not exists power.meters (ts TIMESTAMP, current FLOAT, voltage INT, phase FLOAT) "
+        "TAGS (location BINARY(64), groupId INT)"
+    )
 
     counter = Counter(count=0)
     conn.query_a("select * from power.meters", query_callback, byref(counter))
