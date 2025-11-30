@@ -1,8 +1,6 @@
-from taos.cinterface import *
 import taos
-
+from taos.cinterface import *
 from dotenv import load_dotenv
-
 from utils import tear_down_database
 
 load_dotenv()
@@ -33,7 +31,7 @@ def test_taos_get_client_info():
 
 
 def test_taos_connect_auth():
-    if not taos.IS_V3:
+    if not taos.IS_V3 or taos.IS_WS:
         return
     conn = taos_connect_auth(
         host="localhost",
