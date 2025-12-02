@@ -75,6 +75,8 @@ mod consumer;
 mod cursor;
 mod field;
 
+const CONNECTOR_INFO: &str = concat!("PythonWS-", env!("CARGO_PKG_VERSION"));
+
 #[pyclass]
 struct Connection {
     _builder: Option<TaosBuilder>,
@@ -298,6 +300,7 @@ fn connect(dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Connection> {
     let dsn = dsn.unwrap_or("taosws://");
 
     let mut dsn = Dsn::from_str(dsn).map_err(|err| ConnectionError::new_err(err.to_string()))?;
+    dsn.set("connector_info", CONNECTOR_INFO);
 
     if let Some(args) = args {
         const NONE_TAOS_CFG: &[&str] = &[

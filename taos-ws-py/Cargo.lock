@@ -248,6 +248,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "chrono-tz"
+version = "0.10.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a6139a8597ed92cf816dfb33f5dd6cf0bb93a6adc938f11039f371bc5bcd26c3"
+dependencies = [
+ "chrono",
+ "phf",
+]
+
+[[package]]
 name = "clang-sys"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -497,27 +507,6 @@ name = "data-encoding"
 version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e8566979429cf69b49a5c740c60791108e86440e8be149bbea4fe54d2c32d6e2"
-
-[[package]]
-name = "deadpool"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb84100978c1c7b37f09ed3ce3e5f843af02c2a2c431bae5b19230dad2c1b490"
-dependencies = [
- "async-trait",
- "deadpool-runtime",
- "num_cpus",
- "tokio",
-]
-
-[[package]]
-name = "deadpool-runtime"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "092966b41edc516079bdf31ec78a2e0588d1d0c08f78b91d8307215928642b2b"
-dependencies = [
- "tokio",
-]
 
 [[package]]
 name = "deranged"
@@ -1349,7 +1338,7 @@ checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 [[package]]
 name = "mdsn"
 version = "0.2.25"
-source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#9b1a7cc58ca3eabe69af4409061562bcd563b0a8"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=feat%2F30%2FTD-36924#08d21dfd6e35e06477e200c5b272dc6540a01451"
 dependencies = [
  "itertools 0.13.0",
  "lazy_static",
@@ -1580,6 +1569,24 @@ name = "percent-encoding"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
+
+[[package]]
+name = "phf"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "913273894cec178f401a31ec4b656318d95473527be05c0752cc41cdc32be8b7"
+dependencies = [
+ "phf_shared",
+]
+
+[[package]]
+name = "phf_shared"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "06005508882fb681fd97892ecff4b7fd0fee13ef1aa569f8695dae7ab9099981"
+dependencies = [
+ "siphasher",
+]
 
 [[package]]
 name = "pin-project-lite"
@@ -2304,10 +2311,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
+name = "signal-hook-registry"
+version = "1.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7664a098b8e616bdfcc2dc0e9ac44eb231eedf41db4e9fe95d8d32ec728dedad"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "simdutf8"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3a9fe34e3e7a50316060351f37187a3f546bce95496156754b601a5fa71b76e"
+
+[[package]]
+name = "siphasher"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56199f7ddabf13fe5074ce809e7d3f42b42ae711800501b5b16ea82ad029c39d"
 
 [[package]]
 name = "slab"
@@ -2409,10 +2431,11 @@ dependencies = [
 [[package]]
 name = "taos"
 version = "0.12.4"
-source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#9b1a7cc58ca3eabe69af4409061562bcd563b0a8"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=feat%2F30%2FTD-36924#08d21dfd6e35e06477e200c5b272dc6540a01451"
 dependencies = [
  "async-trait",
  "bytes",
+ "chrono-tz",
  "futures",
  "shadow-rs",
  "taos-optin",
@@ -2424,7 +2447,7 @@ dependencies = [
 [[package]]
 name = "taos-error"
 version = "0.12.4"
-source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#9b1a7cc58ca3eabe69af4409061562bcd563b0a8"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=feat%2F30%2FTD-36924#08d21dfd6e35e06477e200c5b272dc6540a01451"
 dependencies = [
  "anyhow",
  "derive_more",
@@ -2437,7 +2460,7 @@ dependencies = [
 [[package]]
 name = "taos-macros"
 version = "0.2.16"
-source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#9b1a7cc58ca3eabe69af4409061562bcd563b0a8"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=feat%2F30%2FTD-36924#08d21dfd6e35e06477e200c5b272dc6540a01451"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2447,7 +2470,7 @@ dependencies = [
 [[package]]
 name = "taos-optin"
 version = "0.12.4"
-source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#9b1a7cc58ca3eabe69af4409061562bcd563b0a8"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=feat%2F30%2FTD-36924#08d21dfd6e35e06477e200c5b272dc6540a01451"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2466,13 +2489,14 @@ dependencies = [
  "serde_json",
  "taos-macros",
  "taos-query",
+ "tokio",
  "tracing",
 ]
 
 [[package]]
 name = "taos-query"
 version = "0.12.4"
-source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#9b1a7cc58ca3eabe69af4409061562bcd563b0a8"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=feat%2F30%2FTD-36924#08d21dfd6e35e06477e200c5b272dc6540a01451"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2482,7 +2506,7 @@ dependencies = [
  "byteorder",
  "bytes",
  "chrono",
- "deadpool",
+ "chrono-tz",
  "derive_builder",
  "derive_more",
  "either",
@@ -2515,13 +2539,14 @@ dependencies = [
 [[package]]
 name = "taos-ws"
 version = "0.12.4"
-source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#9b1a7cc58ca3eabe69af4409061562bcd563b0a8"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=feat%2F30%2FTD-36924#08d21dfd6e35e06477e200c5b272dc6540a01451"
 dependencies = [
  "anyhow",
  "async-trait",
  "byteorder",
  "bytes",
  "cfg-if",
+ "chrono-tz",
  "crossbeam",
  "dashmap",
  "faststr",
@@ -2540,6 +2565,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-tungstenite",
+ "tokio-util",
  "tracing",
 ]
 
@@ -2680,7 +2706,9 @@ dependencies = [
  "bytes",
  "libc",
  "mio",
+ "parking_lot",
  "pin-project-lite",
+ "signal-hook-registry",
  "socket2",
  "tokio-macros",
  "windows-sys 0.52.0",
@@ -2721,6 +2749,19 @@ dependencies = [
  "tokio",
  "tokio-rustls",
  "tungstenite",
+]
+
+[[package]]
+name = "tokio-util"
+version = "0.7.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2efa149fe76073d6e8fd97ef4f4eca7b67f599660115591483572e406e165594"
+dependencies = [
+ "bytes",
+ "futures-core",
+ "futures-sink",
+ "pin-project-lite",
+ "tokio",
 ]
 
 [[package]]

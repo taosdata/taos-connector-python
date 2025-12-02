@@ -1,4 +1,6 @@
 import taosws
+import time
+import os
 
 
 def test_ws_connect():
@@ -39,6 +41,31 @@ def test_connect_invalid_user():
     print("-" * 40)
 
 
+def test_report_connector_info():
+    test = os.getenv("TEST_TD_3360")
+    if test is not None:
+        return
+
+    conn1 = taosws.connect()
+    time.sleep(2)
+    res = conn1.query("show connections")
+    assert any(isinstance(col, str) and "PythonWS" in col for row in res for col in row)
+
+    conn2 = taosws.connect(
+        user="root",
+        password="taosdata",
+        host="localhost",
+        port=6041,
+    )
+    time.sleep(2)
+    res = conn2.query("show connections")
+    cnt = sum(1 for row in res for col in row if isinstance(col, str) and "PythonWS" in col)
+    assert cnt == 2
+
+    conn1.close()
+    conn2.close()
+
+
 def show_env():
     import os
 
@@ -56,3 +83,4 @@ if __name__ == "__main__":
     test_ws_connect()
     test_default_connect()
     test_connect_invalid_user()
+    test_report_connector_info()
