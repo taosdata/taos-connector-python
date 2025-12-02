@@ -82,21 +82,23 @@ def test_taos_validate_sql():
 def test_taos_stmt_errstr():
     if not taos.IS_V3:
         return
-
     conn = taos.connect(**cfg)
-    dbname = "pytest_taos_stmt111"
 
+    dbname = "pytest_taos_stmt"
     try:
         conn.execute("drop database if exists %s" % dbname)
         conn.execute("create database if not exists %s" % dbname)
         conn.select_db(dbname)
+
         conn.execute(
             "create table if not exists log(ts timestamp, bo bool, nil tinyint, ti tinyint, si smallint, ii int,\
              bi bigint, tu tinyint unsigned, su smallint unsigned, iu int unsigned, bu bigint unsigned, \
              ff float, dd double, bb binary(100), nn nchar(100), tt timestamp)",
         )
+        # conn.load_table_info("log")
 
         stmt = conn.statement("insert into log values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+
         stmt.set_tbname("test")
 
         params = taos.new_bind_params(16)
@@ -119,20 +121,25 @@ def test_taos_stmt_errstr():
 
         stmt.bind_param(params)
         stmt.execute()
+
         assert stmt.affected_rows == 1
 
         result = conn.query("select * from log")
         row = result.next()
+        # print(row)
         assert len(row) == 16
         assert row[2] is None
         for i in range(3, 11):
             assert row[i] == i - 1
+        # float == may not work as expected
+        # assert row[10] == c_float(10.1)
         assert row[12] == 10.11
         assert row[13] == "hello"
         assert row[14] == "stmt"
 
         conn.execute("drop database if exists %s" % dbname)
         conn.close()
+        print("pass test_stmt_insert")
 
     except Exception as err:
         conn.execute("drop database if exists %s" % dbname)
@@ -158,7 +165,7 @@ def test_taos_use_result():
 
 def test_parsing_decimal():
     if not IS_V3:
-        print("test_parsing_decimal not support TDengine 2.X version.")
+        print(" test_parsing_decimal not support TDengine 2.X version.")
         return
 
     conn = taos_connect(**cfg)
@@ -182,9 +189,11 @@ def test_parsing_decimal():
             block, num_rows = taos_fetch_block_raw(res)
         else:
             block = taos_fetch_row_raw(res)
+        #
         ptr = parsing_block(block)
         for i, value in enumerate(values):
             assert cast(ptr[i], c_char_p).value.decode("utf-8") == value
+        #
 
     def check_decimal_block(conn, sql, values):
         res = taos_query(conn, sql)
@@ -195,21 +204,26 @@ def test_parsing_decimal():
         res = taos_query(conn, sql)
         for value in values:
             check_decimal(res, [value], False)
+        #
         taos_free_result(res)
 
+    # taos_fetch_block_raw
     check_decimal_block(conn, "select dec64 from testdec.test", ["9876.123456", "-6789.654321"])
     check_decimal_block(
         conn, "select dec128 from testdec.test", ["123456789012.0987654321", "-123456789012.0987654321"]
     )
 
+    # taos_fetch_row_raw
     check_decimal_row(conn, "select dec64 from testdec.test", ["9876.123456", "-6789.654321"])
     check_decimal_row(conn, "select dec128 from testdec.test", ["123456789012.0987654321", "-123456789012.0987654321"])
 
+    # fetch fields e
     res = taos_query(conn, "select dec64, dec128 from testdec.test")
     fields: TaosFieldEs = taos_fetch_fields_e(res)
     print("count: %d" % fields.count)
     for field in fields:
         print(field)
+    #
     row = taos_fetch_row_raw(res)
     print("row: %s" % taos_print_row(row, fields.fields, fields.count))
     taos_free_result(res)
@@ -536,11 +550,13 @@ def test_taos_stmt2_get_fields():
         binds[2].bool(data_list[2])
         binds[3].int(data_list[3])
         stmt2_cols.append(binds)
+    #
 
     bindv = new_bindv(cnt_tbls, tbanmes, stmt2_tags, stmt2_cols)
 
     taos_stmt2_bind_param(stmt2, bindv.get_address(), -1)
 
+    # check
     check_fields = [
         TaosFieldAllCls("tbname", 8, 0, 0, 271, 4),
         TaosFieldAllCls("grade", 8, 0, 0, 26, 2),
