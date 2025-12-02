@@ -43,7 +43,6 @@ class TaosResult(object):
         if self._block is None or self._block_iter >= self._block_length:
             self._block, self._block_length = self.fetch_block()
             self._block_iter = 0
-            # self._row_count += self._block_length
 
         raw = self._block[self._block_iter]
         self._block_iter += 1
