@@ -150,6 +150,8 @@ impl Consumer {
                 builder.set(key_str, value.extract::<String>()?);
             }
         }
+
+        builder.set("connector_info", crate::CONNECTOR_INFO);
         let builder = TmqBuilder::from_dsn(builder)
             .map_err(|err| ConsumerException::new_err(err.to_string()))?;
         Ok(Consumer(Some(builder.build().map_err(|err| {

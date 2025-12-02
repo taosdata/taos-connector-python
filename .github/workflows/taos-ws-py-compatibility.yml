@@ -103,6 +103,7 @@ jobs:
           TDENGINE_URL: localhost:6041
           WS_CLOUD_URL: ${{ secrets.WS_CLOUD_URL }}
           WS_CLOUD_TOKEN: ${{ secrets.WS_CLOUD_TOKEN }}
+          TEST_TD_3360: "true"
         run: |
           pip3 install pytest
           pytest ./taos-ws-py/tests/
