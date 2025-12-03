@@ -33,7 +33,6 @@ class TaosResult(object):
         return self._next_row()
 
     def next(self):
-        # fetch next row
         return self._next_row()
 
     def _next_row(self):

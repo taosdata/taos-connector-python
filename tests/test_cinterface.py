@@ -84,7 +84,7 @@ def test_taos_stmt_errstr():
         return
 
     conn = taos.connect(**cfg)
-    dbname = "pytest_taos_stmt111"
+    dbname = "pytest_taos_stmt"
 
     try:
         conn.execute("drop database if exists %s" % dbname)
@@ -523,7 +523,6 @@ def test_taos_stmt2_get_fields():
         binds[0].binary(tag_list[0])
         binds[1].int(tag_list[1])
         stmt2_tags.append(binds)
-    #
 
     # cols
     stmt2_cols = []

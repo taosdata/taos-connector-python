@@ -341,8 +341,6 @@ def taos_query(connection, sql):
     """
     try:
         ptr = c_char_p(sql.encode("utf-8"))
-        # if sql.lower().startswith("insert"):
-        #     raise ProgrammingError(sql, 1)
         res = c_void_p(_libtaos.taos_query(connection, ptr))
         errno = taos_errno(res)
         if errno != 0:
@@ -1311,6 +1309,8 @@ TAOS_FIELD_COL = 1
 TAOS_FIELD_TAG = 2
 TAOS_FIELD_QUERY = 3
 TAOS_FIELD_TBNAME = 4
+
+
 # get fields
 def taos_stmt2_get_fields(stmt):
     # type: (ctypes.c_void_p) -> Tuple[int, List[TaosFieldAll]]
