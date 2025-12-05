@@ -1,7 +1,6 @@
 # encoding:UTF-8
 
-"""Constants in TDengine python
-"""
+"""Constants in TDengine python"""
 
 import ctypes, struct
 from enum import Enum

@@ -1,7 +1,7 @@
 from taos import *
-import time
-
 from taos.constants import TSDB_CONNECTIONS_MODE, TSDB_OPTION_CONNECTION
+import taos
+import time
 
 
 def test_connect_args():
@@ -12,12 +12,16 @@ def test_connect_args():
     Because some case in CI of earlier version may use it.
     """
 
-    host = "localhost:6030"
+    if taos.IS_WS:
+        host = "localhost"
+    else:
+        host = "localhost:6030"
+
     conn = connect(
         host=host, charset="utf8", timezone="UTC", user_app="python client 1", user_ip="127.2.2.2", bi_mode=True
     )
 
-    time.sleep(30)
+    time.sleep(3)
     bClient = False
     bHost = False
     result = conn.query("show connections")
@@ -43,7 +47,7 @@ def test_connect_args():
     conn.set_option(TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_USER_APP.value, "python client")
     conn.set_mode(TSDB_CONNECTIONS_MODE.TSDB_CONNECTIONS_MODE_BI.value, 1)
 
-    time.sleep(30)
+    time.sleep(3)
     bClient = False
     bHost = False
     result = conn.query("show connections")
