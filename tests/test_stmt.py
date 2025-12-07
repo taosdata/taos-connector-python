@@ -1,10 +1,9 @@
 # # encoding:UTF-8
-# from taos import *
-
-# from ctypes import *
-# from datetime import datetime
 # import taos
 # import pytest
+# from taos import *
+# from ctypes import *
+# from datetime import datetime
 
 
 # @pytest.fixture

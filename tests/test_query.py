@@ -1,9 +1,8 @@
+import taos
 from datetime import datetime
-
 from utils import tear_down_database
 from taos import utils, IS_V3
 from taos.error import InterfaceError
-import taos
 
 
 def test_query():
@@ -84,10 +83,8 @@ def test_query_decimal():
         dec128 = row[3]
         if dec64 is not None:
             assert str(dec64) in ["9876.123456", "-9876.123456"]
-        #
         if dec128 is not None:
             assert str(dec128) in ["123456789012.0987654321", "-123456789012.0987654321"]
-        #
 
     for row in result.rows_iter():
         print(row)

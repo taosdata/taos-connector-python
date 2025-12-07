@@ -1,9 +1,9 @@
+import taos
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy import inspect
 from sqlalchemy import text
-
-import taos
+from tests.conftest import PORT
 
 load_dotenv()
 
@@ -26,7 +26,7 @@ def prepare(conn, dbname, stbname, ntb1, ntb2):
 
 
 def test_stmt2_query():
-    engine = create_engine(f"taos://root:taosdata@{host}:6030?timezone=Asia/Shanghai")
+    engine = create_engine(f"taos://root:taosdata@{host}:{PORT}?timezone=Asia/Shanghai")
     conn = engine.connect()
     dbname = "stmt2"
     stbname = "meters"
@@ -201,7 +201,7 @@ def check_basic(conn, inspection, subTables=["meters", "ntb"]):
 def test_read_from_sqlalchemy_taos():
     if not taos.IS_V3:
         return
-    engine = create_engine(f"taos://root:taosdata@{host}:6030?timezone=Asia/Shanghai")
+    engine = create_engine(f"taos://root:taosdata@{host}:{PORT}?timezone=Asia/Shanghai")
     conn = engine.connect()
     insert_data(conn)
     inspection = inspect(engine)
@@ -212,7 +212,7 @@ def test_read_from_sqlalchemy_taos():
 def test_sqlalchemy_format_stmt_taos():
     if not taos.IS_V3:
         return
-    engine = create_engine(f"taos://root:taosdata@{host}:6030?timezone=Asia/Shanghai")
+    engine = create_engine(f"taos://root:taosdata@{host}:{PORT}?timezone=Asia/Shanghai")
     conn = engine.connect()
     insert_stmt_sqlalchemy_data(conn)
     inspection = inspect(engine)

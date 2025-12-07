@@ -1,6 +1,7 @@
+import taos
 import threading
 from dbutils.pooled_db import PooledDB
-import taos  # TDengine official Python connector (install with: pip install taospy)
+from tests.conftest import PORT
 
 
 # Initialize TDengine connection pool
@@ -10,7 +11,7 @@ def init_native_pool():
         maxconnections=10,  # Maximum number of connections
         # TDengine connection parameters (modify according to actual environment)
         host="localhost",
-        port=6030,
+        port=PORT,
         user="root",
         password="taosdata",
     )
@@ -22,8 +23,8 @@ native_pool = init_native_pool()
 
 def init_db():
     conn = None
-    host = "localhost"  # Fix: Remove comma to avoid tuple
-    port = 6030  # Fix: Use correct TDengine port 6030
+    host = "localhost"
+    port = PORT
     try:
         conn = native_pool.connection()
         cursor = conn.cursor()
@@ -49,7 +50,7 @@ def init_db():
 def taos_insert_sql(i: int):
     conn = None
     host = "localhost"
-    port = 6030
+    port = PORT
     try:
         conn = native_pool.connection()
         cursor = conn.cursor()

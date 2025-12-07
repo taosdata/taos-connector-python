@@ -74,6 +74,3 @@ def connect(*args, **kwargs):
     @rtype: TDengineConnector
     """
     return TaosConnection(*args, **kwargs)
-
-
-IS_WS = os.getenv("TDENGINE_DRIVER", "native").lower() == "websocket"

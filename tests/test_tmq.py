@@ -1,8 +1,8 @@
-import threading
 import time
+import taos
+import threading
 from time import sleep
 from decimal import Decimal
-import taos
 from taos.tmq import *
 
 
@@ -70,6 +70,7 @@ class ConsumerThread(threading.Thread):
 
 def pre_test_tmq(precision: str):
     conn = taos.connect()
+    time.sleep(3)
     conn.execute("drop topic if exists topic1")
     conn.execute("drop database if exists tmq_test")
     if len(precision) > 0:
@@ -132,7 +133,6 @@ def pre_test_tmq(precision: str):
 
 def after_ter_tmq():
     conn = taos.connect()
-    # drop database and topic
     try:
         conn.execute("drop topic if exists topic1")
         conn.execute("drop database if exists tmq_test")

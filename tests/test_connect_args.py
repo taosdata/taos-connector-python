@@ -1,7 +1,7 @@
+import time
 from taos import *
 from taos.constants import TSDB_CONNECTIONS_MODE, TSDB_OPTION_CONNECTION
-import taos
-import time
+from tests.conftest import IS_WS
 
 
 def test_connect_args():
@@ -12,7 +12,7 @@ def test_connect_args():
     Because some case in CI of earlier version may use it.
     """
 
-    if taos.IS_WS:
+    if IS_WS:
         host = "localhost"
     else:
         host = "localhost:6030"

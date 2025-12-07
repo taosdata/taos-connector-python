@@ -1,18 +1,17 @@
-from datetime import datetime
-
 import pandas
+import taos
+import taosrest
+from datetime import datetime
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.types import Integer, Float, TIMESTAMP, String
-
-import taos
-import taosrest
+from tests.conftest import PORT
 from utils import tear_down_database
 
 load_dotenv()
 
 host = "localhost"
-port = 6030
+port = PORT
 
 
 def test_insert_test_data():
@@ -51,7 +50,7 @@ def test_pandas_read_from_native_connection():
 def test_pandas_read_from_sqlalchemy_taos():
     if taos.IS_V3:
         return
-    engine = create_engine(f"taos://root:taosdata@{host}:6030?timezone=Asia/Shanghai")
+    engine = create_engine(f"taos://root:taosdata@{host}:{PORT}?timezone=Asia/Shanghai")
     conn = engine.connect()
     df: pandas.DataFrame = pandas.read_sql(text("select * from test.tb"), conn)
     conn.close()
@@ -60,7 +59,7 @@ def test_pandas_read_from_sqlalchemy_taos():
 
 
 def test_pandas_read_from_sqlalchemy_stmt():
-    engine = create_engine(f"taos://root:taosdata@{host}:6030?timezone=Asia/Shanghai")
+    engine = create_engine(f"taos://root:taosdata@{host}:{PORT}?timezone=Asia/Shanghai")
     conn = engine.connect()
     sql = text("SELECT * FROM test.tb WHERE c1 > :c1 AND c2 > :c2")
     df = pandas.read_sql(sql=sql, con=conn, params={"c1": 100, "c2": 0})  # 实际参数值（根据需求修改）
@@ -81,7 +80,7 @@ def test_pandas_tosql_auto_create_table():
         "tbname": ["california", "sandiego", "xxxx"],
     }
     df = pandas.DataFrame(data)
-    engine = create_engine(f"taos://root:taosdata@{host}:6030/test?timezone=Asia/Shanghai")
+    engine = create_engine(f"taos://root:taosdata@{host}:{PORT}/test?timezone=Asia/Shanghai")
     rows_affected = df.to_sql(
         "meters",
         engine.connect(),
@@ -101,7 +100,7 @@ def test_pandas_tosql_auto_create_table():
 
 def test_pandas_tosql():
     """Test writing data to TDengine using pandas DataFrame.to_sql() method and verify the results"""
-    engine = create_engine(f"taos://root:taosdata@{host}:6030/test?timezone=Asia/Shanghai")
+    engine = create_engine(f"taos://root:taosdata@{host}:{PORT}/test?timezone=Asia/Shanghai")
 
     # Prepare test data
     data = {
@@ -199,7 +198,7 @@ def test_pandas_tosql():
 
 def test_pandas_read_sql_table():
     test_insert_test_data()
-    engine = create_engine(f"taos://root:taosdata@{host}:6030/test?timezone=Asia/Shanghai")
+    engine = create_engine(f"taos://root:taosdata@{host}:{PORT}/test?timezone=Asia/Shanghai")
     chunk_size = 1
     chunks = pandas.read_sql_table(
         table_name="tb",
@@ -229,7 +228,7 @@ def test_pandas_read_sql_table():
 
 def test_pandas_tosql_simple_verification():
     """Simplified version: demonstrate several common methods to verify pandas to_sql write results"""
-    engine = create_engine(f"taos://root:taosdata@{host}:6030/test?timezone=Asia/Shanghai")
+    engine = create_engine(f"taos://root:taosdata@{host}:{PORT}/test?timezone=Asia/Shanghai")
 
     # Prepare test data
     test_data = pandas.DataFrame({"ts": [1626861400000, 1626861410000], "c1": [100, 200], "c2": [10.5, 20.5]})
