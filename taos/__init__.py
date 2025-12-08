@@ -1,4 +1,5 @@
 # encoding:UTF-8
+import os
 from taos.bind import *
 from taos.bind2 import *
 from taos.connection import TaosConnection

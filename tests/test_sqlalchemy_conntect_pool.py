@@ -1,15 +1,18 @@
-import taos
+import threading
 from sqlalchemy import create_engine
 from sqlalchemy import text
-import threading
+from tests.conftest import PORT
 
-engine = create_engine(url="taos://root:taosdata@localhost:6030?timezone=Asia/Shanghai", pool_size=10, max_overflow=20)
+
+engine = create_engine(
+    url=f"taos://root:taosdata@localhost:{PORT}?timezone=Asia/Shanghai", pool_size=10, max_overflow=20
+)
 
 
 def init_db():
     conn = None
     host = "localhost"
-    port = 6030
+    port = PORT
     try:
         with engine.begin() as conn:
             # create database
@@ -33,7 +36,7 @@ def init_db():
 def taos_insert_sql(i: int):
     conn = None
     host = "localhost"
-    port = 6030
+    port = PORT
     try:
         with engine.begin() as conn:
             sql = text(

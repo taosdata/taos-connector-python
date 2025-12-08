@@ -1,11 +1,12 @@
 import taos
+from tests.conftest import PORT
 from utils import tear_down_database
 
 env = {
     "user": "root",
     "password": "taosdata",
     "host": "localhost",
-    "port": 6030,
+    "port": PORT,
 }
 
 

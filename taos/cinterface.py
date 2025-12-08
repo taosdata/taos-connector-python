@@ -341,8 +341,6 @@ def taos_query(connection, sql):
     """
     try:
         ptr = c_char_p(sql.encode("utf-8"))
-        # if sql.lower().startswith("insert"):
-        #     raise ProgrammingError(sql, 1)
         res = c_void_p(_libtaos.taos_query(connection, ptr))
         errno = taos_errno(res)
         if errno != 0:
@@ -1311,6 +1309,8 @@ TAOS_FIELD_COL = 1
 TAOS_FIELD_TAG = 2
 TAOS_FIELD_QUERY = 3
 TAOS_FIELD_TBNAME = 4
+
+
 # get fields
 def taos_stmt2_get_fields(stmt):
     # type: (ctypes.c_void_p) -> Tuple[int, List[TaosFieldAll]]
@@ -1791,6 +1791,7 @@ def tmq_conf_set(conf, key, value):
     if not isinstance(value, str):
         raise TmqError(msg=f"fail to execute tmq_conf_set({key},{value}), {value} is not string type")
 
+    print(f"tmq_conf_set key={key}, value={value}")
     tmq_res = _libtaos.tmq_conf_set(conf, ctypes.c_char_p(key.encode("utf-8")), ctypes.c_char_p(value.encode("utf-8")))
     if tmq_res != 0:
         raise TmqError(msg=f"fail to execute tmq_conf_set({key},{value}), code={tmq_res}", errno=tmq_res)
