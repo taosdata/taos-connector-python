@@ -259,6 +259,7 @@ class Consumer:
         Returns the current partition assignment as a list of TopicPartition tuples.
         """
         topics = tmq_subscription(self._tmq)
+        print(f"tmq_subscription topics: {topics}")
         if not topics:
             return None
 

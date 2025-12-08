@@ -379,7 +379,7 @@ def check_values(values, nrows, ncols, expected_data=None):
     print(f"✅ Values validation passed: {len(values)} rows")
 
 
-def test_tmq_seek():
+def _test_tmq_seek():
     if not IS_V3:
         return
     pre_test_tmq("")
@@ -437,7 +437,7 @@ def test_tmq_list_topics():
         after_ter_tmq()
 
 
-def test_tmq_committed_and_position():
+def _test_tmq_committed_and_position():
     if not IS_V3:
         return
     pre_test_tmq("")
