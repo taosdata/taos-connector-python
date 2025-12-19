@@ -23,6 +23,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Copy .git to taos-ws-py
+        run: cp -r .git taos-ws-py/
+
       - name: Check if file changes would trigger a rebuild
         if: "!startsWith(github.ref, 'refs/tags/taos-ws-py')"
         id: rebuild
@@ -208,10 +212,6 @@ jobs:
           printf "dataDir /tmp/taos/v3/data\nlogDir /tmp/taos/v3/log\ndebugFlag 135\n" |sudo tee /etc/taos/taos.cfg
           TAOS_SUPPORT_VNODES=256 ./TDengine_v3/build/build/bin/taosd &
           ./TDengine_v3/build/build/bin/taosadapter &
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 300
 
       #----------------------------------------------
       #              run test suite
