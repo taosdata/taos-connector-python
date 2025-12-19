@@ -46,7 +46,7 @@ jobs:
       - id: output
         run: echo "rebuild=${{ env.rebuild }}" >> $GITHUB_OUTPUT
   macos:
-    runs-on: macOS-14
+    runs-on: macOS-15
     needs: rebuild
     if: needs.rebuild.outputs.status == 'true'
     strategy:
@@ -54,8 +54,10 @@ jobs:
         target: [x86_64]
     steps:
       - name: Install gettext
-        run: |
-          brew install gettext
+        run: brew install gettext
+
+      - name: Set DYLD_LIBRARY_PATH
+        run: echo "export DYLD_LIBRARY_PATH=/usr/local/opt/gettext/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
 
       - uses: actions/checkout@v4
 
@@ -72,15 +74,13 @@ jobs:
           target: x86_64
           working-directory: taos-ws-py
           args: --release --strip
+
       - name: Install Homebrew
-        run: |
-          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-      - name: Set DYLD_LIBRARY_PATH
-        run: |
-          echo "export DYLD_LIBRARY_PATH=/usr/local/opt/gettext/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
+        run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
       - name: Install built wheel - x86_64
-        run: |
-          pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
+        run: pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
+
       - name: Build wheels - universal2
         uses: PyO3/maturin-action@v1
         with:
