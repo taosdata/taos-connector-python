@@ -76,6 +76,8 @@ def test_report_connector_info():
     conn1.close()
     conn2.close()
 
+    assert False
+
 
 def show_env():
     import os
