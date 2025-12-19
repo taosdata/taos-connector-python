@@ -209,6 +209,10 @@ jobs:
           TAOS_SUPPORT_VNODES=256 ./TDengine_v3/build/build/bin/taosd &
           ./TDengine_v3/build/build/bin/taosadapter &
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 300
+
       #----------------------------------------------
       #              run test suite
       #----------------------------------------------
