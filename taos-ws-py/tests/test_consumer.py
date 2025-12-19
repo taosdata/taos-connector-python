@@ -1,5 +1,8 @@
 from taosws import Consumer
 import taosws
+import time
+import pytest
+import os
 
 
 def init_topic():
@@ -58,3 +61,44 @@ def test_comsumer():
 
     consumer.unsubscribe()
     consumer.close()
+
+
+@pytest.mark.skip
+def test_report_connector_info():
+    test = os.getenv("TEST_TD_3360")
+    if test is not None:
+        return
+
+    init_topic()
+    conn = taosws.connect()
+
+    def count_connections():
+        res = conn.query("show connections")
+        cnt = 0
+        for row in res:
+            for col in row:
+                if isinstance(col, str) and "python-ws" in col:
+                    cnt += 1
+                    print("connector_info:", col)
+        return cnt
+
+    conf = {
+        "group.id": "10",
+    }
+    consumer1 = Consumer(conf)
+    consumer1.subscribe(["test_topic_1"])
+    time.sleep(2)
+    assert count_connections() == 2
+
+    consumer2 = Consumer(dsn="ws://localhost:6041?group.id=10")
+    consumer2.subscribe(["test_topic_1"])
+    time.sleep(2)
+    assert count_connections() == 3
+
+    time.sleep(2)
+
+    consumer1.unsubscribe()
+    consumer2.unsubscribe()
+    consumer1.close()
+    consumer2.close()
+    conn.close()

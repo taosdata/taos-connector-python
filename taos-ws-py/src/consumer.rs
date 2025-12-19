@@ -152,6 +152,7 @@ impl Consumer {
             })
             .transpose()?;
 
+        dsn_cfg.set("connector_info", crate::CONNECTOR_INFO);
         let consumer = TmqBuilder::from_dsn(dsn_cfg)
             .map_err(|err| ConsumerException::new_err(err.to_string()))?
             .build()
