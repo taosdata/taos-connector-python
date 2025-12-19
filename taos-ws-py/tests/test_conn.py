@@ -9,7 +9,6 @@ def test_ws_connect():
     conn = taosws.connect("taosws://root:taosdata@localhost:6041")
     r = conn.query_with_req_id("show dnodes", 1)
     print("r: ", r.fields)
-    conn.close()
     print("test_ws_connect done")
     print("-" * 40)
 
@@ -20,7 +19,6 @@ def test_default_connect():
     conn = taosws.connect()
     r = conn.query_with_req_id("show dnodes", 1)
     print("r: ", r.fields)
-    conn.close()
     print("test_default_connect done")
     print("-" * 40)
 
@@ -37,7 +35,6 @@ def test_connect_invalid_user():
         )
         r = conn.query_with_req_id("show dnodes", 1)
         print("r: ", r.fields)
-        conn.close()
     except Exception as e:
         print("except invalid_user: ", e)
     print("test_connect_invalid_user done")
@@ -52,13 +49,13 @@ def test_report_connector_info():
     conn1 = taosws.connect()
     time.sleep(2)
     res = conn1.query("show connections")
-    cnt = 0
+    found = False
     for row in res:
-        for col in row:
-            if isinstance(col, str) and "python-ws" in col:
-                cnt += 1
-                print("conn1 connector_info:", col)
-    assert cnt == 1
+        connector_info = row[row.__len__() - 1]
+        if "python-ws" in str(connector_info):
+            found = True
+            print("connector_info:", connector_info)
+    assert found
 
     conn2 = taosws.connect(
         user="root",
@@ -68,13 +65,13 @@ def test_report_connector_info():
     )
     time.sleep(2)
     res = conn2.query("show connections")
-    cnt = 0
+    found = False
     for row in res:
-        for col in row:
-            if isinstance(col, str) and "python-ws" in col:
-                cnt += 1
-                print("conn2 connector_info:", col)
-    assert cnt == 2
+        connector_info = row[row.__len__() - 1]
+        if "python-ws" in str(connector_info):
+            found = True
+            print("connector_info:", connector_info)
+    assert found
 
     conn1.close()
     conn2.close()

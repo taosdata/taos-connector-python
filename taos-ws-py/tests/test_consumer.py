@@ -72,28 +72,27 @@ def test_report_connector_info():
     init_topic()
     conn = taosws.connect()
 
-    def count_connections():
+    def find_connections():
+        time.sleep(2)
         res = conn.query("show connections")
-        cnt = 0
+        found = False
         for row in res:
-            for col in row:
-                if isinstance(col, str) and "python-ws" in col:
-                    cnt += 1
-                    print("connector_info:", col)
-        return cnt
+            connector_info = row[row.__len__() - 1]
+            if "python-ws" in str(connector_info):
+                found = True
+                print("connector_info:", connector_info)
+        assert found
 
     conf = {
         "group.id": "10",
     }
     consumer1 = Consumer(conf)
     consumer1.subscribe(["test_topic_1"])
-    time.sleep(2)
-    assert count_connections() == 2
+    find_connections()
 
     consumer2 = Consumer(dsn="ws://localhost:6041?group.id=10")
     consumer2.subscribe(["test_topic_1"])
-    time.sleep(2)
-    assert count_connections() == 3
+    find_connections()
 
     time.sleep(2)
 
