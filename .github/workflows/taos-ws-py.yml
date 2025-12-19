@@ -53,19 +53,11 @@ jobs:
       - name: Install gettext
         run: brew install gettext
 
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
-      #   timeout-minutes: 300
-
-      # - name: Set DYLD_LIBRARY_PATH
-      #   run: echo "export DYLD_LIBRARY_PATH=/usr/local/opt/gettext/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
-
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-          # architecture: x64
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -75,9 +67,6 @@ jobs:
           target: x86_64
           working-directory: taos-ws-py
           args: --release --strip
-
-      # - name: Install Homebrew
-      #   run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
       - name: Install built wheel - x86_64
         run: pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
@@ -145,6 +134,8 @@ jobs:
         target: [x86_64]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Copy .git to taos-ws-py
         run: cp -r .git taos-ws-py/
