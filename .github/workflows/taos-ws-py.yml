@@ -56,6 +56,10 @@ jobs:
       - name: Install gettext
         run: brew install gettext
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 300
+
       - name: Set DYLD_LIBRARY_PATH
         run: echo "export DYLD_LIBRARY_PATH=/usr/local/opt/gettext/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
 
@@ -86,9 +90,10 @@ jobs:
         with:
           working-directory: taos-ws-py
           args: --release --strip --target universal2-apple-darwin
+
       - name: Install built wheel - universal2
-        run: |
-          pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
+        run: pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
+
       - name: Upload wheels x86_64
         uses: actions/upload-artifact@v4
         with:
