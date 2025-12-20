@@ -76,22 +76,21 @@ def test_report_connector_info():
     init_topic()
     conn = taosws.connect()
 
-    def assert_connector_info_in_connections():
-        time.sleep(2)
-        res = conn.query("show connections")
-        assert sum(1 for row in res if connector_info == row[-1]) > 1
-
     conf = {
         "group.id": "10",
     }
     consumer1 = Consumer(conf)
     consumer1.subscribe(["test_topic_1"])
-    assert_connector_info_in_connections()
+    time.sleep(2)
+    res = conn.query("show connections")
+    assert sum(1 for row in res if connector_info == row[-1]) > 1
     consumer1.unsubscribe()
 
     consumer2 = Consumer(dsn="ws://localhost:6041?group.id=10")
     consumer2.subscribe(["test_topic_1"])
-    assert_connector_info_in_connections()
+    time.sleep(2)
+    res = conn.query("show connections")
+    assert sum(1 for row in res if connector_info == row[-1]) > 2
     consumer2.unsubscribe()
 
     time.sleep(2)

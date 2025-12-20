@@ -50,22 +50,22 @@ def test_report_connector_info():
     connector_info = utils.get_connector_info()
     print("connector_info:", connector_info)
 
-    conn1 = taosws.connect()
+    conn = taosws.connect()
     time.sleep(2)
-    res = conn1.query("show connections")
-    assert any(connector_info == row[-1] for row in res)
-    conn1.close()
+    res = conn.query("show connections")
+    assert sum(1 for row in res if connector_info == row[-1]) > 0
+    conn.close()
 
-    conn2 = taosws.connect(
+    conn = taosws.connect(
         user="root",
         password="taosdata",
         host="localhost",
         port=6041,
     )
     time.sleep(2)
-    res = conn2.query("show connections")
-    assert any(connector_info == row[-1] for row in res)
-    conn2.close()
+    res = conn.query("show connections")
+    assert sum(1 for row in res if connector_info == row[-1]) > 0
+    conn.close()
 
 
 def show_env():
