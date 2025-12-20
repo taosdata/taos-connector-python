@@ -3,6 +3,7 @@ import taosws
 import time
 import pytest
 import os
+import utils
 
 
 def init_topic():
@@ -69,35 +70,32 @@ def test_report_connector_info():
     if test is not None:
         return
 
+    connector_info = utils.get_connector_info()
+    print("connector_info:", connector_info)
+
     init_topic()
     conn = taosws.connect()
 
-    def find_connections():
+    def assert_connector_info_in_connections():
         time.sleep(2)
         res = conn.query("show connections")
-        found = False
-        for row in res:
-            connector_info = row[row.__len__() - 1]
-            if "python-ws" in str(connector_info):
-                found = True
-                print("connector_info:", connector_info)
-        assert found
+        assert sum(1 for row in res if connector_info == row[-1]) > 1
 
     conf = {
         "group.id": "10",
     }
     consumer1 = Consumer(conf)
     consumer1.subscribe(["test_topic_1"])
-    find_connections()
+    assert_connector_info_in_connections()
+    consumer1.unsubscribe()
 
     consumer2 = Consumer(dsn="ws://localhost:6041?group.id=10")
     consumer2.subscribe(["test_topic_1"])
-    find_connections()
+    assert_connector_info_in_connections()
+    consumer2.unsubscribe()
 
     time.sleep(2)
 
-    consumer1.unsubscribe()
-    consumer2.unsubscribe()
     consumer1.close()
     consumer2.close()
     conn.close()

@@ -88,10 +88,6 @@ jobs:
       - name: Install built wheel - universal2
         run: pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 300
-
       - name: Upload wheels x86_64
         uses: actions/upload-artifact@v4
         with:
@@ -130,10 +126,6 @@ jobs:
 
       - name: Install built wheel
         run: pip install taos-ws-py --no-index --force-reinstall --find-links .\taos-ws-py\target\wheels
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 300
 
       - name: Upload wheels windows
         uses: actions/upload-artifact@v4
@@ -220,10 +212,6 @@ jobs:
           TAOS_SUPPORT_VNODES=256 ./TDengine_v3/build/build/bin/taosd &
           ./TDengine_v3/build/build/bin/taosadapter &
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 300
-
       #----------------------------------------------
       #              run test suite
       #----------------------------------------------
@@ -288,10 +276,6 @@ jobs:
             apt-get install -y --no-install-recommends python3 python3-pip
             pip3 install -U pip
           run: pip3 install taos-ws-py --no-index --find-links taos-ws-py/target/wheels/ --force-reinstall
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 300
 
       - name: Upload wheels linux-cross
         uses: actions/upload-artifact@v4

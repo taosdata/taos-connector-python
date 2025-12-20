@@ -1,6 +1,7 @@
 import taosws
 import time
 import os
+import utils
 
 
 def test_ws_connect():
@@ -46,16 +47,14 @@ def test_report_connector_info():
     if test is not None:
         return
 
+    connector_info = utils.get_connector_info()
+    print("connector_info:", connector_info)
+
     conn1 = taosws.connect()
     time.sleep(2)
     res = conn1.query("show connections")
-    found = False
-    for row in res:
-        connector_info = row[row.__len__() - 1]
-        if "python-ws" in str(connector_info):
-            found = True
-            print("connector_info:", connector_info)
-    assert found
+    assert any(connector_info == row[-1] for row in res)
+    conn1.close()
 
     conn2 = taosws.connect(
         user="root",
@@ -65,18 +64,8 @@ def test_report_connector_info():
     )
     time.sleep(2)
     res = conn2.query("show connections")
-    found = False
-    for row in res:
-        connector_info = row[row.__len__() - 1]
-        if "python-ws" in str(connector_info):
-            found = True
-            print("connector_info:", connector_info)
-    assert found
-
-    conn1.close()
+    assert any(connector_info == row[-1] for row in res)
     conn2.close()
-
-    assert False
 
 
 def show_env():
