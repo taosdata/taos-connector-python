@@ -1,4 +1,6 @@
 fn main() {
+    println!("cargo:rerun-if-env-changed=GIT_COMMIT_ID");
+
     shadow_rs::new().unwrap();
 
     let commit_id = std::env::var("GIT_COMMIT_ID").unwrap_or_else(|_| {
