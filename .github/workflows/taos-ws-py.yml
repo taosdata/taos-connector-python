@@ -164,6 +164,7 @@ jobs:
           working-directory: taos-ws-py
           manylinux: auto
           args: --release --strip
+          docker-options: -e GIT_COMMIT_ID=${{ needs.rebuild.outputs.git_commit_id }}
 
       - name: Install built wheel
         run: pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
