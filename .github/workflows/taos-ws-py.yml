@@ -73,6 +73,7 @@ jobs:
           target: x86_64
           working-directory: taos-ws-py
           args: --release --strip
+          docker-options: -e GIT_COMMIT_ID=${{ needs.rebuild.outputs.git_commit_id }}
 
       - name: Install built wheel - x86_64
         run: pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
@@ -82,9 +83,14 @@ jobs:
         with:
           working-directory: taos-ws-py
           args: --release --strip --target universal2-apple-darwin
+          docker-options: -e GIT_COMMIT_ID=${{ needs.rebuild.outputs.git_commit_id }}
 
       - name: Install built wheel - universal2
         run: pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 300
 
       - name: Upload wheels x86_64
         uses: actions/upload-artifact@v4
@@ -120,9 +126,14 @@ jobs:
           target: ${{ matrix.target }}
           working-directory: taos-ws-py
           args: --release --strip
+          docker-options: -e GIT_COMMIT_ID=${{ needs.rebuild.outputs.git_commit_id }}
 
       - name: Install built wheel
         run: pip install taos-ws-py --no-index --force-reinstall --find-links .\taos-ws-py\target\wheels
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 300
 
       - name: Upload wheels windows
         uses: actions/upload-artifact@v4
@@ -133,8 +144,6 @@ jobs:
   linux:
     runs-on: ubuntu-latest
     needs: rebuild
-    env:
-      GIT_COMMIT_ID: ${{ needs.rebuild.outputs.git_commit_id }}
     if: needs.rebuild.outputs.status == 'true'
     strategy:
       matrix:
@@ -152,12 +161,8 @@ jobs:
         with:
           cmakeVersion: 3.31.6
 
-      - run: echo "Built with GIT_COMMIT_ID=${GIT_COMMIT_ID}"
-
       - name: Build wheels
         uses: PyO3/maturin-action@v1
-        env:
-          GIT_COMMIT_ID: ${{ needs.rebuild.outputs.git_commit_id }}
         with:
           rust-toolchain: stable
           target: ${{ matrix.target }}
@@ -215,9 +220,9 @@ jobs:
           TAOS_SUPPORT_VNODES=256 ./TDengine_v3/build/build/bin/taosd &
           ./TDengine_v3/build/build/bin/taosadapter &
 
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
-      #   timeout-minutes: 300
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 300
 
       #----------------------------------------------
       #              run test suite
@@ -265,7 +270,7 @@ jobs:
           target: ${{ matrix.target }}
           rust-toolchain: stable
           working-directory: taos-ws-py
-          docker-options: -e "CFLAGS_aarch64_unknown_linux_gnu=-D__ARM_ARCH=8" -e "CFLAGS_armv7_unknown_linux_gnueabihf=-D__ARM_ARCH=7"
+          docker-options: -e "CFLAGS_aarch64_unknown_linux_gnu=-D__ARM_ARCH=8" -e "CFLAGS_armv7_unknown_linux_gnueabihf=-D__ARM_ARCH=7" -e GIT_COMMIT_ID=${{ needs.rebuild.outputs.git_commit_id }}
           manylinux: auto
           args: --release --strip
           before-script-linux: |
@@ -282,8 +287,11 @@ jobs:
             apt-get update
             apt-get install -y --no-install-recommends python3 python3-pip
             pip3 install -U pip
-          run: |
-            pip3 install taos-ws-py --no-index --find-links taos-ws-py/target/wheels/ --force-reinstall
+          run: pip3 install taos-ws-py --no-index --find-links taos-ws-py/target/wheels/ --force-reinstall
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 300
 
       - name: Upload wheels linux-cross
         uses: actions/upload-artifact@v4
