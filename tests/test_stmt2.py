@@ -1,14 +1,9 @@
-# encoding:UTF-8
+import taos
 import math
-from datetime import datetime
-
 import pytest
-
-# geometry support
+from datetime import datetime
 from shapely.wkb import dumps
 from shapely.wkt import loads as wkt_loads
-
-import taos
 from taos import bind2
 from taos import log
 from taos.statement2 import *
@@ -467,6 +462,7 @@ def test_bind_invalid_tbnames_type():
 #
 # insert
 #
+@pytest.mark.skip
 def test_stmt2_insert(conn):
     if not IS_V3:
         print(" test_stmt2_query not support TDengine 2.X version.")

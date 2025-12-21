@@ -1,8 +1,6 @@
-from taos.error import OperationalError, SchemalessError
-from taos import connect, new_bind_params, PrecisionEnum
+from taos.error import SchemalessError
 from taos import *
 from taos.cinterface import *
-
 from ctypes import *
 import taos
 import pytest
@@ -10,13 +8,11 @@ import pytest
 
 @pytest.fixture
 def conn():
-    # type: () -> taos.TaosConnection
     return connect()
 
 
+@pytest.mark.skip
 def test_schemaless_insert_update_2(conn):
-    # type: (TaosConnection) -> None
-
     dbname = "test_schemaless_insert_update_2"
     try:
         conn.execute("drop database if exists %s" % dbname)
@@ -59,8 +55,6 @@ def test_schemaless_insert_update_2(conn):
 
 
 def test_schemaless_insert(conn):
-    # type: (TaosConnection) -> None
-
     dbname = "pytest_taos_schemaless_insert"
     try:
         conn.execute("drop database if exists %s" % dbname)

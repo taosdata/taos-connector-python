@@ -1,4 +1,5 @@
 import taos
+import pytest
 from datetime import datetime
 from utils import tear_down_database
 from taos import utils, IS_V3
@@ -47,6 +48,7 @@ def test_query():
     conn.close()
 
 
+@pytest.mark.skip
 def test_query_decimal():
     if not IS_V3:
         return

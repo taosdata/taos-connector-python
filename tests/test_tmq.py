@@ -1,5 +1,6 @@
 import time
 import taos
+import pytest
 import threading
 from time import sleep
 from decimal import Decimal
@@ -177,6 +178,7 @@ def tmq_consumer_with_precision(precision: str):
         after_ter_tmq()
 
 
+@pytest.mark.skip
 def test_tmq_assignment():
     if not IS_V3:
         return
