@@ -79,7 +79,6 @@ def checkResultCorrect(conn, sql, tagsTb, datasTb):
         oris.append(row)
 
     # fetch all
-    lres = []
     log.debug(sql)
     res = conn.query(sql)
     i = 0
