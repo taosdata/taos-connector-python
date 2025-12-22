@@ -71,7 +71,6 @@ class ConsumerThread(threading.Thread):
 
 def pre_test_tmq(precision: str):
     conn = taos.connect()
-    time.sleep(3)
     conn.execute("drop topic if exists topic1")
     conn.execute("drop database if exists tmq_test")
     if len(precision) > 0:
@@ -381,7 +380,7 @@ def check_values(values, nrows, ncols, expected_data=None):
     print(f"✅ Values validation passed: {len(values)} rows")
 
 
-def _test_tmq_seek():
+def test_tmq_seek():
     if not IS_V3:
         return
     pre_test_tmq("")
@@ -439,7 +438,8 @@ def test_tmq_list_topics():
         after_ter_tmq()
 
 
-def _test_tmq_committed_and_position():
+@pytest.mark.skip
+def test_tmq_committed_and_position():
     if not IS_V3:
         return
     pre_test_tmq("")
@@ -480,4 +480,4 @@ def _test_tmq_committed_and_position():
 
 if __name__ == "__main__":
     print("call tst_tmp.py nothing do.\n")
-    # test_consumer_with_precision()
+    test_consumer_with_precision()
