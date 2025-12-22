@@ -1791,7 +1791,6 @@ def tmq_conf_set(conf, key, value):
     if not isinstance(value, str):
         raise TmqError(msg=f"fail to execute tmq_conf_set({key},{value}), {value} is not string type")
 
-    print(f"tmq_conf_set key={key}, value={value}")
     tmq_res = _libtaos.tmq_conf_set(conf, ctypes.c_char_p(key.encode("utf-8")), ctypes.c_char_p(value.encode("utf-8")))
     if tmq_res != 0:
         raise TmqError(msg=f"fail to execute tmq_conf_set({key},{value}), code={tmq_res}", errno=tmq_res)
