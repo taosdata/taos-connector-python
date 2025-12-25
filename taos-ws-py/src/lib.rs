@@ -76,6 +76,13 @@ mod consumer;
 mod cursor;
 mod field;
 
+const CONNECTOR_INFO: &str = concat!(
+    "python-ws-v",
+    env!("CARGO_PKG_VERSION"),
+    "-",
+    env!("GIT_COMMIT_ID")
+);
+
 #[pyclass]
 struct Connection {
     _builder: Option<TaosBuilder>,
@@ -379,6 +386,7 @@ fn connect(dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Connection> {
         })
         .transpose()?;
 
+    dsn.set("connector_info", CONNECTOR_INFO);
     let builder =
         TaosBuilder::from_dsn(dsn).map_err(|err| ConnectionError::new_err(err.to_string()))?;
 
