@@ -100,8 +100,8 @@ jobs:
       #   uses: mxschmitt/action-tmate@v3
       #   timeout-minutes: 300
 
-      - name: Setup Debug Session
-        uses: csexton/debugger-action@master
+      # - name: Setup Debug Session
+      #   uses: csexton/debugger-action@master
 
       - name: Build TDengine 3.0
         run: |
@@ -111,8 +111,10 @@ jobs:
           rm build -rf
           mkdir build
           cd build
-          cmake ../ -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false -DWEBSOCKET=true
-          make -j14
+          # -DWEBSOCKET=true
+          cmake ../ -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false
+          # make -j14
+          make -j4
           sudo make install
           ls -alh /etc/taos/
           cd ../../
