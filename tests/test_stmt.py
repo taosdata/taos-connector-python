@@ -74,7 +74,6 @@ def test_stmt_insert(conn):
         raise err
 
 
-@pytest.mark.skip
 def test_stmt_insert_multi(conn):
     dbname = "pytest_taos_stmt_multi"
     try:
@@ -206,7 +205,6 @@ def test_stmt_set_tbname_tag(conn):
         raise err
 
 
-@pytest.mark.skip
 def test_stmt_null(conn):
     dbname = "pytest_taos_stmt_null"
 

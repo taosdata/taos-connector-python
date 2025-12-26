@@ -100,7 +100,6 @@ def test_stmt_insert():
         raise err
 
 
-@pytest.mark.skip
 def test_stmt_insert_multi():
     if not IS_V3:
         return
@@ -302,7 +301,6 @@ def test_stmt_set_tbname_tag():
         raise err
 
 
-@pytest.mark.skip
 def test_stmt_null():
     if not IS_V3:
         return

@@ -160,7 +160,6 @@ def test_simple_with_req_id(conn, caplog):
         raise err
 
 
-@pytest.mark.skip
 def test_stmt(conn, caplog):
     dbname = "pytest_ctaos_stmt"
     try:
@@ -224,7 +223,6 @@ def test_stmt(conn, caplog):
         raise err
 
 
-@pytest.mark.skip
 def test_stmt_with_req_id(conn, caplog):
     dbname = "pytest_ctaos_stmt"
     try:
