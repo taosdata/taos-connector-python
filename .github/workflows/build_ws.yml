@@ -111,10 +111,8 @@ jobs:
           rm build -rf
           mkdir build
           cd build
-          # -DWEBSOCKET=true
-          cmake ../ -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false
-          # make -j14
-          make -j4
+          cmake ../ -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false -DWEBSOCKET=true
+          make
           sudo make install
           ls -alh /etc/taos/
           cd ../../
