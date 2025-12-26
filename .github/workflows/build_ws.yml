@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Get CMake
         uses: lukka/get-cmake@latest
@@ -29,6 +29,12 @@ jobs:
 
       - name: Setup Python
         run: sudo apt-get install -y python3 python3-pip python-is-python3
+
+      - name: Set up Rust
+        id: setup-rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.90.0
 
       - name: Cache Poetry
         id: cache-poetry
@@ -84,20 +90,15 @@ jobs:
           if_false: "3.0"
 
       - name: Checkout tdengine
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: "taosdata/TDengine"
           path: "TDengine_v3"
           ref: ${{ steps.determine-branch.outputs.value }}
 
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
-      #   timeout-minutes: 300
-      - name: Set up Rust
-        id: setup-rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: 1.90.0
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 300
 
       - name: Build TDengine 3.0
         run: |
@@ -126,7 +127,7 @@ jobs:
       #----------------------------------------------
       #              run test suite
       #----------------------------------------------
-      - name: Test 3.0
+      - name: Run Tests
         run: |
           export LD_LIBRARY_PATH=$PWD/TDengine_v3/build/build/lib
           export TDENGINE_URL=localhost:6041
@@ -142,11 +143,11 @@ jobs:
           path: /tmp/taos/v3/log/
           retention-days: 1
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./coverage.xml
-          token: ${{ secrets.CODECOV_TOKEN }}
+      # - name: Upload coverage to Codecov
+      #   uses: codecov/codecov-action@v4
+      #   with:
+      #     files: ./coverage.xml
+      #     token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Build Artifacts
         run: poetry build
