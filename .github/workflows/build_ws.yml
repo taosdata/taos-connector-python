@@ -96,9 +96,9 @@ jobs:
           path: "TDengine_v3"
           ref: ${{ steps.determine-branch.outputs.value }}
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 300
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+      #   timeout-minutes: 300
 
       - name: Build TDengine 3.0
         run: |
@@ -113,6 +113,10 @@ jobs:
           sudo make install
           ls -alh /etc/taos/
           cd ../../
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 300
 
       - name: Start TDengine 3.0
         run: |
