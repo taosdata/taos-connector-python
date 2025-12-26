@@ -90,9 +90,14 @@ jobs:
           path: "TDengine_v3"
           ref: ${{ steps.determine-branch.outputs.value }}
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 300
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+      #   timeout-minutes: 300
+      - name: Set up Rust
+        id: setup-rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.90.0
 
       - name: Build TDengine 3.0
         run: |
