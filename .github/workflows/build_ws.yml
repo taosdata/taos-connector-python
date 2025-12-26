@@ -100,6 +100,9 @@ jobs:
       #   uses: mxschmitt/action-tmate@v3
       #   timeout-minutes: 300
 
+      - name: Setup Debug Session
+        uses: csexton/debugger-action@master
+
       - name: Build TDengine 3.0
         run: |
           pwd
