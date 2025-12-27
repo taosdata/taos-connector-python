@@ -30,7 +30,7 @@ jobs:
       - name: Setup Python
         run: sudo apt-get install -y python3 python3-pip python-is-python3
 
-      - name: Set up Rust
+      - name: Setup Rust
         id: setup-rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -43,9 +43,6 @@ jobs:
           path: ~/.poetry
           key: ubuntu-22.04-poetry
 
-      #----------------------------------------------
-      #       install & configure poetry
-      #----------------------------------------------
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
@@ -54,9 +51,6 @@ jobs:
           virtualenvs-in-project: true
           installer-parallel: true
 
-      #----------------------------------------------
-      #       load cached venv if cache exists
-      #----------------------------------------------
       - name: Load cached venv
         id: cached-poetry-dependencies
         uses: actions/cache@v4
@@ -64,18 +58,12 @@ jobs:
           path: .venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
 
-      #----------------------------------------------
-      # install dependencies if cache does not exist
-      #----------------------------------------------
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
           poetry install --no-interaction --no-root
           poetry run pip install "numpy<2.0.0"
 
-      #----------------------------------------------
-      # install your root project, if required
-      #----------------------------------------------
       - name: Install library
         run: |
           poetry install --no-interaction --with=test
@@ -96,69 +84,35 @@ jobs:
           path: "TDengine_v3"
           ref: ${{ steps.determine-branch.outputs.value }}
 
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
-      #   timeout-minutes: 300
-
-      # - name: Setup Debug Session
-      #   uses: csexton/debugger-action@master
-
-      - name: Build TDengine 3.0
+      - name: Build TDengine
         run: |
-          pwd
-          # git branch -vv
           cd TDengine_v3
-          rm build -rf
-          mkdir build
-          cd build
-          # cmake .. -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false -DWEBSOCKET=true
+          mkdir debug && cd debug
           cmake .. -DBUILD_JDBC=false -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false -DWEBSOCKET=true
-          # make
           make -j$(nproc)
           make install
-          # sudo make install
-          ls -alh /etc/taos/
-          cd ../../
 
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
-      #   timeout-minutes: 300
-
-      - name: Start TDengine 3.0
+      - name: Start TDengine
         run: |
-          tree TDengine_v3/build/build/
-          export C_INCLUDE_PATH=$PWD/TDengine_v3/build/build/bin
-          export LD_LIBRARY_PATH=$PWD/TDengine_v3/build/build/lib
-          mkdir -p /tmp/taos/v3/log /tmp/taos/v3/data
-          printf "dataDir /tmp/taos/v3/data\nlogDir /tmp/taos/v3/log\ndebugFlag 135\n" |sudo tee /etc/taos/taos.cfg
-          TAOS_SUPPORT_VNODES=256 ./TDengine_v3/build/build/bin/taosd &
-          ./TDengine_v3/build/build/bin/taosadapter &
+          mkdir -p /tmp/taos/log /tmp/taos/data
+          printf "dataDir /tmp/taos/data\nlogDir /tmp/taos/log\ndebugFlag 135\n" | sudo tee /etc/taos/taos.cfg
+          TAOS_SUPPORT_VNODES=256 ./TDengine_v3/debug/build/bin/taosd &
+          ./TDengine_v3/debug/build/bin/taosadapter &
 
-      #----------------------------------------------
-      #              run test suite
-      #----------------------------------------------
       - name: Run Tests
         run: |
-          export LD_LIBRARY_PATH=$PWD/TDengine_v3/build/build/lib
+          export LD_LIBRARY_PATH=$PWD/TDengine/debug/build/lib
           export TDENGINE_URL=localhost:6041
           export TDENGINE_DRIVER=websocket
-          curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
-          # poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
           poetry run pytest --cov=taos --cov=taosrest tests
 
-      - name: "Upload taosd logs"
+      - name: Upload taosd logs
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: log-v3-taosd
-          path: /tmp/taos/v3/log/
+          name: log-taosd
+          path: /tmp/taos/log
           retention-days: 1
-
-      # - name: Upload coverage to Codecov
-      #   uses: codecov/codecov-action@v4
-      #   with:
-      #     files: ./coverage.xml
-      #     token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Build Artifacts
         run: poetry build

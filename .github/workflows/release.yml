@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Poetry Setup
         uses: abatilo/actions-poetry@v2
@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Get CMake
         uses: lukka/get-cmake@latest
@@ -109,13 +109,13 @@ jobs:
           export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
           export TDENGINE_URL=localhost:6041
           poetry run pytest tests
+
       - name: Build Artifacts
-        run: |
-          poetry build
+        run: poetry build
 
       - name: Generate Changelog
-        run: |
-          ./ci/extract-changelog.sh > ${{ github.workflow }}-CHANGELOG.txt
+        run: ./ci/extract-changelog.sh > ${{ github.workflow }}-CHANGELOG.txt
+
       - name: Release
         uses: softprops/action-gh-release@v1
         env:

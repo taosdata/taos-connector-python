@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Get CMake
         uses: lukka/get-cmake@latest
@@ -38,7 +38,7 @@ jobs:
           key: ubuntu-22.04-poetry
 
       #----------------------------------------------
-      #       install & configure poetry
+      #          install & configure poetry
       #----------------------------------------------
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -68,7 +68,7 @@ jobs:
           poetry run pip install "numpy<2.0.0"
 
       #----------------------------------------------
-      # install your root project, if required
+      #    install your root project, if required
       #----------------------------------------------
       - name: Install library
         run: |
@@ -84,7 +84,7 @@ jobs:
           if_false: "3.0"
 
       - name: Checkout tdengine
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: "taosdata/TDengine"
           path: "TDengine_v3"
@@ -115,7 +115,7 @@ jobs:
           ./TDengine_v3/build/build/bin/taosadapter &
 
       #----------------------------------------------
-      #              run test suite
+      #                run test suite
       #----------------------------------------------
       - name: Test 3.0
         run: |
@@ -125,7 +125,7 @@ jobs:
           curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
           poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
 
-      - name: "Upload taosd logs"
+      - name: Upload taosd logs
         if: failure()
         uses: actions/upload-artifact@v4
         with:
