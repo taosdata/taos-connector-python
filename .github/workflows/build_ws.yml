@@ -100,8 +100,8 @@ jobs:
       #   uses: mxschmitt/action-tmate@v3
       #   timeout-minutes: 300
 
-      - name: Setup Debug Session
-        uses: csexton/debugger-action@master
+      # - name: Setup Debug Session
+      #   uses: csexton/debugger-action@master
 
       - name: Build TDengine 3.0
         run: |
@@ -115,7 +115,8 @@ jobs:
           cmake .. -DBUILD_JDBC=false -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false -DWEBSOCKET=true
           # make
           make -j$(nproc)
-          sudo make install
+          make install
+          # sudo make install
           ls -alh /etc/taos/
           cd ../../
 
@@ -142,7 +143,8 @@ jobs:
           export TDENGINE_URL=localhost:6041
           export TDENGINE_DRIVER=websocket
           curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
-          poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
+          # poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
+          poetry run pytest --cov=taos --cov=taosrest tests
 
       - name: "Upload taosd logs"
         if: failure()
