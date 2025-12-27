@@ -108,5 +108,5 @@ jobs:
           WS_CLOUD_TOKEN: ${{ secrets.WS_CLOUD_TOKEN }}
           TEST_TD_3360: "true"
         run: |
-          pip3 install pytest
+          pip3 install pytest toml
           pytest ./taos-ws-py/tests/
