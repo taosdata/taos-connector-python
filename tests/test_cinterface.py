@@ -1,8 +1,9 @@
 import taos
 import pytest
-from taos.cinterface import *
 from dotenv import load_dotenv
+from taos.cinterface import *
 from utils import tear_down_database, IS_WS
+
 
 load_dotenv()
 
@@ -31,8 +32,9 @@ def test_taos_get_client_info():
     print("pass test_taos_connect_auth")
 
 
+@pytest.mark.skipif(IS_WS, reason="Skip WS")
 def test_taos_connect_auth():
-    if not taos.IS_V3 or IS_WS:
+    if not taos.IS_V3:
         return
     conn = taos_connect_auth(
         host="localhost",

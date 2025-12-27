@@ -14,11 +14,7 @@ def test_connect_args():
     Because some case in CI of earlier version may use it.
     """
 
-    if IS_WS:
-        host = "localhost"
-    else:
-        host = "localhost:6030"
-
+    host = "localhost:6030"
     conn = connect(
         host=host, charset="utf8", timezone="UTC", user_app="python client 1", user_ip="127.2.2.2", bi_mode=True
     )

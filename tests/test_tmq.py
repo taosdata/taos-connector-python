@@ -480,4 +480,4 @@ def test_tmq_committed_and_position():
 
 if __name__ == "__main__":
     print("call tst_tmp.py nothing do.\n")
-    test_consumer_with_precision()
+    # test_consumer_with_precision()
