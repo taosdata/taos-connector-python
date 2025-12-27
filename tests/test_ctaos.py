@@ -1,5 +1,4 @@
 import pytest
-
 from taos.bind import *
 from taos.cinterface import *
 from taos.utils import gen_req_id

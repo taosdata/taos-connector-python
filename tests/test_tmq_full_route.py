@@ -1,8 +1,7 @@
-import threading
-from time import sleep
-
 import taos
+import threading
 from taos.tmq import *
+from time import sleep
 
 
 class insertThread(threading.Thread):

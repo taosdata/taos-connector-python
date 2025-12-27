@@ -118,7 +118,7 @@ def obtainSchema(statement2):
         raise StatementError("stmt2 object is null.")
 
     try:
-        count, fields = statement2.get_fields()
+        _, fields = statement2.get_fields()
         statement2.tag_fields = []
         statement2.fields = []
         statement2.all_fields = fields

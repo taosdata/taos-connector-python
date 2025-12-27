@@ -1,8 +1,8 @@
+import taos
+import time
+import pytest
 from taos import *
 from ctypes import *
-import taos
-import pytest
-import time
 from utils import tear_down_database
 from taos.error import InterfaceError
 

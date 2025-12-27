@@ -1,14 +1,13 @@
-# encoding:UTF-8
-from taos import *
-
-from ctypes import *
-from datetime import datetime
 import taos
 import pytest
+from ctypes import *
+from datetime import datetime
+from taos import *
+from utils import IS_WS
 
 
+@pytest.mark.skipif(IS_WS, reason="Skip WS")
 def test_stmt_insert():
-    # type: (TaosConnection) -> None
     if not IS_V3:
         return
     conn = taos.connect()
@@ -23,7 +22,6 @@ def test_stmt_insert():
              bi bigint, tu tinyint unsigned, su smallint unsigned, iu int unsigned, bu bigint unsigned, \
              ff float, dd double, bb binary(100), nn nchar(100), tt timestamp, v3 varbinary(50), v4 geometry(512))",
         )
-        # conn.load_table_info("log"), v4 geometry(512) , v3 varbinary(50)
 
         stmt = conn.statement("insert into log values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
         params = new_bind_params(18)
@@ -104,8 +102,6 @@ def test_stmt_insert():
 
 
 def test_stmt_insert_multi():
-    # type: (TaosConnection) -> None
-
     if not IS_V3:
         return
 
@@ -121,7 +117,6 @@ def test_stmt_insert_multi():
              bi bigint, tu tinyint unsigned, su smallint unsigned, iu int unsigned, bu bigint unsigned, \
              ff float, dd double, bb binary(100), nn nchar(100), tt timestamp, v3 varbinary(50), v4 geometry(512))",
         )
-        # conn.load_table_info("log")
 
         start = datetime.now()
         stmt = conn.statement("insert into log values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
@@ -192,6 +187,7 @@ def test_stmt_insert_multi():
         raise err
 
 
+@pytest.mark.skipif(IS_WS, reason="Skip WS")
 def test_stmt_set_tbname_tag():
     if not IS_V3:
         return

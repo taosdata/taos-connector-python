@@ -1,8 +1,3 @@
-import time
-import os
-import sys
-
-
 # info
 show_info = True
 show_warn = True
@@ -10,6 +5,7 @@ show_debug = False
 show_debug1 = False
 show_debug2 = False
 show_debug3 = False
+
 
 # set show
 def setting(info, warn, debug, debug1, debug2, debug3):
