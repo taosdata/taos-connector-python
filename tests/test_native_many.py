@@ -1,6 +1,5 @@
 import taos
-from tests.conftest import PORT
-from utils import tear_down_database
+from utils import tear_down_database, PORT
 
 env = {
     "user": "root",

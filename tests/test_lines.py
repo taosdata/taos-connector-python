@@ -1,9 +1,10 @@
-from taos.error import SchemalessError
-from taos import *
-from taos.cinterface import *
-from ctypes import *
 import taos
 import pytest
+from ctypes import *
+from taos import *
+from taos.cinterface import *
+from taos.error import SchemalessError
+from utils import IS_WS
 
 
 @pytest.fixture
@@ -11,7 +12,7 @@ def conn():
     return connect()
 
 
-@pytest.mark.skip
+@pytest.mark.skipif(IS_WS, reason="Skip WS")
 def test_schemaless_insert_update_2(conn):
     dbname = "test_schemaless_insert_update_2"
     try:

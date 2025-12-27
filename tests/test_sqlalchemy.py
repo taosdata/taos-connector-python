@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy import inspect
 from sqlalchemy import text
-from tests.conftest import PORT
+from utils import PORT
 
 load_dotenv()
 

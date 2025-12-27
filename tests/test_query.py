@@ -1,9 +1,9 @@
 import taos
 import pytest
 from datetime import datetime
-from utils import tear_down_database
 from taos import utils, IS_V3
 from taos.error import InterfaceError
+from utils import tear_down_database, IS_WS
 
 
 def test_query():
@@ -48,7 +48,7 @@ def test_query():
     conn.close()
 
 
-@pytest.mark.skip
+@pytest.mark.skipif(IS_WS, reason="Skip WS")
 def test_query_decimal():
     if not IS_V3:
         return

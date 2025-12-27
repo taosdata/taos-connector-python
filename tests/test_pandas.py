@@ -5,8 +5,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.types import Integer, Float, TIMESTAMP, String
-from tests.conftest import PORT
-from utils import tear_down_database
+from utils import tear_down_database, PORT
 
 load_dotenv()
 

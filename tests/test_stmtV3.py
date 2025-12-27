@@ -1,11 +1,12 @@
-from taos import *
-from ctypes import *
-from datetime import datetime
 import taos
 import pytest
+from ctypes import *
+from datetime import datetime
+from taos import *
+from utils import IS_WS
 
 
-@pytest.mark.skip
+@pytest.mark.skipif(IS_WS, reason="Skip WS")
 def test_stmt_insert():
     if not IS_V3:
         return
@@ -186,7 +187,7 @@ def test_stmt_insert_multi():
         raise err
 
 
-@pytest.mark.skip
+@pytest.mark.skipif(IS_WS, reason="Skip WS")
 def test_stmt_set_tbname_tag():
     if not IS_V3:
         return

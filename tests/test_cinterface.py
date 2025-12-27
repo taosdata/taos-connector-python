@@ -2,8 +2,7 @@ import taos
 import pytest
 from taos.cinterface import *
 from dotenv import load_dotenv
-from tests.conftest import IS_WS
-from utils import tear_down_database
+from utils import tear_down_database, IS_WS
 
 load_dotenv()
 
@@ -81,7 +80,7 @@ def test_taos_validate_sql():
     print("pass test_taos_validate_sql")
 
 
-@pytest.mark.skip
+@pytest.mark.skipif(IS_WS, reason="Skip WS")
 def test_taos_stmt_errstr():
     if not taos.IS_V3:
         return
@@ -159,7 +158,7 @@ def test_taos_use_result():
         taos_close(conn)
 
 
-@pytest.mark.skip
+@pytest.mark.skipif(IS_WS, reason="Skip WS")
 def test_parsing_decimal():
     if not IS_V3:
         print("test_parsing_decimal not support TDengine 2.X version.")

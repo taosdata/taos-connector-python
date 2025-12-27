@@ -1,7 +1,7 @@
 import taos
 import threading
 from dbutils.pooled_db import PooledDB
-from tests.conftest import PORT
+from utils import PORT
 
 
 # Initialize TDengine connection pool

@@ -1,8 +1,9 @@
 import taos
 import pytest
-from taos import *
 from ctypes import *
+from taos import *
 from datetime import datetime
+from utils import IS_WS
 
 
 @pytest.fixture
@@ -11,7 +12,7 @@ def conn():
     return connect()
 
 
-@pytest.mark.skip
+@pytest.mark.skipif(IS_WS, reason="Skip WS")
 def test_stmt_insert(conn):
     # type: (TaosConnection) -> None
 
@@ -125,7 +126,7 @@ def test_stmt_insert_multi(conn):
         raise err
 
 
-@pytest.mark.skip
+@pytest.mark.skipif(IS_WS, reason="Skip WS")
 def test_stmt_set_tbname_tag(conn):
     dbname = "pytest_taos_stmt_set_tbname_tag"
 

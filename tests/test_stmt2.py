@@ -1,5 +1,5 @@
-import taos
 import math
+import taos
 import pytest
 from datetime import datetime
 from shapely.wkb import dumps
@@ -7,6 +7,7 @@ from shapely.wkt import loads as wkt_loads
 from taos import bind2
 from taos import log
 from taos.statement2 import *
+from utils import IS_WS
 
 
 # input WKT return WKB (bytes object)
@@ -458,10 +459,7 @@ def test_bind_invalid_tbnames_type():
         conn.close()
 
 
-#
-# insert
-#
-@pytest.mark.skip
+@pytest.mark.skipif(IS_WS, reason="Skip WS")
 def test_stmt2_insert(conn):
     if not IS_V3:
         print(" test_stmt2_query not support TDengine 2.X version.")

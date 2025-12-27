@@ -1,6 +1,7 @@
 import taos
-from taos.tmq import Consumer
 import pytest
+from taos.tmq import Consumer
+from utils import IS_WS
 
 
 def before():
@@ -23,7 +24,7 @@ def after():
     conn.execute("drop database if exists test_decode_binary")
 
 
-@pytest.mark.skip
+@pytest.mark.skipif(IS_WS, reason="Skip WS")
 def test_decode_binary():
     if not taos.IS_V3:
         return
@@ -39,7 +40,7 @@ def test_decode_binary():
     after()
 
 
-@pytest.mark.skip
+@pytest.mark.skipif(IS_WS, reason="Skip WS")
 def test_decode_binary_in_tmq():
     if not taos.IS_V3:
         return

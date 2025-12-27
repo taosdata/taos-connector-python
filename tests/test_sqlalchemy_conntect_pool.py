@@ -1,7 +1,7 @@
 import threading
 from sqlalchemy import create_engine
 from sqlalchemy import text
-from tests.conftest import PORT
+from utils import PORT
 
 
 engine = create_engine(

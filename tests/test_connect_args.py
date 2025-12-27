@@ -1,9 +1,11 @@
 import time
+import pytest
 from taos import *
 from taos.constants import TSDB_CONNECTIONS_MODE, TSDB_OPTION_CONNECTION
-from tests.conftest import IS_WS
+from utils import IS_WS
 
 
+@pytest.mark.skipif(IS_WS, reason="Skip WS")
 def test_connect_args():
     """
     DO NOT DELETE THIS TEST CASE!
@@ -27,7 +29,6 @@ def test_connect_args():
     result = conn.query("show connections")
     assert result is not None
     for row in result:
-        print(row)
         if row[7] == "python client 1":
             bClient = True
         if row[8] == "127.2.2.2":
