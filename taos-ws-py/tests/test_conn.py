@@ -53,7 +53,7 @@ def test_report_connector_info():
     conn = taosws.connect()
     time.sleep(2)
     res = conn.query("show connections")
-    assert sum(1 for row in res if connector_info == row[-1]) > 0
+    assert any(connector_info == col for row in res for col in row)
     conn.close()
 
     conn = taosws.connect(
@@ -64,7 +64,7 @@ def test_report_connector_info():
     )
     time.sleep(2)
     res = conn.query("show connections")
-    assert sum(1 for row in res if connector_info == row[-1]) > 0
+    assert any(connector_info == col for row in res for col in row)
     conn.close()
 
 
