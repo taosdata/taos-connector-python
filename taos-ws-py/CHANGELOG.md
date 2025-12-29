@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Features:
 
-- Support report connector version information
+- Support reporting connector version information
 
 ## v0.6.3 - 2025-11-07
 
