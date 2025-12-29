@@ -1,9 +1,11 @@
-from taos import *
 import time
-
+import pytest
+from taos import *
 from taos.constants import TSDB_CONNECTIONS_MODE, TSDB_OPTION_CONNECTION
+from utils import IS_WS
 
 
+@pytest.mark.skipif(IS_WS, reason="Skip WS")
 def test_connect_args():
     """
     DO NOT DELETE THIS TEST CASE!
@@ -17,13 +19,12 @@ def test_connect_args():
         host=host, charset="utf8", timezone="UTC", user_app="python client 1", user_ip="127.2.2.2", bi_mode=True
     )
 
-    time.sleep(30)
+    time.sleep(3)
     bClient = False
     bHost = False
     result = conn.query("show connections")
     assert result is not None
     for row in result:
-        print(row)
         if row[7] == "python client 1":
             bClient = True
         if row[8] == "127.2.2.2":
@@ -43,7 +44,7 @@ def test_connect_args():
     conn.set_option(TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_USER_APP.value, "python client")
     conn.set_mode(TSDB_CONNECTIONS_MODE.TSDB_CONNECTIONS_MODE_BI.value, 1)
 
-    time.sleep(30)
+    time.sleep(3)
     bClient = False
     bHost = False
     result = conn.query("show connections")

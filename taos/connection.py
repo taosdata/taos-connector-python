@@ -144,7 +144,6 @@ class TaosConnection(object):
         callback: Optional[subscribe_callback_type] = None,
         param: Optional[c_void_p] = None,
     ) -> Optional[TaosSubscription]:
-
         """Create a subscription."""
         if self._conn is None:
             return None

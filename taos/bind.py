@@ -3,19 +3,13 @@ import sys
 import ctypes
 from ctypes import *
 from datetime import datetime
-from typing import List, Optional
 
 from taos.cinterface import IS_V3
 from taos.constants import FieldType
 from taos.precision import PrecisionEnum, PrecisionError
-from taos.field import get_tz
 from taos.bind_base import datetime_to_timestamp
 
 _datetime_epoch = datetime.utcfromtimestamp(0)
-
-
-def _is_not_none(obj):
-    return obj is not None
 
 
 class TaosBind(ctypes.Structure):

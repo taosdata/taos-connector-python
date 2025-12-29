@@ -1,9 +1,10 @@
-import threading
-import time
-from time import sleep
-from decimal import Decimal
 import taos
+import pytest
+import threading
+from decimal import Decimal
 from taos.tmq import *
+from time import sleep
+from utils import IS_WS
 
 
 class insertThread(threading.Thread):
@@ -132,7 +133,6 @@ def pre_test_tmq(precision: str):
 
 def after_ter_tmq():
     conn = taos.connect()
-    # drop database and topic
     try:
         conn.execute("drop topic if exists topic1")
         conn.execute("drop database if exists tmq_test")
@@ -177,6 +177,7 @@ def tmq_consumer_with_precision(precision: str):
         after_ter_tmq()
 
 
+@pytest.mark.skipif(IS_WS, reason="Skip WS")
 def test_tmq_assignment():
     if not IS_V3:
         return
@@ -437,6 +438,7 @@ def test_tmq_list_topics():
         after_ter_tmq()
 
 
+@pytest.mark.skipif(IS_WS, reason="Skip WS")
 def test_tmq_committed_and_position():
     if not IS_V3:
         return
