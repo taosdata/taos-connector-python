@@ -102,6 +102,10 @@ jobs:
           taosd &
           taosadapter &
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 300
+
       - name: Run tests
         env:
           TDENGINE_URL: localhost:6041
