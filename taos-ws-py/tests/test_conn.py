@@ -69,6 +69,7 @@ def test_report_connector_info():
     conn.close()
 
 
+@pytest.mark.skipif(not utils.TEST_TD_ENTERPRISE, reason="only for TDengine Enterprise")
 def test_connect_with_token():
     conn = taosws.connect("ws://localhost:6041")
     try:
@@ -100,6 +101,7 @@ def test_connect_with_token():
     conn.close()
 
 
+@pytest.mark.skipif(not utils.TEST_TD_ENTERPRISE, reason="only for TDengine Enterprise")
 def test_connect_with_totp():
     conn = taosws.connect("ws://localhost:6041")
     try:

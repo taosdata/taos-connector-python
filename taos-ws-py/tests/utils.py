@@ -10,6 +10,9 @@ import time
 import toml
 
 
+TEST_TD_ENTERPRISE = os.getenv("TEST_TD_ENTERPRISE") is not None
+
+
 def get_connector_info():
     cargo_toml = toml.load(os.path.join(os.path.dirname(__file__), "../Cargo.toml"))
     version = cargo_toml["package"]["version"]
