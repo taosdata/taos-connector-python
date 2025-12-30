@@ -1,4 +1,4 @@
-name: taos-ws-py-compatibility
+name: taos-ws-py-enterprise
 
 on:
   push:
@@ -80,14 +80,14 @@ jobs:
         run: pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
 
       - name: Get TDengine
-        run: wget https://github.com/taosdata/TDengine/releases/download/ver-3.3.6.0/TDengine-server-3.3.6.0-Linux-x64.tar.gz
+        run: wget "${{ secrets.NIGHTLY_TDENGINE_ENTERPRISE_BASE_URL }}/tsdb-nightly-3.0.tar.gz?v=$(date +%s)" -O tsdb-nightly-3.0.tar.gz
 
       - name: Install TDengine
         run: |
-          tar -zxf TDengine-server-3.3.6.0-Linux-x64.tar.gz
-          rm -rf TDengine-server-3.3.6.0-Linux-x64.tar.gz
-          cd TDengine-server-3.3.6.0
-          sudo ./install.sh -e no
+          tar -zxf tsdb-nightly-3.0.tar.gz
+          rm -rf tsdb-nightly-3.0.tar.gz
+          cd tsdb-nightly-3.0
+          sudo ./install.sh
 
       - name: Copy taos.cfg
         run: |
@@ -107,7 +107,6 @@ jobs:
           TDENGINE_URL: localhost:6041
           WS_CLOUD_URL: ${{ secrets.WS_CLOUD_URL }}
           WS_CLOUD_TOKEN: ${{ secrets.WS_CLOUD_TOKEN }}
-          TEST_TD_3360: "true"
         run: |
           pip3 install pytest toml
           pytest ./taos-ws-py/tests/
