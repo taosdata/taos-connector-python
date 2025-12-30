@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       status: ${{ steps.set-output.outputs.rebuild }}
+      git_commit_id: ${{ steps.output.outputs.git_commit_id }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,6 +44,9 @@ jobs:
           else
             echo "rebuild=${{ steps.detect-changes.outputs.any_changed }}" >> $GITHUB_OUTPUT
           fi
+
+      - id: output
+        run: echo "git_commit_id=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
 
   test:
     runs-on: ubuntu-latest
@@ -75,6 +79,7 @@ jobs:
           working-directory: taos-ws-py
           manylinux: auto
           args: --release --strip
+          docker-options: -e GIT_COMMIT_ID=${{ needs.rebuild.outputs.git_commit_id }}
 
       - name: Install taos-ws-py wheel
         run: pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
