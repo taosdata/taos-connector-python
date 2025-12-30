@@ -69,9 +69,8 @@ def test_report_connector_info():
     conn.close()
 
 
-@pytest.mark.skip
 def test_connect_with_token():
-    conn = taosws.connect("ws://192.168.1.98:6041")
+    conn = taosws.connect("ws://localhost:6041")
     try:
         conn.execute("drop user token_user")
     except Exception:
@@ -81,14 +80,14 @@ def test_connect_with_token():
     rs = conn.query("create token test_bearer_token from user token_user")
     token = next(iter(rs))[0]
 
-    conn1 = taosws.connect("ws://192.168.1.98:6041?bearer_token=" + token)
+    conn1 = taosws.connect("ws://localhost:6041?bearer_token=" + token)
     rs = conn1.query("select 1")
     res = next(iter(rs))[0]
     assert res == 1
     conn1.close()
 
     conn2 = taosws.connect(
-        host="192.168.1.98",
+        host="localhost",
         port=6041,
         bearer_token=token,
     )
@@ -101,9 +100,8 @@ def test_connect_with_token():
     conn.close()
 
 
-@pytest.mark.skip
 def test_connect_with_totp():
-    conn = taosws.connect("ws://192.168.1.98:6041")
+    conn = taosws.connect("ws://localhost:6041")
     try:
         conn.execute("drop user totp_user")
     except Exception:
@@ -118,14 +116,14 @@ def test_connect_with_totp():
     secret = utils.totp_secret_decode(totp_secret)
     code = utils.generate_totp_code(secret)
 
-    conn1 = taosws.connect("ws://192.168.1.98:6041?totp_code=" + code)
+    conn1 = taosws.connect("ws://localhost:6041?totp_code=" + code)
     rs = conn1.query("select 1")
     res = next(iter(rs))[0]
     assert res == 1
     conn1.close()
 
     conn2 = taosws.connect(
-        host="192.168.1.98",
+        host="localhost",
         port=6041,
         totp_code=code,
     )
