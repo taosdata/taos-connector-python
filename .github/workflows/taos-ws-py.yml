@@ -11,6 +11,7 @@ on:
     branches:
       - main
       - "3.0"
+
 env:
   PYTHON_VERSION: "3.10" # to build abi3 wheels
 
@@ -19,10 +20,12 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       status: ${{ steps.output.outputs.rebuild }}
+      git_commit_id: ${{ steps.output.outputs.git_commit_id }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Check if file changes would trigger a rebuild
         if: "!startsWith(github.ref, 'refs/tags/taos-ws-py')"
         id: rebuild
@@ -31,18 +34,22 @@ jobs:
           files: |
             .github/workflows/taos-ws-py.yml
             taos-ws-py/**
+
       - name: Set Github Output
         if: "!startsWith(github.ref, 'refs/tags/taos-ws-py')"
-        run: |
-          echo "rebuild=${{ steps.rebuild.outputs.any_changed }}" >> $GITHUB_ENV
+        run: echo "rebuild=${{ steps.rebuild.outputs.any_changed }}" >> $GITHUB_ENV
+
       - name: Set Github Output
         if: "startsWith(github.ref, 'refs/tags/taos-ws-py')"
-        run: |
-          echo "rebuild=true" >> $GITHUB_ENV
+        run: echo "rebuild=true" >> $GITHUB_ENV
+
       - id: output
-        run: echo "rebuild=${{ env.rebuild }}" >> $GITHUB_OUTPUT
+        run: |
+          echo "rebuild=${{ env.rebuild }}" >> $GITHUB_OUTPUT
+          echo "git_commit_id=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+
   macos:
-    runs-on: macos-13
+    runs-on: macos-15-intel
     needs: rebuild
     if: needs.rebuild.outputs.status == 'true'
     strategy:
@@ -50,15 +57,13 @@ jobs:
         target: [x86_64]
     steps:
       - name: Install gettext
-        run: |
-          brew install gettext
+        run: brew install gettext
 
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-          architecture: x64
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -68,23 +73,21 @@ jobs:
           target: x86_64
           working-directory: taos-ws-py
           args: --release --strip
-      - name: Install Homebrew
-        run: |
-          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-      - name: Set DYLD_LIBRARY_PATH
-        run: |
-          echo "export DYLD_LIBRARY_PATH=/usr/local/opt/gettext/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
+          docker-options: -e GIT_COMMIT_ID=${{ needs.rebuild.outputs.git_commit_id }}
+
       - name: Install built wheel - x86_64
-        run: |
-          pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
+        run: pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
+
       - name: Build wheels - universal2
         uses: PyO3/maturin-action@v1
         with:
           working-directory: taos-ws-py
           args: --release --strip --target universal2-apple-darwin
+          docker-options: -e GIT_COMMIT_ID=${{ needs.rebuild.outputs.git_commit_id }}
+
       - name: Install built wheel - universal2
-        run: |
-          pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
+        run: pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
+
       - name: Upload wheels x86_64
         uses: actions/upload-artifact@v4
         with:
@@ -97,7 +100,7 @@ jobs:
     if: needs.rebuild.outputs.status == 'true'
     strategy:
       matrix:
-        target: [x64] #, x86
+        target: [x64]
     steps:
       - uses: actions/checkout@v4
 
@@ -119,10 +122,10 @@ jobs:
           target: ${{ matrix.target }}
           working-directory: taos-ws-py
           args: --release --strip
+          docker-options: -e GIT_COMMIT_ID=${{ needs.rebuild.outputs.git_commit_id }}
 
       - name: Install built wheel
-        run: |
-          pip install taos-ws-py --no-index --force-reinstall --find-links .\taos-ws-py\target\wheels
+        run: pip install taos-ws-py --no-index --force-reinstall --find-links .\taos-ws-py\target\wheels
 
       - name: Upload wheels windows
         uses: actions/upload-artifact@v4
@@ -158,10 +161,10 @@ jobs:
           working-directory: taos-ws-py
           manylinux: auto
           args: --release --strip
+          docker-options: -e GIT_COMMIT_ID=${{ needs.rebuild.outputs.git_commit_id }}
 
       - name: Install built wheel
-        run: |
-          pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
+        run: pip install taos-ws-py --no-index --force-reinstall --find-links taos-ws-py/target/wheels
 
       #
       #  build TDengine and run taos-ws-py tests
@@ -220,7 +223,7 @@ jobs:
           export WS_CLOUD_URL=${{ secrets.WS_CLOUD_URL }}
           export WS_CLOUD_TOKEN=${{ secrets.WS_CLOUD_TOKEN }}
           curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
-          pip3 install pytest
+          pip3 install pytest toml
           pip3 install ./
           pytest ./taos-ws-py/tests/
 
@@ -246,19 +249,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+
       - run: sudo apt-get install -y libc6-dev
+
       - name: Build wheels
         uses: messense/maturin-action@v1
         with:
           target: ${{ matrix.target }}
           rust-toolchain: stable
           working-directory: taos-ws-py
-          docker-options: -e "CFLAGS_aarch64_unknown_linux_gnu=-D__ARM_ARCH=8" -e "CFLAGS_armv7_unknown_linux_gnueabihf=-D__ARM_ARCH=7"
+          docker-options: -e "CFLAGS_aarch64_unknown_linux_gnu=-D__ARM_ARCH=8" -e "CFLAGS_armv7_unknown_linux_gnueabihf=-D__ARM_ARCH=7" -e GIT_COMMIT_ID=${{ needs.rebuild.outputs.git_commit_id }}
           manylinux: auto
           args: --release --strip
           before-script-linux: |
             apt-get install -y libc6-dev libc6-dev-arm64-cross libc6-dev-armhf-cross libc6-dev-armel-cross
             curl --proto '=https' --tlsv1.2 -LsSf https://github.com/rust-lang/rust-bindgen/releases/download/v0.69.5/bindgen-cli-installer.sh | sh
+
       - uses: uraimo/run-on-arch-action@v2
         name: Install built wheel
         with:
@@ -269,8 +275,7 @@ jobs:
             apt-get update
             apt-get install -y --no-install-recommends python3 python3-pip
             pip3 install -U pip
-          run: |
-            pip3 install taos-ws-py --no-index --find-links taos-ws-py/target/wheels/ --force-reinstall
+          run: pip3 install taos-ws-py --no-index --find-links taos-ws-py/target/wheels/ --force-reinstall
 
       - name: Upload wheels linux-cross
         uses: actions/upload-artifact@v4
@@ -287,21 +292,27 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: taos-ws-py-linux
+
       - uses: actions/download-artifact@v4
         with:
           name: taos-ws-py-macos
+
       - uses: actions/download-artifact@v4
         with:
           name: taos-ws-py-windows
+
       - uses: actions/download-artifact@v4
         with:
           name: taos-ws-py-cross-aarch64
+
       - uses: actions/download-artifact@v4
         with:
           name: taos-ws-py-cross-armv7
+
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+
       - name: Publish to PyPI
         env:
           MATURIN_USERNAME: ${{ secrets.MATURIN_USERNAME }}

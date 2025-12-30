@@ -1,9 +1,9 @@
+import taos
+import pytest
 from datetime import datetime
-
-from utils import tear_down_database
 from taos import utils, IS_V3
 from taos.error import InterfaceError
-import taos
+from utils import tear_down_database, IS_WS
 
 
 def test_query():
@@ -48,6 +48,7 @@ def test_query():
     conn.close()
 
 
+@pytest.mark.skipif(IS_WS, reason="Skip WS")
 def test_query_decimal():
     if not IS_V3:
         return
@@ -84,10 +85,8 @@ def test_query_decimal():
         dec128 = row[3]
         if dec64 is not None:
             assert str(dec64) in ["9876.123456", "-9876.123456"]
-        #
         if dec128 is not None:
             assert str(dec128) in ["123456789012.0987654321", "-123456789012.0987654321"]
-        #
 
     for row in result.rows_iter():
         print(row)

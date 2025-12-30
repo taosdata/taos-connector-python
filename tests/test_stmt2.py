@@ -1,17 +1,13 @@
-# encoding:UTF-8
 import math
-from datetime import datetime
-
+import taos
 import pytest
-
-# geometry support
+from datetime import datetime
 from shapely.wkb import dumps
 from shapely.wkt import loads as wkt_loads
-
-import taos
 from taos import bind2
 from taos import log
 from taos.statement2 import *
+from utils import IS_WS
 
 
 # input WKT return WKB (bytes object)
@@ -84,7 +80,6 @@ def checkResultCorrect(conn, sql, tagsTb, datasTb):
         oris.append(row)
 
     # fetch all
-    lres = []
     log.debug(sql)
     res = conn.query(sql)
     i = 0
@@ -464,9 +459,7 @@ def test_bind_invalid_tbnames_type():
         conn.close()
 
 
-#
-# insert
-#
+@pytest.mark.skipif(IS_WS, reason="Skip WS")
 def test_stmt2_insert(conn):
     if not IS_V3:
         print(" test_stmt2_query not support TDengine 2.X version.")

@@ -1,4 +1,8 @@
 import taosws
+import time
+import os
+import utils
+import pytest
 
 
 def test_ws_connect():
@@ -39,6 +43,33 @@ def test_connect_invalid_user():
     print("-" * 40)
 
 
+def test_report_connector_info():
+    test = os.getenv("TEST_TD_3360")
+    if test is not None:
+        return
+
+    connector_info = utils.get_connector_info()
+    print("connector_info:", connector_info)
+
+    conn = taosws.connect()
+    time.sleep(2)
+    res = conn.query("show connections")
+    assert any(connector_info == col for row in res for col in row)
+    conn.close()
+
+    conn = taosws.connect(
+        user="root",
+        password="taosdata",
+        host="localhost",
+        port=6041,
+    )
+    time.sleep(2)
+    res = conn.query("show connections")
+    assert any(connector_info == col for row in res for col in row)
+    conn.close()
+
+
+@pytest.mark.skip
 def test_connect_with_token():
     conn = taosws.connect("ws://192.168.1.98:6041")
     conn.execute("drop user token_user")
@@ -83,3 +114,4 @@ if __name__ == "__main__":
     test_ws_connect()
     test_default_connect()
     test_connect_invalid_user()
+    test_report_connector_info()
