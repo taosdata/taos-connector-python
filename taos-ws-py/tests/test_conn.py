@@ -39,6 +39,33 @@ def test_connect_invalid_user():
     print("-" * 40)
 
 
+def test_connect_with_token():
+    conn = taosws.connect("ws://192.168.1.98:6041")
+    conn.execute("drop user token_user")
+    conn.execute("create user token_user pass 'token_pass_1'")
+    rs = conn.query("create token test_bearer_token from user token_user")
+    token = next(iter(rs))[0]
+
+    conn1 = taosws.connect("ws://192.168.1.98:6041?bearer_token=" + token)
+    rs = conn1.query("select 1")
+    res = next(iter(rs))[0]
+    assert res == 1
+    conn1.close()
+
+    conn2 = taosws.connect(
+        host="192.168.1.98",
+        port=6041,
+        bearer_token=token,
+    )
+    rs = conn2.query("select 1")
+    res = next(iter(rs))[0]
+    assert res == 1
+    conn2.close()
+
+    conn.execute("drop user token_user")
+    conn.close()
+
+
 def show_env():
     import os
 
