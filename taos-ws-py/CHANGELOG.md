@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Conventional Changelog](https://www.conventionalcommits.org/en/v1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.6.5 - 2025-12-31
+
+### Features:
+
+- Support TOTP authentication and token authentication
+
 ## v0.6.4 - 2025-12-28
 
 ### Features:

@@ -2445,7 +2445,7 @@ dependencies = [
 
 [[package]]
 name = "taos-ws-py"
-version = "0.6.4"
+version = "0.6.5"
 dependencies = [
  "anyhow",
  "chrono",
