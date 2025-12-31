@@ -2,6 +2,7 @@ import taosws
 import time
 import os
 import utils
+import pytest
 
 
 def test_ws_connect():
@@ -65,6 +66,75 @@ def test_report_connector_info():
     time.sleep(2)
     res = conn.query("show connections")
     assert any(connector_info == col for row in res for col in row)
+    conn.close()
+
+
+@pytest.mark.skipif(not utils.TEST_TD_ENTERPRISE, reason="only for TDengine Enterprise")
+def test_connect_with_token():
+    conn = taosws.connect("ws://localhost:6041")
+    try:
+        conn.execute("drop user token_user")
+    except Exception:
+        pass
+
+    conn.execute("create user token_user pass 'token_pass_1'")
+    rs = conn.query("create token test_bearer_token from user token_user")
+    token = next(iter(rs))[0]
+
+    conn1 = taosws.connect("ws://localhost:6041?bearer_token=" + token)
+    rs = conn1.query("select 1")
+    res = next(iter(rs))[0]
+    assert res == 1
+    conn1.close()
+
+    conn2 = taosws.connect(
+        host="localhost",
+        port=6041,
+        bearer_token=token,
+    )
+    rs = conn2.query("select 1")
+    res = next(iter(rs))[0]
+    assert res == 1
+    conn2.close()
+
+    conn.execute("drop user token_user")
+    conn.close()
+
+
+@pytest.mark.skipif(not utils.TEST_TD_ENTERPRISE, reason="only for TDengine Enterprise")
+def test_connect_with_totp():
+    conn = taosws.connect("ws://localhost:6041")
+    try:
+        conn.execute("drop user totp_user")
+    except Exception:
+        pass
+
+    totp_seed = utils.generate_totp_seed(255)
+    conn.execute("create user totp_user pass 'totp_pass_1' totpseed '%s'" % totp_seed)
+
+    rs = conn.query("select generate_totp_secret('%s')" % totp_seed)
+    totp_secret = next(iter(rs))[0]
+
+    secret = utils.totp_secret_decode(totp_secret)
+    code = utils.generate_totp_code(secret)
+
+    conn1 = taosws.connect("ws://localhost:6041?totp_code=" + code)
+    rs = conn1.query("select 1")
+    res = next(iter(rs))[0]
+    assert res == 1
+    conn1.close()
+
+    conn2 = taosws.connect(
+        host="localhost",
+        port=6041,
+        totp_code=code,
+    )
+    rs = conn2.query("select 1")
+    res = next(iter(rs))[0]
+    assert res == 1
+    conn2.close()
+
+    conn.execute("drop user totp_user")
     conn.close()
 
 
