@@ -65,9 +65,12 @@ def connect(*args, **kwargs):
 
     Current supporting keyword parameters:
     @dsn: Data source name as string
+    @host: Hostname(optional)
+    @port: Port number(optional)
+    @totp_code: TOTP code for TOTP authentication(optional)
+    @bearer_token: Token for token authentication(optional)
     @user: Username as string(optional)
     @password: Password as string(optional)
-    @host: Hostname(optional)
     @database: Database name(optional)
 
     @rtype: TDengineConnector

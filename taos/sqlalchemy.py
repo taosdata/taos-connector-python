@@ -612,6 +612,7 @@ class TaosDialect(BaseDialect):
 # ---------------- TDengine WebSocket connector implementation -------------
 #
 
+
 # WebSocket dialect
 class TaosWsDialect(BaseDialect):
     name = "taosws"

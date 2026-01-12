@@ -367,9 +367,11 @@ class TaosMultiBind(ctypes.Structure):
                 c_char_p(
                     b"".join(
                         [
-                            create_string_buffer(b, buffer_length)
-                            if b is not None
-                            else create_string_buffer(buffer_length)
+                            (
+                                create_string_buffer(b, buffer_length)
+                                if b is not None
+                                else create_string_buffer(buffer_length)
+                            )
                             for b in _bytes
                         ]
                     )
