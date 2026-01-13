@@ -2,7 +2,7 @@ import time
 import pytest
 from taos import *
 from taos.constants import TSDB_CONNECTIONS_MODE, TSDB_OPTION_CONNECTION
-from utils import IS_WS
+from utils import *
 
 
 @pytest.mark.skipif(IS_WS, reason="Skip WS")
@@ -65,4 +65,92 @@ def test_connect_args():
         assert row[0] == "UTC (UTC, +0000)"
 
     assert conn is not None
+    conn.close()
+
+
+@pytest.mark.skipif(not TEST_TD_ENTERPRISE, reason="only for TDengine Enterprise")
+def test_connect_with_totp():
+    conn = connect()
+    try:
+        conn.execute("drop user totp_user")
+    except Exception:
+        pass
+
+    totp_seed = generate_totp_seed(255)
+    conn.execute("create user totp_user pass 'totp_pass_1' totpseed '%s'" % totp_seed)
+
+    rs = conn.query("select generate_totp_secret('%s')" % totp_seed)
+    totp_secret = next(iter(rs))[0]
+
+    secret = totp_secret_decode(totp_secret)
+    code = generate_totp_code(secret)
+
+    conn1 = connect(
+        host="localhost",
+        port=6030,
+        user="totp_user",
+        password="totp_pass_1",
+        totp_code=code,
+    )
+    rs = conn1.query("select 1")
+    res = next(iter(rs))[0]
+    assert res == 1
+    conn1.close()
+
+    conn.execute("drop user totp_user")
+    conn.close()
+
+
+@pytest.mark.skipif(not TEST_TD_ENTERPRISE, reason="only for TDengine Enterprise")
+def test_connect_with_token():
+    conn = connect()
+    try:
+        conn.execute("drop user token_user")
+    except Exception:
+        pass
+
+    conn.execute("create user token_user pass 'token_pass_1'")
+    rs = conn.query("create token test_bearer_token from user token_user")
+    token = next(iter(rs))[0]
+
+    conn1 = connect(
+        host="localhost",
+        port=6030,
+        bearer_token=token,
+    )
+    rs = conn1.query("select 1")
+    res = next(iter(rs))[0]
+    assert res == 1
+    conn1.close()
+
+    conn.execute("drop user token_user")
+    conn.close()
+
+
+@pytest.mark.skipif(not TEST_TD_ENTERPRISE, reason="only for TDengine Enterprise")
+def test_connect_test():
+    conn = connect()
+    try:
+        conn.execute("drop user totp_test_user")
+    except Exception:
+        pass
+
+    totp_seed = generate_totp_seed(255)
+    conn.execute("create user totp_test_user pass 'totp_pass_1' totpseed '%s'" % totp_seed)
+
+    rs = conn.query("select generate_totp_secret('%s')" % totp_seed)
+    totp_secret = next(iter(rs))[0]
+
+    secret = totp_secret_decode(totp_secret)
+    code = generate_totp_code(secret)
+
+    connect_test(
+        host="localhost",
+        port=6030,
+        user="totp_test_user",
+        password="totp_pass_1",
+        totp_code=code,
+    )
+
+    conn.execute("drop user totp_test_user")
     conn.close()
