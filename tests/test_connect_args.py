@@ -2,6 +2,7 @@ import time
 import pytest
 from taos import *
 from taos.constants import TSDB_CONNECTIONS_MODE, TSDB_OPTION_CONNECTION
+from taos.error import ConnectionError
 from utils import *
 
 
@@ -102,6 +103,33 @@ def test_connect_with_totp():
 
 
 @pytest.mark.skipif(not TEST_TD_ENTERPRISE, reason="only for TDengine Enterprise")
+def test_connect_with_invalid_totp():
+    conn = connect()
+    try:
+        conn.execute("drop user it_totp_user")
+    except Exception:
+        pass
+
+    totp_seed = generate_totp_seed(255)
+    conn.execute("create user it_totp_user pass 'totp_pass_1' totpseed '%s'" % totp_seed)
+
+    try:
+        connect(
+            host="localhost",
+            port=6030,
+            user="it_totp_user",
+            password="totp_pass_1",
+            totp_code="000000",
+        )
+    except ConnectionError as e:
+        assert "Wrong TOTP code" in str(e)
+        pass
+
+    conn.execute("drop user it_totp_user")
+    conn.close()
+
+
+@pytest.mark.skipif(not TEST_TD_ENTERPRISE, reason="only for TDengine Enterprise")
 def test_connect_with_token():
     conn = connect()
     try:
@@ -124,6 +152,30 @@ def test_connect_with_token():
     conn1.close()
 
     conn.execute("drop user token_user")
+    conn.close()
+
+
+@pytest.mark.skipif(not TEST_TD_ENTERPRISE, reason="only for TDengine Enterprise")
+def test_connect_with_invalid_token():
+    conn = connect()
+    try:
+        conn.execute("drop user it_token_user")
+    except Exception:
+        pass
+
+    conn.execute("create user it_token_user pass 'token_pass_1'")
+
+    try:
+        connect(
+            host="localhost",
+            port=6030,
+            bearer_token="invalid_token",
+        )
+    except ConnectionError as e:
+        assert "Invalid token" in str(e)
+        pass
+
+    conn.execute("drop user it_token_user")
     conn.close()
 
 
@@ -211,4 +263,31 @@ def test_connect_test():
     )
 
     conn.execute("drop user totp_test_user")
+    conn.close()
+
+
+@pytest.mark.skipif(not TEST_TD_ENTERPRISE, reason="only for TDengine Enterprise")
+def test_connect_test_with_invalid_totp():
+    conn = connect()
+    try:
+        conn.execute("drop user it_totp_test_user")
+    except Exception:
+        pass
+
+    totp_seed = generate_totp_seed(255)
+    conn.execute("create user it_totp_test_user pass 'totp_pass_1' totpseed '%s'" % totp_seed)
+
+    try:
+        connect_test(
+            host="localhost",
+            port=6030,
+            user="it_totp_test_user",
+            password="totp_pass_1",
+            totp_code="123456",
+        )
+    except ConnectionError as e:
+        assert "Wrong TOTP code" in str(e)
+        pass
+
+    conn.execute("drop user it_totp_test_user")
     conn.close()

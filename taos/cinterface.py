@@ -2508,14 +2508,6 @@ class CTaosInterface(object):
         """
         return taos_connect_totp(totp, host, user, password, db, port)
 
-    def connect_test(self, totp, host=None, user="root", password="taosdata", db=None, port=0):
-        """
-        Function to test connection to server with TOTP authentication
-
-        @rtype: int, status code (0 for success, non-zero for failure)
-        """
-        return taos_connect_test(totp, host, user, password, db, port)
-
     def connect_token(self, token, host=None, db=None, port=0):
         """
         Function to connect to server with token authentication
