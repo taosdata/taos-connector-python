@@ -291,3 +291,12 @@ def test_connect_test_with_invalid_totp():
 
     conn.execute("drop user it_totp_test_user")
     conn.close()
+
+
+@pytest.mark.skipif(not TEST_TD_ENTERPRISE, reason="only for TDengine Enterprise")
+def test_connect_test_without_totp():
+    try:
+        connect_test()
+    except TypeError as e:
+        assert "missing 1 required" in str(e)
+        pass

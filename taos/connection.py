@@ -34,10 +34,10 @@ class TaosConnection(object):
         self._chandle = CTaosInterface(self._config, self._tz)
 
         if self._bearer_token:
-            self._conn = self._chandle.connect_token(self._bearer_token, self._host, self._database, self._port)
+            self._conn = self._chandle.connect_token(self._host, self._bearer_token, self._database, self._port)
         elif self._totp_code:
             self._conn = self._chandle.connect_totp(
-                self._totp_code, self._host, self._user, self._password, self._database, self._port
+                self._host, self._user, self._password, self._totp_code, self._database, self._port
             )
         else:
             self._conn = self._chandle.connect(self._host, self._user, self._password, self._database, self._port)
