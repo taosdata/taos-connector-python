@@ -360,37 +360,31 @@ def taos_connect_totp(totp, host=None, user="root", password="taosdata", db=None
     """
     _check_if_supported()
 
-    # totp
     try:
         _totp = c_char_p(totp.encode("utf-8"))
     except AttributeError:
         raise AttributeError("totp is expected as a str")
 
-    # host
     try:
         _host = c_char_p(host.encode("utf-8")) if host is not None else None
     except AttributeError:
         raise AttributeError("host is expected as a str")
 
-    # user
     try:
         _user = c_char_p(user.encode("utf-8"))
     except AttributeError:
         raise AttributeError("user is expected as a str")
 
-    # password
     try:
         _password = c_char_p(password.encode("utf-8"))
     except AttributeError:
         raise AttributeError("password is expected as a str")
 
-    # db
     try:
         _db = c_char_p(db.encode("utf-8")) if db is not None else None
     except AttributeError:
         raise AttributeError("db is expected as a str")
 
-    # port
     try:
         _port = c_uint16(port)
     except TypeError:
@@ -407,7 +401,7 @@ def taos_connect_totp(totp, host=None, user="root", password="taosdata", db=None
 
 
 def taos_connect_test(totp, host=None, user="root", password="taosdata", db=None, port=0):
-    # type: (str, None|str, str, str, None|str, int) -> int
+    # type: (str, None|str, str, str, None|str, int) -> None
     """Test TDengine connection with TOTP authentication.
 
     - totp: time-based one-time password for testing
@@ -416,49 +410,45 @@ def taos_connect_test(totp, host=None, user="root", password="taosdata", db=None
     - password: user password
     - db: database name (optional)
     - port: server port
-
-    @rtype: int, status code (0 for success, non-zero for failure)
     """
     _check_if_supported()
 
-    # totp
     try:
         _totp = c_char_p(totp.encode("utf-8"))
     except AttributeError:
         raise AttributeError("totp is expected as a str")
 
-    # host
     try:
         _host = c_char_p(host.encode("utf-8")) if host is not None else None
     except AttributeError:
         raise AttributeError("host is expected as a str")
 
-    # user
     try:
         _user = c_char_p(user.encode("utf-8"))
     except AttributeError:
         raise AttributeError("user is expected as a str")
 
-    # password
     try:
         _password = c_char_p(password.encode("utf-8"))
     except AttributeError:
         raise AttributeError("password is expected as a str")
 
-    # db
     try:
         _db = c_char_p(db.encode("utf-8")) if db is not None else None
     except AttributeError:
         raise AttributeError("db is expected as a str")
 
-    # port
     try:
         _port = c_uint16(port)
     except TypeError:
         raise TypeError("port is expected as an uint16")
 
     code = _libtaos.taos_connect_test(_host, _user, _password, _totp, _db, _port)
-    return code
+    if code != 0:
+        null_ptr = c_void_p(None)
+        errno = taos_errno(null_ptr)
+        errstr = taos_errstr(null_ptr)
+        raise ConnectionError(errstr, errno)
 
 
 def taos_connect_token(token, host=None, db=None, port=0):
@@ -474,25 +464,21 @@ def taos_connect_token(token, host=None, db=None, port=0):
     """
     _check_if_supported()
 
-    # token
     try:
         _token = c_char_p(token.encode("utf-8"))
     except AttributeError:
         raise AttributeError("token is expected as a str")
 
-    # host
     try:
         _host = c_char_p(host.encode("utf-8")) if host is not None else None
     except AttributeError:
         raise AttributeError("host is expected as a str")
 
-    # db
     try:
         _db = c_char_p(db.encode("utf-8")) if db is not None else None
     except AttributeError:
         raise AttributeError("db is expected as a str")
 
-    # port
     try:
         _port = c_uint16(port)
     except TypeError:

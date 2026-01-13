@@ -37,6 +37,7 @@ __all__ = [
     "TAOS_FIELD_TBNAME",
     # functions
     "connect",
+    "connect_test",
     "new_bind_param",
     "new_bind_params",
     "new_multi_binds",
@@ -67,12 +68,36 @@ def connect(*args, **kwargs):
     @dsn: Data source name as string
     @host: Hostname(optional)
     @port: Port number(optional)
-    @totp_code: TOTP code for TOTP authentication(optional)
-    @bearer_token: Token for token authentication(optional)
     @user: Username as string(optional)
     @password: Password as string(optional)
+    @totp_code: TOTP code for TOTP authentication(optional)
+    @bearer_token: Token for token authentication(optional)
     @database: Database name(optional)
 
     @rtype: TDengineConnector
     """
     return TaosConnection(*args, **kwargs)
+
+
+def connect_test(*args, **kwargs):
+    # type: (..., ...) -> None
+    """Function to test connection to TDengine with TOTP authentication
+
+    Current supporting keyword parameters:
+    @host: Hostname(optional)
+    @port: Port number(optional)
+    @user: Username as string(optional)
+    @password: Password as string(optional)
+    @totp_code: TOTP code for TOTP authentication(optional)
+    @database: Database name(optional)
+    """
+    from taos.cinterface import taos_connect_test
+
+    host = kwargs.get("host")
+    port = kwargs.get("port")
+    user = kwargs.get("user")
+    password = kwargs.get("password")
+    totp = kwargs.get("totp_code")
+    db = kwargs.get("database")
+
+    taos_connect_test(totp, host, user, password, db, port)
