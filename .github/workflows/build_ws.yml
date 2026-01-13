@@ -74,7 +74,7 @@ jobs:
         id: determine-branch
         with:
           cond: ${{ github.base_ref == 'main' }}
-          if_true: "3.0"
+          if_true: "main"
           if_false: "3.0"
 
       - name: Checkout tdengine
