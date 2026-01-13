@@ -128,6 +128,64 @@ def test_connect_with_token():
 
 
 @pytest.mark.skipif(not TEST_TD_ENTERPRISE, reason="only for TDengine Enterprise")
+def test_connect_with_totp_and_token():
+    conn = connect()
+    try:
+        conn.execute("drop user tt_user")
+    except Exception:
+        pass
+
+    totp_seed = generate_totp_seed(255)
+    conn.execute("create user tt_user pass 'totp_pass_1' totpseed '%s'" % totp_seed)
+
+    rs = conn.query("select generate_totp_secret('%s')" % totp_seed)
+    totp_secret = next(iter(rs))[0]
+
+    secret = totp_secret_decode(totp_secret)
+    code = generate_totp_code(secret)
+
+    conn1 = connect(
+        host="localhost",
+        port=6030,
+        user="tt_user",
+        password="totp_pass_1",
+        totp_code=code,
+    )
+    rs = conn1.query("select 1")
+    res = next(iter(rs))[0]
+    assert res == 1
+    conn1.close()
+
+    rs = conn.query("create token test_tt_token from user tt_user")
+    token = next(iter(rs))[0]
+
+    conn2 = connect(
+        host="localhost",
+        port=6030,
+        bearer_token=token,
+    )
+    rs = conn2.query("select 1")
+    res = next(iter(rs))[0]
+    assert res == 1
+    conn2.close()
+
+    conn3 = connect(
+        host="localhost",
+        port=6030,
+        user="tt_user",
+        password="totp_pass_1",
+        bearer_token=token,
+    )
+    rs = conn3.query("select 1")
+    res = next(iter(rs))[0]
+    assert res == 1
+    conn3.close()
+
+    conn.execute("drop user tt_user")
+    conn.close()
+
+
+@pytest.mark.skipif(not TEST_TD_ENTERPRISE, reason="only for TDengine Enterprise")
 def test_connect_test():
     conn = connect()
     try:
