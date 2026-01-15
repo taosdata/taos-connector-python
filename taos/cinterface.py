@@ -326,6 +326,133 @@ def taos_connect_auth(host=None, user="root", auth="", db=None, port=0):
     return connection
 
 
+try:
+    _libtaos.taos_connect_totp.restype = c_void_p
+    _libtaos.taos_connect_totp.argtypes = c_char_p, c_char_p, c_char_p, c_char_p, c_char_p, c_uint16
+except Exception as err:
+    _UNSUPPORTED["taos_connect_totp"] = err
+
+try:
+    _libtaos.taos_connect_test.restype = c_int
+    _libtaos.taos_connect_test.argtypes = c_char_p, c_char_p, c_char_p, c_char_p, c_char_p, c_uint16
+except Exception as err:
+    _UNSUPPORTED["taos_connect_test"] = err
+
+try:
+    _libtaos.taos_connect_token.restype = c_void_p
+    _libtaos.taos_connect_token.argtypes = c_char_p, c_char_p, c_char_p, c_uint16
+except Exception as err:
+    _UNSUPPORTED["taos_connect_token"] = err
+
+
+def taos_connect_totp(host=None, user="root", password="taosdata", totp=None, db=None, port=0):
+    # type: (None|str, str, str, None|str, None|str, int) -> c_void_p
+    """Connect TDengine with TOTP authentication.
+
+    - host: server hostname/FQDN
+    - user: user name
+    - password: user password
+    - totp: time-based one-time password
+    - db: database name (optional)
+    - port: server port
+
+    @rtype: c_void_p, TDengine handle
+    """
+    _check_if_supported()
+
+    _host = _str_to_c_char_p(host, "host")
+    _user = _str_to_c_char_p(user, "user")
+    _password = _str_to_c_char_p(password, "password")
+    _totp = _str_to_c_char_p(totp, "totp")
+    _db = _str_to_c_char_p(db, "db")
+
+    try:
+        _port = c_uint16(port)
+    except TypeError:
+        raise TypeError("port is expected as an uint16")
+
+    connection = cast(_libtaos.taos_connect_totp(_host, _user, _password, _totp, _db, _port), c_void_p)
+
+    if connection.value is None:
+        null_ptr = c_void_p(None)
+        errno = taos_errno(null_ptr)
+        errstr = taos_errstr(null_ptr)
+        raise ConnectionError(errstr, errno)
+    return connection
+
+
+def taos_connect_test(host=None, user="root", password="taosdata", totp=None, db=None, port=0):
+    # type: (None|str, str, str, None|str, None|str, int) -> None
+    """Test TDengine connection with TOTP authentication.
+
+    - host: server hostname/FQDN
+    - user: user name
+    - password: user password
+    - totp: time-based one-time password for testing
+    - db: database name (optional)
+    - port: server port
+    """
+    _check_if_supported()
+
+    _host = _str_to_c_char_p(host, "host")
+    _user = _str_to_c_char_p(user, "user")
+    _password = _str_to_c_char_p(password, "password")
+    _totp = _str_to_c_char_p(totp, "totp")
+    _db = _str_to_c_char_p(db, "db")
+
+    try:
+        _port = c_uint16(port)
+    except TypeError:
+        raise TypeError("port is expected as an uint16")
+
+    code = _libtaos.taos_connect_test(_host, _user, _password, _totp, _db, _port)
+    if code != 0:
+        null_ptr = c_void_p(None)
+        errno = taos_errno(null_ptr)
+        errstr = taos_errstr(null_ptr)
+        raise ConnectionError(errstr, errno)
+
+
+def taos_connect_token(host=None, token=None, db=None, port=0):
+    # type: (None|str, None|str, None|str, int) -> c_void_p
+    """Connect TDengine with token authentication.
+
+    - host: server hostname/FQDN
+    - token: authentication token
+    - db: database name (optional)
+    - port: server port
+
+    @rtype: c_void_p, TDengine handle
+    """
+    _check_if_supported()
+
+    _host = _str_to_c_char_p(host, "host")
+    _token = _str_to_c_char_p(token, "token")
+    _db = _str_to_c_char_p(db, "db")
+
+    try:
+        _port = c_uint16(port)
+    except TypeError:
+        raise TypeError("port is expected as an uint16")
+
+    connection = cast(_libtaos.taos_connect_token(_host, _token, _db, _port), c_void_p)
+
+    if connection.value is None:
+        null_ptr = c_void_p(None)
+        errno = taos_errno(null_ptr)
+        errstr = taos_errstr(null_ptr)
+        raise ConnectionError(errstr, errno)
+    return connection
+
+
+def _str_to_c_char_p(value, name):
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise AttributeError(f"{name} is expected as a str")
+    return c_char_p(value.encode("utf-8"))
+
+
 _libtaos.taos_query.restype = c_void_p
 _libtaos.taos_query.argtypes = c_void_p, c_char_p
 
@@ -442,9 +569,6 @@ def taos_affected_rows(result):
 
 
 subscribe_callback_type = CFUNCTYPE(None, c_void_p, c_void_p, c_void_p, c_int)
-
-
-# _libtaos.taos_subscribe.argtypes = c_void_p, c_int, c_char_p, c_char_p, subscribe_callback_type, c_void_p, c_int
 
 
 def taos_subscribe(connection, restart, topic, sql, interval, callback=None, param=None):
@@ -2334,3 +2458,19 @@ class CTaosInterface(object):
         """
 
         return taos_connect(host, user, password, db, port)
+
+    def connect_totp(self, host=None, user="root", password="taosdata", totp=None, db=None, port=0):
+        """
+        Function to connect to server with TOTP authentication
+
+        @rtype: c_void_p, TDengine handle
+        """
+        return taos_connect_totp(host, user, password, totp, db, port)
+
+    def connect_token(self, host=None, token=None, db=None, port=0):
+        """
+        Function to connect to server with token authentication
+
+        @rtype: c_void_p, TDengine handle
+        """
+        return taos_connect_token(host, token, db, port)

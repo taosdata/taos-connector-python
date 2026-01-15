@@ -27,10 +27,20 @@ class TaosConnection(object):
         self._user_app = None
         self._user_ip = None
         self._bi_mode = None
+        self._totp_code = None
+        self._bearer_token = None
 
         self._init_config(**kwargs)
         self._chandle = CTaosInterface(self._config, self._tz)
-        self._conn = self._chandle.connect(self._host, self._user, self._password, self._database, self._port)
+
+        if self._bearer_token:
+            self._conn = self._chandle.connect_token(self._host, self._bearer_token, self._database, self._port)
+        elif self._totp_code:
+            self._conn = self._chandle.connect_totp(
+                self._host, self._user, self._password, self._totp_code, self._database, self._port
+            )
+        else:
+            self._conn = self._chandle.connect(self._host, self._user, self._password, self._database, self._port)
 
         if self._charset is not None:
             self.set_option(TSDB_OPTION_CONNECTION.TSDB_OPTION_CONNECTION_CHARSET.value, self._charset)
@@ -90,6 +100,12 @@ class TaosConnection(object):
 
         if "bi_mode" in kwargs:
             self._bi_mode = kwargs["bi_mode"]
+
+        if "totp_code" in kwargs:
+            self._totp_code = kwargs["totp_code"]
+
+        if "bearer_token" in kwargs:
+            self._bearer_token = kwargs["bearer_token"]
 
     def close(self):
         """Close current connection."""

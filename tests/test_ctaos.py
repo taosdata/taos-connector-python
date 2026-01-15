@@ -53,8 +53,6 @@ def test_simple(conn, caplog):
 
         taos_select_db(conn, dbname)
 
-        #  cursor.execute("CREATE STABLE weather(ts TIMESTAMP, temperature FLOAT, city NCHAR(100), country BINARY(100), town VARBINARY(100)) TAGS (location INT)")
-        #     cursor.execute(f"INSERT INTO t1 USING weather TAGS(1) VALUES (now, 23.5, 'tianjin', 'china', 'wuqing') (now+100a, 23.5, 'tianjin', 'china', 'wuqing')")
         res = taos_query(
             conn,
             "create table if not exists log(ts timestamp, c_level tinyint, content binary(100), ipaddr binary(134), city NCHAR(100), town VARBINARY(100))",
@@ -72,10 +70,6 @@ def test_simple(conn, caplog):
         fields = taos_fetch_fields(res)
         for field in fields:
             print(field)
-
-        # field_lengths = taos_fetch_lengths(res, field_count)
-        # if not field_lengths:
-        #     raise "fetch lengths error"
 
         row = taos_fetch_row_raw(res)
         rowstr = taos_print_row(row, fields, field_count)

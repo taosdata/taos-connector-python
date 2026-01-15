@@ -105,8 +105,8 @@ def test_get_server_info():
     conn = taosrest.connect(url=url, user="root", password="taosdata")
 
     version: str = conn.server_info
-    # 3.0.5.0 or 3.0.6.0.alpha
-    assert len(version.split(".")) == 4 or len(version.split(".")) == 5
+    # 3.0.5.0 or 3.0.6.0.alpha or 3.4.0.0.alpha.community
+    assert len(version.split(".")) == 4 or len(version.split(".")) == 5 or len(version.split(".")) == 6
 
 
 @check_env

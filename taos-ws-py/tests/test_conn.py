@@ -118,7 +118,7 @@ def test_connect_with_totp():
     secret = utils.totp_secret_decode(totp_secret)
     code = utils.generate_totp_code(secret)
 
-    conn1 = taosws.connect("ws://localhost:6041?totp_code=" + code)
+    conn1 = taosws.connect("ws://totp_user:totp_pass_1@localhost:6041?totp_code=" + code)
     rs = conn1.query("select 1")
     res = next(iter(rs))[0]
     assert res == 1
@@ -127,6 +127,8 @@ def test_connect_with_totp():
     conn2 = taosws.connect(
         host="localhost",
         port=6041,
+        user="totp_user",
+        password="totp_pass_1",
         totp_code=code,
     )
     rs = conn2.query("select 1")

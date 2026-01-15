@@ -1,6 +1,5 @@
 # encoding:UTF-8
-"""Python exceptions
-"""
+"""Python exceptions"""
 
 
 class ErrMsg:
