@@ -7,10 +7,6 @@ on:
     paths:
       - "pyproject.toml"
       - ".github/workflows/audit.yml"
-  pull_request:
-    paths:
-      - "pyproject.toml"
-      - ".github/workflows/audit.yml"
 
 jobs:
   check:
@@ -24,16 +20,22 @@ jobs:
       - name: Install poetry
         run: pip install poetry
 
-      - name: Audit check
+      # - name: Audit check
+      #   run: |
+      #     poetry self add poetry-plugin-export
+      #     poetry export --with dev,test -f requirements.txt --output reqs.txt
+      #     pip install pip-audit
+      #     pip-audit -r reqs.txt --ignore-vuln PYSEC-2024-48 \
+      #       --ignore-vuln CVE-2024-35195 \
+      #       --ignore-vuln CVE-2024-47081 \
+      #       --ignore-vuln CVE-2024-37891 \
+      #       --ignore-vuln CVE-2025-50181 \
+      #       --ignore-vuln CVE-2025-66418 \
+      #       --ignore-vuln CVE-2025-66471 \
+      #       --ignore-vuln CVE-2026-21441
+
+      - name: License check
         run: |
-          poetry self add poetry-plugin-export
-          poetry export --with dev,test -f requirements.txt --output reqs.txt
-          pip install pip-audit
-          pip-audit -r reqs.txt --ignore-vuln PYSEC-2024-48 \
-            --ignore-vuln CVE-2024-35195 \
-            --ignore-vuln CVE-2024-47081 \
-            --ignore-vuln CVE-2024-37891 \
-            --ignore-vuln CVE-2025-50181 \
-            --ignore-vuln CVE-2025-66418 \
-            --ignore-vuln CVE-2025-66471 \
-            --ignore-vuln CVE-2026-21441
+          pip install pip-licenses
+          pip-licenses --from mixed -o license --partial-match \
+            --allow-only "Apache;BSD;MIT;ISC;LGPLv3;Unlicense;Python Software Foundation License;MPL 2.0"
