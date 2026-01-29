@@ -34,8 +34,13 @@ jobs:
       #       --ignore-vuln CVE-2025-66471 \
       #       --ignore-vuln CVE-2026-21441
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 300
+
       - name: License check
         run: |
+          poetry install --no-interaction --no-root
           pip install pip-licenses
           pip-licenses --from mixed -o license --partial-match \
             --allow-only "Apache;BSD;MIT;ISC;LGPLv3;Unlicense;Python Software Foundation License;MPL 2.0"
