@@ -7,7 +7,7 @@ license = "MIT"
 readme = "README.md"
 packages = [{ include = "taos" }, { include = "taosrest" }]
 
-[tool.poetry.plugins] # Optional super table
+[tool.poetry.plugins]
 
 [tool.poetry.plugins."sqlalchemy.dialects"]
 "taos" = "taos.sqlalchemy:TaosDialect"
@@ -20,7 +20,6 @@ pytz = "*"
 iso8601 = "1.0.2"
 requests = ">=2.27.1"
 typing-extensions = ">=4.2.0,<4.15.0"
-
 
 [tool.poetry.dependencies.taos-ws-py]
 version = ">=0.3.0"
