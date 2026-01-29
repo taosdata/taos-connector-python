@@ -1,12 +1,13 @@
 name: taos-ws-py-audit
 
 on:
-  push:
-    paths:
-      - "taos-ws-py/**"
-      - ".github/workflows/taos-ws-py*.yml"
   schedule:
     - cron: "0 0 * * *"
+  push:
+    paths:
+      - "taos-ws-py/Cargo.toml"
+      - "taos-ws-py/Cargo.lock"
+      - ".github/workflows/taos-ws-py-audit.yml"
 
 permissions:
   contents: read

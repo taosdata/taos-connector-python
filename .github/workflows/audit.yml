@@ -6,10 +6,18 @@ on:
   push:
     paths:
       - "pyproject.toml"
+      - "poetry.lock"
       - ".github/workflows/audit.yml"
+
+permissions:
+  contents: read
 
 jobs:
   check:
+    permissions:
+      checks: write
+      contents: read
+      issues: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
