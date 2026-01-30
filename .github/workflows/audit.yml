@@ -4,10 +4,9 @@ on:
   schedule:
     - cron: "0 0 * * *"
   push:
-    paths:
-      - "pyproject.toml"
-      - "poetry.lock"
-      - ".github/workflows/audit.yml"
+    paths-ignore:
+      - "taos-ws-py/**"
+      - ".github/workflows/taos-ws-py*.yml"
 
 permissions:
   contents: read
