@@ -1,5 +1,6 @@
 import taos
 import threading
+import utils
 from taos.tmq import *
 from time import sleep
 
@@ -127,8 +128,8 @@ def tmq_consumer_with_precision(precision: str):
     consumer = Consumer(
         {
             "group.id": "1",
-            "td.connect.user": "root",
-            "td.connect.pass": "taosdata",
+            "td.connect.user": utils.test_username(),
+            "td.connect.pass": utils.test_password(),
             "msg.with.table.name": "true",
         }
     )

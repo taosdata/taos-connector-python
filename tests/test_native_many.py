@@ -1,9 +1,11 @@
 import taos
+import utils
 from utils import tear_down_database, PORT
 
+
 env = {
-    "user": "root",
-    "password": "taosdata",
+    "user": utils.test_username(),
+    "password": utils.test_password(),
     "host": "localhost",
     "port": PORT,
 }

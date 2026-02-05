@@ -1,9 +1,11 @@
 import taos
+import utils
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy import inspect
 from sqlalchemy import text
 from utils import PORT
+
 
 load_dotenv()
 
@@ -26,7 +28,9 @@ def prepare(conn, dbname, stbname, ntb1, ntb2):
 
 
 def test_stmt2_query():
-    engine = create_engine(f"taos://root:taosdata@{host}:{PORT}?timezone=Asia/Shanghai")
+    engine = create_engine(
+        f"taos://{utils.test_username()}:{utils.test_password()}@{host}:{PORT}?timezone=Asia/Shanghai"
+    )
     conn = engine.connect()
     dbname = "stmt2"
     stbname = "meters"
@@ -201,7 +205,9 @@ def check_basic(conn, inspection, subTables=["meters", "ntb"]):
 def test_read_from_sqlalchemy_taos():
     if not taos.IS_V3:
         return
-    engine = create_engine(f"taos://root:taosdata@{host}:{PORT}?timezone=Asia/Shanghai")
+    engine = create_engine(
+        f"taos://{utils.test_username()}:{utils.test_password()}@{host}:{PORT}?timezone=Asia/Shanghai"
+    )
     conn = engine.connect()
     insert_data(conn)
     inspection = inspect(engine)
@@ -212,7 +218,9 @@ def test_read_from_sqlalchemy_taos():
 def test_sqlalchemy_format_stmt_taos():
     if not taos.IS_V3:
         return
-    engine = create_engine(f"taos://root:taosdata@{host}:{PORT}?timezone=Asia/Shanghai")
+    engine = create_engine(
+        f"taos://{utils.test_username()}:{utils.test_password()}@{host}:{PORT}?timezone=Asia/Shanghai"
+    )
     conn = engine.connect()
     insert_stmt_sqlalchemy_data(conn)
     inspection = inspect(engine)
@@ -226,7 +234,9 @@ def test_read_from_sqlalchemy_taosws():
     except ImportError:
         return
 
-    engine = create_engine(f"taosws://root:taosdata@{host}:6041?timezone=Asia/Shanghai")
+    engine = create_engine(
+        f"taosws://{utils.test_username()}:{utils.test_password()}@{host}:6041?timezone=Asia/Shanghai"
+    )
     conn = engine.connect()
     insert_data(None)
     inspection = inspect(engine)
@@ -252,12 +262,12 @@ def test_read_from_sqlalchemy_taosws_failover():
             "taosws://localhost:6041/test_1755496227",
             "taosws://root@localhost:6041/test_1755496227",
             "taosws://root:@localhost:6041/test_1755496227",
-            "taosws://root:taosdata@localhost:6041/test_1755496227",
-            "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=",
-            "taosws://root:taosdata@/test_1755496227?hosts=localhost:6041",
-            "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=localhost:6041",
-            "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=localhost:6041,127.0.0.1:6041",
-            "taosws://root:taosdata@localhost:6041/test_1755496227?hosts=localhost:6041,127.0.0.1:6041&timezone=Asia/Shanghai",
+            f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:6041/test_1755496227",
+            f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:6041/test_1755496227?hosts=",
+            f"taosws://{utils.test_username()}:{utils.test_password()}@/test_1755496227?hosts=localhost:6041",
+            f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:6041/test_1755496227?hosts=localhost:6041",
+            f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:6041/test_1755496227?hosts=localhost:6041,127.0.0.1:6041",
+            f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:6041/test_1755496227?hosts=localhost:6041,127.0.0.1:6041&timezone=Asia/Shanghai",
         ]
 
         for url in urls:
@@ -287,7 +297,9 @@ def test_read_from_sqlalchemy_taosws_failover():
 def test_read_from_sqlalchemy_taosrest():
     if not taos.IS_V3:
         return
-    engine = create_engine(f"taosrest://root:taosdata@{host}:6041?timezone=Asia/Shanghai")
+    engine = create_engine(
+        f"taosrest://{utils.test_username()}:{utils.test_password()}@{host}:6041?timezone=Asia/Shanghai"
+    )
     conn = engine.connect()
     insert_data(conn)
     inspection = inspect(engine)

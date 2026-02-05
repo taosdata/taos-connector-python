@@ -1,6 +1,7 @@
 import pandas
 import taos
 import taosrest
+import utils
 from datetime import datetime
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
@@ -14,7 +15,7 @@ port = PORT
 
 
 def test_insert_test_data():
-    conn = taos.connect(host=host, port=port, user="root", password="taosdata")
+    conn = taos.connect(host=host, port=port, user=utils.test_username(), password=utils.test_password())
     c = conn.cursor()
     c.execute("drop database if exists test")
     c.execute("create database test")
@@ -40,7 +41,7 @@ def test_pandas_read_from_rest_connection():
 def test_pandas_read_from_native_connection():
     if taos.IS_V3:
         return
-    conn = taos.connect(host=host, port=port, user="root", password="taosdata")
+    conn = taos.connect(host=host, port=port, user=utils.test_username(), password=utils.test_password())
     df: pandas.DataFrame = pandas.read_sql("select * from test.tb", conn)
     assert isinstance(df.ts[0], datetime)
     assert df.shape == (2, 3)
@@ -49,7 +50,9 @@ def test_pandas_read_from_native_connection():
 def test_pandas_read_from_sqlalchemy_taos():
     if taos.IS_V3:
         return
-    engine = create_engine(f"taos://root:taosdata@{host}:{PORT}?timezone=Asia/Shanghai")
+    engine = create_engine(
+        f"taos://{utils.test_username()}:{utils.test_password()}@{host}:{PORT}?timezone=Asia/Shanghai"
+    )
     conn = engine.connect()
     df: pandas.DataFrame = pandas.read_sql(text("select * from test.tb"), conn)
     conn.close()
@@ -58,7 +61,9 @@ def test_pandas_read_from_sqlalchemy_taos():
 
 
 def test_pandas_read_from_sqlalchemy_stmt():
-    engine = create_engine(f"taos://root:taosdata@{host}:{PORT}?timezone=Asia/Shanghai")
+    engine = create_engine(
+        f"taos://{utils.test_username()}:{utils.test_password()}@{host}:{PORT}?timezone=Asia/Shanghai"
+    )
     conn = engine.connect()
     sql = text("SELECT * FROM test.tb WHERE c1 > :c1 AND c2 > :c2")
     df = pandas.read_sql(sql=sql, con=conn, params={"c1": 100, "c2": 0})  # 实际参数值（根据需求修改）
@@ -79,7 +84,9 @@ def test_pandas_tosql_auto_create_table():
         "tbname": ["california", "sandiego", "xxxx"],
     }
     df = pandas.DataFrame(data)
-    engine = create_engine(f"taos://root:taosdata@{host}:{PORT}/test?timezone=Asia/Shanghai")
+    engine = create_engine(
+        f"taos://{utils.test_username()}:{utils.test_password()}@{host}:{PORT}/test?timezone=Asia/Shanghai"
+    )
     rows_affected = df.to_sql(
         "meters",
         engine.connect(),
@@ -99,7 +106,9 @@ def test_pandas_tosql_auto_create_table():
 
 def test_pandas_tosql():
     """Test writing data to TDengine using pandas DataFrame.to_sql() method and verify the results"""
-    engine = create_engine(f"taos://root:taosdata@{host}:{PORT}/test?timezone=Asia/Shanghai")
+    engine = create_engine(
+        f"taos://{utils.test_username()}:{utils.test_password()}@{host}:{PORT}/test?timezone=Asia/Shanghai"
+    )
 
     # Prepare test data
     data = {
@@ -197,7 +206,9 @@ def test_pandas_tosql():
 
 def test_pandas_read_sql_table():
     test_insert_test_data()
-    engine = create_engine(f"taos://root:taosdata@{host}:{PORT}/test?timezone=Asia/Shanghai")
+    engine = create_engine(
+        f"taos://{utils.test_username()}:{utils.test_password()}@{host}:{PORT}/test?timezone=Asia/Shanghai"
+    )
     chunk_size = 1
     chunks = pandas.read_sql_table(
         table_name="tb",
@@ -227,7 +238,9 @@ def test_pandas_read_sql_table():
 
 def test_pandas_tosql_simple_verification():
     """Simplified version: demonstrate several common methods to verify pandas to_sql write results"""
-    engine = create_engine(f"taos://root:taosdata@{host}:{PORT}/test?timezone=Asia/Shanghai")
+    engine = create_engine(
+        f"taos://{utils.test_username()}:{utils.test_password()}@{host}:{PORT}/test?timezone=Asia/Shanghai"
+    )
 
     # Prepare test data
     test_data = pandas.DataFrame({"ts": [1626861400000, 1626861410000], "c1": [100, 200], "c2": [10.5, 20.5]})
@@ -264,7 +277,7 @@ def test_pandas_tosql_simple_verification():
 
 
 def teardown_module(module):
-    conn = taos.connect(host=host, port=port, user="root", password="taosdata")
+    conn = taos.connect(host=host, port=port, user=utils.test_username(), password=utils.test_password())
     db_name = "test"
     tear_down_database(conn, db_name)
     conn.close()

@@ -1,11 +1,14 @@
 import threading
+import utils
 from sqlalchemy import create_engine
 from sqlalchemy import text
 from utils import PORT
 
 
 engine = create_engine(
-    url=f"taos://root:taosdata@localhost:{PORT}?timezone=Asia/Shanghai", pool_size=10, max_overflow=20
+    url=f"taos://{utils.test_username()}:{utils.test_password()}@localhost:{PORT}?timezone=Asia/Shanghai",
+    pool_size=10,
+    max_overflow=20,
 )
 
 

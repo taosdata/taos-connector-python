@@ -64,3 +64,11 @@ def totp_secret_decode(secret: str) -> bytes:
     if missing_padding:
         secret += "=" * (8 - missing_padding)
     return base64.b32decode(secret, casefold=True)
+
+
+def test_username() -> str:
+    return os.getenv("TDENGINE_TEST_USERNAME", "root")
+
+
+def test_password() -> str:
+    return os.getenv("TDENGINE_TEST_PASSWORD", "taosdata")
