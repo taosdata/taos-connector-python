@@ -3,7 +3,7 @@ from taosws import Consumer
 
 
 def setup():
-    conn = taosws.connect("taosws://root:taosdata@localhost:6041")
+    conn = taosws.connect("taosws://localhost:6041")
     cursor = conn.cursor()
     statements = [
         "drop topic if exists ws_tmq_meta",

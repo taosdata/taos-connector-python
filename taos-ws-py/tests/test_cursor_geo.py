@@ -1,12 +1,14 @@
 import pytest
 import taosws
 import datetime
+import utils
+
 
 config = [
     {
         "db_protocol": "taosws",
-        "db_user": "root",
-        "db_pass": "taosdata",
+        "db_user": utils.test_username(),
+        "db_pass": utils.test_password(),
         "db_host": "localhost",
         "db_port": 6041,
         "db_name": "t_ws1",

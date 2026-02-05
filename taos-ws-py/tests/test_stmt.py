@@ -22,7 +22,7 @@ def test_stmt_insert():
     db_name = "test_ws_stmt_{}".format(int(time.time()))
     before_test(db_name)
 
-    conn = taosws.connect("taosws://root:taosdata@localhost:6041/%s" % db_name)
+    conn = taosws.connect("taosws://localhost:6041/%s" % db_name)
 
     stmt = conn.statement()
     stmt.prepare("insert into t1 values (?, ?, ?, ?)")
@@ -47,8 +47,7 @@ def test_stmt_insert_into_stable():
     db_name = "test_ws_stmt_{}".format(int(time.time()))
     before_test(db_name)
 
-    conn = taosws.connect("taosws://root:taosdata@localhost:6041/%s" % db_name)
-
+    conn = taosws.connect("taosws://localhost:6041/%s" % db_name)
     stmt = conn.statement()
     stmt.prepare("insert into ? using stb1 tags (?, ?) values (?, ?, ?, ?)")
     stmt.set_tbname("stb1_1")
@@ -78,7 +77,7 @@ def test_stmt_insert_with_null():
     db_name = "test_ws_stmt_{}".format(int(time.time()))
     before_test(db_name)
 
-    conn = taosws.connect("taosws://root:taosdata@localhost:6041/%s" % db_name)
+    conn = taosws.connect("taosws://localhost:6041/%s" % db_name)
     stmt = conn.statement()
     stmt.prepare("insert into ? using stb1 tags (?, ?) values (?, ?, ?, ?)")
     stmt.set_tbname("stb1_1")

@@ -23,7 +23,7 @@ def test_stmt_insert():
     db_name = "test_ws_stmt_{}".format(int(time.time()))
     before_test(db_name)
 
-    conn = taosws.connect("taosws://root:taosdata@localhost:6041/%s" % db_name)
+    conn = taosws.connect("taosws://localhost:6041/%s" % db_name)
 
     stmt = conn.statement()
 

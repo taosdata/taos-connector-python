@@ -3,7 +3,7 @@ from taosws import Consumer
 
 
 def prepare(topic_name):
-    conn = taosws.connect("taosws://root:taosdata@localhost:6041")
+    conn = taosws.connect("taosws://localhost:6041")
     cursor = conn.cursor()
     dbname = f"{topic_name}_db"
     statements = [
@@ -41,7 +41,7 @@ def prepare(topic_name):
 
 
 def clear(topic_name):
-    conn = taosws.connect("taosws://root:taosdata@localhost:6041")
+    conn = taosws.connect("taosws://localhost:6041")
     cursor = conn.cursor()
     dbname = f"{topic_name}_db"
     statements = [
