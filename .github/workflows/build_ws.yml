@@ -100,11 +100,13 @@ jobs:
           ./TDengine_v3/debug/build/bin/taosadapter &
 
       - name: Run Tests
-        run: |
-          export LD_LIBRARY_PATH=$PWD/TDengine/debug/build/lib
-          export TDENGINE_URL=localhost:6041
-          export TDENGINE_DRIVER=websocket
-          poetry run pytest --cov=taos --cov=taosrest tests
+        env:
+          LD_LIBRARY_PATH: $PWD/TDengine/debug/build/lib
+          TDENGINE_URL: localhost:6041
+          TDENGINE_DRIVER: websocket
+          TDENGINE_TEST_USERNAME: ${{ secrets.TDENGINE_TEST_USERNAME }}
+          TDENGINE_TEST_PASSWORD: ${{ secrets.TDENGINE_TEST_PASSWORD }}
+        run: poetry run pytest --cov=taos --cov=taosrest tests
 
       - name: Upload taosd logs
         if: failure()

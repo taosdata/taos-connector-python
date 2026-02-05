@@ -105,10 +105,13 @@ jobs:
       #              run test suite
       #----------------------------------------------
       - name: Test
-        run: |
-          export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
-          export TDENGINE_URL=localhost:6041
-          poetry run pytest tests
+        env:
+          LD_LIBRARY_PATH: $PWD/TDengine/build/build/lib
+          TDENGINE_URL: localhost:6041
+          TDENGINE_TEST_USERNAME: ${{ secrets.TDENGINE_TEST_USERNAME }}
+          TDENGINE_TEST_PASSWORD: ${{ secrets.TDENGINE_TEST_PASSWORD }}
+        run: poetry run pytest tests
+
       - name: Build Artifacts
         run: |
           poetry build
