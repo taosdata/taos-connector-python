@@ -111,6 +111,8 @@ jobs:
       - name: Run tests
         env:
           TDENGINE_URL: localhost:6041
+          TDENGINE_TEST_USERNAME: ${{ secrets.WS_TDENGINE_TEST_USERNAME }}
+          TDENGINE_TEST_PASSWORD: ${{ secrets.WS_TDENGINE_TEST_PASSWORD }}
           WS_CLOUD_URL: ${{ secrets.WS_CLOUD_URL }}
           WS_CLOUD_TOKEN: ${{ secrets.WS_CLOUD_TOKEN }}
           TEST_TD_ENTERPRISE: "true"
