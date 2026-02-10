@@ -41,7 +41,7 @@ def test_fetch_all_with_req_id():
 def test_fetch_one():
     url = os.environ["TDENGINE_URL"]
 
-    conn = taosrest.connect(url=url, user="root", password=utils.test_password())
+    conn = taosrest.connect(url=url, user=utils.test_username(), password=utils.test_password())
     c = conn.cursor()
     c.execute("drop database if exists test")
     c.executemany("create database test")
