@@ -116,19 +116,19 @@ jobs:
           pip3 install cyclonedx-bom
           cyclonedx-py environment --output-format JSON --output-file taospy-sbom.cdx.json
 
-      - name: Scan SBOM
-        uses: anchore/scan-action@v7
-        with:
-          sbom: taospy-sbom.cdx.json
-          cache-db: true
-          output-format: "table"
-
-      # - name: Release
-      #   uses: softprops/action-gh-release@v2
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Scan SBOM
+      #   uses: anchore/scan-action@v7
       #   with:
-      #     body_path: ${{ github.workflow }}-CHANGELOG.txt
-      #     files: |
-      #       dist/*
-      #       taospy-sbom.cdx.json
+      #     sbom: taospy-sbom.cdx.json
+      #     cache-db: true
+      #     output-format: "table"
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          body_path: ${{ github.workflow }}-CHANGELOG.txt
+          files: |
+            dist/*
+            taospy-sbom.cdx.json
