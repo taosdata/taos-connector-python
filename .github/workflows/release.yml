@@ -59,7 +59,7 @@ jobs:
           key: ubuntu-22.04-poetry-${{ hashFiles('**/poetry.lock') }}
 
       - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        if: steps.cache-poetry.outputs.cache-hit != 'true'
         run: |
           sudo apt install -y gnome-keyring
           pip3 install --upgrade requests
