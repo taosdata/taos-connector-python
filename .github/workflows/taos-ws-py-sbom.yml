@@ -1,4 +1,4 @@
-name: SBOM
+name: taos-ws-py-sbom
 
 on:
   pull_request:
