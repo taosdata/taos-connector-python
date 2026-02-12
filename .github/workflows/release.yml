@@ -111,10 +111,24 @@ jobs:
       - name: Generate Changelog
         run: ./ci/extract-changelog.sh > ${{ github.workflow }}-CHANGELOG.txt
 
+      - name: Create SBOM
+        run: |
+          pip3 install cyclonedx-bom
+          cyclonedx-py environment --output-format JSON --output-file taospy-sbom.cdx.json
+
+      - name: Scan SBOM
+        uses: anchore/scan-action@v7
+        with:
+          sbom: taospy-sbom.cdx.json
+          cache-db: true
+          output-format: "table"
+
       # - name: Release
-      #   uses: softprops/action-gh-release@v1
+      #   uses: softprops/action-gh-release@v2
       #   env:
       #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       #   with:
       #     body_path: ${{ github.workflow }}-CHANGELOG.txt
-      #     files: dist/*
+      #     files: |
+      #       dist/*
+      #       taospy-sbom.cdx.json
