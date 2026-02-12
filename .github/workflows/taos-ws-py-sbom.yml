@@ -2,13 +2,20 @@ name: taos-ws-py-sbom
 
 on:
   pull_request:
-    branches: ["main", "3.0"]
+    branches:
+      - "main"
+      - "3.0"
+    paths:
+      - "taos-ws-py/**"
+      - ".github/workflows/taos-ws-py*.yml"
   release:
-    types: [published]
+    types:
+      - published
 
 jobs:
   sbom:
     name: Generate and Scan SBOM
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'taos-ws-py-')
     runs-on: ubuntu-latest
     permissions:
       actions: read
