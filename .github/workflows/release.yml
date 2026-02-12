@@ -68,38 +68,6 @@ jobs:
       - name: Install library
         run: poetry install --no-interaction --with=test
 
-      # - name: Set up Go
-      #   uses: actions/setup-go@v2
-      #   with:
-      #     go-version: 1.18
-
-      # - name: Build TDengine
-      #   run: |
-      #     git clone --depth 1 https://github.com/taosdata/TDengine.git -b 2.4
-      #     cd TDengine
-      #     git submodule update --depth 1 --init --recursive
-      #     mkdir build
-      #     cd build
-      #     cmake ../ -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/`
-      #     make -j14
-      #     cd ../../
-
-      # - name: Start TDengine
-      #   run: |
-      #     tree TDengine/build/build/
-      #     export C_INCLUDE_PATH=$PWD/TDengine/build/build/bin
-      #     export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
-      #     mkdir -p /tmp/taos/
-      #     printf "dataDir /tmp/taos\nlogDir /tmp/taos/\n" > /tmp/taos/taos.cfg
-      #     ./TDengine/build/build/bin/taosadapter &
-      #     ./TDengine/build/build/bin/taosd -c /tmp/taos/ &
-
-      # - name: Run Tests
-      #   run: |
-      #     export LD_LIBRARY_PATH=$PWD/TDengine/build/build/lib
-      #     export TDENGINE_URL=localhost:6041
-      #     poetry run pytest tests
-
       - name: Build Artifacts
         run: poetry build
 

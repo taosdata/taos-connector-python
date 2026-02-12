@@ -15,7 +15,7 @@ on:
 jobs:
   sbom:
     name: Generate and Scan SBOM
-    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'taos-ws-py-')
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'taos-ws-py-v')
     runs-on: ubuntu-latest
     permissions:
       actions: read
