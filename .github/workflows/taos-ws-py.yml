@@ -224,7 +224,7 @@ jobs:
           WS_CLOUD_URL: ${{ secrets.WS_CLOUD_URL }}
           WS_CLOUD_TOKEN: ${{ secrets.WS_CLOUD_TOKEN }}
         run: |
-          curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
+          curl -L -u "$TDENGINE_TEST_USERNAME:$TDENGINE_TEST_PASSWORD" -d "show databases" localhost:6041/rest/sql
           pip3 install pytest toml
           pip3 install ./
           pytest ./taos-ws-py/tests/

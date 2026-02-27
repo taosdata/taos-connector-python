@@ -124,7 +124,7 @@ jobs:
           TDENGINE_TEST_USERNAME: ${{ secrets.TDENGINE_TEST_USERNAME }}
           TDENGINE_TEST_PASSWORD: ${{ secrets.TDENGINE_TEST_PASSWORD }}
         run: |
-          curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
+          curl -L -u "$TDENGINE_TEST_USERNAME:$TDENGINE_TEST_PASSWORD" -d "show databases" localhost:6041/rest/sql
           poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
 
       - name: Upload taosd logs
