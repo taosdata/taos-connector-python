@@ -8,7 +8,7 @@ import pytest
 def test_ws_connect():
     print("-" * 40)
     print("test_ws_connect")
-    conn = taosws.connect("taosws://root:taosdata@localhost:6041")
+    conn = taosws.connect(f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:6041")
     r = conn.query_with_req_id("show dnodes", 1)
     print("r: ", r.fields)
     print("test_ws_connect done")
@@ -58,8 +58,8 @@ def test_report_connector_info():
     conn.close()
 
     conn = taosws.connect(
-        user="root",
-        password="taosdata",
+        user=utils.test_username(),
+        password=utils.test_password(),
         host="localhost",
         port=6041,
     )

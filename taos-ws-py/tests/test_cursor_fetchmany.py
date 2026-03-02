@@ -4,7 +4,7 @@ import time
 
 def test_fetchmany():
     try:
-        conn = taosws.connect("taosws://root:taosdata@localhost:6041")
+        conn = taosws.connect("taosws://localhost:6041")
         conn.execute("drop database if exists test_173942943")
         conn.execute("create database test_173942943")
         conn.execute("use test_173942943")

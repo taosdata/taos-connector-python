@@ -1,12 +1,12 @@
 import datetime
-
 import taosrest
-import pytest
 import os
+import utils
 from decorators import check_env
 from dotenv import load_dotenv
 from taos.utils import gen_req_id
 from taosrest import HTTPError, ConnectError
+
 
 load_dotenv()
 
@@ -14,7 +14,7 @@ load_dotenv()
 @check_env
 def test_fetch_all():
     url = os.environ["TDENGINE_URL"]
-    conn = taosrest.connect(url=url, password="taosdata")
+    conn = taosrest.connect(url=url, password=utils.test_password())
     cursor = conn.cursor()
 
     cursor.execute("show databases")
@@ -27,7 +27,7 @@ def test_fetch_all():
 @check_env
 def test_fetch_all_with_req_id():
     url = os.environ["TDENGINE_URL"]
-    conn = taosrest.connect(url=url, password="taosdata")
+    conn = taosrest.connect(url=url, password=utils.test_password())
     cursor = conn.cursor()
 
     cursor.execute("show databases", req_id=gen_req_id())
@@ -41,7 +41,7 @@ def test_fetch_all_with_req_id():
 def test_fetch_one():
     url = os.environ["TDENGINE_URL"]
 
-    conn = taosrest.connect(url=url, user="root", password="taosdata")
+    conn = taosrest.connect(url=url, user=utils.test_username(), password=utils.test_password())
     c = conn.cursor()
     c.execute("drop database if exists test")
     c.executemany("create database test")
@@ -63,7 +63,7 @@ def test_fetch_one():
 def test_fetch_one_with_req_id():
     url = os.environ["TDENGINE_URL"]
 
-    conn = taosrest.connect(url=url, user="root", password="taosdata")
+    conn = taosrest.connect(url=url, user=utils.test_username(), password=utils.test_password())
     c = conn.cursor()
     c.execute("drop database if exists test", req_id=gen_req_id())
     c.executemany("create database test", req_id=gen_req_id())
@@ -84,7 +84,7 @@ def test_fetch_one_with_req_id():
 @check_env
 def test_row_count():
     url = os.environ["TDENGINE_URL"]
-    conn = taosrest.connect(url=url, user="root", password="taosdata")
+    conn = taosrest.connect(url=url, user=utils.test_username(), password=utils.test_password())
     cursor = conn.cursor()
     cursor.execute("select * from test.tb")
     assert cursor.rowcount == 2
@@ -93,7 +93,7 @@ def test_row_count():
 @check_env
 def test_row_count_with_req_id():
     url = os.environ["TDENGINE_URL"]
-    conn = taosrest.connect(url=url, user="root", password="taosdata")
+    conn = taosrest.connect(url=url, user=utils.test_username(), password=utils.test_password())
     cursor = conn.cursor()
     cursor.execute("select * from test.tb", req_id=gen_req_id())
     assert cursor.rowcount == 2
@@ -102,7 +102,7 @@ def test_row_count_with_req_id():
 @check_env
 def test_get_server_info():
     url = os.environ["TDENGINE_URL"]
-    conn = taosrest.connect(url=url, user="root", password="taosdata")
+    conn = taosrest.connect(url=url, user=utils.test_username(), password=utils.test_password())
 
     version: str = conn.server_info
     # 3.0.5.0 or 3.0.6.0.alpha or 3.4.0.0.alpha.community

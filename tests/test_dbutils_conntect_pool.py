@@ -1,5 +1,6 @@
 import taos
 import threading
+import utils
 from dbutils.pooled_db import PooledDB
 from utils import PORT
 
@@ -12,8 +13,8 @@ def init_native_pool():
         # TDengine connection parameters (modify according to actual environment)
         host="localhost",
         port=PORT,
-        user="root",
-        password="taosdata",
+        user=utils.test_username(),
+        password=utils.test_password(),
     )
 
 

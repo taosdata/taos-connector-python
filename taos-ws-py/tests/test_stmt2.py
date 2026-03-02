@@ -1,7 +1,8 @@
 import time
 import taosws
 
-url = "taosws://root:taosdata@localhost:6041/"
+
+url = "taosws://localhost:6041/"
 
 
 def before_test(db_name):

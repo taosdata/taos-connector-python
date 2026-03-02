@@ -1,5 +1,6 @@
 import taos
 import pytest
+import utils
 from dotenv import load_dotenv
 from taos.cinterface import *
 from utils import tear_down_database, IS_WS
@@ -21,8 +22,8 @@ def teardown_module(module):
 
 cfg = dict(
     host="localhost",
-    user="root",
-    password="taosdata",
+    user=utils.test_username(),
+    password=utils.test_password(),
 )
 
 
@@ -48,8 +49,8 @@ def test_taos_connect_auth():
 def test_taos_connect():
     conn = taos_connect(
         host="localhost",
-        user="root",
-        password="taosdata",
+        user=utils.test_username(),
+        password=utils.test_password(),
     )
     assert conn is not None
     print("pass test_taos_connect")

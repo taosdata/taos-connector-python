@@ -1,6 +1,7 @@
 import taos
 import pytest
 import threading
+import utils
 from decimal import Decimal
 from taos.tmq import *
 from time import sleep
@@ -155,7 +156,12 @@ def tmq_consumer_with_precision(precision: str):
     pre_test_tmq(precision)
 
     consumer = Consumer(
-        {"group.id": "1", "td.connect.user": "root", "td.connect.pass": "taosdata", "msg.with.table.name": "true"}
+        {
+            "group.id": "1",
+            "td.connect.user": utils.test_username(),
+            "td.connect.pass": utils.test_password(),
+            "msg.with.table.name": "true",
+        }
     )
     consumer.subscribe(["topic1"])
     try:

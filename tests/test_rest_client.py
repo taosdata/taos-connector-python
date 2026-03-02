@@ -1,12 +1,13 @@
 import datetime
 import os
 import taos
+import utils
 
 from dotenv import load_dotenv
-
 from decorators import check_env
 from taosrest.restclient import RestClient
 from taos.utils import gen_req_id
+
 
 load_dotenv()
 
@@ -14,7 +15,7 @@ load_dotenv()
 @check_env
 def test_auth():
     url = os.environ["TDENGINE_URL"]
-    client = RestClient(url, user="root", password="taosdata")
+    client = RestClient(url, user=utils.test_username(), password=utils.test_password())
     resp = client.sql("select server_version()")
     print("\n", resp)
 
@@ -38,7 +39,7 @@ def test_show_database_with_req_id():
 @check_env
 def test_insert_data():
     url = os.environ["TDENGINE_URL"]
-    c = RestClient(url, password="taosdata", database="test")
+    c = RestClient(url, password=utils.test_password(), database="test")
     c.sql("drop database if exists test")
     c.sql("create database test")
     resp = c.sql("create table tb2 (ts timestamp, c1 int, c2 double, c3 timestamp)")
@@ -59,7 +60,7 @@ def test_insert_data():
 @check_env
 def test_insert_data_with_req_id():
     url = os.environ["TDENGINE_URL"]
-    c = RestClient(url, password="taosdata", database="test")
+    c = RestClient(url, password=utils.test_password(), database="test")
     c.sql("drop database if exists test", req_id=gen_req_id())
     c.sql("create database test", req_id=gen_req_id())
     resp = c.sql("create table tb2 (ts timestamp, c1 int, c2 double, c3 timestamp)", req_id=gen_req_id())

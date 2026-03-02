@@ -387,9 +387,11 @@ jobs:
       - name: Test
         env:
           DYLD_LIBRARY_PATH: /usr/local/lib:$DYLD_LIBRARY_PATH
+          TDENGINE_URL: localhost:6041
+          TDENGINE_TEST_USERNAME: ${{ secrets.TDENGINE_TEST_USERNAME }}
+          TDENGINE_TEST_PASSWORD: ${{ secrets.TDENGINE_TEST_PASSWORD }}
         run: |
           source $VENV
-          export TDENGINE_URL=localhost:6041
           echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH"
           ls -l /usr/local/lib
           ps aux | grep taos
@@ -398,5 +400,4 @@ jobs:
           poetry run pytest tests
 
       - name: Build Artifacts
-        run: |
-          poetry build
+        run: poetry build

@@ -77,6 +77,8 @@ jobs:
       - name: Run Tests
         env:
           TDENGINE_URL: localhost:6041
+          TDENGINE_TEST_USERNAME: ${{ secrets.TDENGINE_TEST_USERNAME }}
+          TDENGINE_TEST_PASSWORD: ${{ secrets.TDENGINE_TEST_PASSWORD }}
           TEST_TD_ENTERPRISE: "true"
         run: poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
 
