@@ -1,4 +1,7 @@
+import pytest
 import taosws
+import time
+import utils
 from taosws import Consumer
 
 
@@ -55,7 +58,6 @@ def setup():
         "alter table `table` drop column new1",
     ]
     for statement in statements:
-        # print(statement)
         cursor.execute(statement)
 
 
@@ -69,7 +71,6 @@ def test_tmq():
         "min.poll.rows": "129",
     }
     consumer = Consumer(conf)
-
     consumer.subscribe(["ws_tmq_meta"])
 
     while 1:
@@ -93,6 +94,126 @@ def test_tmq():
             break
 
     consumer.unsubscribe()
+
+
+@pytest.mark.skipif(not utils.TEST_TD_ENTERPRISE, reason="only for TDengine Enterprise")
+def test_tmq_with_token():
+    conn = taosws.connect("ws://localhost:6041")
+    conn.execute("drop token if exists token_1772607422")
+    conn.execute("drop topic if exists topic_1772607422")
+    conn.execute("drop database if exists test_1772607422")
+    conn.execute("create database test_1772607422")
+    conn.execute("create topic topic_1772607422 as database test_1772607422")
+
+    rs = conn.query(f"create token token_1772607422 from user {utils.test_username()}")
+    token = next(iter(rs))[0]
+
+    consumer = Consumer(conf={
+        "td.connect.websocket.scheme": "ws",
+        "td.connect.ip": "localhost",
+        "td.connect.port": 6041,
+        "td.connect.user": "invalid_user",
+        "td.connect.pass": "invalid_pass",
+        "td.connect.bearer_token": token,
+        "group.id": "1001",
+        "client.id": "1001",
+    })
+    consumer.subscribe(["topic_1772607422"])
+    consumer.unsubscribe()
+
+    consumer2 = Consumer(conf={
+        "td.connect.websocket.scheme": "ws",
+        "td.connect.ip": "localhost",
+        "td.connect.port": 6041,
+        "td.connect.user": "invalid_user",
+        "td.connect.pass": "invalid_pass",
+        "bearer_token": token,
+        "group.id": "1001",
+        "client.id": "1001",
+    })
+    consumer2.subscribe(["topic_1772607422"])
+    consumer2.unsubscribe()
+
+    consumer3 = Consumer(conf={
+        "td.connect.websocket.scheme": "ws",
+        "td.connect.ip": "localhost",
+        "td.connect.port": 6041,
+        "td.connect.user": "invalid_user",
+        "td.connect.pass": "invalid_pass",
+        "td.connect.bearer_token": token,
+        "bearer_token": "invalid_token",
+        "group.id": "1001",
+        "client.id": "1001",
+    })
+    consumer3.subscribe(["topic_1772607422"])
+    consumer3.unsubscribe()
+
+    consumer4 = Consumer(dsn = f"ws://invalid_user:invalid_pass@localhost:6041?group.id=1001&client.id=1001&td.connect.bearer_token={token}")
+    consumer4.subscribe(["topic_1772607422"])
+    consumer4.unsubscribe()
+
+    consumer5 = Consumer(dsn = f"ws://invalid_user:invalid_pass@localhost:6041?group.id=1001&client.id=1001&bearer_token={token}")
+    consumer5.subscribe(["topic_1772607422"])
+    consumer5.unsubscribe()
+
+    consumer6 = Consumer(dsn = f"ws://invalid_user:invalid_pass@localhost:6041?group.id=1001&client.id=1001&td.connect.bearer_token={token}&bearer_token=invalid_token")
+    consumer6.subscribe(["topic_1772607422"])
+    consumer6.unsubscribe()
+
+    time.sleep(3)
+    conn.execute("drop token if exists token_1772607422")
+    conn.execute("drop topic if exists topic_1772607422")
+    conn.execute("drop database if exists test_1772607422")
+    conn.close()
+
+
+@pytest.mark.skipif(not utils.TEST_TD_ENTERPRISE, reason="only for TDengine Enterprise")
+def test_tmq_with_invalid_token():
+    conn = taosws.connect("ws://localhost:6041")
+    try:
+        conn.execute("drop topic if exists topic_1772611547")
+        conn.execute("drop database if exists test_1772611547")
+        conn.execute("create database test_1772611547")
+        conn.execute("create topic topic_1772611547 as database test_1772611547")
+
+        consumer = Consumer(conf={
+            "td.connect.websocket.scheme": "ws",
+            "td.connect.ip": "localhost",
+            "td.connect.port": 6041,
+            "td.connect.user": "invalid_user",
+            "td.connect.pass": "invalid_pass",
+            "td.connect.bearer_token": "invalid_token",
+            "group.id": "1001",
+            "client.id": "1001",
+        })
+        with pytest.raises(Exception, match=r"init tscObj with token failed"):
+            consumer.subscribe(["topic_1772611547"])
+
+        consumer2 = Consumer(conf={
+            "td.connect.websocket.scheme": "ws",
+            "td.connect.ip": "localhost",
+            "td.connect.port": 6041,
+            "td.connect.user": "invalid_user",
+            "td.connect.pass": "invalid_pass",
+            "bearer_token": "invalid_token",
+            "group.id": "1001",
+            "client.id": "1001",
+        })
+        with pytest.raises(Exception, match=r"init tscObj with token failed"):
+            consumer2.subscribe(["topic_1772611547"])
+
+        consumer3 = Consumer(dsn = f"ws://invalid_user:invalid_pass@localhost:6041?group.id=1001&client.id=1001&td.connect.bearer_token=invalid_token")
+        with pytest.raises(Exception, match=r"init tscObj with token failed"):
+            consumer3.subscribe(["topic_1772611547"])
+
+        consumer4 = Consumer(dsn = f"ws://invalid_user:invalid_pass@localhost:6041?group.id=1001&client.id=1001&bearer_token=invalid_token")
+        with pytest.raises(Exception, match=r"init tscObj with token failed"):
+            consumer4.subscribe(["topic_1772611547"])
+    finally:
+        time.sleep(3)
+        conn.execute("drop topic if exists topic_1772611547")
+        conn.execute("drop database if exists test_1772611547")
+        conn.close()
 
 
 def show_env():
