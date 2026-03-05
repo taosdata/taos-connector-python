@@ -484,6 +484,50 @@ def test_tmq_committed_and_position():
         after_ter_tmq()
 
 
+@pytest.mark.skipif(not IS_V3, reason="TMQ features require TDengine v3 or later")
+def test_tmq_with_token():
+    pre_test_tmq("")
+
+    conn = taos.connect()
+    rs = conn.query(f"create token token_1772680884 from user {utils.test_username()}")
+    token = next(iter(rs))[0]
+
+    try:
+        consumer = Consumer({
+            "group.id": "token_test_group",
+            "td.connect.user": "invalid_user",
+            "td.connect.pass": "invalid_pass",
+            "td.connect.token": token,
+            "auto.offset.reset": "earliest",
+        })
+        consumer.subscribe(["topic1"])
+
+        topics = consumer.list_topics()
+        assert topics == ["topic1"]
+
+        consumer.unsubscribe()
+        consumer.close()
+    finally:
+        after_ter_tmq()
+
+
+@pytest.mark.skipif(not IS_V3, reason="TMQ features require TDengine v3 or later")
+def test_tmq_with_invalid_token():
+    pre_test_tmq("")
+    try:
+        with pytest.raises(TmqError, match=r"init tscObj with token failed"):
+            Consumer(
+                {
+                    "group.id": "token_test_group",
+                    "td.connect.user": "invalid_user",
+                    "td.connect.pass": "invalid_pass",
+                    "td.connect.token": "invalid_token",
+                    "auto.offset.reset": "earliest",
+                }
+            )
+    finally:
+        after_ter_tmq()
+
+
 if __name__ == "__main__":
     print("call tst_tmp.py nothing do.\n")
-    # test_consumer_with_precision()

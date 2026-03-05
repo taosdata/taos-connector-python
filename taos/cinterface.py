@@ -1955,13 +1955,14 @@ except Exception as err:
     _UNSUPPORTED["tmq_consumer_new"] = err
 
 
-def tmq_consumer_new(conf, errstrlen=0):
+def tmq_consumer_new(conf):
     # type (c_void_p, c_char_p, c_int) -> c_void_p
     _check_if_supported()
-    buf = ctypes.create_string_buffer(errstrlen)
-    tmq = cast(_libtaos.tmq_consumer_new(conf, buf, errstrlen), c_void_p)
+    errstr = ctypes.create_string_buffer(256)
+    tmq = cast(_libtaos.tmq_consumer_new(conf, errstr, 255), c_void_p)
     if tmq.value is None:
-        raise TmqError("failed on tmq_consumer_new()")
+        err = errstr.value.decode("utf-8", errors="replace")
+        raise TmqError(f"failed on tmq_consumer_new(), err: {err}")
     return tmq
 
 
