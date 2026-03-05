@@ -5,7 +5,7 @@ import utils
 from decimal import Decimal
 from taos.tmq import *
 from time import sleep
-from utils import IS_WS
+from utils import IS_WS, TEST_TD_ENTERPRISE
 
 
 class insertThread(threading.Thread):
@@ -484,7 +484,7 @@ def test_tmq_committed_and_position():
         after_ter_tmq()
 
 
-@pytest.mark.skipif(not IS_V3, reason="TMQ features require TDengine v3 or later")
+@pytest.mark.skipif(not TEST_TD_ENTERPRISE, reason="only for TDengine Enterprise")
 def test_tmq_with_token():
     pre_test_tmq("")
 
@@ -511,7 +511,7 @@ def test_tmq_with_token():
         after_ter_tmq()
 
 
-@pytest.mark.skipif(not IS_V3, reason="TMQ features require TDengine v3 or later")
+@pytest.mark.skipif(not TEST_TD_ENTERPRISE, reason="only for TDengine Enterprise")
 def test_tmq_with_invalid_token():
     pre_test_tmq("")
     try:
