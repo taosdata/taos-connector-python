@@ -1956,7 +1956,7 @@ except Exception as err:
 
 
 def tmq_consumer_new(conf):
-    # type (c_void_p, c_char_p, c_int) -> c_void_p
+    # type: (c_void_p) -> c_void_p
     _check_if_supported()
     errstr = ctypes.create_string_buffer(256)
     tmq = cast(_libtaos.tmq_consumer_new(conf, errstr, 255), c_void_p)
