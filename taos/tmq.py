@@ -192,7 +192,10 @@ class Consumer:
                 if key == "decode_binary":
                     self.decode_binary = configs[key]
                     continue
-                tmq_conf_set(tmq_conf, key=key, value=configs[key])
+                value = configs[key]
+                if key == "td.connect.bearer_token":
+                    key = "td.connect.token"
+                tmq_conf_set(tmq_conf, key=key, value=value)
 
             self._tmq = tmq_consumer_new(tmq_conf)
         finally:

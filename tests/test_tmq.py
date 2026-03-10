@@ -500,7 +500,7 @@ def test_tmq_with_token():
             "group.id": "token_test_group",
             "td.connect.user": "invalid_user",
             "td.connect.pass": "invalid_pass",
-            "td.connect.token": token,
+            "td.connect.bearer_token": token,
             "auto.offset.reset": "earliest",
         })
         consumer.subscribe(["topic1"])
@@ -529,7 +529,7 @@ def test_tmq_with_invalid_token():
                     "group.id": "token_test_group",
                     "td.connect.user": "invalid_user",
                     "td.connect.pass": "invalid_pass",
-                    "td.connect.token": "invalid_token",
+                    "td.connect.bearer_token": "invalid_token",
                     "auto.offset.reset": "earliest",
                 }
             )
