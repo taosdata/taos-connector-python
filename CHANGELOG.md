@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.8.9 - 2026-03-05
+
+### Features:
+
+- Data subscription supports token authentication
+
 ## v2.8.6 - 2025-10-27
 
 ### Features:

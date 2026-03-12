@@ -5,7 +5,7 @@ import utils
 from decimal import Decimal
 from taos.tmq import *
 from time import sleep
-from utils import IS_WS
+from utils import IS_WS, TEST_TD_ENTERPRISE
 
 
 class insertThread(threading.Thread):
@@ -484,6 +484,58 @@ def test_tmq_committed_and_position():
         after_ter_tmq()
 
 
+@pytest.mark.skipif(not TEST_TD_ENTERPRISE, reason="only for TDengine Enterprise")
+def test_tmq_with_token():
+    pre_test_tmq("")
+
+    conn = taos.connect()
+    try:
+        conn.select_db("tmq_test")
+        conn.execute("insert into t1 using stb1 tags(true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now-4s, true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1', 'binary value_1', 'POINT (3.0 5.0)', '9876.123456', '123456789012.0987654321', 'axxxxxxxxxxxxxxxxxxxa')")
+        conn.execute("drop token if exists token_1772680884")
+        rs = conn.query(f"create token token_1772680884 from user {utils.test_username()}")
+        token = next(iter(rs))[0]
+
+        consumer = Consumer({
+            "group.id": "token_test_group",
+            "td.connect.user": "invalid_user",
+            "td.connect.pass": "invalid_pass",
+            "td.connect.bearer_token": token,
+            "auto.offset.reset": "earliest",
+        })
+        consumer.subscribe(["topic1"])
+
+        data = consumer.poll(1)
+        assert data is not None
+
+        topics = consumer.list_topics()
+        assert topics == ["topic1"]
+
+        consumer.unsubscribe()
+        consumer.close()
+    finally:
+        conn.execute("drop token if exists token_1772680884")
+        conn.close()
+        after_ter_tmq()
+
+
+@pytest.mark.skipif(not TEST_TD_ENTERPRISE, reason="only for TDengine Enterprise")
+def test_tmq_with_invalid_token():
+    pre_test_tmq("")
+    try:
+        with pytest.raises(TmqError, match=r"init tscObj with token failed"):
+            Consumer(
+                {
+                    "group.id": "token_test_group",
+                    "td.connect.user": "invalid_user",
+                    "td.connect.pass": "invalid_pass",
+                    "td.connect.bearer_token": "invalid_token",
+                    "auto.offset.reset": "earliest",
+                }
+            )
+    finally:
+        after_ter_tmq()
+
+
 if __name__ == "__main__":
     print("call tst_tmp.py nothing do.\n")
-    # test_consumer_with_precision()

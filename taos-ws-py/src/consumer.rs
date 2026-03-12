@@ -58,6 +58,9 @@ impl Consumer {
         }
 
         let mut tz = dsn_cfg.get("timezone").cloned();
+        if let Some(token) = dsn_cfg.remove("td.connect.bearer_token") {
+            dsn_cfg.set("bearer_token", token);
+        }
 
         if let Some(args) = conf {
             if let Some(scheme) = args
@@ -105,6 +108,12 @@ impl Consumer {
             if let Some(value) = args.get_item("td.connect.token").or(args.get_item("token")) {
                 dsn_cfg.set("token", value.extract::<String>()?);
             }
+            if let Some(value) = args
+                .get_item("td.connect.bearer_token")
+                .or(args.get_item("bearer_token"))
+            {
+                dsn_cfg.set("bearer_token", value.extract::<String>()?);
+            }
             if let Some(value) = args.get_item("timezone") {
                 tz = Some(value.extract::<String>()?);
             }
@@ -135,6 +144,8 @@ impl Consumer {
                 "td.connect.user",
                 "td.connect.pass",
                 "group.id",
+                "bearer_token",
+                "td.connect.bearer_token",
             ];
 
             for (key, value) in args {
