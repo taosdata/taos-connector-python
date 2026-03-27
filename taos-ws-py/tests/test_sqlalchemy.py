@@ -8,7 +8,6 @@ from sqlalchemy import inspect
 from sqlalchemy.dialects import registry
 
 
-pytest.importorskip("sqlalchemy")
 pytestmark = pytest.mark.skipif(
     "TDENGINE_URL" not in os.environ, reason="Please set environment variable TDENGINE_URL"
 )

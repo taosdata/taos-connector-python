@@ -117,5 +117,5 @@ jobs:
           WS_CLOUD_TOKEN: ${{ secrets.WS_CLOUD_TOKEN }}
           TEST_TD_ENTERPRISE: "true"
         run: |
-          pip3 install pytest toml
+          pip3 install pytest toml sqlalchemy
           pytest ./taos-ws-py/tests/
