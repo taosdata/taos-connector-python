@@ -4,4 +4,3 @@ poetry run pip install "numpy<2.0.0"
 export TDENGINE_URL=localhost:6041
 curl -L -H "Authorization: Basic cm9vdDp0YW9zZGF0YQ==" -d "show databases" localhost:6041/rest/sql
 poetry run pytest ./tests
-
