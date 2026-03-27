@@ -12,11 +12,13 @@ import taos
 import taos.sqlalchemy
 import taosrest
 
+
 # rest connect
 class AlchemyRestConnection:
     threadsafety = 0
     paramstyle = "pyformat"
     Error = taosrest.Error
+
     # connect
     def connect(self, **kwargs):
         host = kwargs["host"] if "host" in kwargs else None

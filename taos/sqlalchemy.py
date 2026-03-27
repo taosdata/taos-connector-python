@@ -574,7 +574,6 @@ class BaseDialect(default.DefaultDialect):
         sql = f"show `{schema}`.views"
         # Execute query
         try:
-
             cursor = connection.execute(text(sql))
             return [row[0] for row in cursor.fetchall()]
         except:
@@ -606,4 +605,3 @@ class TaosDialect(BaseDialect):
     @classmethod
     def import_dbapi(cls):
         return taos
-

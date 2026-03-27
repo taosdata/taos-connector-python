@@ -39,8 +39,7 @@ def test_create_connect_args_no_trailing_ampersand_when_hosts_is_last_param():
     module = importlib.import_module("taosws.sqlalchemy")
     dialect = module.TaosWsDialect()
     url = make_url(
-        "taosws://root:taosdata@localhost:6041/test_1755496227?"
-        "timezone=Asia/Shanghai&hosts=localhost:6041"
+        "taosws://root:taosdata@localhost:6041/test_1755496227?" "timezone=Asia/Shanghai&hosts=localhost:6041"
     )
 
     args, kwargs = dialect.create_connect_args(url)

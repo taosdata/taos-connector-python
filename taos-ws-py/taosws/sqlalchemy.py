@@ -538,7 +538,6 @@ class BaseDialect(default.DefaultDialect):
         sql = f"show `{schema}`.views"
         # Execute query
         try:
-
             cursor = connection.execute(text(sql))
             return [row[0] for row in cursor.fetchall()]
         except:
@@ -547,6 +546,7 @@ class BaseDialect(default.DefaultDialect):
     def _resolve_type(self, type_):
         # print(f"call function {sys._getframe().f_code.co_name} type: {type_} ...\n")
         return TYPES_MAP.get(type_, sqltypes.UserDefinedType)
+
 
 # WebSocket dialect
 class TaosWsDialect(BaseDialect):
