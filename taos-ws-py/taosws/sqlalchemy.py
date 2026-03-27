@@ -2,7 +2,7 @@ from sqlalchemy import sql
 from sqlalchemy import text
 from sqlalchemy import types as sqltypes
 from sqlalchemy.engine import default, reflection
-from sqlalchemy.sql import compiler
+from urllib.parse import quote, urlencode
 
 TYPES_MAP = {
     "BOOL": sqltypes.Boolean,
@@ -351,39 +351,7 @@ RESERVED_WORDS_TDENGINE = {
     "force_window_close",
 }
 
-# backup generator function
-"""
-generator from TDengine/source/libs/parse/src/parTokenizer.c -> keywordTable
-
-import sys
-def readKeyWord(filename):
-    keys = ""
-    print(f"read file {filename}\n")
-    with open(filename) as file:
-        for line in file.readlines():
-            pos1 = line.find('"')
-            if pos1 == -1 :
-                print(f"NO FOUND FIRST QUOTA: {line}\n")
-                continue
-            pos2 = line.find('"', pos1 + 1)
-            if pos2 == -1 :
-                print(f"NO FOUND SECOND QUOTA: {line}\n")
-                continue
-            word = line[pos1:pos2+1]
-            if keys == "":
-                keys = "RESERVED_WORDS_TDENGINE = {\n    " + word.lower()
-            else:
-                keys += ",\n    " + word.lower()
-
-    # end
-    keys += "\n}"
-    print(f"\n\n{keys}\n")
-
-
-if __name__ == "__main__":
-    readKeyWord("./keyword.txt")
-
-"""
+# NOTE: reserved words are synced from TDengine parser keyword table when needed.
 
 
 #
@@ -573,16 +541,19 @@ class TaosWsDialect(BaseDialect):
 
     @classmethod
     def create_connect_args(cls, url):
-        if url.username and url.password:
-            userpass = f"{url.username}:{url.password}"
-        elif url.username:
-            userpass = f"{url.username}"
-        elif url.password:
-            userpass = f":{url.password}"
+        username = url.username
+        password = url.password
+
+        if username is not None and password is not None:
+            userpass = f"{username}:{password}"
+        elif username is not None:
+            userpass = f"{username}"
+        elif password is not None:
+            userpass = f":{password}"
         else:
             userpass = ""
 
-        at = "@" if userpass else ""
+        at = "@" if (username is not None or password is not None) else ""
 
         hosts = url.query.get("hosts")
         if hosts:
@@ -598,7 +569,7 @@ class TaosWsDialect(BaseDialect):
                 addr = ""
 
         query_params = [(key, value) for key, value in url.query.items() if key != "hosts"]
-        params = "&".join(f"{key}={value}" for key, value in query_params)
+        params = urlencode(query_params, doseq=True, quote_via=quote)
 
         dsn = f"{url.drivername}://{userpass}{at}{addr}"
         if url.database:
