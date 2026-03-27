@@ -1,19 +1,33 @@
-import sys
-from pathlib import Path
+import importlib
+import importlib.util
+import pkgutil
 
 
-_current_package_dir = Path(__file__).resolve().parent
-for search_path in list(sys.path):
-    candidate = Path(search_path) / "taosws"
-    if candidate.is_dir() and candidate != _current_package_dir and str(candidate) not in __path__:
-        __path__.append(str(candidate))
+__path__ = pkgutil.extend_path(__path__, __name__)
 
-try:
-    from . import _taosws as _native
-    from ._taosws import *
-except ImportError:
-    from . import taosws as _native
-    from .taosws import *
+
+def _load_native_module():
+    for module_name in ("_taosws", "taosws"):
+        full_name = f"{__name__}.{module_name}"
+        if importlib.util.find_spec(full_name) is None:
+            continue
+        return importlib.import_module(full_name)
+
+    raise ImportError(
+        "Failed to import native extension 'taosws._taosws' or 'taosws.taosws'. "
+        "Ensure taos-ws-py is built and installed correctly."
+    )
+
+
+_native = _load_native_module()
+
+if hasattr(_native, "__all__"):
+    for name in _native.__all__:
+        globals()[name] = getattr(_native, name)
+else:
+    for name in dir(_native):
+        if not name.startswith("_"):
+            globals()[name] = getattr(_native, name)
 
 __doc__ = _native.__doc__
 if hasattr(_native, "__all__"):

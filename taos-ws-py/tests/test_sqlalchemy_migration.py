@@ -2,6 +2,10 @@ import importlib
 import ast
 from pathlib import Path
 
+import pytest
+
+pytest.importorskip("sqlalchemy")
+
 from sqlalchemy.engine.url import make_url
 from sqlalchemy import types as sqltypes
 

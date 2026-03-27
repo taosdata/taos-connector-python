@@ -466,12 +466,14 @@ class BaseDialect(default.DefaultDialect):
                 column["type"] = self._resolve_type(row[1])
                 columns.append(column)
             return columns
-        except:
+        except Exception:
             return []
 
     @reflection.cache
     def get_pk_constraint(self, connection, table_name, schema=None, **kw):
         columns = self.get_columns(connection, table_name, schema)
+        if not columns:
+            return {"constrained_columns": [], "name": None}
         return {"constrained_columns": [columns[0]["name"]], "name": None}
 
     @reflection.cache
@@ -482,9 +484,13 @@ class BaseDialect(default.DefaultDialect):
     # Get indexes information
     @reflection.cache
     def get_indexes(self, connection, table_name, schema=None, **kw):
+        if schema is None:
+            return []
+
         sql = (
             "SELECT * FROM information_schema.INS_INDEXES "
             f"WHERE db_name = '{schema}'"
+            " "
             f"AND table_name = '{table_name}'"
         )
         try:
@@ -495,7 +501,7 @@ class BaseDialect(default.DefaultDialect):
                 index = {"name": row[0], "column_names": [row[5]], "type": "index", "unique": False}
                 indexes.append(index)
             return indexes
-        except:
+        except Exception:
             return []
 
     # Get database names

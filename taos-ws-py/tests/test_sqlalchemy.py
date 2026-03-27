@@ -1,20 +1,29 @@
 import os
+from urllib.parse import urlparse
 
 import pytest
 import taosws
 import utils
+
+pytest.importorskip("sqlalchemy")
+
 from sqlalchemy import create_engine
 from sqlalchemy import inspect
 from sqlalchemy.dialects import registry
 
 
-pytestmark = pytest.mark.skipif(
-    "TDENGINE_URL" not in os.environ, reason="Please set environment variable TDENGINE_URL"
-)
+TDENGINE_URL = os.getenv("TDENGINE_URL")
+pytestmark = pytest.mark.skipif(TDENGINE_URL is None, reason="Please set environment variable TDENGINE_URL")
 registry.register("taosws", "taosws.sqlalchemy", "TaosWsDialect")
 
-HOST = "localhost"
-PORT = 6041
+
+def resolve_tdengine_host_port(url):
+    normalized = url if "://" in url else f"ws://{url}"
+    parsed = urlparse(normalized)
+    return parsed.hostname or "localhost", parsed.port or 6041
+
+
+HOST, PORT = resolve_tdengine_host_port(TDENGINE_URL) if TDENGINE_URL else ("localhost", 6041)
 
 
 def insert_data(conn=None):
@@ -31,24 +40,13 @@ def insert_data(conn=None):
         c.close()
 
 
-def check_list_equal(list1, list2, tips):
-    if list1 != list2:
-        raise BaseException(f"{tips} failed. list1={list1} list2={list2}")
-
-
-def check_result_equal(result1, result2, tips):
-    if result1 != result2:
-        raise BaseException(f"{tips} failed. result1={result1} result2={result2}")
-
-
 def check_basic(conn, inspection, sub_tables=None):
     tables = sub_tables or ["meters", "ntb"]
 
     databases = inspection.get_schema_names()
-    if "test" not in databases:
-        raise BaseException(f"test not in {databases}")
+    assert "test" in databases, f"test not in {databases}"
 
-    check_list_equal(inspection.get_table_names("test"), tables, "check get_table_names()")
+    assert inspection.get_table_names("test") == tables, "check get_table_names() failed"
 
     expected_columns = [
         {"name": "ts", "type": inspection.dialect._resolve_type("TIMESTAMP")},
@@ -59,13 +57,13 @@ def check_basic(conn, inspection, sub_tables=None):
     columns = inspection.get_columns("meters", "test")
     for index, column in enumerate(columns):
         expected = expected_columns[index]
-        if column["name"] != expected["name"]:
-            raise BaseException(f"column name mismatch: {column['name']} != {expected['name']}")
-        if type(column["type"]) != expected["type"]:
-            raise BaseException(f"column type mismatch: {type(column['type'])} != {expected['type']}")
+        assert column["name"] == expected["name"], f"column name mismatch: {column['name']} != {expected['name']}"
+        assert (
+            type(column["type"]) == expected["type"]
+        ), f"column type mismatch: {type(column['type'])} != {expected['type']}"
 
-    check_result_equal(inspection.has_table("meters", "test"), True, "check has_table()")
-    check_result_equal(inspection.dialect.has_schema(conn, "test"), True, "check has_schema()")
+    assert inspection.has_table("meters", "test") is True, "check has_table() failed"
+    assert inspection.dialect.has_schema(conn, "test") is True, "check has_schema() failed"
 
     conn.close()
 
@@ -89,17 +87,17 @@ def test_read_from_sqlalchemy_taosws_failover():
     try:
         urls = [
             "taosws://",
-            "taosws://localhost",
-            f"taosws://localhost:{PORT}",
-            f"taosws://localhost:{PORT}/{db_name}",
-            f"taosws://root@localhost:{PORT}/{db_name}",
-            f"taosws://root:@localhost:{PORT}/{db_name}",
-            f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:{PORT}/{db_name}",
-            f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:{PORT}/{db_name}?hosts=",
-            f"taosws://{utils.test_username()}:{utils.test_password()}@/{db_name}?hosts=localhost:{PORT}",
-            f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:{PORT}/{db_name}?hosts=localhost:{PORT}",
-            f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:{PORT}/{db_name}?hosts=localhost:{PORT},127.0.0.1:{PORT}",
-            f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:{PORT}/{db_name}?hosts=localhost:{PORT},127.0.0.1:{PORT}&timezone=Asia/Shanghai",
+            f"taosws://{HOST}",
+            f"taosws://{HOST}:{PORT}",
+            f"taosws://{HOST}:{PORT}/{db_name}",
+            f"taosws://root@{HOST}:{PORT}/{db_name}",
+            f"taosws://root:@{HOST}:{PORT}/{db_name}",
+            f"taosws://{utils.test_username()}:{utils.test_password()}@{HOST}:{PORT}/{db_name}",
+            f"taosws://{utils.test_username()}:{utils.test_password()}@{HOST}:{PORT}/{db_name}?hosts=",
+            f"taosws://{utils.test_username()}:{utils.test_password()}@/{db_name}?hosts={HOST}:{PORT}",
+            f"taosws://{utils.test_username()}:{utils.test_password()}@{HOST}:{PORT}/{db_name}?hosts={HOST}:{PORT}",
+            f"taosws://{utils.test_username()}:{utils.test_password()}@{HOST}:{PORT}/{db_name}?hosts={HOST}:{PORT},127.0.0.1:{PORT}",
+            f"taosws://{utils.test_username()}:{utils.test_password()}@{HOST}:{PORT}/{db_name}?hosts={HOST}:{PORT},127.0.0.1:{PORT}&timezone=Asia/Shanghai",
         ]
 
         for url in urls:

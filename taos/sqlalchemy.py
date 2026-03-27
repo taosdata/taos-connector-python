@@ -508,6 +508,8 @@ class BaseDialect(default.DefaultDialect):
     @reflection.cache
     def get_pk_constraint(self, connection, table_name, schema=None, **kw):
         columns = self.get_columns(connection, table_name, schema)
+        if not columns:
+            return {"constrained_columns": [], "name": None}
         return {"constrained_columns": [columns[0]["name"]], "name": None}
 
     @reflection.cache
@@ -521,6 +523,7 @@ class BaseDialect(default.DefaultDialect):
         sql = (
             "SELECT * FROM information_schema.INS_INDEXES "
             f"WHERE db_name = '{schema}'"
+            " "
             f"AND table_name = '{table_name}'"
         )
         try:
