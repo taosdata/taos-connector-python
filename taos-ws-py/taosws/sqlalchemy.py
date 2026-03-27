@@ -386,42 +386,6 @@ if __name__ == "__main__":
 """
 
 
-class TDengineCompiler(compiler.SQLCompiler):
-    """TDengine SQL compiler with simplified output format"""
-
-    def visit_create_table(self, create, **kw):
-        """Custom CREATE TABLE statement format"""
-        table = create.element
-        preparer = self.preparer
-
-        # Build basic CREATE TABLE statement
-        text = "CREATE TABLE " + preparer.format_table(table)
-
-        # Build column definitions
-        create_column_spec = self.get_column_specification
-        columns = []
-        for column in table.columns:
-            column_spec = self.create_column_specification(column)
-            columns.append(column_spec)
-
-        # Use compact format
-        text += " (" + ", ".join(columns) + ")"
-
-        return text
-
-    def create_column_specification(self, column, **kwargs):
-        """Create column definition with simplified format"""
-        spec = self.preparer.format_column(column)
-        spec += " " + self.dialect.type_compiler.process(column.type)
-        return spec
-
-
-class TDengineDDLCompiler(compiler.DDLCompiler):
-    def visit_create_table(self, create, **kw):
-        """Simplified CREATE TABLE format"""
-        return super().visit_create_table(create, **kw).replace("\n\t", " ").replace("\n", " ")
-
-
 #
 # identifier for TDengine
 #
@@ -584,26 +548,56 @@ class BaseDialect(default.DefaultDialect):
         # print(f"call function {sys._getframe().f_code.co_name} type: {type_} ...\n")
         return TYPES_MAP.get(type_, sqltypes.UserDefinedType)
 
-
-#
-# ---------------- TDengine native connector implementation -------------
-#
-import taos
-
-
-# TDengine native dialect
-class TaosDialect(BaseDialect):
-    name = "taos"
-    driver = "taos"
-    supports_statement_cache = True
-    statement_compiler = TDengineCompiler
-    ddl_compiler = TDengineDDLCompiler
+# WebSocket dialect
+class TaosWsDialect(BaseDialect):
+    name = "taosws"
+    driver = "taosws"
 
     @classmethod
     def dbapi(cls):
-        return taos
+        import taosws
+
+        return taosws
 
     @classmethod
     def import_dbapi(cls):
-        return taos
+        import taosws
 
+        return taosws
+
+    @classmethod
+    def create_connect_args(cls, url):
+        if url.username and url.password:
+            userpass = f"{url.username}:{url.password}"
+        elif url.username:
+            userpass = f"{url.username}"
+        elif url.password:
+            userpass = f":{url.password}"
+        else:
+            userpass = ""
+
+        at = "@" if userpass else ""
+
+        hosts = url.query.get("hosts")
+        if hosts:
+            addr = hosts
+        else:
+            if url.host and url.port:
+                addr = f"{url.host}:{url.port}"
+            elif url.host:
+                addr = f"{url.host}"
+            elif url.port:
+                addr = f":{url.port}"
+            else:
+                addr = ""
+
+        query_params = [(key, value) for key, value in url.query.items() if key != "hosts"]
+        params = "&".join(f"{key}={value}" for key, value in query_params)
+
+        dsn = f"{url.drivername}://{userpass}{at}{addr}"
+        if url.database:
+            dsn += f"/{url.database}"
+        if params:
+            dsn += f"?{params}"
+
+        return ([dsn], {})

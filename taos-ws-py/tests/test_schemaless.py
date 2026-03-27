@@ -1,5 +1,5 @@
 import taosws
-from taosws.taosws import PySchemalessProtocol, PySchemalessPrecision
+from taosws import PySchemalessProtocol, PySchemalessPrecision
 
 line_data = [
     "measurement,host=host1 field1=2i,field2=2.0 1577837300000",

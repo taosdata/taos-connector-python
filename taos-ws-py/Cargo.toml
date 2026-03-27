@@ -6,7 +6,7 @@ publish = false
 license = "MIT"
 
 [lib]
-name = "taosws"
+name = "_taosws"
 crate-type = ["cdylib"]
 
 [dependencies]

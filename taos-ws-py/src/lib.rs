@@ -39,37 +39,37 @@ shadow_rs::shadow!(build);
 // ```
 
 create_exception!(
-    taosws,
+    _taosws,
     Warning,
     PyException,
     "Calling some methods will produce warning."
 );
-create_exception!(taosws, Error, PyException, "The root error exception");
+create_exception!(_taosws, Error, PyException, "The root error exception");
 create_exception!(
-    taosws,
+    _taosws,
     InterfaceError,
     PyException,
     "The low-level api caused exception"
 );
-create_exception!(taosws, DatabaseError, Error);
-create_exception!(taosws, DataError, DatabaseError);
-create_exception!(taosws, OperationalError, DatabaseError);
-create_exception!(taosws, IntegrityError, DatabaseError);
-create_exception!(taosws, InternalError, DatabaseError);
-create_exception!(taosws, ProgrammingError, DatabaseError);
-create_exception!(taosws, NotSupportedError, DatabaseError);
+create_exception!(_taosws, DatabaseError, Error);
+create_exception!(_taosws, DataError, DatabaseError);
+create_exception!(_taosws, OperationalError, DatabaseError);
+create_exception!(_taosws, IntegrityError, DatabaseError);
+create_exception!(_taosws, InternalError, DatabaseError);
+create_exception!(_taosws, ProgrammingError, DatabaseError);
+create_exception!(_taosws, NotSupportedError, DatabaseError);
 
-create_exception!(taosws, QueryError, DatabaseError);
-create_exception!(taosws, FetchError, DatabaseError);
+create_exception!(_taosws, QueryError, DatabaseError);
+create_exception!(_taosws, FetchError, DatabaseError);
 
-create_exception!(taosws, ConnectionError, Error, "Connection error");
+create_exception!(_taosws, ConnectionError, Error, "Connection error");
 create_exception!(
-    taosws,
+    _taosws,
     AlreadyClosedError,
     ConnectionError,
     "Connection error"
 );
-create_exception!(taosws, ConsumerException, Error);
+create_exception!(_taosws, ConsumerException, Error);
 
 mod common;
 mod consumer;
@@ -1020,7 +1020,7 @@ fn blob_to_column(values: Vec<Option<Vec<u8>>>) -> PyColumnView {
 }
 
 #[pymodule]
-fn taosws(py: Python<'_>, m: &PyModule) -> PyResult<()> {
+fn _taosws(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     if std::env::var("RUST_LOG").is_ok() {
         let _ = pretty_env_logger::try_init();
     }
