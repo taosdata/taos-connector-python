@@ -5,7 +5,7 @@ build-backend = "maturin"
 [project]
 name = "taos-ws-py"
 dynamic = ["version"]
-description = "The official TDengine Python websocket connector"
+description = "The official TDengine Python WebSocket connector"
 readme = "README.md"
 requires-python = ">=3.7"
 license = { text = "MIT" }

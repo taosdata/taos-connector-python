@@ -29,13 +29,13 @@ def test_create_connect_args_prefers_hosts_and_keeps_other_query_params():
     module = importlib.import_module("taosws.sqlalchemy")
     dialect = module.TaosWsDialect()
     url = make_url(
-        "taosws://root:taosdata@localhost:6041/test_1755496227?"
+        "taosws://root:taosdata@localhost:6041/test_1774703606?"
         "hosts=localhost:6041,127.0.0.1:6041&timezone=Asia/Shanghai"
     )
 
     args, kwargs = dialect.create_connect_args(url)
 
-    assert args == ["taosws://root:taosdata@localhost:6041,127.0.0.1:6041/test_1755496227?timezone=Asia%2FShanghai"]
+    assert args == ["taosws://root:taosdata@localhost:6041,127.0.0.1:6041/test_1774703606?timezone=Asia%2FShanghai"]
     assert kwargs == {}
 
 
@@ -43,35 +43,35 @@ def test_create_connect_args_no_trailing_ampersand_when_hosts_is_last_param():
     module = importlib.import_module("taosws.sqlalchemy")
     dialect = module.TaosWsDialect()
     url = make_url(
-        "taosws://root:taosdata@localhost:6041/test_1755496227?" "timezone=Asia/Shanghai&hosts=localhost:6041"
+        "taosws://root:taosdata@localhost:6041/test_1774703606?" "timezone=Asia/Shanghai&hosts=localhost:6041"
     )
 
     args, kwargs = dialect.create_connect_args(url)
 
-    assert args == ["taosws://root:taosdata@localhost:6041/test_1755496227?timezone=Asia%2FShanghai"]
+    assert args == ["taosws://root:taosdata@localhost:6041/test_1774703606?timezone=Asia%2FShanghai"]
     assert kwargs == {}
 
 
 def test_create_connect_args_encodes_query_values_safely():
     module = importlib.import_module("taosws.sqlalchemy")
     dialect = module.TaosWsDialect()
-    url = make_url("taosws://root:taosdata@localhost:6041/test_1755496227?note=cn north")
+    url = make_url("taosws://root:taosdata@localhost:6041/test_1774703606?note=cn north")
 
     args, kwargs = dialect.create_connect_args(url)
 
-    assert args == ["taosws://root:taosdata@localhost:6041/test_1755496227?note=cn%20north"]
+    assert args == ["taosws://root:taosdata@localhost:6041/test_1774703606?note=cn%20north"]
     assert kwargs == {}
 
 
 def test_create_connect_args_normalizes_explicit_empty_password():
     module = importlib.import_module("taosws.sqlalchemy")
     dialect = module.TaosWsDialect()
-    url = make_url("taosws://root:@localhost:6041/test_1755496227")
+    url = make_url("taosws://root:@localhost:6041/test_1774703606")
 
     args, kwargs = dialect.create_connect_args(url)
 
     # taosws rejects explicit empty password (root:@...), so we normalize it.
-    assert args == ["taosws://root@localhost:6041/test_1755496227"]
+    assert args == ["taosws://root@localhost:6041/test_1774703606"]
     assert kwargs == {}
 
 

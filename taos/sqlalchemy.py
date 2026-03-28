@@ -520,13 +520,14 @@ class BaseDialect(default.DefaultDialect):
     # Get indexes information
     @reflection.cache
     def get_indexes(self, connection, table_name, schema=None, **kw):
-        sql = (
-            "SELECT * FROM information_schema.INS_INDEXES "
-            f"WHERE db_name = '{schema}' "
-            f"AND table_name = '{table_name}'"
+        if schema is None:
+            return []
+
+        sql = text(
+            "SELECT * FROM information_schema.INS_INDEXES " "WHERE db_name = :schema " "AND table_name = :table_name"
         )
         try:
-            cursor = connection.execute(text(sql))
+            cursor = connection.execute(sql, {"schema": schema, "table_name": table_name})
             rows = cursor.fetchall()
             indexes = []
             for row in rows:
