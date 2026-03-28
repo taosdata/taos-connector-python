@@ -544,16 +544,19 @@ class TaosWsDialect(BaseDialect):
         username = url.username
         password = url.password
 
-        if username is not None and password is not None:
+        has_username = username is not None and username != ""
+        has_password = password is not None and password != ""
+
+        if has_username and has_password:
             userpass = f"{username}:{password}"
-        elif username is not None:
+        elif has_username:
             userpass = f"{username}"
-        elif password is not None:
+        elif has_password:
             userpass = f":{password}"
         else:
             userpass = ""
 
-        at = "@" if (username is not None or password is not None) else ""
+        at = "@" if (has_username or has_password) else ""
 
         hosts = url.query.get("hosts")
         if hosts:

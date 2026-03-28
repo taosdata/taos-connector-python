@@ -63,14 +63,15 @@ def test_create_connect_args_encodes_query_values_safely():
     assert kwargs == {}
 
 
-def test_create_connect_args_preserves_explicit_empty_password():
+def test_create_connect_args_normalizes_explicit_empty_password():
     module = importlib.import_module("taosws.sqlalchemy")
     dialect = module.TaosWsDialect()
     url = make_url("taosws://root:@localhost:6041/test_1755496227")
 
     args, kwargs = dialect.create_connect_args(url)
 
-    assert args == ["taosws://root:@localhost:6041/test_1755496227"]
+    # taosws rejects explicit empty password (root:@...), so we normalize it.
+    assert args == ["taosws://root@localhost:6041/test_1755496227"]
     assert kwargs == {}
 
 
