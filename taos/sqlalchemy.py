@@ -523,11 +523,14 @@ class BaseDialect(default.DefaultDialect):
         if schema is None:
             return []
 
-        sql = text(
-            "SELECT * FROM information_schema.INS_INDEXES " "WHERE db_name = :schema " "AND table_name = :table_name"
+        sql = (
+            "SELECT * FROM information_schema.INS_INDEXES "
+            f"WHERE db_name = '{schema}'"
+            " "
+            f"AND table_name = '{table_name}'"
         )
         try:
-            cursor = connection.execute(sql, {"schema": schema, "table_name": table_name})
+            cursor = connection.execute(text(sql))
             rows = cursor.fetchall()
             indexes = []
             for row in rows:
