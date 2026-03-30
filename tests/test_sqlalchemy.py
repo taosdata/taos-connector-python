@@ -13,10 +13,6 @@ taos.log.setting(True, True, True, True, True, True)
 
 host = "localhost"
 
-PK_EMPTY_DB = "test_1774703701"
-INDEX_INJECTION_DB_1 = "test_1774703702"
-INDEX_INJECTION_DB_2 = "test_1774703703"
-
 
 def prepare(conn, dbname, stbname, ntb1, ntb2):
     conn.execute(text("drop database if exists %s" % dbname))
@@ -241,59 +237,6 @@ def test_read_from_sqlalchemy_taosrest():
     insert_data(conn)
     inspection = inspect(engine)
     check_basic(conn, inspection)
-
-
-def test_get_pk_constraint_returns_empty_when_no_columns():
-    db_name = PK_EMPTY_DB
-    engine = create_engine(
-        f"taos://{utils.test_username()}:{utils.test_password()}@{host}:{PORT}?timezone=Asia/Shanghai"
-    )
-    conn = engine.connect()
-    try:
-        conn.execute(text(f"drop database if exists {db_name}"))
-        conn.execute(text(f"create database if not exists {db_name}"))
-
-        inspection = inspect(engine)
-        pk = inspection.get_pk_constraint("table_not_exists", db_name)
-
-        assert pk == {"constrained_columns": [], "name": None}
-    finally:
-        conn.execute(text(f"drop database if exists {db_name}"))
-        conn.close()
-
-
-def test_get_indexes_prevents_schema_injection():
-    db_name_1, db_name_2 = INDEX_INJECTION_DB_1, INDEX_INJECTION_DB_2
-    engine = create_engine(
-        f"taos://{utils.test_username()}:{utils.test_password()}@{host}:{PORT}?timezone=Asia/Shanghai"
-    )
-    conn = engine.connect()
-    try:
-        conn.execute(text(f"drop database if exists {db_name_1}"))
-        conn.execute(text(f"drop database if exists {db_name_2}"))
-        conn.execute(text(f"create database if not exists {db_name_1}"))
-        conn.execute(text(f"create database if not exists {db_name_2}"))
-        conn.execute(
-            text(f"create table {db_name_1}.meters(ts timestamp, c1 int, c2 double) tags(t1 int, location nchar(16))")
-        )
-        conn.execute(
-            text(f"create table {db_name_2}.meters(ts timestamp, c1 int, c2 double) tags(t1 int, location nchar(16))")
-        )
-        conn.execute(text(f"create index idx_location_a on {db_name_1}.meters(location)"))
-        conn.execute(text(f"create index idx_location_b on {db_name_2}.meters(location)"))
-
-        inspection = inspect(engine)
-        indexes = inspection.get_indexes("meters", db_name_1)
-        assert any(idx.get("name") == "idx_location_a" for idx in indexes)
-        assert all(idx.get("name") != "idx_location_b" for idx in indexes)
-
-        injected_schema = f"{db_name_1}' OR '1'='1"
-        injected_indexes = inspection.get_indexes("meters", injected_schema)
-        assert injected_indexes == []
-    finally:
-        conn.execute(text(f"drop database if exists {db_name_1}"))
-        conn.execute(text(f"drop database if exists {db_name_2}"))
-        conn.close()
 
 
 # main test

@@ -1,4 +1,7 @@
+import ast
+import importlib
 import os
+from pathlib import Path
 from urllib.parse import urlparse
 
 import pytest
@@ -9,11 +12,13 @@ pytest.importorskip("sqlalchemy")
 
 from sqlalchemy import create_engine
 from sqlalchemy import inspect
+from sqlalchemy import types as sqltypes
 from sqlalchemy.dialects import registry
+from sqlalchemy.engine.url import make_url
 
 
 TDENGINE_URL = os.getenv("TDENGINE_URL")
-pytestmark = pytest.mark.skipif(TDENGINE_URL is None, reason="Please set environment variable TDENGINE_URL")
+requires_tdengine = pytest.mark.skipif(TDENGINE_URL is None, reason="Please set environment variable TDENGINE_URL")
 registry.register("taosws", "taosws.sqlalchemy", "TaosWsDialect")
 
 
@@ -68,6 +73,7 @@ def check_basic(conn, inspection, sub_tables=None):
     conn.close()
 
 
+@requires_tdengine
 def test_read_from_sqlalchemy_taosws():
     engine = create_engine(
         f"taosws://{utils.test_username()}:{utils.test_password()}@{HOST}:{PORT}?timezone=Asia/Shanghai"
@@ -78,6 +84,7 @@ def test_read_from_sqlalchemy_taosws():
     check_basic(conn, inspection)
 
 
+@requires_tdengine
 def test_read_from_sqlalchemy_taosws_failover():
     db_name = "test_1755496227"
     conn = taosws.connect(f"taosws://{utils.test_username()}:{utils.test_password()}@{HOST}:{PORT}")
@@ -119,3 +126,80 @@ def test_read_from_sqlalchemy_taosws_failover():
     finally:
         conn.execute(f"drop database if exists {db_name}")
         conn.close()
+
+
+def test_taosws_sqlalchemy_module_is_available():
+    module = importlib.import_module("taosws.sqlalchemy")
+    assert hasattr(module, "TaosWsDialect")
+
+
+def test_resolve_type_covers_all_declared_tdengine_types():
+    module = importlib.import_module("taosws.sqlalchemy")
+    dialect = module.TaosWsDialect()
+
+    for tdengine_type, sqlalchemy_type in module.TYPES_MAP.items():
+        assert dialect._resolve_type(tdengine_type) is sqlalchemy_type
+
+    assert dialect._resolve_type("TYPE_NOT_EXISTS") is sqltypes.UserDefinedType
+
+
+def test_create_connect_args_prefers_hosts_and_keeps_other_query_params():
+    module = importlib.import_module("taosws.sqlalchemy")
+    dialect = module.TaosWsDialect()
+    url = make_url(
+        "taosws://root:taosdata@localhost:6041/test_1774703606?"
+        "hosts=localhost:6041,127.0.0.1:6041&timezone=Asia/Shanghai"
+    )
+
+    args, kwargs = dialect.create_connect_args(url)
+
+    assert args == ["taosws://root:taosdata@localhost:6041,127.0.0.1:6041/test_1774703606?timezone=Asia%2FShanghai"]
+    assert kwargs == {}
+
+
+def test_create_connect_args_no_trailing_ampersand_when_hosts_is_last_param():
+    module = importlib.import_module("taosws.sqlalchemy")
+    dialect = module.TaosWsDialect()
+    url = make_url(
+        "taosws://root:taosdata@localhost:6041/test_1774703606?" "timezone=Asia/Shanghai&hosts=localhost:6041"
+    )
+
+    args, kwargs = dialect.create_connect_args(url)
+
+    assert args == ["taosws://root:taosdata@localhost:6041/test_1774703606?timezone=Asia%2FShanghai"]
+    assert kwargs == {}
+
+
+def test_create_connect_args_encodes_query_values_safely():
+    module = importlib.import_module("taosws.sqlalchemy")
+    dialect = module.TaosWsDialect()
+    url = make_url("taosws://root:taosdata@localhost:6041/test_1774703606?note=cn north")
+
+    args, kwargs = dialect.create_connect_args(url)
+
+    assert args == ["taosws://root:taosdata@localhost:6041/test_1774703606?note=cn%20north"]
+    assert kwargs == {}
+
+
+def test_create_connect_args_normalizes_explicit_empty_password():
+    module = importlib.import_module("taosws.sqlalchemy")
+    dialect = module.TaosWsDialect()
+    url = make_url("taosws://root:@localhost:6041/test_1774703606")
+
+    args, kwargs = dialect.create_connect_args(url)
+
+    # taosws rejects explicit empty password (root:@...), so we normalize it.
+    assert args == ["taosws://root@localhost:6041/test_1774703606"]
+    assert kwargs == {}
+
+
+def test_sqlalchemy_module_does_not_depend_on_taospy_imports():
+    module = importlib.import_module("taosws.sqlalchemy")
+    source = Path(module.__file__).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            for alias in node.names:
+                top_level_name = alias.name.split(".")[0]
+                assert top_level_name not in {"taos", "taospy"}
