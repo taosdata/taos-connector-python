@@ -56,13 +56,12 @@ def test_decode_binary_in_tmq():
     try:
         res = consumer.poll(1)
         vals = res.value()
-        assert len(vals) == 2
-        v0 = vals[0].fetchall()
-        v1 = vals[1].fetchall()
-        assert v0[0][1] == "hello"
-        assert v1[0][1] == "hello"
-        assert v0[0][3] == b"world"
-        assert v1[0][3] == b"\\x00\\x01\\x02\\x03\\x04\\x05\\x06\\x07\\x08\\x09"
+        assert len(vals) == 1
+        val = vals[0].fetchall()
+        assert val[0][1] == "hello"
+        assert val[1][1] == "hello"
+        assert val[0][3] == b"world"
+        assert val[1][3] == b"\\x00\\x01\\x02\\x03\\x04\\x05\\x06\\x07\\x08\\x09"
     finally:
         consumer.unsubscribe()
         consumer.close()
