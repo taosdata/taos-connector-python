@@ -103,6 +103,12 @@ def test_taosws_sqlalchemy_module_is_available():
     assert hasattr(module, "TaosWsDialect")
 
 
+def test_legacy_taosws_submodule_alias_is_available():
+    module = importlib.import_module("taosws.taosws")
+    assert hasattr(module, "connect")
+    assert module.connect is taosws.connect
+
+
 def test_resolve_type_covers_all_declared_tdengine_types():
     module = importlib.import_module("taosws.sqlalchemy")
     dialect = module.TaosWsDialect()
