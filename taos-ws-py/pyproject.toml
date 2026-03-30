@@ -9,12 +9,7 @@ description = "The official TDengine Python WebSocket connector"
 readme = "README.md"
 requires-python = ">=3.7"
 license = { text = "MIT" }
-classifiers = [
-    "Programming Language :: Python",
-    "Programming Language :: Rust",
-    "Programming Language :: Python :: Implementation :: CPython",
-    "Programming Language :: Python :: Implementation :: PyPy",
-]
+classifiers = ["Programming Language :: Python", "Programming Language :: Rust"]
 
 [project.optional-dependencies]
 sqlalchemy = ["sqlalchemy>=2.0.0"]
