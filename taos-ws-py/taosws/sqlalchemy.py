@@ -2,7 +2,6 @@ from sqlalchemy import sql
 from sqlalchemy import text
 from sqlalchemy import types as sqltypes
 from sqlalchemy.engine import default, reflection
-from urllib.parse import quote, urlencode
 
 TYPES_MAP = {
     "BOOL": sqltypes.Boolean,
