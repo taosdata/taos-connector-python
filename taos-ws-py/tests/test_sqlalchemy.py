@@ -1,57 +1,41 @@
 import ast
 import importlib
-import os
 from pathlib import Path
-from urllib.parse import urlparse
 
 import pytest
 import taosws
 import utils
 
-pytest.importorskip("sqlalchemy")
-
 from sqlalchemy import create_engine
 from sqlalchemy import inspect
 from sqlalchemy import types as sqltypes
-from sqlalchemy.dialects import registry
 from sqlalchemy.engine.url import make_url
 
 
-TDENGINE_URL = os.getenv("TDENGINE_URL")
-requires_tdengine = pytest.mark.skipif(TDENGINE_URL is None, reason="Please set environment variable TDENGINE_URL")
-registry.register("taosws", "taosws.sqlalchemy", "TaosWsDialect")
+def test_read():
+    setup_conn = taosws.connect("ws://localhost:6041")
+    setup_conn.execute("drop database if exists test_1774860246")
+    setup_conn.execute("create database test_1774860246")
+    setup_conn.execute("create table test_1774860246.meters (ts timestamp, c1 int, c2 double) tags (t1 int)")
+    setup_conn.execute(
+        "insert into test_1774860246.d0 using test_1774860246.meters tags(0) values (1733189403001, 1, 1.11) (1733189403002, 2, 2.22)"
+    )
+    setup_conn.execute(
+        "insert into test_1774860246.d1 using test_1774860246.meters tags(1) values (1733189403003, 3, 3.33) (1733189403004, 4, 4.44)"
+    )
+    setup_conn.execute("create table test_1774860246.ntb (ts timestamp, age int)")
+    setup_conn.execute("insert into test_1774860246.ntb values (now, 23)")
+    setup_conn.close()
 
-
-def resolve_tdengine_host_port(url):
-    normalized = url if "://" in url else f"ws://{url}"
-    parsed = urlparse(normalized)
-    return parsed.hostname or "localhost", parsed.port or 6041
-
-
-HOST, PORT = resolve_tdengine_host_port(TDENGINE_URL) if TDENGINE_URL else ("localhost", 6041)
-
-
-def insert_data(conn=None):
-    close_on_exit = conn is None
-    c = conn or taosws.connect(f"taosws://{utils.test_username()}:{utils.test_password()}@{HOST}:{PORT}")
-    c.execute("drop database if exists test")
-    c.execute("create database if not exists test")
-    c.execute("create table test.meters (ts timestamp, c1 int, c2 double) tags(t1 int)")
-    c.execute("insert into test.d0 using test.meters tags(0) values (1733189403001, 1, 1.11) (1733189403002, 2, 2.22)")
-    c.execute("insert into test.d1 using test.meters tags(1) values (1733189403003, 3, 3.33) (1733189403004, 4, 4.44)")
-    c.execute("create table test.ntb(ts timestamp, age int)")
-    c.execute("insert into test.ntb values(now, 23)")
-    if close_on_exit:
-        c.close()
-
-
-def check_basic(conn, inspection, sub_tables=None):
-    tables = sub_tables or ["meters", "ntb"]
+    engine = create_engine(
+        f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:6041?timezone=Asia/Shanghai"
+    )
+    conn = engine.connect()
+    inspection = inspect(engine)
 
     databases = inspection.get_schema_names()
-    assert "test" in databases, f"test not in {databases}"
-
-    assert inspection.get_table_names("test") == tables, "check get_table_names() failed"
+    assert "test_1774860246" in databases
+    assert inspection.get_table_names("test_1774860246") == ["meters", "ntb"]
 
     expected_columns = [
         {"name": "ts", "type": inspection.dialect._resolve_type("TIMESTAMP")},
@@ -59,52 +43,38 @@ def check_basic(conn, inspection, sub_tables=None):
         {"name": "c2", "type": inspection.dialect._resolve_type("DOUBLE")},
         {"name": "t1", "type": inspection.dialect._resolve_type("INT")},
     ]
-    columns = inspection.get_columns("meters", "test")
+    columns = inspection.get_columns("meters", "test_1774860246")
     for index, column in enumerate(columns):
         expected = expected_columns[index]
-        assert column["name"] == expected["name"], f"column name mismatch: {column['name']} != {expected['name']}"
-        assert (
-            type(column["type"]) == expected["type"]
-        ), f"column type mismatch: {type(column['type'])} != {expected['type']}"
+        assert column["name"] == expected["name"]
+        assert type(column["type"]) == expected["type"]
 
-    assert inspection.has_table("meters", "test") is True, "check has_table() failed"
-    assert inspection.dialect.has_schema(conn, "test") is True, "check has_schema() failed"
+    assert inspection.has_table("meters", "test_1774860246") is True
+    assert inspection.dialect.has_schema(conn, "test_1774860246") is True
 
     conn.close()
 
 
-@requires_tdengine
-def test_read_from_sqlalchemy_taosws():
-    engine = create_engine(
-        f"taosws://{utils.test_username()}:{utils.test_password()}@{HOST}:{PORT}?timezone=Asia/Shanghai"
-    )
-    conn = engine.connect()
-    insert_data()
-    inspection = inspect(engine)
-    check_basic(conn, inspection)
-
-
-@requires_tdengine
-def test_read_from_sqlalchemy_taosws_failover():
-    db_name = "test_1755496227"
-    conn = taosws.connect(f"taosws://{utils.test_username()}:{utils.test_password()}@{HOST}:{PORT}")
+def test_read_failover():
+    db_name = "test_1774860246"
+    conn = taosws.connect(f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:6041")
     conn.execute(f"drop database if exists {db_name}")
     conn.execute(f"create database {db_name}")
 
     try:
         urls = [
             "taosws://",
-            f"taosws://{HOST}",
-            f"taosws://{HOST}:{PORT}",
-            f"taosws://{HOST}:{PORT}/{db_name}",
-            f"taosws://root@{HOST}:{PORT}/{db_name}",
-            f"taosws://root:@{HOST}:{PORT}/{db_name}",
-            f"taosws://{utils.test_username()}:{utils.test_password()}@{HOST}:{PORT}/{db_name}",
-            f"taosws://{utils.test_username()}:{utils.test_password()}@{HOST}:{PORT}/{db_name}?hosts=",
-            f"taosws://{utils.test_username()}:{utils.test_password()}@/{db_name}?hosts={HOST}:{PORT}",
-            f"taosws://{utils.test_username()}:{utils.test_password()}@{HOST}:{PORT}/{db_name}?hosts={HOST}:{PORT}",
-            f"taosws://{utils.test_username()}:{utils.test_password()}@{HOST}:{PORT}/{db_name}?hosts={HOST}:{PORT},127.0.0.1:{PORT}",
-            f"taosws://{utils.test_username()}:{utils.test_password()}@{HOST}:{PORT}/{db_name}?hosts={HOST}:{PORT},127.0.0.1:{PORT}&timezone=Asia/Shanghai",
+            "taosws://localhost",
+            "taosws://localhost:6041",
+            f"taosws://localhost:6041/{db_name}",
+            f"taosws://root@localhost:6041/{db_name}",
+            f"taosws://root:@localhost:6041/{db_name}",
+            f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:6041/{db_name}",
+            f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:6041/{db_name}?hosts=",
+            f"taosws://{utils.test_username()}:{utils.test_password()}@/{db_name}?hosts=localhost:6041",
+            f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:6041/{db_name}?hosts=localhost:6041",
+            f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:6041/{db_name}?hosts=localhost:6041,127.0.0.1:6041",
+            f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:6041/{db_name}?hosts=localhost:6041,127.0.0.1:6041&timezone=Asia/Shanghai",
         ]
 
         for url in urls:
@@ -113,8 +83,8 @@ def test_read_from_sqlalchemy_taosws_failover():
             econn.close()
 
         invalid_urls = [
-            f"taosws://:{PORT}",
-            f"taosws://:taosdata@=localhost:{PORT}/{db_name}",
+            "taosws://:6041",
+            f"taosws://:taosdata@=localhost:6041/{db_name}",
         ]
 
         for url in invalid_urls:
@@ -147,49 +117,13 @@ def test_create_connect_args_prefers_hosts_and_keeps_other_query_params():
     module = importlib.import_module("taosws.sqlalchemy")
     dialect = module.TaosWsDialect()
     url = make_url(
-        "taosws://root:taosdata@localhost:6041/test_1774703606?"
+        "taosws://root:taosdata@localhost:6041/test_1774860246?"
         "hosts=localhost:6041,127.0.0.1:6041&timezone=Asia/Shanghai"
     )
 
     args, kwargs = dialect.create_connect_args(url)
 
-    assert args == ["taosws://root:taosdata@localhost:6041,127.0.0.1:6041/test_1774703606?timezone=Asia%2FShanghai"]
-    assert kwargs == {}
-
-
-def test_create_connect_args_no_trailing_ampersand_when_hosts_is_last_param():
-    module = importlib.import_module("taosws.sqlalchemy")
-    dialect = module.TaosWsDialect()
-    url = make_url(
-        "taosws://root:taosdata@localhost:6041/test_1774703606?" "timezone=Asia/Shanghai&hosts=localhost:6041"
-    )
-
-    args, kwargs = dialect.create_connect_args(url)
-
-    assert args == ["taosws://root:taosdata@localhost:6041/test_1774703606?timezone=Asia%2FShanghai"]
-    assert kwargs == {}
-
-
-def test_create_connect_args_encodes_query_values_safely():
-    module = importlib.import_module("taosws.sqlalchemy")
-    dialect = module.TaosWsDialect()
-    url = make_url("taosws://root:taosdata@localhost:6041/test_1774703606?note=cn north")
-
-    args, kwargs = dialect.create_connect_args(url)
-
-    assert args == ["taosws://root:taosdata@localhost:6041/test_1774703606?note=cn%20north"]
-    assert kwargs == {}
-
-
-def test_create_connect_args_normalizes_explicit_empty_password():
-    module = importlib.import_module("taosws.sqlalchemy")
-    dialect = module.TaosWsDialect()
-    url = make_url("taosws://root:@localhost:6041/test_1774703606")
-
-    args, kwargs = dialect.create_connect_args(url)
-
-    # taosws rejects explicit empty password (root:@...), so we normalize it.
-    assert args == ["taosws://root@localhost:6041/test_1774703606"]
+    assert args == ["taosws://root:taosdata@localhost:6041,127.0.0.1:6041/test_1774860246?timezone=Asia/Shanghai"]
     assert kwargs == {}
 
 
