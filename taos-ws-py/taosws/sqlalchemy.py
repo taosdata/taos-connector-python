@@ -26,7 +26,6 @@ TYPES_MAP = {
     "GEOMETRY": sqltypes.BINARY,
 }
 
-# TDengine reserved words
 RESERVED_WORDS_TDENGINE = {
     "account",
     "accounts",
@@ -351,12 +350,7 @@ RESERVED_WORDS_TDENGINE = {
     "force_window_close",
 }
 
-# NOTE: reserved words are synced from TDengine parser keyword table when needed.
 
-
-#
-# identifier for TDengine
-#
 class TDengineIdentifierPreparer(sql.compiler.IdentifierPreparer):
     reserved_words = RESERVED_WORDS_TDENGINE
 
@@ -373,15 +367,9 @@ class TDengineIdentifierPreparer(sql.compiler.IdentifierPreparer):
         return tuple([self.quote_identifier(i) for i in ids if i is not None])
 
 
-#
-# base class for dialect
-#
 class BaseDialect(default.DefaultDialect):
     supports_native_boolean = True
     implicit_returning = True
-    # supports_statement_cache = True
-
-    # Set back-quote identifier preparer for TDengine keywords
     preparer = TDengineIdentifierPreparer
 
     def is_sys_db(self, dbname):
@@ -399,7 +387,6 @@ class BaseDialect(default.DefaultDialect):
             cursor.execute(statement, parameters)
         else:
             cursor.execute(statement, [parameters])
-
         return cursor
 
     def do_executemany(self, cursor, statement, parameters, context=None):
@@ -410,25 +397,20 @@ class BaseDialect(default.DefaultDialect):
     def has_schema(self, connection, schema, **kw):
         return schema in self.get_schema_names(connection)
 
-    # Check if table exists
     @reflection.cache
     def has_table(self, connection, table_name, schema=None, **kw):
         return table_name in self.get_table_names(connection, schema)
 
-    # Get column information
     @reflection.cache
     def get_columns(self, connection, table_name, schema=None, **kw):
-        sysdb = False
         if schema is None:
             sql = f"describe {table_name}"
         else:
             sql = f"describe {schema}.{table_name}"
-            # sysdb = self.is_sys_db(schema)
         try:
             cursor = connection.execute(text(sql))
             columns = []
             for row in cursor.fetchall():
-                # print(row)
                 column = dict()
                 column["name"] = row[0]
                 column["type"] = self._resolve_type(row[1])
@@ -446,10 +428,8 @@ class BaseDialect(default.DefaultDialect):
 
     @reflection.cache
     def get_foreign_keys(self, connection, table_name, schema=None, **kw):
-        # No foreign key is supported by TDengine
         return []
 
-    # Get indexes information
     @reflection.cache
     def get_indexes(self, connection, table_name, schema=None, **kw):
         if schema is None:
@@ -472,7 +452,6 @@ class BaseDialect(default.DefaultDialect):
         except Exception:
             return []
 
-    # Get database names
     @reflection.cache
     def get_schema_names(self, connection, **kw):
         sql = text("SHOW DATABASES")
@@ -486,14 +465,12 @@ class BaseDialect(default.DefaultDialect):
         except:
             return []
 
-    # Get table names
     @reflection.cache
     def get_table_names(self, connection, schema=None, **kw):
         if schema is None:
             sqls = [f"show stables", f"show normal tables"]
         else:
             sqls = [f"show `{schema}`.stables", f"show normal `{schema}`.tables"]
-        # Execute queries
         try:
             names = []
             for sql in sqls:
@@ -508,9 +485,7 @@ class BaseDialect(default.DefaultDialect):
     def get_view_names(self, connection, schema=None, **kw):
         if schema is None:
             return []
-        # SQL query for views
         sql = f"show `{schema}`.views"
-        # Execute query
         try:
             cursor = connection.execute(text(sql))
             return [row[0] for row in cursor.fetchall()]
@@ -518,11 +493,9 @@ class BaseDialect(default.DefaultDialect):
             return []
 
     def _resolve_type(self, type_):
-        # print(f"call function {sys._getframe().f_code.co_name} type: {type_} ...\n")
         return TYPES_MAP.get(type_, sqltypes.UserDefinedType)
 
 
-# WebSocket dialect
 class TaosWsDialect(BaseDialect):
     name = "taosws"
     driver = "taosws"
@@ -541,22 +514,16 @@ class TaosWsDialect(BaseDialect):
 
     @classmethod
     def create_connect_args(cls, url):
-        username = url.username
-        password = url.password
-
-        has_username = username is not None and username != ""
-        has_password = password is not None and password != ""
-
-        if has_username and has_password:
-            userpass = f"{username}:{password}"
-        elif has_username:
-            userpass = f"{username}"
-        elif has_password:
-            userpass = f":{password}"
+        if url.username and url.password:
+            userpass = f"{url.username}:{url.password}"
+        elif url.username:
+            userpass = f"{url.username}"
+        elif url.password:
+            userpass = f":{url.password}"
         else:
             userpass = ""
 
-        at = "@" if (has_username or has_password) else ""
+        at = "@" if userpass else ""
 
         hosts = url.query.get("hosts")
         if hosts:
@@ -571,8 +538,13 @@ class TaosWsDialect(BaseDialect):
             else:
                 addr = ""
 
-        query_params = [(key, value) for key, value in url.query.items() if key != "hosts"]
-        params = urlencode(query_params, doseq=True, quote_via=quote)
+        params = ""
+        for i, (key, value) in enumerate(url.query.items()):
+            if key == "hosts":
+                continue
+            params += f"{key}={value}"
+            if i != len(url.query.items()) - 1:
+                params += "&"
 
         dsn = f"{url.drivername}://{userpass}{at}{addr}"
         if url.database:
