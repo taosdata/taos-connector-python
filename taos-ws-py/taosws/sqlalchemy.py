@@ -1,6 +1,3 @@
-import numbers
-from datetime import date, datetime
-
 from sqlalchemy import sql
 from sqlalchemy import text
 from sqlalchemy import types as sqltypes
@@ -397,54 +394,16 @@ class BaseDialect(default.DefaultDialect):
         cursor = connection.execute(text("select server_version()"))
         return cursor.fetchone()
 
-    def _to_sql_literal(self, value):
-        if value is None:
-            return "NULL"
-        if isinstance(value, bool):
-            return "true" if value else "false"
-        if isinstance(value, numbers.Number):
-            return str(value)
-        if isinstance(value, datetime):
-            return f"'{value.strftime('%Y-%m-%d %H:%M:%S.%f')}'"
-        if isinstance(value, date):
-            return f"'{value.isoformat()}'"
-
-        text_value = str(value)
-        return "'" + text_value.replace("'", "''") + "'"
-
-    def _render_sql(self, statement, parameters):
-        if parameters is None:
-            return statement
-
-        if isinstance(parameters, dict):
-            if len(parameters) == 0:
-                return statement
-            literalized = {key: self._to_sql_literal(value) for key, value in parameters.items()}
-            return statement % literalized
-
-        if isinstance(parameters, (list, tuple)):
-            if len(parameters) == 0:
-                return statement
-            literalized = tuple(self._to_sql_literal(value) for value in parameters)
-            return statement % literalized
-
-        return statement % self._to_sql_literal(parameters)
-
     def do_execute(self, cursor, statement, parameters, context=None):
-        rendered_sql = self._render_sql(statement, parameters)
-        cursor.execute(rendered_sql)
+        if parameters is None or len(parameters) == 0:
+            cursor.execute(statement, parameters)
+        else:
+            cursor.execute(statement, [parameters])
 
         return cursor
 
     def do_executemany(self, cursor, statement, parameters, context=None):
-        if parameters is None:
-            return cursor
-        if isinstance(parameters, (list, tuple)) and len(parameters) == 0:
-            return cursor
-
-        for parameter in parameters:
-            rendered_sql = self._render_sql(statement, parameter)
-            cursor.execute(rendered_sql)
+        cursor.executemany(statement, parameters)
         return cursor
 
     @reflection.cache
@@ -496,11 +455,14 @@ class BaseDialect(default.DefaultDialect):
         if schema is None:
             return []
 
-        sql = text(
-            "SELECT * FROM information_schema.INS_INDEXES " "WHERE db_name = :schema " "AND table_name = :table_name"
+        sql = (
+            "SELECT * FROM information_schema.INS_INDEXES "
+            f"WHERE db_name = '{schema}'"
+            " "
+            f"AND table_name = '{table_name}'"
         )
         try:
-            cursor = connection.execute(sql, {"schema": schema, "table_name": table_name})
+            cursor = connection.execute(text(sql))
             rows = cursor.fetchall()
             indexes = []
             for row in rows:
