@@ -2,7 +2,6 @@ from sqlalchemy import sql
 from sqlalchemy import text
 from sqlalchemy import types as sqltypes
 from sqlalchemy.engine import default, reflection
-from sqlalchemy.sql import compiler
 
 TYPES_MAP = {
     "BOOL": sqltypes.Boolean,
@@ -26,7 +25,6 @@ TYPES_MAP = {
     "GEOMETRY": sqltypes.BINARY,
 }
 
-# TDengine reserved words
 RESERVED_WORDS_TDENGINE = {
     "account",
     "accounts",
@@ -351,80 +349,7 @@ RESERVED_WORDS_TDENGINE = {
     "force_window_close",
 }
 
-# backup generator function
-"""
-generator from TDengine/source/libs/parse/src/parTokenizer.c -> keywordTable
 
-import sys
-def readKeyWord(filename):
-    keys = ""
-    print(f"read file {filename}\n")
-    with open(filename) as file:
-        for line in file.readlines():
-            pos1 = line.find('"')
-            if pos1 == -1 :
-                print(f"NO FOUND FIRST QUOTA: {line}\n")
-                continue
-            pos2 = line.find('"', pos1 + 1)
-            if pos2 == -1 :
-                print(f"NO FOUND SECOND QUOTA: {line}\n")
-                continue
-            word = line[pos1:pos2+1]
-            if keys == "":
-                keys = "RESERVED_WORDS_TDENGINE = {\n    " + word.lower()
-            else:
-                keys += ",\n    " + word.lower()
-
-    # end
-    keys += "\n}"
-    print(f"\n\n{keys}\n")
-
-
-if __name__ == "__main__":
-    readKeyWord("./keyword.txt")
-
-"""
-
-
-class TDengineCompiler(compiler.SQLCompiler):
-    """TDengine SQL compiler with simplified output format"""
-
-    def visit_create_table(self, create, **kw):
-        """Custom CREATE TABLE statement format"""
-        table = create.element
-        preparer = self.preparer
-
-        # Build basic CREATE TABLE statement
-        text = "CREATE TABLE " + preparer.format_table(table)
-
-        # Build column definitions
-        create_column_spec = self.get_column_specification
-        columns = []
-        for column in table.columns:
-            column_spec = self.create_column_specification(column)
-            columns.append(column_spec)
-
-        # Use compact format
-        text += " (" + ", ".join(columns) + ")"
-
-        return text
-
-    def create_column_specification(self, column, **kwargs):
-        """Create column definition with simplified format"""
-        spec = self.preparer.format_column(column)
-        spec += " " + self.dialect.type_compiler.process(column.type)
-        return spec
-
-
-class TDengineDDLCompiler(compiler.DDLCompiler):
-    def visit_create_table(self, create, **kw):
-        """Simplified CREATE TABLE format"""
-        return super().visit_create_table(create, **kw).replace("\n\t", " ").replace("\n", " ")
-
-
-#
-# identifier for TDengine
-#
 class TDengineIdentifierPreparer(sql.compiler.IdentifierPreparer):
     reserved_words = RESERVED_WORDS_TDENGINE
 
@@ -441,15 +366,9 @@ class TDengineIdentifierPreparer(sql.compiler.IdentifierPreparer):
         return tuple([self.quote_identifier(i) for i in ids if i is not None])
 
 
-#
-# base class for dialect
-#
 class BaseDialect(default.DefaultDialect):
     supports_native_boolean = True
     implicit_returning = True
-    # supports_statement_cache = True
-
-    # Set back-quote identifier preparer for TDengine keywords
     preparer = TDengineIdentifierPreparer
 
     def is_sys_db(self, dbname):
@@ -467,7 +386,6 @@ class BaseDialect(default.DefaultDialect):
             cursor.execute(statement, parameters)
         else:
             cursor.execute(statement, [parameters])
-
         return cursor
 
     def do_executemany(self, cursor, statement, parameters, context=None):
@@ -478,31 +396,26 @@ class BaseDialect(default.DefaultDialect):
     def has_schema(self, connection, schema, **kw):
         return schema in self.get_schema_names(connection)
 
-    # Check if table exists
     @reflection.cache
     def has_table(self, connection, table_name, schema=None, **kw):
         return table_name in self.get_table_names(connection, schema)
 
-    # Get column information
     @reflection.cache
     def get_columns(self, connection, table_name, schema=None, **kw):
-        sysdb = False
         if schema is None:
             sql = f"describe {table_name}"
         else:
             sql = f"describe {schema}.{table_name}"
-            # sysdb = self.is_sys_db(schema)
         try:
             cursor = connection.execute(text(sql))
             columns = []
             for row in cursor.fetchall():
-                # print(row)
                 column = dict()
                 column["name"] = row[0]
                 column["type"] = self._resolve_type(row[1])
                 columns.append(column)
             return columns
-        except:
+        except Exception:
             return []
 
     @reflection.cache
@@ -514,10 +427,8 @@ class BaseDialect(default.DefaultDialect):
 
     @reflection.cache
     def get_foreign_keys(self, connection, table_name, schema=None, **kw):
-        # No foreign key is supported by TDengine
         return []
 
-    # Get indexes information
     @reflection.cache
     def get_indexes(self, connection, table_name, schema=None, **kw):
         if schema is None:
@@ -537,10 +448,9 @@ class BaseDialect(default.DefaultDialect):
                 index = {"name": row[0], "column_names": [row[5]], "type": "index", "unique": False}
                 indexes.append(index)
             return indexes
-        except:
+        except Exception:
             return []
 
-    # Get database names
     @reflection.cache
     def get_schema_names(self, connection, **kw):
         sql = text("SHOW DATABASES")
@@ -554,14 +464,12 @@ class BaseDialect(default.DefaultDialect):
         except:
             return []
 
-    # Get table names
     @reflection.cache
     def get_table_names(self, connection, schema=None, **kw):
         if schema is None:
             sqls = [f"show stables", f"show normal tables"]
         else:
             sqls = [f"show `{schema}`.stables", f"show normal `{schema}`.tables"]
-        # Execute queries
         try:
             names = []
             for sql in sqls:
@@ -576,9 +484,7 @@ class BaseDialect(default.DefaultDialect):
     def get_view_names(self, connection, schema=None, **kw):
         if schema is None:
             return []
-        # SQL query for views
         sql = f"show `{schema}`.views"
-        # Execute query
         try:
             cursor = connection.execute(text(sql))
             return [row[0] for row in cursor.fetchall()]
@@ -586,28 +492,63 @@ class BaseDialect(default.DefaultDialect):
             return []
 
     def _resolve_type(self, type_):
-        # print(f"call function {sys._getframe().f_code.co_name} type: {type_} ...\n")
         return TYPES_MAP.get(type_, sqltypes.UserDefinedType)
 
 
-#
-# ---------------- TDengine native connector implementation -------------
-#
-import taos
-
-
-# TDengine native dialect
-class TaosDialect(BaseDialect):
-    name = "taos"
-    driver = "taos"
-    supports_statement_cache = True
-    statement_compiler = TDengineCompiler
-    ddl_compiler = TDengineDDLCompiler
+class TaosWsDialect(BaseDialect):
+    name = "taosws"
+    driver = "taosws"
 
     @classmethod
     def dbapi(cls):
-        return taos
+        import taosws
+
+        return taosws
 
     @classmethod
     def import_dbapi(cls):
-        return taos
+        import taosws
+
+        return taosws
+
+    @classmethod
+    def create_connect_args(cls, url):
+        if url.username and url.password:
+            userpass = f"{url.username}:{url.password}"
+        elif url.username:
+            userpass = f"{url.username}"
+        elif url.password:
+            userpass = f":{url.password}"
+        else:
+            userpass = ""
+
+        at = "@" if userpass else ""
+
+        hosts = url.query.get("hosts")
+        if hosts:
+            addr = hosts
+        else:
+            if url.host and url.port:
+                addr = f"{url.host}:{url.port}"
+            elif url.host:
+                addr = f"{url.host}"
+            elif url.port:
+                addr = f":{url.port}"
+            else:
+                addr = ""
+
+        params = ""
+        for i, (key, value) in enumerate(url.query.items()):
+            if key == "hosts":
+                continue
+            params += f"{key}={value}"
+            if i != len(url.query.items()) - 1:
+                params += "&"
+
+        dsn = f"{url.drivername}://{userpass}{at}{addr}"
+        if url.database:
+            dsn += f"/{url.database}"
+        if params:
+            dsn += f"?{params}"
+
+        return ([dsn], {})

@@ -109,55 +109,67 @@ def test_tmq_with_token():
         rs = conn.query(f"create token token_1772607422 from user {utils.test_username()}")
         token = next(iter(rs))[0]
 
-        consumer = Consumer(conf={
-            "td.connect.websocket.scheme": "ws",
-            "td.connect.ip": "localhost",
-            "td.connect.port": 6041,
-            "td.connect.user": "invalid_user",
-            "td.connect.pass": "invalid_pass",
-            "td.connect.bearer_token": token,
-            "group.id": "1001",
-            "client.id": "1001",
-        })
+        consumer = Consumer(
+            conf={
+                "td.connect.websocket.scheme": "ws",
+                "td.connect.ip": "localhost",
+                "td.connect.port": 6041,
+                "td.connect.user": "invalid_user",
+                "td.connect.pass": "invalid_pass",
+                "td.connect.bearer_token": token,
+                "group.id": "1001",
+                "client.id": "1001",
+            }
+        )
         consumer.subscribe(["topic_1772607422"])
         consumer.unsubscribe()
 
-        consumer2 = Consumer(conf={
-            "td.connect.websocket.scheme": "ws",
-            "td.connect.ip": "localhost",
-            "td.connect.port": 6041,
-            "td.connect.user": "invalid_user",
-            "td.connect.pass": "invalid_pass",
-            "bearer_token": token,
-            "group.id": "1001",
-            "client.id": "1001",
-        })
+        consumer2 = Consumer(
+            conf={
+                "td.connect.websocket.scheme": "ws",
+                "td.connect.ip": "localhost",
+                "td.connect.port": 6041,
+                "td.connect.user": "invalid_user",
+                "td.connect.pass": "invalid_pass",
+                "bearer_token": token,
+                "group.id": "1001",
+                "client.id": "1001",
+            }
+        )
         consumer2.subscribe(["topic_1772607422"])
         consumer2.unsubscribe()
 
-        consumer3 = Consumer(conf={
-            "td.connect.websocket.scheme": "ws",
-            "td.connect.ip": "localhost",
-            "td.connect.port": 6041,
-            "td.connect.user": "invalid_user",
-            "td.connect.pass": "invalid_pass",
-            "td.connect.bearer_token": token,
-            "bearer_token": "invalid_token",
-            "group.id": "1001",
-            "client.id": "1001",
-        })
+        consumer3 = Consumer(
+            conf={
+                "td.connect.websocket.scheme": "ws",
+                "td.connect.ip": "localhost",
+                "td.connect.port": 6041,
+                "td.connect.user": "invalid_user",
+                "td.connect.pass": "invalid_pass",
+                "td.connect.bearer_token": token,
+                "bearer_token": "invalid_token",
+                "group.id": "1001",
+                "client.id": "1001",
+            }
+        )
         consumer3.subscribe(["topic_1772607422"])
         consumer3.unsubscribe()
 
-        consumer4 = Consumer(dsn = f"ws://invalid_user:invalid_pass@localhost:6041?group.id=1001&client.id=1001&td.connect.bearer_token={token}")
+        consumer4 = Consumer(
+            dsn=f"ws://invalid_user:invalid_pass@localhost:6041?group.id=1001&client.id=1001&td.connect.bearer_token={token}"
+        )
         consumer4.subscribe(["topic_1772607422"])
         consumer4.unsubscribe()
 
-        consumer5 = Consumer(dsn = f"ws://invalid_user:invalid_pass@localhost:6041?group.id=1001&client.id=1001&bearer_token={token}")
+        consumer5 = Consumer(
+            dsn=f"ws://invalid_user:invalid_pass@localhost:6041?group.id=1001&client.id=1001&bearer_token={token}"
+        )
         consumer5.subscribe(["topic_1772607422"])
         consumer5.unsubscribe()
 
-        consumer6 = Consumer(dsn = f"ws://invalid_user:invalid_pass@localhost:6041?group.id=1001&client.id=1001&td.connect.bearer_token={token}&bearer_token=invalid_token")
+        consumer6 = Consumer(
+            dsn=f"ws://invalid_user:invalid_pass@localhost:6041?group.id=1001&client.id=1001&td.connect.bearer_token={token}&bearer_token=invalid_token"
+        )
         consumer6.subscribe(["topic_1772607422"])
         consumer6.unsubscribe()
     finally:
@@ -177,37 +189,45 @@ def test_tmq_with_invalid_token():
         conn.execute("create database test_1772611547")
         conn.execute("create topic topic_1772611547 as database test_1772611547")
 
-        consumer = Consumer(conf={
-            "td.connect.websocket.scheme": "ws",
-            "td.connect.ip": "localhost",
-            "td.connect.port": 6041,
-            "td.connect.user": "invalid_user",
-            "td.connect.pass": "invalid_pass",
-            "td.connect.bearer_token": "invalid_token",
-            "group.id": "1001",
-            "client.id": "1001",
-        })
+        consumer = Consumer(
+            conf={
+                "td.connect.websocket.scheme": "ws",
+                "td.connect.ip": "localhost",
+                "td.connect.port": 6041,
+                "td.connect.user": "invalid_user",
+                "td.connect.pass": "invalid_pass",
+                "td.connect.bearer_token": "invalid_token",
+                "group.id": "1001",
+                "client.id": "1001",
+            }
+        )
         with pytest.raises(Exception, match=r"init tscObj with token failed"):
             consumer.subscribe(["topic_1772611547"])
 
-        consumer2 = Consumer(conf={
-            "td.connect.websocket.scheme": "ws",
-            "td.connect.ip": "localhost",
-            "td.connect.port": 6041,
-            "td.connect.user": "invalid_user",
-            "td.connect.pass": "invalid_pass",
-            "bearer_token": "invalid_token",
-            "group.id": "1001",
-            "client.id": "1001",
-        })
+        consumer2 = Consumer(
+            conf={
+                "td.connect.websocket.scheme": "ws",
+                "td.connect.ip": "localhost",
+                "td.connect.port": 6041,
+                "td.connect.user": "invalid_user",
+                "td.connect.pass": "invalid_pass",
+                "bearer_token": "invalid_token",
+                "group.id": "1001",
+                "client.id": "1001",
+            }
+        )
         with pytest.raises(Exception, match=r"init tscObj with token failed"):
             consumer2.subscribe(["topic_1772611547"])
 
-        consumer3 = Consumer(dsn = f"ws://invalid_user:invalid_pass@localhost:6041?group.id=1001&client.id=1001&td.connect.bearer_token=invalid_token")
+        consumer3 = Consumer(
+            dsn=f"ws://invalid_user:invalid_pass@localhost:6041?group.id=1001&client.id=1001&td.connect.bearer_token=invalid_token"
+        )
         with pytest.raises(Exception, match=r"init tscObj with token failed"):
             consumer3.subscribe(["topic_1772611547"])
 
-        consumer4 = Consumer(dsn = f"ws://invalid_user:invalid_pass@localhost:6041?group.id=1001&client.id=1001&bearer_token=invalid_token")
+        consumer4 = Consumer(
+            dsn=f"ws://invalid_user:invalid_pass@localhost:6041?group.id=1001&client.id=1001&bearer_token=invalid_token"
+        )
         with pytest.raises(Exception, match=r"init tscObj with token failed"):
             consumer4.subscribe(["topic_1772611547"])
     finally:

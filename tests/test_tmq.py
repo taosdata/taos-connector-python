@@ -491,18 +491,22 @@ def test_tmq_with_token():
     conn = taos.connect()
     try:
         conn.select_db("tmq_test")
-        conn.execute("insert into t1 using stb1 tags(true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now-4s, true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1', 'binary value_1', 'POINT (3.0 5.0)', '9876.123456', '123456789012.0987654321', 'axxxxxxxxxxxxxxxxxxxa')")
+        conn.execute(
+            "insert into t1 using stb1 tags(true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1') values (now-4s, true, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, '1', '1', 'binary value_1', 'POINT (3.0 5.0)', '9876.123456', '123456789012.0987654321', 'axxxxxxxxxxxxxxxxxxxa')"
+        )
         conn.execute("drop token if exists token_1772680884")
         rs = conn.query(f"create token token_1772680884 from user {utils.test_username()}")
         token = next(iter(rs))[0]
 
-        consumer = Consumer({
-            "group.id": "token_test_group",
-            "td.connect.user": "invalid_user",
-            "td.connect.pass": "invalid_pass",
-            "td.connect.bearer_token": token,
-            "auto.offset.reset": "earliest",
-        })
+        consumer = Consumer(
+            {
+                "group.id": "token_test_group",
+                "td.connect.user": "invalid_user",
+                "td.connect.pass": "invalid_pass",
+                "td.connect.bearer_token": token,
+                "auto.offset.reset": "earliest",
+            }
+        )
         consumer.subscribe(["topic1"])
 
         data = consumer.poll(1)

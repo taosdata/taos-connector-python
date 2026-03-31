@@ -1,6 +1,6 @@
 #!
 import taosws
-from taosws.taosws import PySchemalessProtocol, PySchemalessPrecision
+from taosws import PySchemalessProtocol, PySchemalessPrecision
 
 import taos
 
