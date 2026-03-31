@@ -13,50 +13,55 @@ from sqlalchemy.engine.url import make_url
 
 
 def test_read():
+    db_name = "test_1774860246"
     setup_conn = taosws.connect("ws://localhost:6041")
-    setup_conn.execute("drop database if exists test_1774860246")
-    setup_conn.execute("create database test_1774860246")
-    setup_conn.execute("create table test_1774860246.meters (ts timestamp, c1 int, c2 double) tags (t1 int)")
-    setup_conn.execute(
-        "insert into test_1774860246.d0 using test_1774860246.meters tags(0) values (1733189403001, 1, 1.11) (1733189403002, 2, 2.22)"
-    )
-    setup_conn.execute(
-        "insert into test_1774860246.d1 using test_1774860246.meters tags(1) values (1733189403003, 3, 3.33) (1733189403004, 4, 4.44)"
-    )
-    setup_conn.execute("create table test_1774860246.ntb (ts timestamp, age int)")
-    setup_conn.execute("insert into test_1774860246.ntb values (now, 23)")
-    setup_conn.close()
+    try:
+        setup_conn.execute(f"drop database if exists {db_name}")
+        setup_conn.execute(f"create database {db_name}")
+        setup_conn.execute(f"create table {db_name}.meters (ts timestamp, c1 int, c2 double) tags (t1 int)")
+        setup_conn.execute(
+            f"insert into {db_name}.d0 using {db_name}.meters tags(0) values (1733189403001, 1, 1.11) (1733189403002, 2, 2.22)"
+        )
+        setup_conn.execute(
+            f"insert into {db_name}.d1 using {db_name}.meters tags(1) values (1733189403003, 3, 3.33) (1733189403004, 4, 4.44)"
+        )
+        setup_conn.execute(f"create table {db_name}.ntb (ts timestamp, age int)")
+        setup_conn.execute(f"insert into {db_name}.ntb values (now, 23)")
 
-    engine = create_engine(
-        f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:6041?timezone=Asia/Shanghai"
-    )
-    conn = engine.connect()
-    inspection = inspect(engine)
+        engine = create_engine(
+            f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:6041?timezone=Asia/Shanghai"
+        )
+        conn = engine.connect()
+        try:
+            inspection = inspect(engine)
 
-    databases = inspection.get_schema_names()
-    assert "test_1774860246" in databases
-    assert inspection.get_table_names("test_1774860246") == ["meters", "ntb"]
+            databases = inspection.get_schema_names()
+            assert db_name in databases
+            assert inspection.get_table_names(db_name) == ["meters", "ntb"]
 
-    expected_columns = [
-        {"name": "ts", "type": inspection.dialect._resolve_type("TIMESTAMP")},
-        {"name": "c1", "type": inspection.dialect._resolve_type("INT")},
-        {"name": "c2", "type": inspection.dialect._resolve_type("DOUBLE")},
-        {"name": "t1", "type": inspection.dialect._resolve_type("INT")},
-    ]
-    columns = inspection.get_columns("meters", "test_1774860246")
-    for index, column in enumerate(columns):
-        expected = expected_columns[index]
-        assert column["name"] == expected["name"]
-        assert type(column["type"]) == expected["type"]
+            expected_columns = [
+                {"name": "ts", "type": inspection.dialect._resolve_type("TIMESTAMP")},
+                {"name": "c1", "type": inspection.dialect._resolve_type("INT")},
+                {"name": "c2", "type": inspection.dialect._resolve_type("DOUBLE")},
+                {"name": "t1", "type": inspection.dialect._resolve_type("INT")},
+            ]
+            columns = inspection.get_columns("meters", db_name)
+            for index, column in enumerate(columns):
+                expected = expected_columns[index]
+                assert column["name"] == expected["name"]
+                assert type(column["type"]) == expected["type"]
 
-    assert inspection.has_table("meters", "test_1774860246") is True
-    assert inspection.dialect.has_schema(conn, "test_1774860246") is True
-
-    conn.close()
+            assert inspection.has_table("meters", db_name) is True
+            assert inspection.dialect.has_schema(conn, db_name) is True
+        finally:
+            conn.close()
+    finally:
+        setup_conn.execute(f"drop database if exists {db_name}")
+        setup_conn.close()
 
 
 def test_read_failover():
-    db_name = "test_1774860246"
+    db_name = "test_1774920255"
     conn = taosws.connect(f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:6041")
     conn.execute(f"drop database if exists {db_name}")
     conn.execute(f"create database {db_name}")
