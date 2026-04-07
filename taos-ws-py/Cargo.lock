@@ -2404,6 +2404,7 @@ name = "taos-ws-py"
 version = "0.6.7"
 dependencies = [
  "anyhow",
+ "bigdecimal",
  "chrono",
  "chrono-tz",
  "iana-time-zone",

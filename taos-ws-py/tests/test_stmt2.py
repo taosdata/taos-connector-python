@@ -1,6 +1,8 @@
 import time
-import taosws
+from decimal import Decimal
 
+import pytest
+import taosws
 
 url = "taosws://localhost:6041/"
 
@@ -96,3 +98,80 @@ def test_stmt2_stable():
     assert rows == 4
     stmt2_query(conn, "select * from stb1 where a > ?")
     after_test(db_name)
+
+
+def test_decimal_column_rejects_non_decimal_type():
+    with pytest.raises(taosws.ProgrammingError, match=r"expected decimal\.Decimal or None, got int at index 0"):
+        taosws.decimal64_to_column([1])
+
+
+def test_decimal_column_rejects_non_finite_value():
+    with pytest.raises(taosws.ProgrammingError, match=r"decimal value must be finite, got 'NaN' at index 0"):
+        taosws.decimal_to_column([Decimal("NaN")])
+
+
+def test_decimal64_column_rejects_scale_overflow():
+    with pytest.raises(taosws.ProgrammingError, match=r"decimal64 scale exceeds maximum 18"):
+        taosws.decimal64_to_column([Decimal("0.1234567890123456789")])
+
+
+def test_decimal_column_rejects_scale_overflow():
+    with pytest.raises(taosws.ProgrammingError, match=r"decimal scale exceeds maximum 38"):
+        taosws.decimal_to_column([Decimal("0.123456789012345678901234567890123456789")])
+
+
+def test_stmt2_decimal():
+    db_name = "test_1774702104"
+    conn = taosws.connect()
+    try:
+        conn.execute(f"drop database if exists {db_name}")
+        conn.execute(f"create database {db_name}")
+        conn.execute(f"use {db_name}")
+        conn.execute("create table t_decimal (ts timestamp, d64 decimal(10,2), d128 decimal(20,10))")
+
+        stmt2 = conn.stmt2_statement()
+        stmt2.prepare("insert into t_decimal values (?, ?, ?)")
+        param = taosws.stmt2_bind_param_view(
+            table_name="",
+            tags=None,
+            columns=[
+                taosws.millis_timestamps_to_column([1726803356466, 1726803356467, 1726803356468]),
+                taosws.decimal64_to_column([Decimal("99.9876"), Decimal("1.0234"), None]),
+                taosws.decimal_to_column(
+                    [Decimal("1234567890.1234567890"), Decimal("1.23E+5"), Decimal("0.1234567890123")]
+                ),
+            ],
+        )
+        stmt2.bind([param])
+        rows = stmt2.execute()
+        assert rows == 3
+
+        taosws.decimal64_to_column([])
+        taosws.decimal_to_column([])
+
+        try:
+            stmt2.prepare("select d64, d128 from t_decimal where ts >= ? order by ts")
+            query_param = taosws.stmt2_bind_param_view(
+                table_name="",
+                tags=None,
+                columns=[taosws.millis_timestamps_to_column([1726803356466])],
+            )
+            stmt2.bind([query_param])
+            stmt2.execute()
+            data = [row for row in stmt2.result_set()]
+        except (taosws.QueryError, taosws.OperationalError) as err:
+            if "[0x073A]" in str(err):
+                pytest.skip("current ws environment cannot query DECIMAL rows: query memory exhausted")
+            raise
+
+        assert len(data) == 3
+        assert Decimal(data[0][0]) == Decimal("99.99")
+        assert Decimal(data[0][1]) == Decimal("1234567890.1234567890")
+        assert Decimal(data[1][0]) == Decimal("1.02")
+        assert Decimal(data[1][1]) == Decimal("123000")
+        assert data[2][0] is None
+        assert Decimal(data[2][1]) == Decimal("0.1234567890")
+
+    finally:
+        conn.execute(f"drop database if exists {db_name}")
+        conn.close()

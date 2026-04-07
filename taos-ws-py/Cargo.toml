@@ -11,6 +11,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 anyhow = "1"
+bigdecimal = "0.4"
 chrono = "0.4"
 chrono-tz = "0.10.4"
 iana-time-zone = "0.1.63"
