@@ -107,9 +107,19 @@ def test_decimal_column_rejects_non_decimal_type():
         taosws.decimal64_to_column([1])
 
 
-def test_decimal_column_rejects_non_finite_value():
-    with pytest.raises(taosws.ProgrammingError, match=r"decimal value must be finite, got 'NaN' at index 0"):
-        taosws.decimal_to_column([Decimal("NaN")])
+@pytest.mark.parametrize("column_builder", [taosws.decimal64_to_column, taosws.decimal_to_column])
+@pytest.mark.parametrize("non_finite_value", ["NaN", "Infinity", "-Infinity", "sNaN"])
+def test_decimal_column_rejects_non_finite_values(column_builder, non_finite_value):
+    with pytest.raises(
+        taosws.ProgrammingError,
+        match=rf"decimal value must be finite, got '{non_finite_value}' at index 0",
+    ):
+        column_builder([Decimal(non_finite_value)])
+
+
+def test_decimal_column_accepts_all_none_values():
+    assert taosws.decimal64_to_column([None, None]) is not None
+    assert taosws.decimal_to_column([None, None]) is not None
 
 
 def test_decimal64_column_rejects_scale_overflow():
@@ -120,6 +130,18 @@ def test_decimal64_column_rejects_scale_overflow():
 def test_decimal_column_rejects_scale_overflow():
     with pytest.raises(taosws.ProgrammingError, match=r"decimal scale exceeds maximum 38"):
         taosws.decimal_to_column([Decimal("0.123456789012345678901234567890123456789")])
+
+
+@pytest.mark.parametrize(
+    "column_builder, error_message",
+    [
+        (taosws.decimal64_to_column, r"decimal64 scale exceeds maximum 18"),
+        (taosws.decimal_to_column, r"decimal scale exceeds maximum 38"),
+    ],
+)
+def test_decimal_column_rejects_tiny_scientific_notation_scale_overflow(column_builder, error_message):
+    with pytest.raises(taosws.ProgrammingError, match=error_message):
+        column_builder([Decimal("1E-100")])
 
 
 @pytest.mark.skipif(utils.TEST_TD_3360, reason="skip for TD-3360")
@@ -212,6 +234,40 @@ def test_stmt2_decimal():
         assert cursor_rows[2][0] is None
         assert cursor_rows[2][1] == Decimal("0.1234567890")
 
+    finally:
+        conn.execute(f"drop database if exists {db_name}")
+        conn.close()
+
+
+@pytest.mark.skipif(utils.TEST_TD_3360, reason="skip for TD-3360")
+def test_stmt2_decimal_rounding_boundaries():
+    db_name = "test_1775640275"
+    conn = taosws.connect("ws://localhost:6041")
+    try:
+        conn.execute(f"drop database if exists {db_name}")
+        conn.execute(f"create database {db_name}")
+        conn.execute(f"use {db_name}")
+        conn.execute("create table t_rounding (ts timestamp, d64 decimal(10, 2))")
+
+        stmt2 = conn.stmt2_statement()
+        stmt2.prepare("insert into t_rounding values (?, ?)")
+        param = taosws.stmt2_bind_param_view(
+            table_name=None,
+            tags=None,
+            columns=[
+                taosws.millis_timestamps_to_column([1726803356470, 1726803356471, 1726803356472]),
+                taosws.decimal64_to_column([Decimal("0.995"), Decimal("0.994"), Decimal("1.995")]),
+            ],
+        )
+        stmt2.bind([param])
+        rows = stmt2.execute()
+        assert rows == 3
+
+        cursor = conn.cursor()
+        cursor.execute(f"select cast(d64 as varchar(32)) from {db_name}.t_rounding where ts >= 1726803356470")
+        data = cursor.fetchall()
+
+        assert [row[0] for row in data] == ["1.00", "0.99", "2.00"]
     finally:
         conn.execute(f"drop database if exists {db_name}")
         conn.close()

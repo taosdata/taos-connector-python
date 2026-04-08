@@ -945,32 +945,19 @@ fn doubles_to_column(values: Vec<Option<f64>>) -> PyColumnView {
 
 fn parse_decimal_values(values: Vec<Option<&PyAny>>) -> PyResult<Vec<Option<BigDecimal>>> {
     let mut decimals = Vec::with_capacity(values.len());
-    let decimal_type: Option<Py<PyType>> = values
-        .iter()
-        .flatten()
-        .next()
-        .map(|value| -> PyResult<Py<PyType>> {
-            let py = value.py();
-            let decimal = py
-                .import("decimal")?
-                .getattr("Decimal")?
-                .downcast::<PyType>()?;
-            Ok(decimal.into_py(py))
-        })
-        .transpose()?;
+    let decimal_type: Py<PyType> = Python::with_gil(|py| -> PyResult<Py<PyType>> {
+        let decimal = py
+            .import("decimal")?
+            .getattr("Decimal")?
+            .downcast::<PyType>()?;
+        Ok(decimal.into_py(py))
+    })?;
 
     for (index, value) in values.into_iter().enumerate() {
         let decimal = match value {
             Some(value) => {
                 let py = value.py();
-                let decimal_type = decimal_type
-                    .as_ref()
-                    .ok_or_else(|| {
-                        ProgrammingError::new_err(
-                            "expected decimal.Decimal or None, but decimal type is unavailable",
-                        )
-                    })?
-                    .as_ref(py);
+                let decimal_type = decimal_type.as_ref(py);
                 if !value.is_instance(decimal_type)? {
                     let type_name = value.get_type().name()?;
                     return Err(ProgrammingError::new_err(format!(
