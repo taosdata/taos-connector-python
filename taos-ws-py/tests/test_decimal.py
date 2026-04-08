@@ -1,5 +1,6 @@
 import datetime
-import os
+import sys
+import types
 import pytest
 import taosws
 import time
@@ -157,4 +158,26 @@ def test_decimal_tmq():
         time.sleep(3)
         conn.execute("drop topic if exists topic_1775631845")
         conn.execute("drop database if exists test_1775631845")
+        conn.close()
+
+
+@pytest.mark.skipif(utils.TEST_TD_3360, reason="skip for TD-3360")
+def test_decimal_fetch_reports_python_error_when_decimal_class_missing(monkeypatch):
+    conn = taosws.connect("ws://localhost:6041")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("drop database if exists test_1775636199")
+        cursor.execute("create database test_1775636199")
+        cursor.execute("use test_1775636199")
+        cursor.execute("create table t0 (ts timestamp, c1 decimal(10, 2))")
+        cursor.execute("insert into t0 values(1752218982762, 99.9876)")
+
+        fake_decimal_module = types.ModuleType("decimal")
+        monkeypatch.setitem(sys.modules, "decimal", fake_decimal_module)
+
+        cursor.execute("select c1 from t0")
+        with pytest.raises(AttributeError, match=r"Decimal"):
+            cursor.fetchall()
+    finally:
+        cursor.execute("drop database if exists test_1775636199")
         conn.close()

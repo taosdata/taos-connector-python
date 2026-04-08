@@ -86,7 +86,7 @@ def test_report_connector_info():
     consumer2.subscribe(["test_topic_1"])
     time.sleep(2)
     res = conn.query("show connections")
-    assert sum(connector_info == col for row in res for col in row) >= 2
+    assert sum(connector_info == col for row in res for col in row) >= 3
     consumer2.unsubscribe()
 
     time.sleep(2)

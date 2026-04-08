@@ -12,9 +12,9 @@ use taos::{taos_query::common::Timestamp, BorrowedValue, RawBlock};
 use crate::ConsumerException;
 
 pub fn to_py_decimal(value: impl std::fmt::Display, py: Python<'_>) -> PyResult<PyObject> {
-    let decimal = value.to_string();
     let decimal_mod = py.import("decimal")?;
     let decimal_cls = decimal_mod.getattr("Decimal")?;
+    let decimal = value.to_string();
     Ok(decimal_cls.call1((decimal,))?.into_py(py))
 }
 
