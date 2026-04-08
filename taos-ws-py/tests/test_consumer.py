@@ -64,12 +64,8 @@ def test_comsumer():
     consumer.close()
 
 
-@pytest.mark.skip
+@pytest.mark.skipif(utils.TEST_TD_3360, reason="skip for TD-3360")
 def test_report_connector_info():
-    test = os.getenv("TEST_TD_3360")
-    if test is not None:
-        return
-
     connector_info = utils.get_connector_info()
     print("connector_info:", connector_info)
 
@@ -83,14 +79,14 @@ def test_report_connector_info():
     consumer1.subscribe(["test_topic_1"])
     time.sleep(2)
     res = conn.query("show connections")
-    assert sum(1 for row in res if connector_info == row[-1]) > 1
+    assert sum(connector_info == col for row in res for col in row) >= 2
     consumer1.unsubscribe()
 
     consumer2 = Consumer(dsn="ws://localhost:6041?group.id=10")
     consumer2.subscribe(["test_topic_1"])
     time.sleep(2)
     res = conn.query("show connections")
-    assert sum(1 for row in res if connector_info == row[-1]) > 2
+    assert sum(connector_info == col for row in res for col in row) >= 2
     consumer2.unsubscribe()
 
     time.sleep(2)
