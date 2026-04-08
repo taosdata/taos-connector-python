@@ -1,15 +1,14 @@
 import datetime
-import time
+import pytest
 import taosws
+import time
+import utils
+
 from taosws import Consumer
-import os
 
 
+@pytest.mark.skipif(utils.TEST_TD_3360, reason="skip for TD-3360")
 def test_blob_sql():
-    value = os.getenv("TEST_TD_3360")
-    if value is not None:
-        return
-
     conn = taosws.connect("ws://localhost:6041")
     cursor = conn.cursor()
 
@@ -43,11 +42,8 @@ def test_blob_sql():
         conn.close()
 
 
+@pytest.mark.skipif(utils.TEST_TD_3360, reason="skip for TD-3360")
 def test_blob_stmt2():
-    value = os.getenv("TEST_TD_3360")
-    if value is not None:
-        return
-
     conn = taosws.connect("ws://localhost:6041")
     try:
         conn.execute("drop database if exists test_1753269333")
@@ -100,11 +96,8 @@ def test_blob_stmt2():
         conn.close()
 
 
+@pytest.mark.skipif(utils.TEST_TD_3360, reason="skip for TD-3360")
 def test_blob_tmq():
-    value = os.getenv("TEST_TD_3360")
-    if value is not None:
-        return
-
     conn = taosws.connect("ws://localhost:6041")
     try:
         conn.execute("drop topic if exists topic_1753270984")

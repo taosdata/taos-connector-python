@@ -283,6 +283,8 @@ impl TaosResult {
                             BorrowedValue::Json(j) => std::str::from_utf8(&j).unwrap().into_py(py),
                             BorrowedValue::VarBinary(v) => v.as_ref().into_py(py),
                             BorrowedValue::Geometry(v) => v.as_ref().into_py(py),
+                            BorrowedValue::Decimal64(v) => common::to_py_decimal(v, py),
+                            BorrowedValue::Decimal(v) => common::to_py_decimal(v, py),
                             BorrowedValue::Blob(v) => v.as_ref().into_py(py),
                             _ => Option::<()>::None.into_py(py),
                         };

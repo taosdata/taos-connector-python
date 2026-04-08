@@ -11,6 +11,20 @@ use taos::{taos_query::common::Timestamp, BorrowedValue, RawBlock};
 
 use crate::ConsumerException;
 
+pub fn to_py_decimal(value: impl std::fmt::Display, py: Python<'_>) -> PyObject {
+    let decimal = value.to_string();
+    let decimal_mod = py
+        .import("decimal")
+        .expect("python decimal module is required");
+    let decimal_cls = decimal_mod
+        .getattr("Decimal")
+        .expect("decimal.Decimal is required");
+    decimal_cls
+        .call1((decimal,))
+        .expect("failed to build decimal.Decimal from rust decimal value")
+        .into_py(py)
+}
+
 pub fn to_py_datetime(ts: Timestamp, tz: Option<Tz>, py: Python) -> PyResult<PyObject> {
     let datetime_mod = py.import("datetime")?;
     let datetime = datetime_mod.getattr("datetime")?;
@@ -124,8 +138,8 @@ pub unsafe fn get_row_of_block_unchecked(py: Python, block: &RawBlock, index: us
                 .into_py(py),
             BorrowedValue::VarBinary(v) => v.into_py(py),
             BorrowedValue::Geometry(v) => v.into_py(py),
-            BorrowedValue::Decimal64(v) => v.to_string().into_py(py),
-            BorrowedValue::Decimal(v) => v.to_string().into_py(py),
+            BorrowedValue::Decimal64(v) => to_py_decimal(v, py),
+            BorrowedValue::Decimal(v) => to_py_decimal(v, py),
             BorrowedValue::Blob(v) => v.into_py(py),
             BorrowedValue::MediumBlob(_) => todo!(),
         };

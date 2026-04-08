@@ -238,7 +238,7 @@ def test_read_from_sqlalchemy_taosrest():
 
 
 if __name__ == "__main__":
-    print("hello, test sqlalcemy db api. do nothing\n")
+    print("hello, test sqlalchemy db api. do nothing\n")
     test_read_from_sqlalchemy_taos()
     print("Test taos api ..................................... [OK]\n")
     test_read_from_sqlalchemy_taosrest()

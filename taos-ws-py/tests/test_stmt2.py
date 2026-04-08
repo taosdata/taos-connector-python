@@ -1,8 +1,10 @@
-import time
-from decimal import Decimal
-
 import pytest
 import taosws
+import time
+import utils
+
+from decimal import Decimal
+
 
 url = "taosws://localhost:6041/"
 
@@ -120,19 +122,20 @@ def test_decimal_column_rejects_scale_overflow():
         taosws.decimal_to_column([Decimal("0.123456789012345678901234567890123456789")])
 
 
+@pytest.mark.skipif(utils.TEST_TD_3360, reason="skip for TD-3360")
 def test_stmt2_decimal():
-    db_name = "test_1774702104"
-    conn = taosws.connect()
+    db_name = "test_1775627317"
+    conn = taosws.connect("ws://localhost:6041")
     try:
         conn.execute(f"drop database if exists {db_name}")
         conn.execute(f"create database {db_name}")
         conn.execute(f"use {db_name}")
-        conn.execute("create table t_decimal (ts timestamp, d64 decimal(10,2), d128 decimal(20,10))")
+        conn.execute("create table t_decimal (ts timestamp, d64 decimal(10, 2), d128 decimal(20, 10))")
 
         stmt2 = conn.stmt2_statement()
         stmt2.prepare("insert into t_decimal values (?, ?, ?)")
         param = taosws.stmt2_bind_param_view(
-            table_name="",
+            table_name=None,
             tags=None,
             columns=[
                 taosws.millis_timestamps_to_column([1726803356466, 1726803356467, 1726803356468]),
@@ -146,31 +149,68 @@ def test_stmt2_decimal():
         rows = stmt2.execute()
         assert rows == 3
 
-        taosws.decimal64_to_column([])
-        taosws.decimal_to_column([])
-
-        try:
-            stmt2.prepare("select d64, d128 from t_decimal where ts >= ? order by ts")
-            query_param = taosws.stmt2_bind_param_view(
-                table_name="",
-                tags=None,
-                columns=[taosws.millis_timestamps_to_column([1726803356466])],
-            )
-            stmt2.bind([query_param])
-            stmt2.execute()
-            data = [row for row in stmt2.result_set()]
-        except (taosws.QueryError, taosws.OperationalError) as err:
-            if "[0x073A]" in str(err):
-                pytest.skip("current ws environment cannot query DECIMAL rows: query memory exhausted")
-            raise
+        stmt2.prepare("select d64, d128 from t_decimal where ts >= ?")
+        query_param = taosws.stmt2_bind_param_view(
+            table_name=None,
+            tags=None,
+            columns=[taosws.millis_timestamps_to_column([1726803356466])],
+        )
+        stmt2.bind([query_param])
+        stmt2.execute()
+        data = [row for row in stmt2.result_set()]
 
         assert len(data) == 3
-        assert Decimal(data[0][0]) == Decimal("99.99")
-        assert Decimal(data[0][1]) == Decimal("1234567890.1234567890")
-        assert Decimal(data[1][0]) == Decimal("1.02")
-        assert Decimal(data[1][1]) == Decimal("123000")
+        assert isinstance(data[0][0], Decimal)
+        assert isinstance(data[0][1], Decimal)
+        assert isinstance(data[1][0], Decimal)
+        assert isinstance(data[1][1], Decimal)
+        assert isinstance(data[2][1], Decimal)
+        assert data[0][0] == Decimal("99.99")
+        assert data[0][1] == Decimal("1234567890.1234567890")
+        assert data[1][0] == Decimal("1.02")
+        assert data[1][1] == Decimal("123000")
         assert data[2][0] is None
-        assert Decimal(data[2][1]) == Decimal("0.1234567890")
+        assert data[2][1] == Decimal("0.1234567890")
+
+        stmt2.prepare("select d64, d128 from t_decimal where d64 >= ? and d128 >= ?")
+        query_param = taosws.stmt2_bind_param_view(
+            table_name=None,
+            tags=None,
+            columns=[
+                taosws.decimal64_to_column([Decimal("1.00")]),
+                taosws.decimal_to_column([Decimal("100000")]),
+            ],
+        )
+        stmt2.bind([query_param])
+        stmt2.execute()
+        data = [row for row in stmt2.result_set()]
+
+        assert len(data) == 2
+        assert isinstance(data[0][0], Decimal)
+        assert isinstance(data[0][1], Decimal)
+        assert isinstance(data[1][0], Decimal)
+        assert isinstance(data[1][1], Decimal)
+        assert data[0][0] == Decimal("99.99")
+        assert data[0][1] == Decimal("1234567890.1234567890")
+        assert data[1][0] == Decimal("1.02")
+        assert data[1][1] == Decimal("123000")
+
+        cursor = conn.cursor()
+        cursor.execute(f"select d64, d128 from {db_name}.t_decimal where ts >= 1726803356466")
+        cursor_rows = cursor.fetchall()
+
+        assert len(cursor_rows) == 3
+        assert isinstance(cursor_rows[0][0], Decimal)
+        assert isinstance(cursor_rows[0][1], Decimal)
+        assert isinstance(cursor_rows[1][0], Decimal)
+        assert isinstance(cursor_rows[1][1], Decimal)
+        assert isinstance(cursor_rows[2][1], Decimal)
+        assert cursor_rows[0][0] == Decimal("99.99")
+        assert cursor_rows[0][1] == Decimal("1234567890.1234567890")
+        assert cursor_rows[1][0] == Decimal("1.02")
+        assert cursor_rows[1][1] == Decimal("123000")
+        assert cursor_rows[2][0] is None
+        assert cursor_rows[2][1] == Decimal("0.1234567890")
 
     finally:
         conn.execute(f"drop database if exists {db_name}")
