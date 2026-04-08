@@ -253,7 +253,7 @@ impl TaosResult {
                 .map(|b| b.with_timezone(slf._tz));
         }
 
-        Ok(Python::with_gil(|py| -> Option<PyObject> {
+        Python::with_gil(|py| -> PyResult<Option<PyObject>> {
             if let Some(block) = slf._block.as_ref() {
                 let mut vec = Vec::new();
                 for col in 0..block.ncols() {
@@ -283,8 +283,8 @@ impl TaosResult {
                             BorrowedValue::Json(j) => std::str::from_utf8(&j).unwrap().into_py(py),
                             BorrowedValue::VarBinary(v) => v.as_ref().into_py(py),
                             BorrowedValue::Geometry(v) => v.as_ref().into_py(py),
-                            BorrowedValue::Decimal64(v) => common::to_py_decimal(v, py),
-                            BorrowedValue::Decimal(v) => common::to_py_decimal(v, py),
+                            BorrowedValue::Decimal64(v) => common::to_py_decimal(v, py)?,
+                            BorrowedValue::Decimal(v) => common::to_py_decimal(v, py)?,
                             BorrowedValue::Blob(v) => v.as_ref().into_py(py),
                             _ => Option::<()>::None.into_py(py),
                         };
@@ -292,10 +292,10 @@ impl TaosResult {
                     }
                 }
                 slf._current += 1;
-                return Some(PyTuple::new(py, vec).to_object(py));
+                return Ok(Some(PyTuple::new(py, vec).to_object(py)));
             }
-            None
-        }))
+            Ok(None)
+        })
     }
 
     #[getter]
@@ -943,15 +943,32 @@ fn doubles_to_column(values: Vec<Option<f64>>) -> PyColumnView {
 
 fn parse_decimal_values(values: Vec<Option<&PyAny>>) -> PyResult<Vec<Option<BigDecimal>>> {
     let mut decimals = Vec::with_capacity(values.len());
+    let decimal_type: Option<Py<PyType>> = values
+        .iter()
+        .flatten()
+        .next()
+        .map(|value| -> PyResult<Py<PyType>> {
+            let py = value.py();
+            let decimal = py
+                .import("decimal")?
+                .getattr("Decimal")?
+                .downcast::<PyType>()?;
+            Ok(decimal.into_py(py))
+        })
+        .transpose()?;
 
     for (index, value) in values.into_iter().enumerate() {
         let decimal = match value {
             Some(value) => {
-                let decimal_type: &PyType = value
-                    .py()
-                    .import("decimal")?
-                    .getattr("Decimal")?
-                    .downcast()?;
+                let py = value.py();
+                let decimal_type = decimal_type
+                    .as_ref()
+                    .ok_or_else(|| {
+                        ProgrammingError::new_err(
+                            "expected decimal.Decimal or None, but decimal type is unavailable",
+                        )
+                    })?
+                    .as_ref(py);
                 if !value.is_instance(decimal_type)? {
                     let type_name = value.get_type().name()?;
                     return Err(ProgrammingError::new_err(format!(
