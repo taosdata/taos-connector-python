@@ -144,6 +144,21 @@ def test_decimal_column_rejects_tiny_scientific_notation_scale_overflow(column_b
         column_builder([Decimal("1E-100")])
 
 
+@pytest.mark.parametrize(
+    "column_builder, decimal_value, error_prefix",
+    [
+        (taosws.decimal64_to_column, "0.1234567890123456789", "decimal64 scale exceeds maximum 18"),
+        (taosws.decimal_to_column, "1E-100", "decimal scale exceeds maximum 38"),
+    ],
+)
+def test_decimal_column_error_includes_original_error_suffix(column_builder, decimal_value, error_prefix):
+    with pytest.raises(taosws.ProgrammingError) as exc_info:
+        column_builder([Decimal(decimal_value)])
+
+    error_message = str(exc_info.value)
+    assert error_message.startswith(f"{error_prefix}: ")
+
+
 @pytest.mark.skipif(utils.TEST_TD_3360, reason="skip for TD-3360")
 def test_stmt2_decimal():
     db_name = "test_1775627317"

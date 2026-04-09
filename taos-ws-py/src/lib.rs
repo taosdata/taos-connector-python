@@ -994,8 +994,9 @@ fn parse_decimal_values(values: Vec<Option<&PyAny>>) -> PyResult<Vec<Option<BigD
 #[pyfunction]
 fn decimal64_to_column(values: Vec<Option<&PyAny>>) -> PyResult<PyColumnView> {
     let decimals = parse_decimal_values(values)?;
-    let decimal_view = DecimalView::<i64>::from_decimals(decimals)
-        .map_err(|_| ProgrammingError::new_err("decimal64 scale exceeds maximum 18"))?;
+    let decimal_view = DecimalView::<i64>::from_decimals(decimals).map_err(|err| {
+        ProgrammingError::new_err(format!("decimal64 scale exceeds maximum 18: {err:?}"))
+    })?;
     Ok(PyColumnView {
         _inner: ColumnView::Decimal64(decimal_view),
     })
@@ -1004,8 +1005,9 @@ fn decimal64_to_column(values: Vec<Option<&PyAny>>) -> PyResult<PyColumnView> {
 #[pyfunction]
 fn decimal_to_column(values: Vec<Option<&PyAny>>) -> PyResult<PyColumnView> {
     let decimals = parse_decimal_values(values)?;
-    let decimal_view = DecimalView::<i128>::from_decimals(decimals)
-        .map_err(|_| ProgrammingError::new_err("decimal scale exceeds maximum 38"))?;
+    let decimal_view = DecimalView::<i128>::from_decimals(decimals).map_err(|err| {
+        ProgrammingError::new_err(format!("decimal scale exceeds maximum 38: {err:?}"))
+    })?;
     Ok(PyColumnView {
         _inner: ColumnView::Decimal(decimal_view),
     })
