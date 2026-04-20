@@ -277,17 +277,18 @@ jobs:
             apt-get install -y libc6-dev libc6-dev-arm64-cross libc6-dev-armhf-cross libc6-dev-armel-cross libc6-dev-riscv64-cross
             curl --proto '=https' --tlsv1.2 -LsSf https://github.com/rust-lang/rust-bindgen/releases/download/v0.69.5/bindgen-cli-installer.sh | sh
 
-      - uses: uraimo/run-on-arch-action@v3
-        name: Install built wheel
+      - name: Install built wheel
+        uses: uraimo/run-on-arch-action@v3
         with:
           arch: ${{ matrix.target }}
           distro: ${{ matrix.distro }}
           githubToken: ${{ github.token }}
           install: |
             apt-get update
-            apt-get install -y --no-install-recommends python3 python3-pip
-            pip3 install -U pip
-          run: pip3 install taos-ws-py --no-index --find-links taos-ws-py/target/wheels/ --force-reinstall
+            apt-get install -y --no-install-recommends python3 python3-pip python3-venv
+            python3 -m venv /opt/venv
+            /opt/venv/bin/pip install -U pip
+          run: /opt/venv/bin/pip install taos-ws-py --no-index --find-links taos-ws-py/target/wheels/ --force-reinstall
 
       - name: Upload wheels linux-cross
         uses: actions/upload-artifact@v4
