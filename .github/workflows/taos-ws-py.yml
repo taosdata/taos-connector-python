@@ -290,6 +290,68 @@ jobs:
             /opt/venv/bin/pip install -U pip
           run: /opt/venv/bin/pip install taos-ws-py --no-index --find-links taos-ws-py/target/wheels/ --force-reinstall
 
+      - name: Test taos-ws-py cases on riscv64
+        if: matrix.target == 'riscv64'
+        uses: uraimo/run-on-arch-action@v3
+        env:
+          TDENGINE_URL: localhost:6041
+          TDENGINE_TEST_USERNAME: ${{ secrets.WS_TDENGINE_TEST_USERNAME }}
+          TDENGINE_TEST_PASSWORD: ${{ secrets.WS_TDENGINE_TEST_PASSWORD }}
+          WS_CLOUD_URL: ${{ secrets.WS_CLOUD_URL }}
+          WS_CLOUD_TOKEN: ${{ secrets.WS_CLOUD_TOKEN }}
+        with:
+          arch: riscv64
+          distro: ${{ matrix.distro }}
+          githubToken: ${{ github.token }}
+          install: |
+            apt-get update
+            apt-get install -y --no-install-recommends python3 python3-pip python3-venv wget
+          run: |
+            python3 -m venv /opt/venv
+            /opt/venv/bin/pip install -U pip
+            /opt/venv/bin/pip install pytest toml sqlalchemy
+            /opt/venv/bin/pip install taos-ws-py --no-index --find-links taos-ws-py/target/wheels/ --force-reinstall
+
+            # TD_PKG_URL=$(python3 - <<'PY'
+            # import json
+            # import urllib.request
+
+            # api = "https://api.github.com/repos/taosdata/TDengine/releases/latest"
+            # with urllib.request.urlopen(api, timeout=30) as resp:
+            #     release = json.load(resp)
+
+            # url = ""
+            # for asset in release.get("assets", []):
+            #     dl = asset.get("browser_download_url", "")
+            #     if dl.endswith("Linux-riscv64.tar.gz") and "server" in dl:
+            #         url = dl
+            #         break
+
+            # if not url:
+            #     raise SystemExit("Cannot find Linux-riscv64 server package in latest TDengine release")
+
+            # print(url)
+            # PY
+            # )
+            # wget "$TD_PKG_URL" -O TDengine-server-riscv64.tar.gz
+            wget "${{ secrets.NIGHTLY_TDENGINE_ENTERPRISE_BASE_URL }}/tsdb-nightly-main.tar.gz?v=$(date +%s)" -O TDengine-server-riscv64.tar.gz
+            tar -zxf TDengine-server-riscv64.tar.gz
+            rm -rf TDengine-server-riscv64.tar.gz
+            TD_DIR=$(find . -maxdepth 1 -type d -name 'TDengine-server-*' | head -n 1)
+            cd "$TD_DIR"
+            ./install.sh -e no
+            cd ..
+
+            mkdir -p /etc/taos
+            cp ./.github/workflows/taos.cfg /etc/taos/taos.cfg
+            mkdir -p /var/log/taos
+            export TZ=Asia/Shanghai
+            taosd &
+            taosadapter &
+            sleep 8
+
+            /opt/venv/bin/pytest ./taos-ws-py/tests/
+
       - name: Upload wheels linux-cross
         uses: actions/upload-artifact@v4
         with:
