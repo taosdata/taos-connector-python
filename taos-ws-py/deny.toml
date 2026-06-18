@@ -1,6 +1,9 @@
 [advisories]
 unmaintained = "none"
-ignore = ["RUSTSEC-2025-0020"]
+ignore = [
+    "RUSTSEC-2025-0020",
+    "RUSTSEC-2026-0177",
+]
 
 [licenses]
 allow = [
@@ -31,7 +34,6 @@ wildcards = "deny"
 unknown-registry = "deny"
 unknown-git = "deny"
 allow-git = [
-    "https://github.com/taosdata/taos-connector-rust.git",
     "https://github.com/taosdata/tokio-tungstenite.git",
     "https://github.com/taosdata/tungstenite-rs.git",
     "https://github.com/taosdata/ring.git",

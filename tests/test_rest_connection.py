@@ -1,6 +1,7 @@
 import datetime
 import taosrest
 import os
+import pytest
 import utils
 from decorators import check_env
 from dotenv import load_dotenv
@@ -245,6 +246,7 @@ def test_tzinfo_timezone_with_req_id():
         # tzinfo=datetime.timezone(datetime.timedelta(seconds=28800), 'CST')), -100, -200.3]
 
 
+@pytest.mark.skip(reason="connects to public TDengine Cloud gateway; unreachable from internal CI runners")
 def test_wrong_token():
     try:
         conn = taosrest.connect(url="https://gw.us-east.azure.cloud.tdengine.com", token="wrong_token")
@@ -254,6 +256,7 @@ def test_wrong_token():
         assert e.status_code == 401
 
 
+@pytest.mark.skip(reason="connects to public TDengine Cloud gateway; unreachable from internal CI runners")
 def test_token():
     conn = taosrest.connect(
         url="https://gw.us-west-2.aws.cloud.tdengine.com", token="f158c322e165e82156f50ba4aa0f3e01081b38d7"
