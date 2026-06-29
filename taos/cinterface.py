@@ -511,13 +511,40 @@ def taos_query_with_reqid(connection, sql, req_id):
 
 
 async_query_callback_type = CFUNCTYPE(None, c_void_p, c_void_p, c_int)
+
+
+# The async APIs (taos_query_a / taos_query_a_with_reqid / taos_fetch_rows_a) invoke
+# the callback later, from a native client worker thread. The ctypes closure that
+# wraps the Python callback must stay alive until then; otherwise it can be garbage
+# collected while the native side still holds the function pointer, which leads to a
+# segfault (use-after-free) when the callback is finally fired. Keep a reference to
+# the closure of each in-flight callback and release it right after it is invoked.
+_inflight_async_callbacks = {}
+
+
+def _retain_async_callback(callback_type, callback):
+    # type: (type, callable) -> object
+    def wrapper(*args):
+        try:
+            callback(*args)
+        finally:
+            _inflight_async_callbacks.pop(token, None)
+
+    closure = callback_type(wrapper)
+    token = id(closure)
+    _inflight_async_callbacks[token] = closure
+    return closure
+
+
 _libtaos.taos_query_a.restype = None
 _libtaos.taos_query_a.argtypes = c_void_p, c_char_p, async_query_callback_type, c_void_p
 
 
 def taos_query_a(connection, sql, callback, param):
     # type: (c_void_p, str, async_query_callback_type, c_void_p) -> None
-    _libtaos.taos_query_a(connection, c_char_p(sql.encode("utf-8")), async_query_callback_type(callback), param)
+    _libtaos.taos_query_a(
+        connection, c_char_p(sql.encode("utf-8")), _retain_async_callback(async_query_callback_type, callback), param
+    )
 
 
 # add req_id for async query
@@ -548,7 +575,11 @@ def taos_query_a_with_reqid(connection, sql, callback, param, req_id):
     """
     _check_if_supported()
     _libtaos.taos_query_a_with_reqid(
-        connection, c_char_p(sql.encode("utf-8")), async_query_with_reqid_callback_type(callback), param, req_id
+        connection,
+        c_char_p(sql.encode("utf-8")),
+        _retain_async_callback(async_query_with_reqid_callback_type, callback),
+        param,
+        req_id,
     )
 
 
@@ -559,7 +590,7 @@ _libtaos.taos_fetch_rows_a.argtypes = c_void_p, async_fetch_rows_callback_type, 
 
 def taos_fetch_rows_a(result, callback, param):
     # type: (c_void_p, async_fetch_rows_callback_type, c_void_p) -> None
-    _libtaos.taos_fetch_rows_a(result, async_fetch_rows_callback_type(callback), param)
+    _libtaos.taos_fetch_rows_a(result, _retain_async_callback(async_fetch_rows_callback_type, callback), param)
 
 
 def taos_affected_rows(result):
