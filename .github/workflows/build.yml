@@ -25,7 +25,9 @@ jobs:
       - name: Build tools
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y build-essential libgeos-dev
+          sudo apt-get install -y build-essential cmake \
+            libgeos-dev libjansson-dev libsnappy-dev liblzma-dev libz-dev \
+            zlib1g pkg-config libssl-dev gawk
 
       - name: Setup Python
         run: sudo apt-get install -y python3 python3-pip python-is-python3
@@ -98,32 +100,66 @@ jobs:
           rm build -rf
           mkdir build
           cd build
-          cmake ../ -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false
-          make -j14
+          cmake ../ -DBUILD_JDBC=false -DBUILD_TOOLS=false -DBUILD_TEST=off -DBUILD_DEPENDENCY_TESTS=false -DBUILD_CONTRIB=ON
+          make -j 4
           sudo make install
+          sudo ldconfig
+          which taosd
           ls -alh /etc/taos/
           cd ../../
 
+      # taosadapter is no longer produced by the TDengine build, so build it from source.
+      - name: Checkout taosadapter
+        uses: actions/checkout@v4
+        with:
+          repository: "taosdata/taosadapter"
+          path: "taosadapter"
+          ref: ${{ steps.determine-branch.outputs.value }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.26.0"
+          cache-dependency-path: taosadapter/go.sum
+
+      - name: Build and install taosadapter
+        run: |
+          cd taosadapter
+          go mod download
+          go build -o taosadapter
+          sudo install -m 755 taosadapter /usr/local/bin/taosadapter
+          taosadapter --version
+
       - name: Start TDengine 3.0
         run: |
-          tree TDengine_v3/build/build/
-          export C_INCLUDE_PATH=$PWD/TDengine_v3/build/build/bin
-          export LD_LIBRARY_PATH=$PWD/TDengine_v3/build/build/lib
           mkdir -p /tmp/taos/v3/log /tmp/taos/v3/data
-          printf "dataDir /tmp/taos/v3/data\nlogDir /tmp/taos/v3/log\ndebugFlag 135\n" |sudo tee /etc/taos/taos.cfg
-          TAOS_SUPPORT_VNODES=256 ./TDengine_v3/build/build/bin/taosd &
-          ./TDengine_v3/build/build/bin/taosadapter &
+          printf "dataDir /tmp/taos/v3/data\nlogDir /tmp/taos/v3/log\nsupportVnodes 256\n" | sudo tee /etc/taos/taos.cfg
+          nohup sudo taosd > /tmp/taos/v3/taosd.out 2>&1 &
+          nohup sudo taosadapter > /tmp/taos/v3/taosadapter.out 2>&1 &
 
       #----------------------------------------------
       #                run test suite
       #----------------------------------------------
+      - name: Wait for TDengine
+        run: |
+          for i in $(seq 1 60); do
+            if curl -s -m 2 http://localhost:6041/-/ping > /dev/null 2>&1; then
+              echo "taosadapter is up"
+              break
+            fi
+            echo "waiting for taosadapter ($i/60) ..."
+            sleep 2
+          done
+
       - name: Run Tests
         env:
-          LD_LIBRARY_PATH: $PWD/TDengine_v3/build/build/lib
           TDENGINE_URL: localhost:6041
           TDENGINE_TEST_USERNAME: ${{ secrets.TDENGINE_TEST_USERNAME }}
           TDENGINE_TEST_PASSWORD: ${{ secrets.TDENGINE_TEST_PASSWORD }}
         run: |
+          # Fall back to default credentials when the secrets are unavailable (e.g. fork PRs).
+          export TDENGINE_TEST_USERNAME="${TDENGINE_TEST_USERNAME:-root}"
+          export TDENGINE_TEST_PASSWORD="${TDENGINE_TEST_PASSWORD:-taosdata}"
           curl -L -u "$TDENGINE_TEST_USERNAME:$TDENGINE_TEST_PASSWORD" -d "show databases" localhost:6041/rest/sql
           poetry run pytest --cov-report term --cov-report html --cov-report xml --cov=taos --cov=taosrest --cov-append tests
 
@@ -139,6 +175,7 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           files: ./coverage.xml
+          fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Build Artifacts
