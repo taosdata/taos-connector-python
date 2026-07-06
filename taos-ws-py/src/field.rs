@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 
-use ::taos::Field;
+use taos::Field;
 
 #[pyclass]
 pub(crate) struct TaosField {
