@@ -2,7 +2,6 @@
 
 use std::str::FromStr;
 
-use ::taos::{sync::*, RawBlock, ResultSet};
 use bigdecimal::BigDecimal;
 use chrono_tz::Tz;
 use pyo3::prelude::*;
@@ -16,6 +15,7 @@ use taos::Value::{
     BigInt, Bool, Double, Float, Geometry, Int, Json, NChar, Null, SmallInt, Timestamp, TinyInt,
     UBigInt, UInt, USmallInt, UTinyInt, VarBinary, VarChar,
 };
+use taos::{sync::*, RawBlock, ResultSet};
 
 use consumer::{Consumer, Message};
 use cursor::*;
