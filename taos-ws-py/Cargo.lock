@@ -43,12 +43,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.93"
+version = "1.0.103"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c95c10ba0b00a02636238b814946408b1322d5ac4760326e6fb8ec956d85775"
-dependencies = [
- "backtrace",
-]
+checksum = "2a4385e2e34eb35d6b3efe798b9eb88096925d87726c0798709bf56d9ed84af3"
 
 [[package]]
 name = "async-trait"
@@ -1242,6 +1239,7 @@ checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 [[package]]
 name = "mdsn"
 version = "0.2.25"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#f49c37185987a3f5a893a02d04fe5db662a79c37"
 dependencies = [
  "itertools",
  "lazy_static",
@@ -2259,6 +2257,7 @@ dependencies = [
 [[package]]
 name = "taos"
 version = "0.12.4"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#f49c37185987a3f5a893a02d04fe5db662a79c37"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2274,6 +2273,7 @@ dependencies = [
 [[package]]
 name = "taos-error"
 version = "0.12.4"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#f49c37185987a3f5a893a02d04fe5db662a79c37"
 dependencies = [
  "anyhow",
  "derive_more",
@@ -2286,6 +2286,7 @@ dependencies = [
 [[package]]
 name = "taos-macros"
 version = "0.2.16"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#f49c37185987a3f5a893a02d04fe5db662a79c37"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2295,6 +2296,7 @@ dependencies = [
 [[package]]
 name = "taos-optin"
 version = "0.12.4"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#f49c37185987a3f5a893a02d04fe5db662a79c37"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2320,6 +2322,7 @@ dependencies = [
 [[package]]
 name = "taos-query"
 version = "0.12.4"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#f49c37185987a3f5a893a02d04fe5db662a79c37"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2362,6 +2365,7 @@ dependencies = [
 [[package]]
 name = "taos-ws"
 version = "0.12.4"
+source = "git+https://github.com/taosdata/taos-connector-rust.git?branch=main#f49c37185987a3f5a893a02d04fe5db662a79c37"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2394,7 +2398,7 @@ dependencies = [
 
 [[package]]
 name = "taos-ws-py"
-version = "0.6.9"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "bigdecimal",

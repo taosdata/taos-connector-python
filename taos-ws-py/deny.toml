@@ -34,6 +34,7 @@ wildcards = "deny"
 unknown-registry = "deny"
 unknown-git = "deny"
 allow-git = [
+    "https://github.com/taosdata/taos-connector-rust.git",
     "https://github.com/taosdata/tokio-tungstenite.git",
     "https://github.com/taosdata/tungstenite-rs.git",
     "https://github.com/taosdata/ring.git",
