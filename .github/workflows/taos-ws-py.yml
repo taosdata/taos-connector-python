@@ -229,6 +229,8 @@ jobs:
           cd taosadapter
           go mod download
           go build -o taosadapter
+          sudo install -m 755 taosadapter /bin/taosadapter
+          taosadapter --version
           TAOS_ADAPTER_LOG_PATH=/tmp/taos/v3/log taosadapter &
 
       #----------------------------------------------
