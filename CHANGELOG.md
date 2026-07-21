@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## v2.8.10 - 2026-07-21
+
+### Bug Fixes:
+
+- fix asynchronous query callback crashes
+
 ## v2.8.9 - 2026-03-05
 
 ### Features:
@@ -779,4 +785,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [TD-4803]:fix repo name in python connector README (#6559)
 - [TD-6449]:prefer english only in method documentations in python connector [ci skip] (#7711)
-
