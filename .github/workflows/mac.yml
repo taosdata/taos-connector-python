@@ -122,8 +122,8 @@ jobs:
           cd TDengine
           mkdir debug
           cd debug
-          cmake .. -DBUILD_TEST=off -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false -DVERNUMBER=3.9.9.9
-          make -j 14 install
+          cmake .. -DBUILD_TEST=off -DBUILD_DEPENDENCY_TESTS=false -DVERNUMBER=3.9.9.9
+          make -j4 install
           echo "do make_install grep libtao"
           pwd
 
@@ -136,7 +136,6 @@ jobs:
           mkdir -p ./release
           cp ./TDengine/debug/build/bin/taos ./release/
           cp ./TDengine/debug/build/bin/taosd ./release/
-          cp ./TDengine/debug/build/bin/taosadapter ./release/
           cp ./TDengine/debug/build/lib/libtaos.dylib ./release/
           cp ./TDengine/debug/build/lib/libtaosnative.dylib ./release/
           cp ./TDengine/include/client/taos.h ./release/
@@ -145,10 +144,8 @@ jobs:
           ls -l /usr/local/lib/
           chmod +x ./taos
           chmod +x ./taosd
-          chmod +x ./taosadapter
           cp ./taos /usr/local/bin
           cp ./taosd /usr/local/bin
-          cp ./taosadapter /usr/local/bin
           sudo rm -rf /usr/local/lib/libtaos*
           cp ./libtaos.dylib /usr/local/lib
           cp ./libtaosnative.dylib /usr/local/lib
@@ -370,16 +367,16 @@ jobs:
           sudo taosd &
           sleep 1
 
-      - name: Start taosAdapter
-        run: |
-          pwd
-          mkdir -p TDengine/debug/build/lib
-          ln -sfv /usr/local/lib/libtaos.dylib TDengine/debug/build/lib/libtaos.dylib
-          ln -sfv /usr/local/lib/libtaosnative.dylib TDengine/debug/build/lib/libtaosnative.dylib
-          ln -sfv /usr/local/lib/libtaos.dylib TDengine/debug/build/lib/libtaos.1.dylib
-          ln -sfv /usr/local/lib/libtaosnative.dylib TDengine/debug/build/lib/libtaosnative.1.dylib
-          ls -l TDengine/debug/build/lib/
-          sudo taosadapter &
+      # - name: Start taosAdapter
+      #   run: |
+      #     pwd
+      #     mkdir -p TDengine/debug/build/lib
+      #     ln -sfv /usr/local/lib/libtaos.dylib TDengine/debug/build/lib/libtaos.dylib
+      #     ln -sfv /usr/local/lib/libtaosnative.dylib TDengine/debug/build/lib/libtaosnative.dylib
+      #     ln -sfv /usr/local/lib/libtaos.dylib TDengine/debug/build/lib/libtaos.1.dylib
+      #     ln -sfv /usr/local/lib/libtaosnative.dylib TDengine/debug/build/lib/libtaosnative.1.dylib
+      #     ls -l TDengine/debug/build/lib/
+      #     sudo taosadapter &
 
       #----------------------------------------------
       # run test suite
