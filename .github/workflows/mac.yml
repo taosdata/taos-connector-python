@@ -392,17 +392,11 @@ jobs:
 
       - name: Start taosAdapter
         run: |
-          TAOS_ADAPTER_LOG_PATH=/tmp/taos/v3/log taosadapter >/tmp/taos/v3/log/taosadapter.stdout.log 2>&1 &
-          for attempt in {1..30}; do
-            if curl --fail --silent --max-time 2 http://127.0.0.1:6041/-/ping >/dev/null; then
-              taosadapter --version
-              exit 0
-            fi
-            sleep 1
-          done
-          echo "taosAdapter did not become ready after ${attempt} attempts"
-          cat /tmp/taos/v3/log/taosadapter.stdout.log
-          exit 1
+          mkdir -p TDengine/debug/build/lib
+          ln -sfv /usr/local/lib/libtaos.dylib TDengine/debug/build/lib/libtaos.dylib
+          ln -sfv /usr/local/lib/libtaosnative.dylib TDengine/debug/build/lib/libtaosnative.dylib
+          ls -l TDengine/debug/build/lib/
+          sudo taosadapter &
 
       #----------------------------------------------
       # run test suite
