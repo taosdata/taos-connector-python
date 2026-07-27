@@ -137,6 +137,42 @@ def test_connect_with_totp():
     conn.close()
 
 
+@pytest.mark.skipif(utils.TEST_TD_3360, reason="skip for TD-3360")
+def test_connect_with_user_app():
+    user_app = "test-python-ws"
+    conn = taosws.connect(
+        user=utils.test_username(),
+        password=utils.test_password(),
+        host="localhost",
+        port=6041,
+        user_app=user_app,
+    )
+    deadline = time.monotonic() + 10
+    while True:
+        res = conn.query("show connections")
+        if any(user_app == col for row in res for col in row):
+            break
+        if time.monotonic() >= deadline:
+            pytest.fail(f"user_app {user_app!r} was not found in show connections")
+        time.sleep(0.5)
+    conn.close()
+
+
+@pytest.mark.skipif(utils.TEST_TD_3360, reason="skip for TD-3360")
+def test_connect_dsn_with_user_app():
+    user_app = "test-python-ws-dsn"
+    conn = taosws.connect(f"taosws://{utils.test_username()}:{utils.test_password()}@localhost:6041?user_app={user_app}")
+    deadline = time.monotonic() + 10
+    while True:
+        res = conn.query("show connections")
+        if any(user_app == col for row in res for col in row):
+            break
+        if time.monotonic() >= deadline:
+            pytest.fail(f"user_app {user_app!r} was not found in show connections")
+        time.sleep(0.5)
+    conn.close()
+
+
 def show_env():
     import os
 
