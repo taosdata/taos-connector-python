@@ -18,7 +18,7 @@ on:
 
 jobs:
   build-tdengine:
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     outputs:
       commit_id: ${{ steps.get_commit_id.outputs.commit_id }}
     steps:
@@ -156,7 +156,7 @@ jobs:
           tar -zcvf server.tar.gz ./release
 
   build-poetry:
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     needs: build-tdengine
     steps:
       - name: Set up Python 3.12
@@ -259,7 +259,7 @@ jobs:
           poetry build
 
   test:
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     needs: build-tdengine
     steps:
       - name: get cache server by pr
