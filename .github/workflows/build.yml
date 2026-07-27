@@ -90,7 +90,7 @@ jobs:
           path: "TDengine_v3"
           ref: ${{ steps.determine-branch.outputs.value }}
 
-      - name: Build TDengine 3.0
+      - name: Build TDengine
         run: |
           pwd
           git branch -vv
@@ -98,13 +98,13 @@ jobs:
           rm build -rf
           mkdir build
           cd build
-          cmake ../ -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false
-          make -j14
+          cmake ../ -DBUILD_JDBC=false -DCMAKE_INSTALL_PREFIX:PATH=`realpath ../../local/` -DBUILD_DEPENDENCY_TESTS=false
+          make -j4
           sudo make install
           ls -alh /etc/taos/
           cd ../../
 
-      - name: Start TDengine 3.0
+      - name: Start TDengine
         run: |
           tree TDengine_v3/build/build/
           export C_INCLUDE_PATH=$PWD/TDengine_v3/build/build/bin
@@ -112,7 +112,28 @@ jobs:
           mkdir -p /tmp/taos/v3/log /tmp/taos/v3/data
           printf "dataDir /tmp/taos/v3/data\nlogDir /tmp/taos/v3/log\ndebugFlag 135\n" |sudo tee /etc/taos/taos.cfg
           TAOS_SUPPORT_VNODES=256 ./TDengine_v3/build/build/bin/taosd &
-          ./TDengine_v3/build/build/bin/taosadapter &
+
+      - name: Checkout taosadapter
+        uses: actions/checkout@v4
+        with:
+          repository: "taosdata/taosadapter"
+          path: "taosadapter"
+          ref: ${{ steps.determine-branch.outputs.value }}
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.26.0"
+          cache-dependency-path: taosadapter/go.sum
+
+      - name: Build and start taosadapter
+        run: |
+          cd taosadapter
+          go mod download
+          go build -o taosadapter
+          sudo install -m 755 taosadapter /bin/taosadapter
+          taosadapter --version
+          TAOS_ADAPTER_LOG_PATH=/tmp/taos/v3/log taosadapter &
 
       #----------------------------------------------
       #                run test suite
