@@ -139,8 +139,11 @@ jobs:
           native_version="${native_library##*.so.}"
           sudo install -m 755 target/release/libtaosws.so \
             "/usr/local/taos/driver/libtaosws.so.${native_version}"
+          sudo ln -s "/usr/local/taos/driver/libtaosws.so.${native_version}" /usr/lib/libtaosws.so
           test -f "/usr/local/taos/driver/libtaosnative.so.${native_version}"
           test -f "/usr/local/taos/driver/libtaosws.so.${native_version}"
+          test "$(readlink -f /usr/lib/libtaosws.so)" = \
+            "/usr/local/taos/driver/libtaosws.so.${native_version}"
 
       - name: Run Tests
         env:
