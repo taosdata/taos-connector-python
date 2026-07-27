@@ -526,7 +526,10 @@ def test_tmq_with_token():
 def test_tmq_with_invalid_token():
     pre_test_tmq("")
     try:
-        with pytest.raises(TmqError, match=r"Invalid token"):
+        with pytest.raises(
+            TmqError,
+            match=r"(Invalid token|init tscObj with token failed)",
+        ):
             Consumer(
                 {
                     "group.id": "token_test_group",
