@@ -18,7 +18,7 @@ on:
 
 jobs:
   build-tdengine:
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     outputs:
       commit_id: ${{ steps.get_commit_id.outputs.commit_id }}
     steps:
@@ -43,11 +43,19 @@ jobs:
           path: "TDengine"
           ref: ${{ steps.determine-branch.outputs.value }}
 
+      - name: Checkout taosadapter
+        uses: actions/checkout@v4
+        with:
+          repository: "taosdata/taosadapter"
+          path: "taosadapter"
+          ref: ${{ steps.determine-branch.outputs.value }}
+
       - name: get_commit_id
         id: get_commit_id
         run: |
-          cd TDengine
-          echo "commit_id=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          tdengine_commit_id=$(git -C TDengine rev-parse HEAD)
+          taosadapter_commit_id=$(git -C taosadapter rev-parse HEAD)
+          echo "commit_id=${tdengine_commit_id}-${taosadapter_commit_id}" >> "$GITHUB_OUTPUT"
 
       - name: Cache server by pr
         if: github.event_name == 'pull_request'
@@ -91,13 +99,14 @@ jobs:
           brew info argp-standalone
 
       - name: Set up Go
-        if: |
-          github.event_name == 'pull_request'
-          || github.event_name == 'push'
-          || github.event_name == 'schedule'
-        uses: actions/setup-go@v3
+        if: >
+          (github.event_name == 'workflow_dispatch' && steps.cache-server-manually.outputs.cache-hit != 'true') ||
+          (github.event_name == 'pull_request' && steps.cache-server-pr.outputs.cache-hit != 'true') ||
+          (github.event_name == 'push' && steps.cache-server-push.outputs.cache-hit != 'true')
+        uses: actions/setup-go@v6
         with:
-          go-version: stable
+          go-version: "1.26.0"
+          cache-dependency-path: taosadapter/go.sum
 
       - name: Set up Rust
         if: |
@@ -122,10 +131,21 @@ jobs:
           cd TDengine
           mkdir debug
           cd debug
-          cmake .. -DBUILD_TEST=off -DBUILD_HTTP=false -DBUILD_DEPENDENCY_TESTS=false -DVERNUMBER=3.9.9.9
-          make -j 14 install
+          cmake .. -DBUILD_TEST=off -DBUILD_DEPENDENCY_TESTS=false -DVERNUMBER=3.9.9.9
+          make -j4 install
           echo "do make_install grep libtao"
           pwd
+
+      - name: Build taosadapter
+        if: >
+          (github.event_name == 'workflow_dispatch' && steps.cache-server-manually.outputs.cache-hit != 'true') ||
+          (github.event_name == 'pull_request' && steps.cache-server-pr.outputs.cache-hit != 'true') ||
+          (github.event_name == 'push' && steps.cache-server-push.outputs.cache-hit != 'true')
+        run: |
+          cd taosadapter
+          go mod download
+          go build -o taosadapter
+          ./taosadapter --version
 
       - name: package
         if: >
@@ -136,7 +156,7 @@ jobs:
           mkdir -p ./release
           cp ./TDengine/debug/build/bin/taos ./release/
           cp ./TDengine/debug/build/bin/taosd ./release/
-          cp ./TDengine/debug/build/bin/taosadapter ./release/
+          cp ./taosadapter/taosadapter ./release/
           cp ./TDengine/debug/build/lib/libtaos.dylib ./release/
           cp ./TDengine/debug/build/lib/libtaosnative.dylib ./release/
           cp ./TDengine/include/client/taos.h ./release/
@@ -159,7 +179,7 @@ jobs:
           tar -zcvf server.tar.gz ./release
 
   build-poetry:
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     needs: build-tdengine
     steps:
       - name: Set up Python 3.12
@@ -262,7 +282,7 @@ jobs:
           poetry build
 
   test:
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     needs: build-tdengine
     steps:
       - name: get cache server by pr
@@ -370,14 +390,11 @@ jobs:
           sudo taosd &
           sleep 1
 
-      - name: Start taosAdapter
+      - name: Start taosadapter
         run: |
-          pwd
           mkdir -p TDengine/debug/build/lib
           ln -sfv /usr/local/lib/libtaos.dylib TDengine/debug/build/lib/libtaos.dylib
           ln -sfv /usr/local/lib/libtaosnative.dylib TDengine/debug/build/lib/libtaosnative.dylib
-          ln -sfv /usr/local/lib/libtaos.dylib TDengine/debug/build/lib/libtaos.1.dylib
-          ln -sfv /usr/local/lib/libtaosnative.dylib TDengine/debug/build/lib/libtaosnative.1.dylib
           ls -l TDengine/debug/build/lib/
           sudo taosadapter &
 

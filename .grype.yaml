@@ -10,3 +10,15 @@ ignore:
       name: pyo3
       version: 0.17.3
       type: rust-crate
+
+  - vulnerability: GHSA-36hh-v3qg-5jq4
+    package:
+      name: pyo3
+      version: 0.17.3
+      type: rust-crate
+
+  - vulnerability: GHSA-chgr-c6px-7xpp
+    package:
+      name: pyo3
+      version: 0.17.3
+      type: rust-crate
