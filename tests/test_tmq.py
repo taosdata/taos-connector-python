@@ -544,4 +544,4 @@ def test_tmq_with_invalid_token():
 
 
 if __name__ == "__main__":
-    print("call tst_tmp.py nothing do.\n")
+    print("call test_tmp.py nothing do.\n")
