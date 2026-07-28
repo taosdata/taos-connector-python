@@ -43,7 +43,7 @@ jobs:
           path: "TDengine"
           ref: ${{ steps.determine-branch.outputs.value }}
 
-      - name: Checkout taosAdapter
+      - name: Checkout taosadapter
         uses: actions/checkout@v4
         with:
           repository: "taosdata/taosadapter"
@@ -136,7 +136,7 @@ jobs:
           echo "do make_install grep libtao"
           pwd
 
-      - name: Build taosAdapter
+      - name: Build taosadapter
         if: >
           (github.event_name == 'workflow_dispatch' && steps.cache-server-manually.outputs.cache-hit != 'true') ||
           (github.event_name == 'pull_request' && steps.cache-server-pr.outputs.cache-hit != 'true') ||
@@ -390,7 +390,7 @@ jobs:
           sudo taosd &
           sleep 1
 
-      - name: Start taosAdapter
+      - name: Start taosadapter
         run: |
           mkdir -p TDengine/debug/build/lib
           ln -sfv /usr/local/lib/libtaos.dylib TDengine/debug/build/lib/libtaos.dylib
