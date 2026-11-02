@@ -1,3 +1,25 @@
+// Copyright (c) 2022 TAOS Data, Inc.
+//
+// SPDX-License-Identifier: MIT
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 use std::{sync::Arc, time::Duration};
 
 use chrono_tz::Tz;
@@ -47,7 +69,8 @@ impl Consumer {
 #[pymethods]
 impl Consumer {
     #[new]
-    pub fn new(conf: Option<&PyDict>, dsn: Option<&str>) -> PyResult<Self> {
+    #[pyo3(signature = (conf=None, dsn=None))]
+    pub fn new(conf: Option<&Bound<'_, PyDict>>, dsn: Option<&str>) -> PyResult<Self> {
         let mut dsn_cfg = Dsn::default();
         dsn_cfg.driver = "taos".to_string();
 
@@ -64,24 +87,25 @@ impl Consumer {
 
         if let Some(args) = conf {
             if let Some(scheme) = args
-                .get_item("td.connect.websocket.scheme")
-                .or(args.get_item("protocol"))
-                .or(args.get_item("driver"))
+                .get_item("td.connect.websocket.scheme")?
+                .or(args.get_item("protocol")?)
+                .or(args.get_item("driver")?)
             {
-                let scheme = scheme.downcast::<PyString>().map_err(|_err| {
-                    ConsumerException::new_err(format!("Invalid td.connect.websocket.scheme value type: {}, only `'ws'|'wss'` is supported", scheme.get_type().to_string()))
+                let scheme_type = scheme.get_type().to_string();
+                let scheme = scheme.cast_into::<PyString>().map_err(|_err| {
+                    ConsumerException::new_err(format!("Invalid td.connect.websocket.scheme value type: {}, only `'ws'|'wss'` is supported", scheme_type))
                 })?;
                 dsn_cfg.protocol = Some(scheme.to_string());
             }
 
             let mut addr = Address::default();
-            if let Some(host) = args.get_item("td.connect.ip").or(args.get_item("host")) {
+            if let Some(host) = args.get_item("td.connect.ip")?.or(args.get_item("host")?) {
                 addr.host = Some(host.extract::<String>()?);
             }
-            if let Some(port) = args.get_item("td.connect.port").or(args.get_item("port")) {
-                if port.is_instance_of::<pyo3::types::PyInt>()? {
+            if let Some(port) = args.get_item("td.connect.port")?.or(args.get_item("port")?) {
+                if port.is_instance_of::<pyo3::types::PyInt>() {
                     addr.port = Some(port.extract()?);
-                } else if port.is_instance_of::<PyString>()? {
+                } else if port.is_instance_of::<PyString>() {
                     addr.port = Some(port.extract::<String>()?.parse()?);
                 } else {
                     Err(ConsumerException::new_err(format!("Invalid port: {port}")))?;
@@ -93,32 +117,32 @@ impl Consumer {
             dsn_cfg.addresses.push(addr);
 
             if let Some(value) = args
-                .get_item("td.connect.user")
-                .or(args.get_item("username"))
-                .or(args.get_item("user"))
+                .get_item("td.connect.user")?
+                .or(args.get_item("username")?)
+                .or(args.get_item("user")?)
             {
                 dsn_cfg.username = Some(value.extract()?);
             }
             if let Some(value) = args
-                .get_item("td.connect.pass")
-                .or(args.get_item("password"))
+                .get_item("td.connect.pass")?
+                .or(args.get_item("password")?)
             {
                 dsn_cfg.password = Some(value.extract()?);
             }
-            if let Some(value) = args.get_item("td.connect.token").or(args.get_item("token")) {
+            if let Some(value) = args.get_item("td.connect.token")?.or(args.get_item("token")?) {
                 dsn_cfg.set("token", value.extract::<String>()?);
             }
             if let Some(value) = args
-                .get_item("td.connect.bearer_token")
-                .or(args.get_item("bearer_token"))
+                .get_item("td.connect.bearer_token")?
+                .or(args.get_item("bearer_token")?)
             {
                 dsn_cfg.set("bearer_token", value.extract::<String>()?);
             }
-            if let Some(value) = args.get_item("timezone") {
+            if let Some(value) = args.get_item("timezone")? {
                 tz = Some(value.extract::<String>()?);
             }
 
-            if let Some(value) = args.get_item("group.id") {
+            if let Some(value) = args.get_item("group.id")? {
                 dsn_cfg.set("group.id", value.extract::<String>()?);
             } else {
                 Err(ConsumerException::new_err(
@@ -149,9 +173,9 @@ impl Consumer {
             ];
 
             for (key, value) in args {
-                let key = key.extract::<&str>()?;
-                if !SKIP_KEYS.contains(&key) {
-                    dsn_cfg.set(key, value.extract::<String>()?);
+                let key = key.extract::<String>()?;
+                if !SKIP_KEYS.contains(&key.as_str()) {
+                    dsn_cfg.set(&key, &value.extract::<String>()?);
                 }
             }
         }
@@ -175,7 +199,7 @@ impl Consumer {
         })
     }
 
-    pub fn subscribe(&mut self, topics: &PyList) -> PyResult<()> {
+    pub fn subscribe(&mut self, topics: &Bound<'_, PyList>) -> PyResult<()> {
         self.inner()?
             .subscribe(topics.extract::<Vec<String>>()?)
             .map_err(|err| ConsumerException::new_err(format!("{err}")))
@@ -194,6 +218,7 @@ impl Consumer {
     }
 
     /// Poll for a message with an optional timeout.
+    #[pyo3(signature = (timeout=None))]
     pub fn poll(&mut self, timeout: Option<f64>) -> PyResult<Option<Message>> {
         let timeout = if let Some(timeout) = timeout {
             Timeout::Duration(Duration::from_secs_f64(timeout))
@@ -354,8 +379,8 @@ impl MessageBlock {
         self.block.ncols()
     }
 
-    pub fn fetchall(&self) -> PyResult<Vec<PyObject>> {
-        Python::with_gil(|py| get_all_of_block(py, &self.block))
+    pub fn fetchall(&self) -> PyResult<Vec<Py<PyAny>>> {
+        Python::attach(|py| get_all_of_block(py, &self.block))
     }
 
     pub fn __iter__(slf: PyRef<Self>) -> MessageBlockIter {
@@ -378,7 +403,7 @@ impl MessageBlockIter {
         if slf.index >= slf.block.nrows() {
             Ok(None)
         } else {
-            Python::with_gil(|py| {
+            Python::attach(|py| {
                 let values = unsafe { get_row_of_block_unchecked(py, &slf.block, slf.index)? };
                 slf.index += 1;
                 Ok(Some(values))
@@ -461,7 +486,8 @@ mod tests {
 
     #[test]
     fn consumer_demo() -> PyResult<()> {
-        Python::with_gil(|py| {
+        Python::initialize();
+        Python::attach(|py| {
             let mut args = HashMap::new();
             args.insert("td.connect.ip", "localhost");
             args.insert("td.connect.user", "root");
@@ -469,9 +495,9 @@ mod tests {
             args.insert("td.connect.port", "6041");
             args.insert("td.connect.websocket.scheme", "ws");
             args.insert("group.id", "0");
-            let args = args.into_py_dict(py);
+            let args = args.into_py_dict(py)?;
 
-            let _consumer = Consumer::new(Some(args), None)?;
+            let _consumer = Consumer::new(Some(&args), None)?;
 
             Ok(())
         })

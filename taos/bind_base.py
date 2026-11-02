@@ -1,3 +1,25 @@
+# Copyright (c) 2024 TAOS Data, Inc.
+#
+# SPDX-License-Identifier: MIT
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 # encoding:UTF-8
 
 from ctypes import *
@@ -7,10 +29,10 @@ from taos.constants import FieldType
 from taos.precision import PrecisionEnum, PrecisionError
 
 
-from taos.field import get_tz
+from taos.field import DEFAULT_TIMEZONE, get_tz
 
 
-def parse_datetime_to_utc_timestamp(dt) -> int:
+def parse_datetime_to_utc_timestamp(dt, tz=DEFAULT_TIMEZONE) -> int:
     if isinstance(dt, str):
         dt_naive = datetime.fromisoformat(dt)
     elif isinstance(dt, datetime):
@@ -19,9 +41,12 @@ def parse_datetime_to_utc_timestamp(dt) -> int:
         raise TypeError(f"dt type error, expected str or datetime type but got {type(dt)}.")
     #
     if dt_naive.tzinfo is None or dt_naive.tzinfo.utcoffset(dt_naive) is None:
-        tz = get_tz()
-        if tz is not None:
-            dt_aware = dt_naive.replace(tzinfo=tz)
+        selected_tz = get_tz() if tz is DEFAULT_TIMEZONE else tz
+        if selected_tz is not None:
+            if hasattr(selected_tz, "localize"):
+                dt_aware = selected_tz.localize(dt_naive)
+            else:
+                dt_aware = dt_naive.replace(tzinfo=selected_tz)
         else:
             dt_aware = dt_naive
     else:
@@ -31,13 +56,13 @@ def parse_datetime_to_utc_timestamp(dt) -> int:
     return result
 
 
-def datetime_to_timestamp(value, precision, is_null_type=0):
+def datetime_to_timestamp(value, precision, is_null_type=0, tz=DEFAULT_TIMEZONE):
     # type: (datetime | float | int | str | c_int64, PrecisionEnum, int) -> c_int64
     if is_null_type > 0 or value is None:
         return FieldType.C_BIGINT_NULL
 
     if type(value) is datetime or isinstance(value, str):
-        utc_timestamp = parse_datetime_to_utc_timestamp(value)
+        utc_timestamp = parse_datetime_to_utc_timestamp(value, tz)
         if precision == PrecisionEnum.Milliseconds:
             ret_value = c_int64(utc_timestamp * 10**3)
             return ret_value

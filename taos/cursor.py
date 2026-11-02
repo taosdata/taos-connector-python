@@ -1,11 +1,33 @@
+# Copyright (c) 2019 TAOS Data, Inc.
+#
+# SPDX-License-Identifier: MIT
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 # encoding:UTF-8
+
 from typing import Optional
 
 from taos import log
 from taos.cinterface import *
 from taos.constants import FieldType
 from taos.error import *
-
 
 class TaosCursor(object):
     """Database cursor which is used to manage the context of a fetch operation.
@@ -33,11 +55,13 @@ class TaosCursor(object):
         self._rowcount = -1
         self._connection = None
         self._result = None
+        self._result_timezone = None
         self._stmt_result = None
         self._fields = None
         self._block = None
         self._stmt = None
         self._bind_sql = ""
+        self._last_sql = None
         self._block_rows = -1
         self._block_iter = 0
         self._affected_rows = 0
@@ -61,7 +85,9 @@ class TaosCursor(object):
             raise OperationalError("Invalid use of fetch iterator")
 
         if self._block_rows <= self._block_iter:
-            block, self._block_rows = taos_fetch_row(self._result, self._fields, decode_binary=self.decode_binary)
+            block, self._block_rows = taos_fetch_row(
+                self._result, self._fields, decode_binary=self.decode_binary, timezone=self._result_timezone
+            )
             if self._block_rows == 0:
                 raise StopIteration
             self._block = list(map(tuple, zip(*block)))
@@ -172,6 +198,8 @@ class TaosCursor(object):
             raise ProgrammingError("Cursor is not connected")
 
         sql = operation
+        self._last_sql = sql
+        should_sync_timezone = self._connection._is_set_timezone_statement(sql)
 
         if req_id is None:
             self._result = taos_query(self._connection._conn, sql)
@@ -186,9 +214,12 @@ class TaosCursor(object):
             affected_rows = taos_affected_rows(self._result)
             self._affected_rows = affected_rows
             self._rowcount = affected_rows
+            if should_sync_timezone and taos_errno(self._result) == 0:
+                self._connection._sync_python_timezone()
             return affected_rows
         else:
-            self._fields = taos_fetch_fields(self._result)
+            self._result_timezone = self._connection._timezone
+            self._fields = taos_fetch_result_fields(self._result)
             return self._handle_result()
 
     def executemany(self, operation, data_list):
@@ -251,7 +282,7 @@ class TaosCursor(object):
                 # If current block is exhausted, fetch new data block
                 if self._block_iter >= self._block_rows:
                     block, self._block_rows = taos_fetch_block(
-                        self._result, self._fields, decode_binary=self.decode_binary
+                        self._result, self._fields, decode_binary=self.decode_binary, timezone=self._result_timezone
                     )
 
                     # If no more data available, break the loop
@@ -342,7 +373,9 @@ class TaosCursor(object):
         buffer = [[] for i in range(len(self._fields))]
         self._rowcount = 0
         while True:
-            block, num_of_rows = taos_fetch_row(self._result, self._fields, decode_binary=self.decode_binary)
+            block, num_of_rows = taos_fetch_row(
+                self._result, self._fields, decode_binary=self.decode_binary, timezone=self._result_timezone
+            )
             errno = taos_errno(self._result)
             if errno != 0:
                 raise ProgrammingError(taos_errstr(self._result), errno)
@@ -362,18 +395,20 @@ class TaosCursor(object):
     def _fetchall_sql(self):
         if self._result is None:
             raise OperationalError("Invalid use of fetchall")
-        fields = self._fields if self._fields is not None else taos_fetch_fields(self._result)
+        fields = self._fields if self._fields is not None else taos_fetch_result_fields(self._result)
         buffer = [[] for i in range(len(fields))]
         self._rowcount = 0
         while True:
-            block, num_of_rows = taos_fetch_block(self._result, self._fields, decode_binary=self.decode_binary)
+            block, num_of_rows = taos_fetch_block(
+                self._result, fields, decode_binary=self.decode_binary, timezone=self._result_timezone
+            )
             errno = taos_errno(self._result)
             if errno != 0:
                 raise ProgrammingError(taos_errstr(self._result), errno)
             if num_of_rows == 0:
                 break
             self._rowcount += num_of_rows
-            for i in range(len(self._fields)):
+            for i in range(len(fields)):
                 buffer[i].extend(block[i])
         return list(map(tuple, zip(*buffer)))
 
@@ -397,6 +432,7 @@ class TaosCursor(object):
         if self._result is not None:
             taos_free_result(self._result)
         self._result = None
+        self._result_timezone = None
         self._fields = None
         self._block = None
         self._block_rows = -1

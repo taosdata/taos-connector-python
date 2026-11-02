@@ -1,3 +1,25 @@
+# Copyright (c) 2021 TAOS Data, Inc.
+#
+# SPDX-License-Identifier: MIT
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 from taos.cinterface import *
 
 from taos.error import *
@@ -8,7 +30,7 @@ from ctypes import c_void_p
 class TaosResult(object):
     """TDengine result interface"""
 
-    def __init__(self, result, close_after=False, decode_binary=True):
+    def __init__(self, result, close_after=False, decode_binary=True, timezone=DEFAULT_TIMEZONE):
         # type: (c_void_p, bool, bool) -> None
         # to make the __del__ order right
         self._close_after = close_after
@@ -25,6 +47,7 @@ class TaosResult(object):
         self._block_length = None
         self._row_count = 0
         self.decode_binary = decode_binary
+        self._timezone = timezone
 
     def __iter__(self):
         return self
@@ -54,7 +77,7 @@ class TaosResult(object):
         if self._result is None:
             raise ResultError("no result object")
         if self._fields is None:
-            self._fields = taos_fetch_fields(self._result)
+            self._fields = taos_fetch_result_fields(self._result)
 
         return self._fields
 
@@ -92,7 +115,7 @@ class TaosResult(object):
         if self._result is None:
             raise OperationalError("Invalid use of fetch iterator")
 
-        blocks, length = taos_fetch_block(self._result, decode_binary=self.decode_binary)
+        blocks, length = taos_fetch_block(self._result, decode_binary=self.decode_binary, timezone=self._timezone)
         if length == 0:
             raise StopIteration
 
@@ -103,11 +126,13 @@ class TaosResult(object):
             raise OperationalError("Invalid use of fetchall")
 
         if self._fields is None:
-            self._fields = taos_fetch_fields(self._result)
+            self._fields = taos_fetch_result_fields(self._result)
         buffer = [[] for i in range(len(self._fields))]
         self._row_count = 0
         while True:
-            block, num_of_fields = taos_fetch_block(self._result, self._fields, decode_binary=self.decode_binary)
+            block, num_of_fields = taos_fetch_block(
+                self._result, self._fields, decode_binary=self.decode_binary, timezone=self._timezone
+            )
             errno = taos_errno(self._result)
             if errno != 0:
                 raise ProgrammingError(taos_errstr(self._result), errno)
@@ -232,13 +257,17 @@ class TaosRow:
         field_lens = self._result.field_lengths()
         for i in range(field_count):
             data = ctypes.cast(self._row, ctypes.POINTER(ctypes.c_void_p))[i]
+            col_precision = taos_get_field_precision(fields[i], precision)
             if fields[i].type not in CONVERT_FUNC:
                 raise DatabaseError("Invalid data type returned from database")
             if data is None:
                 blocks[i] = None
             else:
                 f = convert_func(fields[i].type, self._result.decode_binary)
-                blocks[i] = f(data, [False], 1, field_lens[i], precision)[0]
+                if fields[i].type == FieldType.C_TIMESTAMP:
+                    blocks[i] = f(data, [False], 1, field_lens[i], col_precision, timezone=self._result._timezone)[0]
+                else:
+                    blocks[i] = f(data, [False], 1, field_lens[i], col_precision)[0]
         return tuple(blocks)
 
     def as_dict(self):

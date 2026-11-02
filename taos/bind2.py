@@ -1,4 +1,27 @@
+# Copyright (c) 2024 TAOS Data, Inc.
+#
+# SPDX-License-Identifier: MIT
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 # encoding:UTF-8
+
 import sys
 import ctypes
 from ctypes import *
@@ -10,7 +33,7 @@ from taos.constants import FieldType
 from taos.precision import PrecisionEnum, PrecisionError
 from taos import log
 from taos import utils
-from taos.field import get_tz
+from taos.field import DEFAULT_TIMEZONE
 from taos.bind_base import datetime_to_timestamp
 
 
@@ -51,7 +74,7 @@ class TaosStmt2Bind(ctypes.Structure):
     #
     # set bind value with field type
     #
-    def set_value(self, buffer_type, values, precision=PrecisionEnum.Milliseconds):
+    def set_value(self, buffer_type, values, precision=PrecisionEnum.Milliseconds, timezone=DEFAULT_TIMEZONE):
         log.debug(f"set_value type={buffer_type} precision={precision} values={values}\n")
         if values is not None:
             utils.checkTypeValid(buffer_type, values)
@@ -74,7 +97,7 @@ class TaosStmt2Bind(ctypes.Structure):
         elif buffer_type == FieldType.C_BINARY:
             self.binary(values)
         elif buffer_type == FieldType.C_TIMESTAMP:
-            self.timestamp(values, precision)
+            self.timestamp(values, precision, timezone)
         elif buffer_type == FieldType.C_NCHAR:
             self.nchar(values)
         elif buffer_type == FieldType.C_TINYINT_UNSIGNED:
@@ -142,7 +165,7 @@ class TaosStmt2Bind(ctypes.Structure):
     def double(self, values):
         self.numeric_common(values, c_double, FieldType.C_DOUBLE_NULL, FieldType.C_DOUBLE)
 
-    def timestamp(self, values, precision=PrecisionEnum.Milliseconds):
+    def timestamp(self, values, precision=PrecisionEnum.Milliseconds, timezone=DEFAULT_TIMEZONE):
         if type(values) is not tuple and type(values) is not list:
             values = tuple([values])
         #
@@ -152,7 +175,7 @@ class TaosStmt2Bind(ctypes.Structure):
         except:
             buffer_type = c_int64 * len(values)
             buffer = buffer_type(
-                *[datetime_to_timestamp(value, precision, is_null[idx]) for idx, value in enumerate(values)]
+                *[datetime_to_timestamp(value, precision, is_null[idx], timezone) for idx, value in enumerate(values)]
             )
 
         self.buffer = cast(buffer, c_void_p)
