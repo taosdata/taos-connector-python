@@ -49,16 +49,17 @@ impl Cursor {
             .ok_or_else(|| ConnectionError::new_err("Cursor was already closed"))?)
     }
 
-    fn assert_block(&mut self) -> PyResult<()> {
+    fn assert_block(&mut self, py: Python<'_>) -> PyResult<()> {
         let need_fetch = match self.block.as_ref() {
             Some(block) => self.row_in_block >= block.nrows(),
             None => true,
         };
         if need_fetch {
             self.row_in_block = 0;
-            self.block = self
-                .current_result_set()?
-                .fetch_raw_block()
+            let result_set = self.current_result_set()?;
+            // Only Rust data crosses this boundary; Python objects are built with the GIL held.
+            self.block = py
+                .allow_threads(|| result_set.fetch_raw_block())
                 .map_err(|err| FetchError::new_err(err.to_string()))?
                 .map(|b| b.with_timezone(self.tz));
         }
@@ -129,6 +130,7 @@ impl Cursor {
     #[args(py_args = "*", parameters = "**")]
     pub fn execute(
         &mut self,
+        py: Python<'_>,
         operation: &PyString,
         py_args: &PyTuple,
         parameters: Option<&PyDict>,
@@ -150,9 +152,9 @@ impl Cursor {
             };
             Ok::<_, PyErr>(sql)
         })?;
-        let result_set = self
-            .inner()?
-            .query(sql)
+        let taos = self.inner()?;
+        let result_set = py
+            .allow_threads(|| taos.query(sql))
             .map_err(|err| OperationalError::new_err(err.to_string()))?;
         let affected_rows = result_set.affected_rows();
         self.result_set.replace(result_set);
@@ -163,6 +165,7 @@ impl Cursor {
     #[args(py_args = "*", parameters = "**")]
     pub fn execute_with_req_id(
         &mut self,
+        py: Python<'_>,
         operation: &PyString,
         py_args: &PyTuple,
         parameters: Option<&PyDict>,
@@ -185,9 +188,9 @@ impl Cursor {
             };
             Ok::<_, PyErr>(sql)
         })?;
-        let result_set = self
-            .inner()?
-            .query_with_req_id(sql, req_id)
+        let taos = self.inner()?;
+        let result_set = py
+            .allow_threads(|| taos.query_with_req_id(sql, req_id))
             .map_err(|err| OperationalError::new_err(err.to_string()))?;
         let affected_rows = result_set.affected_rows();
         self.result_set.replace(result_set);
@@ -198,6 +201,7 @@ impl Cursor {
     #[args(py_args = "*", parameters = "**")]
     pub fn execute_many(
         &mut self,
+        py: Python<'_>,
         operation: &PyString,
         seq_of_parameters: &PySequence,
     ) -> PyResult<usize> {
@@ -223,9 +227,9 @@ impl Cursor {
                 .try_collect()?;
             Ok::<_, PyErr>(vec)
         })?;
-        let affected_rows = self
-            .inner()?
-            .exec_many(sql)
+        let taos = self.inner()?;
+        let affected_rows = py
+            .allow_threads(|| taos.exec_many(sql))
             .map_err(|err| OperationalError::new_err(err.to_string()))?;
         self.row_count = affected_rows;
         Ok(affected_rows)
@@ -234,6 +238,7 @@ impl Cursor {
     #[args(py_args = "*", parameters = "**")]
     pub fn execute_many_with_req_id(
         &mut self,
+        py: Python<'_>,
         operation: &PyString,
         seq_of_parameters: &PySequence,
         req_id: u64,
@@ -260,11 +265,11 @@ impl Cursor {
                 .try_collect()?;
             Ok::<_, PyErr>(vec)
         })?;
+        let taos = self.inner()?;
         let affected_rows = sql
             .into_iter()
             .map(|sql| {
-                self.inner()?
-                    .query_with_req_id(sql, req_id)
+                py.allow_threads(|| taos.query_with_req_id(sql, req_id))
                     .map_err(|err| OperationalError::new_err(err.to_string()))
             })
             .try_fold(0, |mut acc, aff| {
@@ -276,8 +281,8 @@ impl Cursor {
     }
 
     /// PEP249 void method
-    pub fn fetchone(&mut self) -> PyResult<Option<PyObject>> {
-        self.assert_block()?;
+    pub fn fetchone(&mut self, py: Python<'_>) -> PyResult<Option<PyObject>> {
+        self.assert_block(py)?;
 
         Python::with_gil(|py| -> PyResult<Option<PyObject>> {
             if let Some(block) = self.block.as_ref() {
@@ -290,8 +295,8 @@ impl Cursor {
     }
 
     /// PEP249 void method
-    pub fn fetchmany(&mut self, size: Option<usize>) -> PyResult<Option<Vec<PyObject>>> {
-        self.assert_block()?;
+    pub fn fetchmany(&mut self, py: Python<'_>, size: Option<usize>) -> PyResult<Option<Vec<PyObject>>> {
+        self.assert_block(py)?;
 
         if let Some(size) = size {
             Python::with_gil(|py| {
@@ -310,7 +315,7 @@ impl Cursor {
                             let remain = remain.unwrap();
                             self.row_in_block = block.nrows();
                             self.row_count += block.nrows() - range.start;
-                            self.assert_block()?;
+                            self.assert_block(py)?;
                             range = 0..remain;
                         }
                     } else {
@@ -331,15 +336,15 @@ impl Cursor {
     }
 
     /// Fetch all rows into a sequence of tuple.
-    pub fn fetchall(&mut self) -> PyResult<Option<Vec<PyObject>>> {
-        self.fetchmany(Some(usize::MAX))
+    pub fn fetchall(&mut self, py: Python<'_>) -> PyResult<Option<Vec<PyObject>>> {
+        self.fetchmany(py, Some(usize::MAX))
     }
 
     /// Fetch all rows in the current result set into a sequence of dict.
     ///
     /// Just an alias of `fetch_all_into_dict()`.
-    pub fn fetchallintodict(&mut self) -> PyResult<Option<Vec<PyObject>>> {
-        if let Some(all) = self.fetchall()? {
+    pub fn fetchallintodict(&mut self, py: Python<'_>) -> PyResult<Option<Vec<PyObject>>> {
+        if let Some(all) = self.fetchall(py)? {
             let names: Vec<_> = self
                 .current_result_set()?
                 .fields()
@@ -366,8 +371,8 @@ impl Cursor {
     }
 
     /// Fetch all rows in the current result set into a sequence of dict.
-    pub fn fetch_all_into_dict(&mut self) -> PyResult<Option<Vec<PyObject>>> {
-        self.fetchallintodict()
+    pub fn fetch_all_into_dict(&mut self, py: Python<'_>) -> PyResult<Option<Vec<PyObject>>> {
+        self.fetchallintodict(py)
     }
 
     /// PEP249 void method, underline interface does not support multiple result sets.

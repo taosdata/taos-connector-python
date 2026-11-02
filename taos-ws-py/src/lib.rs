@@ -129,8 +129,9 @@ impl Connection {
         todo!()
     }
 
-    pub fn query(&self, sql: &str) -> PyResult<TaosResult> {
-        match self.current_cursor()?.query(sql) {
+    pub fn query(&self, py: Python<'_>, sql: &str) -> PyResult<TaosResult> {
+        let taos = self.current_cursor()?;
+        match py.allow_threads(|| taos.query(sql)) {
             Ok(rs) => {
                 let cols = rs.num_of_fields();
                 Ok(TaosResult {
@@ -145,8 +146,9 @@ impl Connection {
         }
     }
 
-    pub fn query_with_req_id(&self, sql: &str, req_id: u64) -> PyResult<TaosResult> {
-        match self.current_cursor()?.query_with_req_id(sql, req_id) {
+    pub fn query_with_req_id(&self, py: Python<'_>, sql: &str, req_id: u64) -> PyResult<TaosResult> {
+        let taos = self.current_cursor()?;
+        match py.allow_threads(|| taos.query_with_req_id(sql, req_id)) {
             Ok(rs) => {
                 let cols = rs.num_of_fields();
                 Ok(TaosResult {
@@ -161,15 +163,17 @@ impl Connection {
         }
     }
 
-    pub fn execute(&self, sql: &str) -> PyResult<i32> {
-        match self.current_cursor()?.query(sql) {
+    pub fn execute(&self, py: Python<'_>, sql: &str) -> PyResult<i32> {
+        let taos = self.current_cursor()?;
+        match py.allow_threads(|| taos.query(sql)) {
             Ok(rs) => Ok(rs.affected_rows()),
             Err(err) => Err(QueryError::new_err(err.to_string())),
         }
     }
 
-    pub fn execute_with_req_id(&self, sql: &str, req_id: u64) -> PyResult<i32> {
-        match self.current_cursor()?.query_with_req_id(sql, req_id) {
+    pub fn execute_with_req_id(&self, py: Python<'_>, sql: &str, req_id: u64) -> PyResult<i32> {
+        let taos = self.current_cursor()?;
+        match py.allow_threads(|| taos.query_with_req_id(sql, req_id)) {
             Ok(rs) => Ok(rs.affected_rows()),
             Err(err) => Err(QueryError::new_err(err.to_string())),
         }
@@ -188,10 +192,10 @@ impl Connection {
     pub fn rollback(&self) {}
 
     /// PEP249 cursor() method.
-    pub fn cursor(&self) -> PyResult<Cursor> {
-        let taos = self
-            .builder()?
-            .build()
+    pub fn cursor(&self, py: Python<'_>) -> PyResult<Cursor> {
+        let builder = self.builder()?;
+        let taos = py
+            .allow_threads(|| builder.build())
             .map_err(|err| ConnectionError::new_err(err.to_string()))?;
         Ok(Cursor::new(taos, self._tz))
     }
@@ -199,6 +203,7 @@ impl Connection {
     /// schemaless data to taos
     pub fn schemaless_insert(
         &self,
+        py: Python<'_>,
         lines: Vec<String>,
         protocol: PySchemalessProtocol,
         precision: PySchemalessPrecision,
@@ -217,8 +222,8 @@ impl Connection {
             .build()
             .map_err(|err| DataError::new_err(err.to_string()))?;
 
-        self.current_cursor()?
-            .put(&data)
+        let taos = self.current_cursor()?;
+        py.allow_threads(|| taos.put(&data))
             .map_err(|err| OperationalError::new_err(err.to_string()))?;
 
         Ok(())
@@ -239,18 +244,19 @@ impl TaosResult {
         slf
     }
 
-    fn __next__(mut slf: PyRefMut<Self>) -> PyResult<Option<PyObject>> {
+    fn __next__(mut slf: PyRefMut<Self>, py: Python<'_>) -> PyResult<Option<PyObject>> {
         let need_fetch = match slf._block.as_ref() {
             Some(block) => slf._current >= block.nrows(),
             None => true,
         };
         if need_fetch {
             slf._current = 0;
-            slf._block = slf
-                ._inner
-                .fetch_raw_block()
+            let inner = &mut slf._inner;
+            let block = py
+                .allow_threads(|| inner.fetch_raw_block())
                 .map_err(|err| FetchError::new_err(err.to_string()))?
                 .map(|b| b.with_timezone(slf._tz));
+            slf._block = block;
         }
 
         Python::with_gil(|py| -> PyResult<Option<PyObject>> {
@@ -316,7 +322,7 @@ static THREAD_SAFETY: u8 = 2;
 static PARAMS_STYLE: &str = "pyformat";
 
 #[pyfunction(args = "**")]
-fn connect(dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Connection> {
+fn connect(py: Python<'_>, dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Connection> {
     let dsn = dsn.unwrap_or("taosws://");
     let mut dsn = Dsn::from_str(dsn).map_err(|err| ConnectionError::new_err(err.to_string()))?;
 
@@ -397,8 +403,8 @@ fn connect(dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Connection> {
     let builder =
         TaosBuilder::from_dsn(dsn).map_err(|err| ConnectionError::new_err(err.to_string()))?;
 
-    let client = builder
-        .build()
+    let client = py
+        .allow_threads(|| builder.build())
         .map_err(|err| ConnectionError::new_err(err.to_string()))?;
 
     Ok(Connection {

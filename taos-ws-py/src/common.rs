@@ -170,7 +170,13 @@ pub fn get_slice_of_block(
 
     let slices = range
         .into_iter()
-        .map(|index| unsafe { get_row_of_block_unchecked(py, block, index) })
+        .map(|index| {
+            // Bound Python object conversion batches without changing row order or types.
+            if index > start && (index - start) % 1024 == 0 {
+                py.allow_threads(std::thread::yield_now);
+            }
+            unsafe { get_row_of_block_unchecked(py, block, index) }
+        })
         .collect::<PyResult<Vec<_>>>()?;
 
     Ok((slices, remain))
@@ -179,6 +185,11 @@ pub fn get_slice_of_block(
 pub fn get_all_of_block(py: Python, block: &RawBlock) -> PyResult<Vec<PyObject>> {
     (0..block.nrows())
         .into_iter()
-        .map(|index| unsafe { get_row_of_block_unchecked(py, block, index) })
+        .map(|index| {
+            if index > 0 && index % 1024 == 0 {
+                py.allow_threads(std::thread::yield_now);
+            }
+            unsafe { get_row_of_block_unchecked(py, block, index) }
+        })
         .collect::<PyResult<Vec<_>>>()
 }
