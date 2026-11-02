@@ -156,7 +156,7 @@ jobs:
           path: taos-ws-py/target/wheels/**
 
   linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: rebuild
     if: needs.rebuild.outputs.status == 'true'
     strategy:
