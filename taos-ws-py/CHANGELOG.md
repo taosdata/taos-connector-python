@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Conventional Changelog](https://www.conventionalcommits.org/en/v1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.7.1 - 2026-11-03
+
+### Bug Fixes:
+
+- Release the GIL during synchronous connection establishment, query execution, and result fetching to allow other Python threads to run.
+
 ## v0.7.0 - 2026-06-29
 
 ### Features:
