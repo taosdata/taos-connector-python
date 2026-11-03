@@ -1,10 +1,32 @@
+# Copyright (c) 2019 TAOS Data, Inc.
+#
+# SPDX-License-Identifier: MIT
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 # encoding:UTF-8
 
 import ctypes
 import platform
 import inspect
 from ctypes import *
-import pytz
+from taos import log
 
 try:
     from typing import Any
@@ -13,6 +35,7 @@ except BaseException:
 
 from taos.error import *
 from taos.schemaless import *
+from taos.constants import FieldType
 from typing import Callable, List, Tuple, Union
 
 _UNSUPPORTED = {}
@@ -93,7 +116,7 @@ if taos_get_client_info().split(".")[0] < "3":
         CONVERT_FUNC_BLOCK,
         TaosFields,
         TaosField,
-        set_tz,
+        DEFAULT_TIMEZONE,
         convert_func,
         convert_block_func,
     )
@@ -103,7 +126,7 @@ else:
         CONVERT_FUNC_BLOCK,
         TaosFields,
         TaosField,
-        set_tz,
+        DEFAULT_TIMEZONE,
         convert_func,
         convert_block_func,
     )
@@ -120,8 +143,6 @@ else:
         TaosFieldAllCls,
         convert_block_func_v3,
     )
-    from taos.constants import FieldType
-
     IS_V3 = True
 
 _libtaos.taos_fetch_fields.restype = ctypes.POINTER(TaosField)
@@ -704,9 +725,15 @@ def taos_get_column_data_offset(result, field, rows):
     return offsets[:rows]
 
 
-def taos_fetch_block_v3(result, fields=None, field_count=None, decode_binary=True):
+def _convert_field_value(converter, field_type, data, is_null, num_of_rows, nbytes, precision, timezone):
+    if field_type == FieldType.C_TIMESTAMP:
+        return converter(data, is_null, num_of_rows, nbytes, precision, timezone=timezone)
+    return converter(data, is_null, num_of_rows, nbytes, precision)
+
+
+def taos_fetch_block_v3(result, fields=None, field_count=None, decode_binary=True, timezone=DEFAULT_TIMEZONE):
     if fields is None:
-        fields = taos_fetch_fields(result)
+        fields = taos_fetch_result_fields(result)
     if field_count is None:
         field_count = taos_field_count(result)
     pblock = ctypes.c_void_p(0)
@@ -717,6 +744,7 @@ def taos_fetch_block_v3(result, fields=None, field_count=None, decode_binary=Tru
     blocks = [None] * field_count
     for i in range(len(fields)):
         data = ctypes.cast(pblock, ctypes.POINTER(ctypes.c_void_p))[i]
+        col_precision = taos_get_field_precision(fields[i], precision)
         if fields[i]["type"] not in CONVERT_FUNC_BLOCK_v3 and fields[i]["type"] not in CONVERT_FUNC_BLOCK:
             raise DatabaseError("Invalid data type returned from database")
         offsets = []
@@ -731,19 +759,50 @@ def taos_fetch_block_v3(result, fields=None, field_count=None, decode_binary=Tru
         ):
             offsets = taos_get_column_data_offset(result, i, num_of_rows)
             f = convert_block_func_v3(fields[i]["type"], decode_binary=decode_binary)
-            blocks[i] = f(data, is_null, num_of_rows, offsets, precision)
+            try:
+                blocks[i] = _convert_field_value(
+                    f, fields[i]["type"], data, is_null, num_of_rows, offsets, col_precision, timezone
+                )
+            except Exception as conv_err:
+                try:
+                    log.warn(
+                        "taos_fetch_block_v3 decode failed "
+                        f"col={i} name={fields[i].name!r} type={fields[i].type} "
+                        f"precision={getattr(fields[i], 'precision', None)} "
+                        f"scale={getattr(fields[i], 'scale', None)} bytes={fields[i].bytes} "
+                        f"rows={num_of_rows} decode_binary={decode_binary} "
+                        f"offsets={list(offsets[:min(len(offsets), 8)])} err={conv_err!r}"
+                    )
+                except Exception as debug_err:
+                    log.warn(f"taos_fetch_block_v3 decode debug failed col={i} err={debug_err!r}")
+                raise
         else:
             if _can_get_is_null_by_column:
                 is_null = taos_is_null_by_column(result, num_of_rows, i)
             else:
                 is_null = [taos_is_null(result, j, i) for j in range(num_of_rows)]
             f = convert_block_func(fields[i]["type"], decode_binary=decode_binary)
-            blocks[i] = f(data, is_null, num_of_rows, offsets, precision)
+            try:
+                blocks[i] = _convert_field_value(
+                    f, fields[i]["type"], data, is_null, num_of_rows, offsets, col_precision, timezone
+                )
+            except Exception as conv_err:
+                try:
+                    log.warn(
+                        "taos_fetch_block_v3 scalar decode failed "
+                        f"col={i} name={fields[i].name!r} type={fields[i].type} "
+                        f"precision={getattr(fields[i], 'precision', None)} "
+                        f"scale={getattr(fields[i], 'scale', None)} bytes={fields[i].bytes} "
+                        f"rows={num_of_rows} decode_binary={decode_binary} err={conv_err!r}"
+                    )
+                except Exception as debug_err:
+                    log.warn(f"taos_fetch_block_v3 scalar debug failed col={i} err={debug_err!r}")
+                raise
 
     return blocks, abs(num_of_rows)
 
 
-def taos_fetch_block_v2(result, fields=None, field_count=None, decode_binary=True):
+def taos_fetch_block_v2(result, fields=None, field_count=None, decode_binary=True, timezone=DEFAULT_TIMEZONE):
     pblock = ctypes.c_void_p(0)
     num_of_rows = _libtaos.taos_fetch_block(result, ctypes.byref(pblock))
     if num_of_rows == 0:
@@ -761,7 +820,9 @@ def taos_fetch_block_v2(result, fields=None, field_count=None, decode_binary=Tru
             raise DatabaseError("Invalid data type returned from database")
         is_null = [taos_is_null(result, j, i) for j in range(num_of_rows)]
         f = convert_block_func(fields[i]["type"], decode_binary=decode_binary)
-        blocks[i] = f(data, is_null, num_of_rows, fieldLen[i], precision)
+        blocks[i] = _convert_field_value(
+            f, fields[i]["type"], data, is_null, num_of_rows, fieldLen[i], precision, timezone
+        )
 
     return blocks, abs(num_of_rows)
 
@@ -783,7 +844,7 @@ def taos_fetch_row_raw(result):
     return None
 
 
-def taos_fetch_row(result, fields, decode_binary=True):
+def taos_fetch_row(result, fields, decode_binary=True, timezone=DEFAULT_TIMEZONE):
     # type: (c_void_p, Array[TaosField], bool) -> tuple(c_void_p, int)
     pblock = taos_fetch_row_raw(result)
     if pblock:
@@ -794,13 +855,29 @@ def taos_fetch_row(result, fields, decode_binary=True):
         field_lens = taos_fetch_lengths(result, field_count)
         for i in range(field_count):
             data = ctypes.cast(pblock, ctypes.POINTER(ctypes.c_void_p))[i]
+            col_precision = taos_get_field_precision(fields[i], precision)
             if fields[i].type not in CONVERT_FUNC:
                 raise DatabaseError("Invalid data type returned from database")
             if data is None:
                 blocks[i] = [None]
             else:
                 f = convert_func(fields[i].type, decode_binary=decode_binary)
-                blocks[i] = f(data, [False], num_of_rows, field_lens[i], precision)
+                try:
+                    blocks[i] = _convert_field_value(
+                        f, fields[i].type, data, [False], num_of_rows, field_lens[i], col_precision, timezone
+                    )
+                except Exception as conv_err:
+                    try:
+                        log.warn(
+                            "taos_fetch_row decode failed "
+                            f"col={i} name={fields[i].name!r} type={fields[i].type} "
+                            f"precision={getattr(fields[i], 'precision', None)} "
+                            f"scale={getattr(fields[i], 'scale', None)} bytes={fields[i].bytes} "
+                            f"field_len={field_lens[i]} decode_binary={decode_binary} err={conv_err!r}"
+                        )
+                    except Exception as debug_err:
+                        log.warn(f"taos_fetch_row decode debug failed col={i} err={debug_err!r}")
+                    raise
     else:
         return None, 0
     return blocks, abs(num_of_rows)
@@ -862,6 +939,29 @@ def taos_fetch_fields_e(result):
     fields = taos_fetch_fields_e_raw(result)
     count = taos_field_count(result)
     return TaosFieldEs(fields, count)
+
+
+def taos_fetch_result_fields(result):
+    # type: (c_void_p) -> TaosFields | TaosFieldEs
+    if IS_V3 and "taos_fetch_fields_e" not in _UNSUPPORTED:
+        return taos_fetch_fields_e(result)
+    return taos_fetch_fields(result)
+
+
+def taos_get_field_precision(field, result_precision):
+    # type: (TaosField | TaosFieldE, int) -> int
+    field_type = field["type"]
+    if not IS_V3 or field_type != FieldType.C_TIMESTAMP:
+        return result_precision
+
+    field_precision = getattr(field, "precision", FieldType.C_TIMESTAMP_UNKNOWN)
+    if field_precision in (
+        FieldType.C_TIMESTAMP_MILLI,
+        FieldType.C_TIMESTAMP_MICRO,
+        FieldType.C_TIMESTAMP_NANO,
+    ):
+        return field_precision
+    return result_precision
 
 
 def taos_fetch_lengths(result, field_count=None):
@@ -2467,7 +2567,6 @@ class CTaosInterface(object):
             taos_options(TaosOption.ConfigDir, config)
 
         if tz is not None:
-            set_tz(pytz.timezone(tz))
             taos_options(TaosOption.Timezone, tz)
 
     @property

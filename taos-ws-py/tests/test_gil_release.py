@@ -1,6 +1,27 @@
-"""验证 I/O 期间让出 GIL，真实数据库测试只允许连接本机临时数据库。"""
+# Copyright (c) 2026 TAOS Data, Inc.
+#
+# SPDX-License-Identifier: MIT
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+"""Verify the GIL is released during I/O; real-database tests connect to a disposable database on the local TDengine."""
 import contextlib
-import os
 import socket
 import subprocess
 import sys
@@ -13,12 +34,12 @@ import taosws
 
 
 def sample_threads(call):
-    """测量被调用函数运行期间，另一个 Python 线程的最大暂停时间。"""
+    """Measure the maximum pause of another Python thread while the call runs."""
     ticks = []
     stop = threading.Event()
 
     def heartbeat():
-        """每毫秒尝试获得 GIL，记录实际执行机会。"""
+        """Try to acquire the GIL every millisecond and record actual execution opportunities."""
         while not stop.is_set():
             ticks.append(time.perf_counter())
             time.sleep(0.001)
@@ -41,7 +62,7 @@ def sample_threads(call):
 
 @contextlib.contextmanager
 def network_process(mode):
-    """使用独立进程制造网络等待，避免测试服务器受被测进程 GIL 影响。"""
+    """Create network waits in a separate process so the test server is not affected by the GIL of the process under test."""
     process = subprocess.Popen([sys.executable, __file__, mode], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     port = int(process.stdout.readline())
     try:
@@ -52,10 +73,10 @@ def network_process(mode):
 
 
 def test_connect_releases_gil():
-    """延迟失败的 WebSocket 握手也必须让其他 Python 线程继续执行。"""
+    """Other Python threads must keep running even during a delayed, failing WebSocket handshake."""
     with network_process('reject') as port:
         def connect():
-            """尝试连接可控的失败服务端。"""
+            """Attempt to connect to the controlled failing server."""
             with pytest.raises(taosws.Error):
                 taosws.connect(f'taosws://127.0.0.1:{port}')
 
@@ -66,9 +87,7 @@ def test_connect_releases_gil():
 
 @pytest.fixture(scope='module')
 def local_database():
-    """仅在显式开启集成测试时创建本机一次性数据库。"""
-    if os.environ.get('TAOSWS_LOCAL_INTEGRATION') != '1':
-        pytest.skip('requires disposable local TDengine container')
+    """Create a disposable database on the local TDengine instance started by CI."""
     deadline = time.monotonic() + 90
     while True:
         try:
@@ -92,7 +111,7 @@ def local_database():
 
 
 def test_cursor_fetch_and_query_releases_gil(local_database):
-    """通过延迟代理验证查询、跨块取数、迭代接口及 Python 方法签名。"""
+    """Verify queries, cross-block fetches, the iterator API and Python method signatures through a delaying proxy."""
     with network_process('proxy') as port:
         connection = taosws.connect(f'taosws://root:taosdata@127.0.0.1:{port}')
         try:
@@ -124,7 +143,7 @@ def test_cursor_fetch_and_query_releases_gil(local_database):
 
 
 def relay(source, destination, delay):
-    """转发 TCP 数据，并在服务端响应方向加入固定延迟。"""
+    """Forward TCP data, adding a fixed delay in the server-to-client direction."""
     try:
         while True:
             data = source.recv(65536)
@@ -142,7 +161,7 @@ def relay(source, destination, delay):
 
 
 def run_network_server(mode):
-    """运行独立测试服务端，不接受外部主机或生产数据库配置。"""
+    """Run the standalone test server; external hosts and production database configurations are not accepted."""
     with socket.socket() as listener:
         listener.bind(('127.0.0.1', 0))
         listener.listen()

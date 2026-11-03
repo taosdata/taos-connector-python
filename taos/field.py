@@ -1,4 +1,27 @@
+# Copyright (c) 2021 TAOS Data, Inc.
+#
+# SPDX-License-Identifier: MIT
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 # encoding:UTF-8
+
 import ctypes
 from ctypes import *
 from datetime import datetime, timedelta
@@ -17,11 +40,18 @@ except OSError:
     _datetime_epoch = datetime.fromtimestamp(86400) - timedelta(seconds=86400)
 _utc_datetime_epoch = _utc_tz.localize(datetime.utcfromtimestamp(0))
 _priv_datetime_epoch = None
+DEFAULT_TIMEZONE = object()
 
 
 def set_tz(tz):
     # type: (str) -> None
     global _priv_tz, _priv_datetime_epoch
+    if tz is None:
+        _priv_tz = None
+        _priv_datetime_epoch = None
+        return
+    if isinstance(tz, str):
+        tz = pytz.timezone(tz)
     _priv_tz = tz
     _priv_datetime_epoch = _utc_datetime_epoch.astimezone(_priv_tz)
 
@@ -31,22 +61,35 @@ def get_tz():
     return _priv_tz
 
 
-def _convert_millisecond_to_datetime(milli):
+def _get_datetime_epoch(timezone):
+    if timezone is DEFAULT_TIMEZONE:
+        return _datetime_epoch if _priv_tz is None else _priv_datetime_epoch
+    if timezone is None:
+        return _datetime_epoch
+    return _utc_datetime_epoch.astimezone(timezone)
+
+
+def _convert_millisecond_to_datetime(milli, timezone=DEFAULT_TIMEZONE):
     try:
-        if _priv_tz is None:
-            return _datetime_epoch + timedelta(seconds=milli / 1000.0)
-        return _priv_datetime_epoch + timedelta(seconds=milli / 1000.0)
+        return _get_datetime_epoch(timezone) + timedelta(milliseconds=milli)
     except OverflowError:
         # catch OverflowError and pass
         print("WARN: datetime overflow!")
         pass
 
 
-def _convert_microsecond_to_datetime(micro):
+def _convert_microsecond_to_datetime(micro, timezone=DEFAULT_TIMEZONE):
     try:
-        if _priv_tz is None:
-            return _datetime_epoch + timedelta(seconds=micro / 1000000.0)
-        return _priv_datetime_epoch + timedelta(seconds=micro / 1000000.0)
+        return _get_datetime_epoch(timezone) + timedelta(microseconds=micro)
+    except OverflowError:
+        # catch OverflowError and pass
+        print("WARN: datetime overflow!")
+        pass
+
+
+def _convert_epoch_with_microsecond_resolution(seconds, microseconds, timezone=DEFAULT_TIMEZONE):
+    try:
+        return _get_datetime_epoch(timezone) + timedelta(seconds=seconds, microseconds=microseconds)
     except OverflowError:
         # catch OverflowError and pass
         print("WARN: datetime overflow!")
@@ -57,21 +100,37 @@ def _convert_nanosecond_to_datetime(nanosec):
     return nanosec
 
 
-def _crow_timestamp_to_python(data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN):
-    """Function to convert C bool row to python row."""
-    _timestamp_converter = _convert_millisecond_to_datetime
+def _convert_timestamp_value(raw_value, precision, timezone=DEFAULT_TIMEZONE):
     if precision == FieldType.C_TIMESTAMP_MILLI:
-        _timestamp_converter = _convert_millisecond_to_datetime
-    elif precision == FieldType.C_TIMESTAMP_MICRO:
-        _timestamp_converter = _convert_microsecond_to_datetime
-    elif precision == FieldType.C_TIMESTAMP_NANO:
-        _timestamp_converter = _convert_nanosecond_to_datetime
-    else:
+        return _convert_millisecond_to_datetime(raw_value, timezone)
+    if precision == FieldType.C_TIMESTAMP_MICRO:
+        return _convert_microsecond_to_datetime(raw_value, timezone)
+    if precision == FieldType.C_TIMESTAMP_NANO:
+        return _convert_nanosecond_to_datetime(raw_value)
+    raise DatabaseError("Unknown precision returned from database")
+
+
+def _crow_timestamp_to_python(
+    data, is_null, num_of_rows, nbytes=None, precision=FieldType.C_TIMESTAMP_UNKNOWN, timezone=DEFAULT_TIMEZONE
+):
+    """Function to convert C bool row to python row."""
+    if precision not in (
+        FieldType.C_TIMESTAMP_MILLI,
+        FieldType.C_TIMESTAMP_MICRO,
+        FieldType.C_TIMESTAMP_NANO,
+    ):
         raise DatabaseError("Unknown precision returned from database")
 
+    raw_values = ctypes.cast(data, ctypes.POINTER(ctypes.c_int64))[: abs(num_of_rows)]
     return [
-        None if is_null[i] else _timestamp_converter(ele)
-        for i, ele in enumerate(ctypes.cast(data, ctypes.POINTER(ctypes.c_int64))[: abs(num_of_rows)])
+        None
+        if is_null[i]
+        else _convert_timestamp_value(
+            raw_value,
+            precision,
+            timezone,
+        )
+        for i, raw_value in enumerate(raw_values)
     ]
 
 
@@ -258,11 +317,13 @@ def _crow_blob_to_python_block(data, is_null, num_of_rows, nbytes=None, precisio
         if is_null[i]:
             res.append(None)
         else:
-            rbyte = ctypes.cast(data + nbytes * i, ctypes.POINTER(ctypes.c_uint16))[:1].pop()
+            rbyte = ctypes.cast(data + nbytes * i, ctypes.POINTER(ctypes.c_uint32))[:1].pop()
             chars = ctypes.cast(c_char_p(data + nbytes * i + 4), ctypes.POINTER(c_char * rbyte))
             buffer = create_string_buffer(rbyte + 1)
             buffer[:rbyte] = chars[0][:rbyte]
-            res.append(cast(buffer, c_char_p).value)
+            # raw[:rbyte], not cast(c_char_p).value: blob payloads legitimately contain
+            # NUL bytes and c_char_p.value stops at the first one
+            res.append(buffer.raw[:rbyte])
     return res
 
 

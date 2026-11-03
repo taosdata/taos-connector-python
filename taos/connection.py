@@ -1,5 +1,31 @@
+# Copyright (c) 2019 TAOS Data, Inc.
+#
+# SPDX-License-Identifier: MIT
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 # encoding:UTF-8
+
+import re
 from typing import Optional, List
+import pytz
+from tzlocal.windows_tz import win_tz
 
 from taos.cinterface import *
 from taos.constants import TSDB_CONNECTIONS_MODE, TSDB_OPTION_CONNECTION
@@ -22,6 +48,7 @@ class TaosConnection(object):
         self._port = 0
         self._config = None
         self._tz = None
+        self._timezone = None
         self.decode_binary = True
         self._charset = None
         self._user_app = None
@@ -56,6 +83,8 @@ class TaosConnection(object):
                 self.set_mode(TSDB_CONNECTIONS_MODE.TSDB_CONNECTIONS_MODE_BI.value, 1)
             else:
                 self.set_mode(TSDB_CONNECTIONS_MODE.TSDB_CONNECTIONS_MODE_BI.value, 0)
+
+        self._sync_python_timezone()
 
     def _init_config(self, **kwargs):
         # host
@@ -126,6 +155,115 @@ class TaosConnection(object):
     def set_option(self, option, value):
         taos_options_connection(self._conn, option, value)
 
+    def _set_python_timezone(self, tz):
+        if tz is None:
+            self._timezone = None
+            return
+
+        if isinstance(tz, bytes):
+            tz = tz.decode("utf-8")
+        self._timezone = self._parse_python_timezone(str(tz))
+
+    @staticmethod
+    def _parse_python_timezone(value):
+        # Preserve Windows names such as "Central Standard Time (Mexico)"
+        # while discarding TDengine's trailing display data "(CST, +0800)".
+        tz_name = re.sub(r"\s+\([^()]*,\s*[+-]\d{4}\)$", "", value).strip()
+        if tz_name in win_tz:
+            tz_name = win_tz[tz_name]
+
+        match = re.fullmatch(r"([+-])(\d{2}):?(\d{2})?", tz_name)
+        if match is not None:
+            sign, hours, minutes = match.groups()
+            hours = int(hours)
+            minutes = int(minutes or 0)
+            if hours > 23 or minutes > 59:
+                raise pytz.UnknownTimeZoneError(tz_name)
+            offset = hours * 60 + minutes
+            return pytz.FixedOffset(offset if sign == "+" else -offset)
+
+        match = re.fullmatch(r"UTC([+-])(\d{1,2})(?::?(\d{2}))?", tz_name, re.IGNORECASE)
+        if match is not None:
+            sign, hours, minutes = match.groups()
+            hours = int(hours)
+            minutes = int(minutes or 0)
+            if hours > 23 or minutes > 59:
+                raise pytz.UnknownTimeZoneError(tz_name)
+            offset = hours * 60 + minutes
+            # TDengine's UTC offsets use POSIX signs: UTC-8 is UTC+08:00.
+            return pytz.FixedOffset(-offset if sign == "+" else offset)
+
+        return pytz.timezone(tz_name)
+
+    @staticmethod
+    def _is_set_timezone_statement(sql):
+        if not isinstance(sql, str):
+            return False
+
+        tokens = []
+        index = 0
+        length = len(sql)
+        while index < length and len(tokens) < 3:
+            if sql[index].isspace():
+                index += 1
+                continue
+            if sql.startswith("--", index):
+                newline = sql.find("\n", index + 2)
+                index = length if newline == -1 else newline + 1
+                continue
+            if sql.startswith("/*", index):
+                comment_end = sql.find("*/", index + 2)
+                if comment_end == -1:
+                    return False
+                index = comment_end + 2
+                continue
+            if sql[index] in ("'", '"'):
+                quote = sql[index]
+                index += 1
+                start = index
+                while index < length and sql[index] != quote:
+                    index += 1
+                if index == length:
+                    return False
+                tokens.append(sql[start:index].upper())
+                index += 1
+                continue
+            if not (sql[index].isalpha() or sql[index] == "_"):
+                return False
+            start = index
+            index += 1
+            while index < length and (sql[index].isalnum() or sql[index] == "_"):
+                index += 1
+            tokens.append(sql[start:index].upper())
+
+        return tokens[:2] == ["SET", "TIMEZONE"] or tokens == ["ALTER", "LOCAL", "TIMEZONE"]
+
+    def _sync_python_timezone(self):
+        if self._conn is None:
+            return
+
+        res = taos_query(self._conn, "select timezone()")
+        try:
+            errno = taos_errno(res)
+            if errno != 0:
+                raise ProgrammingError(taos_errstr(res), errno)
+
+            fields = taos_fetch_result_fields(res)
+            # Connection state must always use text, independently from how callers
+            # request BINARY query results.
+            block, num_of_rows = taos_fetch_block(res, fields, decode_binary=True)
+            errno = taos_errno(res)
+            if errno != 0:
+                raise ProgrammingError(taos_errstr(res), errno)
+            if num_of_rows == 0:
+                return
+
+            timezone_value = block[0][0]
+            if timezone_value is not None:
+                self._set_python_timezone(timezone_value)
+        finally:
+            taos_free_result(res)
+
     def set_mode(self, mode, value):
         taos_set_conn_mode(self._conn, mode, value)
 
@@ -138,11 +276,14 @@ class TaosConnection(object):
         return self.query(sql, req_id).affected_rows
 
     def query(self, sql: str, req_id: Optional[int] = None) -> TaosResult:
+        should_sync_timezone = self._is_set_timezone_statement(sql)
         if req_id is None:
             res = taos_query(self._conn, sql)
         else:
             res = taos_query_with_reqid(self._conn, sql, req_id)
-        return TaosResult(res, close_after=True, decode_binary=self.decode_binary)
+        if should_sync_timezone and taos_errno(res) == 0:
+            self._sync_python_timezone()
+        return TaosResult(res, close_after=True, decode_binary=self.decode_binary, timezone=self._timezone)
 
     def query_a(self, sql: str, callback: async_query_callback_type, param: c_void_p, req_id: Optional[int] = None):
         """Asynchronously query a sql with callback function"""
@@ -168,7 +309,7 @@ class TaosConnection(object):
             errno = taos_errno(c_void_p(None))
             msg = taos_errstr(c_void_p(None))
             raise Error(msg, errno)
-        return TaosSubscription(sub, callback is not None)
+        return TaosSubscription(sub, callback is not None, timezone=self._timezone)
 
     def statement(self, sql=None):
         # type: (str | None) -> TaosStmt|None
@@ -178,7 +319,7 @@ class TaosConnection(object):
         if sql is not None:
             taos_stmt_prepare(stmt, sql)
 
-        return TaosStmt(stmt, decode_binary=self.decode_binary)
+        return TaosStmt(stmt, decode_binary=self.decode_binary, timezone=self._timezone)
 
     def statement2(self, sql=None, option=None):
         # type: (str | None, TaosStmt2Option | None) -> TaosStmt2|None
@@ -187,7 +328,7 @@ class TaosConnection(object):
         if option is not None:
             option = option.get_impl()
         _stmt2 = taos_stmt2_init(self._conn, option)
-        stmt2 = TaosStmt2(_stmt2, decode_binary=self.decode_binary)
+        stmt2 = TaosStmt2(_stmt2, decode_binary=self.decode_binary, timezone=self._timezone)
         if sql is not None:
             stmt2.prepare(sql)
 

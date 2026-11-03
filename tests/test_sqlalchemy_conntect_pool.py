@@ -1,4 +1,28 @@
+# Copyright (c) 2025 TAOS Data, Inc.
+#
+# SPDX-License-Identifier: MIT
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import threading
+import time
+
 import utils
 from sqlalchemy import create_engine
 from sqlalchemy import text
@@ -36,20 +60,21 @@ def init_db():
         raise
 
 
-def taos_insert_sql(i: int):
+def taos_insert_sql(worker_id: int, base_timestamp: int):
     conn = None
     host = "localhost"
     port = PORT
     try:
         with engine.begin() as conn:
+            timestamp = base_timestamp + worker_id * 4
             sql = text(
                 f"""
                 INSERT INTO 
                 power.d1001 USING power.meters (groupid, location) TAGS(2, 'California.SanFrancisco')
-                    VALUES (NOW + {i+1}a, 10.30000, 219, 0.31000) 
-                    (NOW + {i+2}a, 12.60000, 218, 0.33000) (NOW + {i+3}a, 12.30000, 221, 0.31000)
+                    VALUES ({timestamp}, 10.30000, 219, 0.31000)
+                    ({timestamp + 1}, 12.60000, 218, 0.33000) ({timestamp + 2}, 12.30000, 221, 0.31000)
                 power.d1002 USING power.meters (groupid, location)  TAGS(3, 'California.SanFrancisco') 
-                    VALUES (NOW + {i+1}a, 10.30000, 218, 0.25000)
+                    VALUES ({timestamp + 3}, 10.30000, 218, 0.25000)
                 """
             )
             affectedRows = conn.execute(sql)
@@ -81,9 +106,10 @@ def query_native(sql: str):
 def test_connection_pool():
     init_db()  # Initialize database and tables
 
+    base_timestamp = int(time.time() * 1000)
     threads = []
     for i in range(5):
-        t1 = threading.Thread(target=taos_insert_sql, args=(i * 10,))
+        t1 = threading.Thread(target=taos_insert_sql, args=(i, base_timestamp))
         t2 = threading.Thread(target=query_native, args=("SELECT * FROM power.meters",))
         threads.extend([t1, t2])
         t1.start()

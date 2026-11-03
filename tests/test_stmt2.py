@@ -1,3 +1,25 @@
+# Copyright (c) 2024 TAOS Data, Inc.
+#
+# SPDX-License-Identifier: MIT
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import math
 import taos
 import pytest
@@ -512,6 +534,54 @@ def test_stmt2_insert(conn):
     except Exception as err:
         # conn.execute("drop database if exists %s" % dbname)
         print("test_stmt2_insert ............................. failed\n")
+        conn.close()
+        raise err
+
+
+@pytest.mark.skipif(IS_WS, reason="Skip WS")
+def test_stmt2_large_blob(conn):
+    if not taos.IS_V3:
+        print(" test_stmt2_large_blob not support TDengine 2.X version.")
+        return
+
+    dbname = "stmt2_large_blob"
+    ntb = "ntb_blob"
+    # 5MB payload: over the old 4MB (4194304) BLOB limit, within the new 16MB limit (16777212 payload bytes)
+    blob_size = 5 * 1024 * 1024
+    data = (bytes(range(256)) * (blob_size // 256 + 1))[:blob_size]
+
+    try:
+        conn.execute("drop database if exists %s" % dbname)
+        conn.execute("create database if not exists %s precision 'ms' " % dbname)
+        conn.select_db(dbname)
+        conn.execute(f"create table if not exists {dbname}.{ntb} (ts timestamp, v blob)")
+
+        stmt2 = conn.statement2(f"insert into {dbname}.{ntb} values(?,?)")
+        tbnames = [ntb]
+        tags = None
+        datas = [
+            [
+                [1601481600000],
+                [data],
+            ]
+        ]
+        stmt2.bind_param(tbnames, tags, datas)
+        stmt2.execute()
+        stmt2.close()
+        print("insert 5MB blob .............................. ok\n")
+
+        result = conn.query(f"select * from {dbname}.{ntb}")
+        results = result.fetch_all()
+        assert len(results) == 1
+        assert len(results[0][1]) == blob_size
+        assert results[0][1] == data
+        print("query check 5MB blob ......................... ok\n")
+
+        conn.execute("drop database if exists %s" % dbname)
+        conn.close()
+        print("test_stmt2_large_blob ........................ [passed]\n")
+    except Exception as err:
+        print("test_stmt2_large_blob ........................ failed\n")
         conn.close()
         raise err
 

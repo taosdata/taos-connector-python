@@ -1,7 +1,30 @@
+// Copyright (c) 2022 TAOS Data, Inc.
+//
+// SPDX-License-Identifier: MIT
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 use chrono_tz::Tz;
 use pyo3::{
     prelude::*,
     types::{PyDict, PySequence, PyString, PyTuple},
+    IntoPyObjectExt,
 };
 use taos::{
     sync::{Fetchable, Queryable},
@@ -59,7 +82,7 @@ impl Cursor {
             let result_set = self.current_result_set()?;
             // Only Rust data crosses this boundary; Python objects are built with the GIL held.
             self.block = py
-                .allow_threads(|| result_set.fetch_raw_block())
+                .detach(|| result_set.fetch_raw_block())
                 .map_err(|err| FetchError::new_err(err.to_string()))?
                 .map(|b| b.with_timezone(self.tz));
         }
@@ -87,24 +110,26 @@ impl Cursor {
     ///
     /// The type_code can be interpreted by comparing it to the Type Objects specified in the section below.
     #[getter]
-    pub fn description(&mut self) -> PyResult<Vec<PyObject>> {
-        Python::with_gil(|py| {
-            Ok(self
+    pub fn description(&mut self) -> PyResult<Vec<Py<PyAny>>> {
+        Python::attach(|py| -> PyResult<Vec<Py<PyAny>>> {
+            let items: PyResult<Vec<Py<PyAny>>> = self
                 .current_result_set()?
                 .fields()
                 .iter()
                 .map(|field| {
-                    PyTuple::new(
+                    Ok(PyTuple::new(
                         py,
                         [
-                            field.name().to_object(py),
-                            (field.ty() as u8).to_object(py),
-                            field.bytes().to_object(py),
+                            field.name().into_py_any(py)?,
+                            (field.ty() as u8).into_py_any(py)?,
+                            field.bytes().into_py_any(py)?,
                         ],
-                    )
-                    .to_object(py)
+                    )?
+                    .into_any()
+                    .unbind())
                 })
-                .collect())
+                .collect();
+            items
         })
     }
 
@@ -127,34 +152,34 @@ impl Cursor {
         self.inner.take();
     }
 
-    #[args(py_args = "*", parameters = "**")]
+    #[pyo3(signature = (operation, *py_args, **parameters))]
     pub fn execute(
         &mut self,
         py: Python<'_>,
-        operation: &PyString,
-        py_args: &PyTuple,
-        parameters: Option<&PyDict>,
+        operation: &Bound<'_, PyString>,
+        py_args: &Bound<'_, PyTuple>,
+        parameters: Option<&Bound<'_, PyDict>>,
     ) -> PyResult<usize> {
-        let sql = Python::with_gil(|py| {
+        let sql = Python::attach(|py| {
             let sql: String = if let Some(parameters) = parameters {
                 let local = PyDict::new(py);
                 local.set_item("parameters", parameters)?;
                 local.set_item("operation", operation)?;
                 local.set_item("args", py_args)?;
-                let sql = py.eval("operation.format(*args, **parameters)", None, Some(local))?;
+                let sql = py.eval(c"operation.format(*args, **parameters)", None, Some(&local))?;
                 sql.extract()?
             } else {
                 let local = PyDict::new(py);
                 local.set_item("operation", operation)?;
                 local.set_item("args", py_args)?;
-                let sql = py.eval("operation.format(*args)", None, Some(local))?;
+                let sql = py.eval(c"operation.format(*args)", None, Some(&local))?;
                 sql.extract()?
             };
             Ok::<_, PyErr>(sql)
         })?;
         let taos = self.inner()?;
         let result_set = py
-            .allow_threads(|| taos.query(sql))
+            .detach(|| taos.query(sql))
             .map_err(|err| OperationalError::new_err(err.to_string()))?;
         let affected_rows = result_set.affected_rows();
         self.result_set.replace(result_set);
@@ -162,35 +187,35 @@ impl Cursor {
         Ok(affected_rows as _)
     }
 
-    #[args(py_args = "*", parameters = "**")]
+    #[pyo3(signature = (operation, req_id, *py_args, **parameters))]
     pub fn execute_with_req_id(
         &mut self,
         py: Python<'_>,
-        operation: &PyString,
-        py_args: &PyTuple,
-        parameters: Option<&PyDict>,
+        operation: &Bound<'_, PyString>,
         req_id: u64,
+        py_args: &Bound<'_, PyTuple>,
+        parameters: Option<&Bound<'_, PyDict>>,
     ) -> PyResult<usize> {
-        let sql = Python::with_gil(|py| {
+        let sql = Python::attach(|py| {
             let sql: String = if let Some(parameters) = parameters {
                 let local = PyDict::new(py);
                 local.set_item("parameters", parameters)?;
                 local.set_item("operation", operation)?;
                 local.set_item("args", py_args)?;
-                let sql = py.eval("operation.format(*args, **parameters)", None, Some(local))?;
+                let sql = py.eval(c"operation.format(*args, **parameters)", None, Some(&local))?;
                 sql.extract()?
             } else {
                 let local = PyDict::new(py);
                 local.set_item("operation", operation)?;
                 local.set_item("args", py_args)?;
-                let sql = py.eval("operation.format(*args)", None, Some(local))?;
+                let sql = py.eval(c"operation.format(*args)", None, Some(&local))?;
                 sql.extract()?
             };
             Ok::<_, PyErr>(sql)
         })?;
         let taos = self.inner()?;
         let result_set = py
-            .allow_threads(|| taos.query_with_req_id(sql, req_id))
+            .detach(|| taos.query_with_req_id(sql, req_id))
             .map_err(|err| OperationalError::new_err(err.to_string()))?;
         let affected_rows = result_set.affected_rows();
         self.result_set.replace(result_set);
@@ -198,29 +223,28 @@ impl Cursor {
         Ok(affected_rows as _)
     }
 
-    #[args(py_args = "*", parameters = "**")]
     pub fn execute_many(
         &mut self,
         py: Python<'_>,
-        operation: &PyString,
-        seq_of_parameters: &PySequence,
+        operation: &Bound<'_, PyString>,
+        seq_of_parameters: &Bound<'_, PySequence>,
     ) -> PyResult<usize> {
-        let sql = Python::with_gil(|py| {
+        let sql = Python::attach(|py| {
             let vec: Vec<_> = seq_of_parameters
-                .iter()?
+                .try_iter()?
                 .map(|row| -> PyResult<String> {
                     let row = row?;
-                    if row.is_instance_of::<PyDict>()? {
+                    if row.is_instance_of::<PyDict>() {
                         let local = PyDict::new(py);
                         local.set_item("args", row)?;
                         local.set_item("operation", operation)?;
-                        let sql = py.eval("operation.format(**args)", None, Some(local))?;
+                        let sql = py.eval(c"operation.format(**args)", None, Some(&local))?;
                         sql.extract()
                     } else {
                         let local = PyDict::new(py);
                         local.set_item("args", row)?;
                         local.set_item("operation", operation)?;
-                        let sql = py.eval("operation.format(*args)", None, Some(local))?;
+                        let sql = py.eval(c"operation.format(*args)", None, Some(&local))?;
                         sql.extract()
                     }
                 })
@@ -229,36 +253,35 @@ impl Cursor {
         })?;
         let taos = self.inner()?;
         let affected_rows = py
-            .allow_threads(|| taos.exec_many(sql))
+            .detach(|| taos.exec_many(sql))
             .map_err(|err| OperationalError::new_err(err.to_string()))?;
         self.row_count = affected_rows;
         Ok(affected_rows)
     }
 
-    #[args(py_args = "*", parameters = "**")]
     pub fn execute_many_with_req_id(
         &mut self,
         py: Python<'_>,
-        operation: &PyString,
-        seq_of_parameters: &PySequence,
+        operation: &Bound<'_, PyString>,
+        seq_of_parameters: &Bound<'_, PySequence>,
         req_id: u64,
     ) -> PyResult<usize> {
-        let sql = Python::with_gil(|py| {
+        let sql = Python::attach(|py| {
             let vec: Vec<_> = seq_of_parameters
-                .iter()?
+                .try_iter()?
                 .map(|row| -> PyResult<String> {
                     let row = row?;
-                    if row.is_instance_of::<PyDict>()? {
+                    if row.is_instance_of::<PyDict>() {
                         let local = PyDict::new(py);
                         local.set_item("args", row)?;
                         local.set_item("operation", operation)?;
-                        let sql = py.eval("operation.format(**args)", None, Some(local))?;
+                        let sql = py.eval(c"operation.format(**args)", None, Some(&local))?;
                         sql.extract()
                     } else {
                         let local = PyDict::new(py);
                         local.set_item("args", row)?;
                         local.set_item("operation", operation)?;
-                        let sql = py.eval("operation.format(*args)", None, Some(local))?;
+                        let sql = py.eval(c"operation.format(*args)", None, Some(&local))?;
                         sql.extract()
                     }
                 })
@@ -269,7 +292,7 @@ impl Cursor {
         let affected_rows = sql
             .into_iter()
             .map(|sql| {
-                py.allow_threads(|| taos.query_with_req_id(sql, req_id))
+                py.detach(|| taos.query_with_req_id(sql, req_id))
                     .map_err(|err| OperationalError::new_err(err.to_string()))
             })
             .try_fold(0, |mut acc, aff| {
@@ -281,10 +304,10 @@ impl Cursor {
     }
 
     /// PEP249 void method
-    pub fn fetchone(&mut self, py: Python<'_>) -> PyResult<Option<PyObject>> {
+    pub fn fetchone(&mut self, py: Python<'_>) -> PyResult<Option<Py<PyAny>>> {
         self.assert_block(py)?;
 
-        Python::with_gil(|py| -> PyResult<Option<PyObject>> {
+        Python::attach(|py| -> PyResult<Option<Py<PyAny>>> {
             if let Some(block) = self.block.as_ref() {
                 let row = get_row_of_block(py, block, self.row_in_block)?;
                 self.row_in_block += 1;
@@ -295,11 +318,16 @@ impl Cursor {
     }
 
     /// PEP249 void method
-    pub fn fetchmany(&mut self, py: Python<'_>, size: Option<usize>) -> PyResult<Option<Vec<PyObject>>> {
+    #[pyo3(signature = (size=None))]
+    pub fn fetchmany(
+        &mut self,
+        py: Python<'_>,
+        size: Option<usize>,
+    ) -> PyResult<Option<Vec<Py<PyAny>>>> {
         self.assert_block(py)?;
 
         if let Some(size) = size {
-            Python::with_gil(|py| {
+            Python::attach(|py| {
                 let mut range = self.row_in_block..self.row_in_block + size;
                 let mut all = Vec::new();
                 loop {
@@ -328,7 +356,7 @@ impl Cursor {
             self.row_in_block = 0;
             if let Some(block) = self.block.take() {
                 self.row_count += block.nrows();
-                return Ok(Some(Python::with_gil(|py| get_all_of_block(py, &block))?));
+                return Ok(Some(Python::attach(|py| get_all_of_block(py, &block))?));
             } else {
                 return Ok(None);
             }
@@ -336,14 +364,14 @@ impl Cursor {
     }
 
     /// Fetch all rows into a sequence of tuple.
-    pub fn fetchall(&mut self, py: Python<'_>) -> PyResult<Option<Vec<PyObject>>> {
+    pub fn fetchall(&mut self, py: Python<'_>) -> PyResult<Option<Vec<Py<PyAny>>>> {
         self.fetchmany(py, Some(usize::MAX))
     }
 
     /// Fetch all rows in the current result set into a sequence of dict.
     ///
     /// Just an alias of `fetch_all_into_dict()`.
-    pub fn fetchallintodict(&mut self, py: Python<'_>) -> PyResult<Option<Vec<PyObject>>> {
+    pub fn fetchallintodict(&mut self, py: Python<'_>) -> PyResult<Option<Vec<Py<PyAny>>>> {
         if let Some(all) = self.fetchall(py)? {
             let names: Vec<_> = self
                 .current_result_set()?
@@ -354,13 +382,13 @@ impl Cursor {
             let list = all
                 .into_iter()
                 .map(|tuple| {
-                    Python::with_gil(|py| -> PyResult<_> {
-                        let tuple: Vec<PyObject> = tuple.extract(py)?;
+                    Python::attach(|py| -> PyResult<_> {
+                        let tuple: Vec<Py<PyAny>> = tuple.extract(py)?;
                         let dict = PyDict::new(py);
                         for (key, value) in names.iter().zip(tuple) {
                             dict.set_item(key, value)?;
                         }
-                        Ok(dict.to_object(py))
+                        Ok(dict.into_any().unbind())
                     })
                 })
                 .try_collect()?;
@@ -371,7 +399,7 @@ impl Cursor {
     }
 
     /// Fetch all rows in the current result set into a sequence of dict.
-    pub fn fetch_all_into_dict(&mut self, py: Python<'_>) -> PyResult<Option<Vec<PyObject>>> {
+    pub fn fetch_all_into_dict(&mut self, py: Python<'_>) -> PyResult<Option<Vec<Py<PyAny>>>> {
         self.fetchallintodict(py)
     }
 

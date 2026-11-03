@@ -1,12 +1,34 @@
 #![allow(unexpected_cfgs)]
 
+// Copyright (c) 2022 TAOS Data, Inc.
+//
+// SPDX-License-Identifier: MIT
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 use std::str::FromStr;
 
 use bigdecimal::BigDecimal;
 use chrono_tz::Tz;
 use pyo3::prelude::*;
 use pyo3::types::{PyAny, PyDict, PyString, PyTuple, PyType};
-use pyo3::{create_exception, exceptions::PyException};
+use pyo3::{create_exception, exceptions::PyException, IntoPyObjectExt};
 use taos::taos_query;
 use taos::taos_query::common::{
     views::DecimalView, SchemalessPrecision, SchemalessProtocol, SmlDataBuilder,
@@ -125,13 +147,13 @@ impl Connection {
     /// @dsn: Data Source Name string, optional.
     /// @args:
     #[new]
-    pub fn new(_dsn: Option<&str>, _args: Option<&PyDict>) -> PyResult<Self> {
+    pub fn new(_dsn: Option<&str>, _args: Option<&Bound<'_, PyDict>>) -> PyResult<Self> {
         todo!()
     }
 
     pub fn query(&self, py: Python<'_>, sql: &str) -> PyResult<TaosResult> {
         let taos = self.current_cursor()?;
-        match py.allow_threads(|| taos.query(sql)) {
+        match py.detach(|| taos.query(sql)) {
             Ok(rs) => {
                 let cols = rs.num_of_fields();
                 Ok(TaosResult {
@@ -146,9 +168,14 @@ impl Connection {
         }
     }
 
-    pub fn query_with_req_id(&self, py: Python<'_>, sql: &str, req_id: u64) -> PyResult<TaosResult> {
+    pub fn query_with_req_id(
+        &self,
+        py: Python<'_>,
+        sql: &str,
+        req_id: u64,
+    ) -> PyResult<TaosResult> {
         let taos = self.current_cursor()?;
-        match py.allow_threads(|| taos.query_with_req_id(sql, req_id)) {
+        match py.detach(|| taos.query_with_req_id(sql, req_id)) {
             Ok(rs) => {
                 let cols = rs.num_of_fields();
                 Ok(TaosResult {
@@ -165,7 +192,7 @@ impl Connection {
 
     pub fn execute(&self, py: Python<'_>, sql: &str) -> PyResult<i32> {
         let taos = self.current_cursor()?;
-        match py.allow_threads(|| taos.query(sql)) {
+        match py.detach(|| taos.query(sql)) {
             Ok(rs) => Ok(rs.affected_rows()),
             Err(err) => Err(QueryError::new_err(err.to_string())),
         }
@@ -173,7 +200,7 @@ impl Connection {
 
     pub fn execute_with_req_id(&self, py: Python<'_>, sql: &str, req_id: u64) -> PyResult<i32> {
         let taos = self.current_cursor()?;
-        match py.allow_threads(|| taos.query_with_req_id(sql, req_id)) {
+        match py.detach(|| taos.query_with_req_id(sql, req_id)) {
             Ok(rs) => Ok(rs.affected_rows()),
             Err(err) => Err(QueryError::new_err(err.to_string())),
         }
@@ -195,7 +222,7 @@ impl Connection {
     pub fn cursor(&self, py: Python<'_>) -> PyResult<Cursor> {
         let builder = self.builder()?;
         let taos = py
-            .allow_threads(|| builder.build())
+            .detach(|| builder.build())
             .map_err(|err| ConnectionError::new_err(err.to_string()))?;
         Ok(Cursor::new(taos, self._tz))
     }
@@ -223,7 +250,7 @@ impl Connection {
             .map_err(|err| DataError::new_err(err.to_string()))?;
 
         let taos = self.current_cursor()?;
-        py.allow_threads(|| taos.put(&data))
+        py.detach(|| taos.put(&data))
             .map_err(|err| OperationalError::new_err(err.to_string()))?;
 
         Ok(())
@@ -244,7 +271,7 @@ impl TaosResult {
         slf
     }
 
-    fn __next__(mut slf: PyRefMut<Self>, py: Python<'_>) -> PyResult<Option<PyObject>> {
+    fn __next__(mut slf: PyRefMut<Self>, py: Python<'_>) -> PyResult<Option<Py<PyAny>>> {
         let need_fetch = match slf._block.as_ref() {
             Some(block) => slf._current >= block.nrows(),
             None => true,
@@ -253,54 +280,54 @@ impl TaosResult {
             slf._current = 0;
             let inner = &mut slf._inner;
             let block = py
-                .allow_threads(|| inner.fetch_raw_block())
+                .detach(|| inner.fetch_raw_block())
                 .map_err(|err| FetchError::new_err(err.to_string()))?
                 .map(|b| b.with_timezone(slf._tz));
             slf._block = block;
         }
 
-        Python::with_gil(|py| -> PyResult<Option<PyObject>> {
+        Python::attach(|py| -> PyResult<Option<Py<PyAny>>> {
             if let Some(block) = slf._block.as_ref() {
                 let mut vec = Vec::new();
                 for col in 0..block.ncols() {
                     if let Some(value) = block.get_ref(slf._current, col) {
                         let value = match value {
-                            BorrowedValue::Null(_) => Option::<()>::None.into_py(py),
-                            BorrowedValue::Bool(v) => v.into_py(py),
-                            BorrowedValue::TinyInt(v) => v.into_py(py),
-                            BorrowedValue::SmallInt(v) => v.into_py(py),
-                            BorrowedValue::Int(v) => v.into_py(py),
-                            BorrowedValue::BigInt(v) => v.into_py(py),
-                            BorrowedValue::UTinyInt(v) => v.into_py(py),
-                            BorrowedValue::USmallInt(v) => v.into_py(py),
-                            BorrowedValue::UInt(v) => v.into_py(py),
-                            BorrowedValue::UBigInt(v) => v.into_py(py),
-                            BorrowedValue::Float(v) => v.into_py(py),
-                            BorrowedValue::Double(v) => v.into_py(py),
+                            BorrowedValue::Null(_) => Option::<()>::None.into_py_any(py)?,
+                            BorrowedValue::Bool(v) => v.into_py_any(py)?,
+                            BorrowedValue::TinyInt(v) => v.into_py_any(py)?,
+                            BorrowedValue::SmallInt(v) => v.into_py_any(py)?,
+                            BorrowedValue::Int(v) => v.into_py_any(py)?,
+                            BorrowedValue::BigInt(v) => v.into_py_any(py)?,
+                            BorrowedValue::UTinyInt(v) => v.into_py_any(py)?,
+                            BorrowedValue::USmallInt(v) => v.into_py_any(py)?,
+                            BorrowedValue::UInt(v) => v.into_py_any(py)?,
+                            BorrowedValue::UBigInt(v) => v.into_py_any(py)?,
+                            BorrowedValue::Float(v) => v.into_py_any(py)?,
+                            BorrowedValue::Double(v) => v.into_py_any(py)?,
                             BorrowedValue::Timestamp(ts) => {
                                 if let Some(tz) = slf._tz {
-                                    ts.to_datetime_with_custom_tz(&tz).to_string().into_py(py)
+                                    ts.to_datetime_with_custom_tz(&tz).to_string().into_py_any(py)?
                                 } else {
-                                    ts.to_datetime_with_tz().to_string().into_py(py)
+                                    ts.to_datetime_with_tz().to_string().into_py_any(py)?
                                 }
                             }
-                            BorrowedValue::VarChar(s) => s.into_py(py),
-                            BorrowedValue::NChar(v) => v.as_ref().into_py(py),
+                            BorrowedValue::VarChar(s) => s.into_py_any(py)?,
+                            BorrowedValue::NChar(v) => v.as_ref().into_py_any(py)?,
                             BorrowedValue::Json(j) => std::str::from_utf8(&j)
                                 .map_err(|err| ProgrammingError::new_err(err.to_string()))?
-                                .into_py(py),
-                            BorrowedValue::VarBinary(v) => v.as_ref().into_py(py),
-                            BorrowedValue::Geometry(v) => v.as_ref().into_py(py),
+                                .into_py_any(py)?,
+                            BorrowedValue::VarBinary(v) => v.as_ref().into_py_any(py)?,
+                            BorrowedValue::Geometry(v) => v.as_ref().into_py_any(py)?,
                             BorrowedValue::Decimal64(v) => common::to_py_decimal(v, py)?,
                             BorrowedValue::Decimal(v) => common::to_py_decimal(v, py)?,
-                            BorrowedValue::Blob(v) => v.as_ref().into_py(py),
-                            _ => Option::<()>::None.into_py(py),
+                            BorrowedValue::Blob(v) => v.as_ref().into_py_any(py)?,
+                            _ => Option::<()>::None.into_py_any(py)?,
                         };
                         vec.push(value);
                     }
                 }
                 slf._current += 1;
-                return Ok(Some(PyTuple::new(py, vec).to_object(py)));
+                return Ok(Some(PyTuple::new(py, vec)?.into_any().unbind()));
             }
             Ok(None)
         })
@@ -321,8 +348,12 @@ static API_LEVEL: &str = "2.0";
 static THREAD_SAFETY: u8 = 2;
 static PARAMS_STYLE: &str = "pyformat";
 
-#[pyfunction(args = "**")]
-fn connect(py: Python<'_>, dsn: Option<&str>, args: Option<&PyDict>) -> PyResult<Connection> {
+#[pyfunction(signature = (dsn = None, **args))]
+fn connect(
+    py: Python<'_>,
+    dsn: Option<&str>,
+    args: Option<&Bound<'_, PyDict>>,
+) -> PyResult<Connection> {
     let dsn = dsn.unwrap_or("taosws://");
     let mut dsn = Dsn::from_str(dsn).map_err(|err| ConnectionError::new_err(err.to_string()))?;
 
@@ -340,21 +371,21 @@ fn connect(py: Python<'_>, dsn: Option<&str>, args: Option<&PyDict>) -> PyResult
             "native",
         ];
 
-        if let Some(value) = args.get_item("user").or(args.get_item("username")) {
+        if let Some(value) = args.get_item("user")?.or(args.get_item("username")?) {
             dsn.username = Some(value.extract::<String>()?);
         }
-        if let Some(value) = args.get_item("pass").or(args.get_item("password")) {
+        if let Some(value) = args.get_item("pass")?.or(args.get_item("password")?) {
             dsn.password = Some(value.extract::<String>()?);
         }
-        if let Some(value) = args.get_item("db").or(args.get_item("database")) {
+        if let Some(value) = args.get_item("db")?.or(args.get_item("database")?) {
             dsn.subject = Some(value.extract::<String>()?);
         }
-        if let Some(value) = args.get_item("timezone") {
+        if let Some(value) = args.get_item("timezone")? {
             tz = Some(value.extract::<String>()?);
         }
 
-        if let Some(scheme) = args.get_item("ws").or(args.get_item("websocket")) {
-            if scheme.is_instance_of::<pyo3::types::PyBool>()? {
+        if let Some(scheme) = args.get_item("ws")?.or(args.get_item("websocket")?) {
+            if scheme.is_instance_of::<pyo3::types::PyBool>() {
                 if scheme.extract()? {
                     dsn.protocol = Some("ws".to_string());
                 }
@@ -367,16 +398,16 @@ fn connect(py: Python<'_>, dsn: Option<&str>, args: Option<&PyDict>) -> PyResult
 
         let mut addr = Address::default();
         if let Some(host) = args
-            .get_item("host")
-            .or(args.get_item("url"))
-            .or(args.get_item("ip"))
+            .get_item("host")?
+            .or(args.get_item("url")?)
+            .or(args.get_item("ip")?)
         {
             addr.host = Some(host.extract::<String>()?);
         }
-        if let Some(port) = args.get_item("port") {
-            if port.is_instance_of::<pyo3::types::PyInt>()? {
+        if let Some(port) = args.get_item("port")? {
+            if port.is_instance_of::<pyo3::types::PyInt>() {
                 addr.port = Some(port.extract()?);
-            } else if port.is_instance_of::<PyString>()? {
+            } else if port.is_instance_of::<PyString>() {
                 addr.port = Some(port.extract::<String>()?.parse()?);
             } else {
                 Err(ConnectionError::new_err(format!("Invalid port: {port}")))?;
@@ -385,9 +416,9 @@ fn connect(py: Python<'_>, dsn: Option<&str>, args: Option<&PyDict>) -> PyResult
         dsn.addresses.push(addr);
 
         for (key, value) in args {
-            let key = key.extract::<&str>()?;
-            if !SKIP_KEYS.contains(&key) {
-                dsn.set(key, value.extract::<&str>()?);
+            let key = key.extract::<String>()?;
+            if !SKIP_KEYS.contains(&key.as_str()) {
+                dsn.set(&key, &value.extract::<String>()?);
             }
         }
     }
@@ -404,7 +435,7 @@ fn connect(py: Python<'_>, dsn: Option<&str>, args: Option<&PyDict>) -> PyResult
         TaosBuilder::from_dsn(dsn).map_err(|err| ConnectionError::new_err(err.to_string()))?;
 
     let client = py
-        .allow_threads(|| builder.build())
+        .detach(|| builder.build())
         .map_err(|err| ConnectionError::new_err(err.to_string()))?;
 
     Ok(Connection {
@@ -644,6 +675,7 @@ struct PyTagView {
 }
 
 #[pyfunction]
+#[pyo3(signature = (value = None))]
 fn bool_to_tag(value: Option<bool>) -> PyTagView {
     match value {
         Some(value) => PyTagView {
@@ -656,6 +688,7 @@ fn bool_to_tag(value: Option<bool>) -> PyTagView {
 }
 
 #[pyfunction]
+#[pyo3(signature = (value = None))]
 fn tiny_int_to_tag(value: Option<i8>) -> PyTagView {
     match value {
         Some(value) => PyTagView {
@@ -668,6 +701,7 @@ fn tiny_int_to_tag(value: Option<i8>) -> PyTagView {
 }
 
 #[pyfunction]
+#[pyo3(signature = (value = None))]
 fn small_int_to_tag(value: Option<i16>) -> PyTagView {
     match value {
         Some(value) => PyTagView {
@@ -680,6 +714,7 @@ fn small_int_to_tag(value: Option<i16>) -> PyTagView {
 }
 
 #[pyfunction]
+#[pyo3(signature = (value = None))]
 fn int_to_tag(value: Option<i32>) -> PyTagView {
     match value {
         Some(value) => PyTagView { _inner: Int(value) },
@@ -690,6 +725,7 @@ fn int_to_tag(value: Option<i32>) -> PyTagView {
 }
 
 #[pyfunction]
+#[pyo3(signature = (value = None))]
 fn big_int_to_tag(value: Option<i64>) -> PyTagView {
     match value {
         Some(value) => PyTagView {
@@ -702,6 +738,7 @@ fn big_int_to_tag(value: Option<i64>) -> PyTagView {
 }
 
 #[pyfunction]
+#[pyo3(signature = (value = None))]
 fn float_to_tag(value: Option<f32>) -> PyTagView {
     match value {
         Some(value) => PyTagView {
@@ -714,6 +751,7 @@ fn float_to_tag(value: Option<f32>) -> PyTagView {
 }
 
 #[pyfunction]
+#[pyo3(signature = (value = None))]
 fn double_to_tag(value: Option<f64>) -> PyTagView {
     match value {
         Some(value) => PyTagView {
@@ -726,6 +764,7 @@ fn double_to_tag(value: Option<f64>) -> PyTagView {
 }
 
 #[pyfunction]
+#[pyo3(signature = (value = None))]
 fn varchar_to_tag(value: Option<String>) -> PyTagView {
     match value {
         Some(value) => PyTagView {
@@ -750,6 +789,7 @@ fn timestamp_to_tag(value: Option<i64>, precision: PyPrecision) -> PyTagView {
 }
 
 #[pyfunction]
+#[pyo3(signature = (value = None))]
 fn nchar_to_tag(value: Option<String>) -> PyTagView {
     match value {
         Some(value) => PyTagView {
@@ -762,6 +802,7 @@ fn nchar_to_tag(value: Option<String>) -> PyTagView {
 }
 
 #[pyfunction]
+#[pyo3(signature = (value = None))]
 fn u_tiny_int_to_tag(value: Option<u8>) -> PyTagView {
     match value {
         Some(value) => PyTagView {
@@ -774,6 +815,7 @@ fn u_tiny_int_to_tag(value: Option<u8>) -> PyTagView {
 }
 
 #[pyfunction]
+#[pyo3(signature = (value = None))]
 fn u_small_int_to_tag(value: Option<u16>) -> PyTagView {
     match value {
         Some(value) => PyTagView {
@@ -786,6 +828,7 @@ fn u_small_int_to_tag(value: Option<u16>) -> PyTagView {
 }
 
 #[pyfunction]
+#[pyo3(signature = (value = None))]
 fn u_int_to_tag(value: Option<u32>) -> PyTagView {
     match value {
         Some(value) => PyTagView {
@@ -798,6 +841,7 @@ fn u_int_to_tag(value: Option<u32>) -> PyTagView {
 }
 
 #[pyfunction]
+#[pyo3(signature = (value = None))]
 fn u_big_int_to_tag(value: Option<u64>) -> PyTagView {
     match value {
         Some(value) => PyTagView {
@@ -810,6 +854,7 @@ fn u_big_int_to_tag(value: Option<u64>) -> PyTagView {
 }
 
 #[pyfunction]
+#[pyo3(signature = (value = None))]
 fn json_to_tag(value: Option<String>) -> PyTagView {
     match value {
         Some(value) => PyTagView {
@@ -822,6 +867,7 @@ fn json_to_tag(value: Option<String>) -> PyTagView {
 }
 
 #[pyfunction]
+#[pyo3(signature = (value = None))]
 fn varbinary_to_tag(value: Option<Vec<u8>>) -> PyTagView {
     match value {
         Some(value) => PyTagView {
@@ -834,6 +880,7 @@ fn varbinary_to_tag(value: Option<Vec<u8>>) -> PyTagView {
 }
 
 #[pyfunction]
+#[pyo3(signature = (value = None))]
 fn geometry_to_tag(value: Option<Vec<u8>>) -> PyTagView {
     match value {
         Some(value) => PyTagView {
@@ -949,22 +996,22 @@ fn doubles_to_column(values: Vec<Option<f64>>) -> PyColumnView {
     }
 }
 
-fn parse_decimal_values(values: Vec<Option<&PyAny>>) -> PyResult<Vec<Option<BigDecimal>>> {
+fn parse_decimal_values(values: Vec<Option<Bound<'_, PyAny>>>) -> PyResult<Vec<Option<BigDecimal>>> {
     let mut decimals = Vec::with_capacity(values.len());
-    let decimal_type: Py<PyType> = Python::with_gil(|py| -> PyResult<Py<PyType>> {
+    let decimal_type: Py<PyType> = Python::attach(|py| -> PyResult<Py<PyType>> {
         let decimal = py
             .import("decimal")?
             .getattr("Decimal")?
-            .downcast::<PyType>()?;
-        Ok(decimal.into_py(py))
+            .cast_into::<PyType>()?;
+        Ok(decimal.unbind())
     })?;
 
     for (index, value) in values.into_iter().enumerate() {
         let decimal = match value {
             Some(value) => {
                 let py = value.py();
-                let decimal_type = decimal_type.as_ref(py);
-                if !value.is_instance(decimal_type)? {
+                let decimal_type = decimal_type.bind(py);
+                if !value.is_instance(decimal_type.as_any())? {
                     let type_name = value.get_type().name()?;
                     return Err(ProgrammingError::new_err(format!(
                         "expected decimal.Decimal or None, got {type_name} at index {index}"
@@ -998,7 +1045,7 @@ fn parse_decimal_values(values: Vec<Option<&PyAny>>) -> PyResult<Vec<Option<BigD
 }
 
 #[pyfunction]
-fn decimal64_to_column(values: Vec<Option<&PyAny>>) -> PyResult<PyColumnView> {
+fn decimal64_to_column(values: Vec<Option<Bound<'_, PyAny>>>) -> PyResult<PyColumnView> {
     let decimals = parse_decimal_values(values)?;
     let decimal_view = DecimalView::<i64>::from_decimals(decimals).map_err(|err| {
         ProgrammingError::new_err(format!("decimal64 scale exceeds maximum 18: {err:?}"))
@@ -1009,7 +1056,7 @@ fn decimal64_to_column(values: Vec<Option<&PyAny>>) -> PyResult<PyColumnView> {
 }
 
 #[pyfunction]
-fn decimal_to_column(values: Vec<Option<&PyAny>>) -> PyResult<PyColumnView> {
+fn decimal_to_column(values: Vec<Option<Bound<'_, PyAny>>>) -> PyResult<PyColumnView> {
     let decimals = parse_decimal_values(values)?;
     let decimal_view = DecimalView::<i128>::from_decimals(decimals).map_err(|err| {
         ProgrammingError::new_err(format!("decimal scale exceeds maximum 38: {err:?}"))
@@ -1104,7 +1151,7 @@ fn blob_to_column(values: Vec<Option<Vec<u8>>>) -> PyColumnView {
 }
 
 #[pymodule]
-fn _taosws(py: Python<'_>, m: &PyModule) -> PyResult<()> {
+fn _taosws(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     if std::env::var("RUST_LOG").is_ok() {
         let _ = pretty_env_logger::try_init();
     }

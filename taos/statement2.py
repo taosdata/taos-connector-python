@@ -1,4 +1,27 @@
+# Copyright (c) 2021 TAOS Data, Inc.
+#
+# SPDX-License-Identifier: MIT
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 # encoding:UTF-8
+
 from taos.cinterface import *
 from taos.error import StatementError
 from taos.result import TaosResult
@@ -161,7 +184,7 @@ def createTagsBind(statement2, tags_tables):
             log.debug(
                 f"tag i = {i} type={field.type} precision={field.precision} length={field.bytes} values = {values} tags_table = {tags_table}\n"
             )
-            binds_table[i].set_value(field.type, values, field.precision)
+            binds_table[i].set_value(field.type, values, field.precision, statement2._timezone)
         binds.append(binds_table)
 
     return binds
@@ -177,7 +200,7 @@ def createColsBind(statement2, cols_tables):
         binds_table = bind2.new_stmt2_binds(n)
         for i in range(n):
             field = getField(statement2, i, isTag=False)
-            binds_table[i].set_value(field.type, cols_table[i], field.precision)
+            binds_table[i].set_value(field.type, cols_table[i], field.precision, statement2._timezone)
         binds.append(binds_table)
 
     return binds
@@ -206,11 +229,11 @@ def createSuperBindV(statement2, cols_tables):
 
             if field.field_type == TAOS_FIELD_TAG:
                 values = [cols_table[i]]
-                tags_bind[tag_index].set_value(field.type, values, field.precision)
+                tags_bind[tag_index].set_value(field.type, values, field.precision, statement2._timezone)
                 tag_index += 1
             elif field.field_type == TAOS_FIELD_COL:
                 values = [cols_table[i]]
-                cols_bind[cols_index].set_value(field.type, values, field.precision)
+                cols_bind[cols_index].set_value(field.type, values, field.precision, statement2._timezone)
                 cols_index += 1
             elif field.field_type == TAOS_FIELD_TBNAME:
                 bind_names.append(cols_table[i])
@@ -337,9 +360,10 @@ def createBindV(statement2, tbnames, tags, datas):
 class TaosStmt2(object):
     """TDengine STMT2 interface for prepared statements"""
 
-    def __init__(self, stmt2, decode_binary=True):
+    def __init__(self, stmt2, decode_binary=True, timezone=DEFAULT_TIMEZONE):
         self._stmt2 = stmt2
         self._decode_binary = decode_binary
+        self._timezone = timezone
         self.fields = None
         self.tag_fields = None
         self.all_fields = None
@@ -429,7 +453,7 @@ class TaosStmt2(object):
             raise StatementError("stmt2 object is null.")
 
         result = taos_stmt2_result(self._stmt2)
-        return TaosResult(result, close_after=False, decode_binary=self._decode_binary)
+        return TaosResult(result, close_after=False, decode_binary=self._decode_binary, timezone=self._timezone)
 
     def close(self):
         """Close the statement and release resources"""
